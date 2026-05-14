@@ -40,9 +40,9 @@ export default function Home() {
             <div className="flex size-10 items-center justify-center rounded-lg bg-violet-500 text-white">
               <Gamepad2 className="size-5" aria-hidden="true" />
             </div>
-            <p className="text-xl font-semibold">SeasonTracker</p>
+            <p className="font-mono text-xl font-semibold">SeasonTracker</p>
           </div>
-          <nav className="flex gap-6 text-sm text-zinc-400">
+          <nav className="flex gap-6 font-mono text-sm text-zinc-400">
             <span className="text-violet-300">Home</span>
             <span>Games</span>
             <span>Calendar</span>
@@ -51,7 +51,7 @@ export default function Home() {
         </header>
 
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+          <h1 className="font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
             Welcome back!
           </h1>
           <p className="mt-2 text-base text-zinc-400">
@@ -74,7 +74,9 @@ export default function Home() {
                   <Icon className="size-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="text-3xl font-semibold">{stat.value}</p>
+                  <p className="font-mono text-3xl font-semibold">
+                    {stat.value}
+                  </p>
                   <p className="text-sm text-zinc-400">{stat.label}</p>
                 </div>
               </Card>
@@ -84,7 +86,7 @@ export default function Home() {
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="border-l-4 border-violet-400 pl-4 text-xl font-semibold">
+            <h2 className="border-l-4 border-violet-400 pl-4 font-mono text-xl font-semibold">
               Active Seasons
             </h2>
             <span className="text-sm text-violet-300">View all</span>
