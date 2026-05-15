@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   CalendarDays,
   Clock3,
@@ -11,60 +12,16 @@ import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
 import type { Game } from "@/src/data/games";
-
-const dateFormatter = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
-function getRemainingTime(endDate: string) {
-  const end = new Date(`${endDate}T23:59:59`).getTime();
-  const diffInMinutes = Math.max(
-    0,
-    Math.floor((end - new Date().getTime()) / (1000 * 60))
-  );
-  const days = Math.floor(diffInMinutes / (60 * 24));
-  const hours = Math.floor((diffInMinutes % (60 * 24)) / 60);
-  const minutes = diffInMinutes % 60;
-
-  if (diffInMinutes <= 0) {
-    return "Ended";
-  }
-
-  if (days >= 30) {
-    const months = Math.floor(days / 30);
-
-    return `${months}+ ${months === 1 ? "month" : "months"}`;
-  }
-
-  return `${days}d ${hours}h ${minutes}m`;
-}
-
-function getSeasonProgress(startDate: string, endDate: string) {
-  const start = new Date(`${startDate}T00:00:00`).getTime();
-  const end = new Date(`${endDate}T23:59:59`).getTime();
-  const now = new Date().getTime();
-
-  if (now <= start) {
-    return 0;
-  }
-
-  if (now >= end) {
-    return 100;
-  }
-
-  return Math.round(((now - start) / (end - start)) * 100);
-}
+import {
+  formatSeasonDate,
+  getRemainingTime,
+  getSeasonProgress,
+} from "@/src/lib/season";
 
 export function GameCard({ game }: { game: Game }) {
   const progress = getSeasonProgress(game.season.startDate, game.season.endDate);
-  const startDate = dateFormatter.format(
-    new Date(`${game.season.startDate}T00:00:00`)
-  );
-  const endDate = dateFormatter.format(
-    new Date(`${game.season.endDate}T00:00:00`)
-  );
+  const startDate = formatSeasonDate(game.season.startDate);
+  const endDate = formatSeasonDate(game.season.endDate);
   const initials = game.title
     .split(" ")
     .map((word) => word.at(0))
@@ -74,7 +31,7 @@ export function GameCard({ game }: { game: Game }) {
   return (
     <Card className="group overflow-hidden border-white/10 bg-[#0e1729]/95 p-0 text-white shadow-xl shadow-black/25 ring-1 ring-white/5 transition duration-300 hover:-translate-y-0.5 hover:border-violet-400/40 hover:bg-[#111c32] hover:shadow-violet-500/10">
       <CardContent className="grid gap-0 p-0 md:grid-cols-[180px_minmax(0,1fr)_160px] xl:grid-cols-[180px_minmax(220px,1fr)_160px_200px]">
-        <div className="relative aspect-[16/9] overflow-hidden rounded-t-xl md:aspect-auto md:h-[132px] md:rounded-l-xl md:rounded-r-none">
+        <div className="relative aspect-[16/9] self-stretch overflow-hidden rounded-t-xl md:aspect-auto md:h-full md:min-h-[132px] md:rounded-l-xl md:rounded-r-none">
           {game.image ? (
             <>
               <Image
@@ -154,8 +111,11 @@ export function GameCard({ game }: { game: Game }) {
             >
               <Trophy className="size-4" aria-hidden="true" />
             </Button>
-            <Button className="h-9 rounded-md bg-white/5 px-3 text-sm text-zinc-100 hover:bg-white/10">
-              More
+            <Button
+              asChild
+              className="h-9 rounded-md bg-white/5 px-3 text-sm text-zinc-100 hover:bg-white/10"
+            >
+              <Link href={`/games/${game.id}`}>More</Link>
             </Button>
           </div>
         </div>
