@@ -18,6 +18,24 @@ export const games = [
     ],
   },
   {
+    id: "season-13",
+    title: "Diablo IV",
+    genre: "ARPG",
+    image: "/images/d4-icon.jpg",
+    detailImage: "/images/d4-detailpage.png",
+    season: {
+      title: "Season 13",
+      type: "Limited Event",
+      startDate: "2026-05-01",
+      endDate: "2026-07-14",
+    },
+    resources: [
+      { label: "Build Guides", href: "#" },
+      { label: "Tier Lists", href: "#" },
+      { label: "Patch Notes", href: "#" },
+    ],
+  },
+  {
     id: "last-epoch",
     title: "Last Epoch",
     genre: "ARPG",
@@ -28,6 +46,24 @@ export const games = [
       type: "Cycle",
       startDate: "2026-06-01",
       endDate: "2026-05-28",
+    },
+    resources: [
+      { label: "Build Guides", href: "#" },
+      { label: "Tier Lists", href: "#" },
+      { label: "Patch Notes", href: "#" },
+    ],
+  },
+  {
+    id: "last-epoch-2",
+    title: "Last Epoch",
+    genre: "ARPG",
+    image: "/images/le-icon.png",
+    detailImage: "/images/le-detailpage.png",
+    season: {
+      title: "Season 4",
+      type: "Cycle",
+      startDate: "2026-05-01",
+      endDate: "2026-05-17",
     },
     resources: [
       { label: "Build Guides", href: "#" },
