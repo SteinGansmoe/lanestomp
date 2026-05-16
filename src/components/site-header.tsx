@@ -17,8 +17,11 @@ import {
 
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
-import { games } from "@/src/data/games";
-import type { Game } from "@/src/data/games";
+import {
+  getPrimarySeasonRouteForGame,
+  getSupportedGames,
+} from "@/src/features/games/selectors";
+import type { Game } from "@/src/features/games/types";
 
 const navItems = [
   { href: "/", icon: Home, label: "Dashboard" },
@@ -31,18 +34,6 @@ type SiteHeaderProps = {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
 };
-
-function getSupportedGames() {
-  const gameMap = new Map<string, Game>();
-
-  for (const game of games) {
-    if (!gameMap.has(game.title)) {
-      gameMap.set(game.title, game);
-    }
-  }
-
-  return [...gameMap.values()];
-}
 
 function getInitials(title: string) {
   return title
@@ -235,7 +226,7 @@ function SupportedGamesNav({
       </p>
       <nav className="mt-3 space-y-1">
         {games.map((game) => {
-          const href = `/games/${game.id}`;
+          const href = getPrimarySeasonRouteForGame(game.id);
           const isActive = pathname === href;
 
           return (
