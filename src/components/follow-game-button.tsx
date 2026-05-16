@@ -9,14 +9,22 @@ import { useFollowedGames } from "@/src/hooks/use-followed-games";
 type FollowGameButtonProps = {
   className?: string;
   gameId: string;
+  iconClassName?: string;
+  showLabel?: boolean;
 };
 
-export function FollowGameButton({ className, gameId }: FollowGameButtonProps) {
+export function FollowGameButton({
+  className,
+  gameId,
+  iconClassName,
+  showLabel = true,
+}: FollowGameButtonProps) {
   const { isFollowing, toggleFollowedGame } = useFollowedGames();
   const following = isFollowing(gameId);
 
   return (
     <Button
+      aria-label={showLabel ? undefined : following ? "Unfollow game" : "Follow game"}
       aria-pressed={following}
       className={cn(
         "h-8 rounded-md border border-white/10 px-3 text-sm",
@@ -29,10 +37,10 @@ export function FollowGameButton({ className, gameId }: FollowGameButtonProps) {
       type="button"
     >
       <Heart
-        className={cn("size-4", following ? "fill-current" : "")}
+        className={cn("size-4", following ? "fill-current" : "", iconClassName)}
         aria-hidden="true"
       />
-      {following ? "Unfollow" : "Follow"}
+      {showLabel ? (following ? "Unfollow" : "Follow") : null}
     </Button>
   );
 }

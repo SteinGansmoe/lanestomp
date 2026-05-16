@@ -1,6 +1,8 @@
 import { SeasonDashboard } from "@/src/components/season-dashboard";
-import { games } from "@/src/data/games";
+import { getGamesWithSeasons } from "@/src/features";
 
 export default function Home() {
+  const games = getGamesWithSeasons();
+
   return <SeasonDashboard games={games} />;
 }

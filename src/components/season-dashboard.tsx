@@ -11,60 +11,16 @@ import {
 import { GameCard } from "@/src/components/game-card";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
-import type { Game } from "@/src/data/games";
+import {
+  getActiveSeasonCards,
+  getDashboardStats,
+  getEndingSoonSeasonCards,
+  getFollowedSeasonCards,
+  getSearchFilteredSeasonCards,
+  getStartingSoonSeasonCards,
+  type GameSeasonCard,
+} from "@/src/features/games/selectors";
 import { useFollowedGames } from "@/src/hooks/use-followed-games";
-
-const dayInMs = 1000 * 60 * 60 * 24;
-
-function getSeasonStart(game: Game) {
-  return new Date(`${game.season.startDate}T00:00:00`).getTime();
-}
-
-function getSeasonEnd(game: Game) {
-  return new Date(`${game.season.endDate}T23:59:59`).getTime();
-}
-
-function isActiveSeason(game: Game) {
-  const now = new Date().getTime();
-
-  return getSeasonStart(game) <= now && getSeasonEnd(game) >= now;
-}
-
-function isEndingSoon(game: Game) {
-  const end = new Date(`${game.season.endDate}T23:59:59`).getTime();
-  const now = new Date().getTime();
-  const daysLeft = Math.ceil((end - now) / dayInMs);
-
-  return daysLeft >= 0 && daysLeft <= 7;
-}
-
-function isStartingSoon(game: Game) {
-  const start = new Date(`${game.season.startDate}T00:00:00`).getTime();
-  const now = new Date().getTime();
-  const daysUntilStart = Math.ceil((start - now) / dayInMs);
-
-  return daysUntilStart >= 0 && daysUntilStart <= 30;
-}
-
-function gameMatchesSearch(game: Game, search: string) {
-  const normalizedSearch = search.trim().toLowerCase();
-
-  if (!normalizedSearch) {
-    return true;
-  }
-
-  return [
-    game.title,
-    game.genre,
-    game.season.title,
-    game.season.type,
-    game.season.startDate,
-    game.season.endDate,
-  ]
-    .join(" ")
-    .toLowerCase()
-    .includes(normalizedSearch);
-}
 
 function SeasonSection({
   borderClassName,
@@ -74,7 +30,7 @@ function SeasonSection({
 }: {
   borderClassName: string;
   emptyMessage: string;
-  games: Game[];
+  games: GameSeasonCard[];
   title: string;
 }) {
   return (
@@ -105,7 +61,7 @@ function SeasonSection({
   );
 }
 
-export function SeasonDashboard({ games }: { games: Game[] }) {
+export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { followedGameIds } = useFollowedGames();
@@ -119,38 +75,42 @@ export function SeasonDashboard({ games }: { games: Game[] }) {
   }, [search]);
 
   const filteredGames = useMemo(
-    () => games.filter((game) => gameMatchesSearch(game, debouncedSearch)),
+    () => getSearchFilteredSeasonCards(games, debouncedSearch),
     [debouncedSearch, games]
   );
-  const activeGames = filteredGames.filter(isActiveSeason);
-  const startingSoonGames = filteredGames.filter(isStartingSoon);
-  const endingSoonGames = filteredGames.filter(isEndingSoon);
-  const followedGames = filteredGames.filter((game) =>
-    followedGameIds.includes(game.id)
+  const dashboardData = useMemo(
+    () => ({
+      activeGames: getActiveSeasonCards(filteredGames),
+      endingSoonGames: getEndingSoonSeasonCards(filteredGames),
+      followedGames: getFollowedSeasonCards(filteredGames, followedGameIds),
+      startingSoonGames: getStartingSoonSeasonCards(filteredGames),
+      stats: getDashboardStats(filteredGames),
+    }),
+    [filteredGames, followedGameIds]
   );
 
   const stats = [
     {
       label: "Tracked Games",
-      value: filteredGames.length,
+      value: dashboardData.stats.trackedGames,
       icon: Gamepad2,
       className: "bg-violet-500/20 text-violet-200",
     },
     {
       label: "Active Seasons",
-      value: activeGames.length,
+      value: dashboardData.stats.activeSeasons,
       icon: CalendarClock,
       className: "bg-sky-500/20 text-sky-200",
     },
     {
       label: "Starting Soon",
-      value: startingSoonGames.length,
+      value: dashboardData.stats.startingSoon,
       icon: Hourglass,
       className: "bg-emerald-500/20 text-emerald-200",
     },
     {
       label: "Ending Soon",
-      value: endingSoonGames.length,
+      value: dashboardData.stats.endingSoon,
       icon: TimerReset,
       className: "bg-rose-500/20 text-rose-200",
     },
@@ -198,28 +158,28 @@ export function SeasonDashboard({ games }: { games: Game[] }) {
         <SeasonSection
           borderClassName="border-sky-400"
           emptyMessage="No followed games yet. Follow games to keep them here."
-          games={followedGames}
+          games={dashboardData.followedGames}
           title="My Games"
         />
 
         <SeasonSection
           borderClassName="border-violet-400"
           emptyMessage="No active seasons match your search."
-          games={activeGames}
+          games={dashboardData.activeGames}
           title="Active Seasons"
         />
 
         <SeasonSection
           borderClassName="border-emerald-400"
           emptyMessage="No seasons are starting soon."
-          games={startingSoonGames}
+          games={dashboardData.startingSoonGames}
           title="Starting Soon"
         />
 
         <SeasonSection
           borderClassName="border-rose-400"
           emptyMessage="No seasons are ending soon."
-          games={endingSoonGames}
+          games={dashboardData.endingSoonGames}
           title="Ending Soon"
         />
       </section>

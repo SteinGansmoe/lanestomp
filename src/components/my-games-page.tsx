@@ -6,30 +6,14 @@ import Link from "next/link";
 import { GameCard } from "@/src/components/game-card";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
-import type { Game } from "@/src/data/games";
+import {
+  getFollowedSeasonCards,
+  getSearchFilteredSeasonCards,
+  type GameSeasonCard,
+} from "@/src/features/games/selectors";
 import { useFollowedGames } from "@/src/hooks/use-followed-games";
 
-function gameMatchesSearch(game: Game, search: string) {
-  const normalizedSearch = search.trim().toLowerCase();
-
-  if (!normalizedSearch) {
-    return true;
-  }
-
-  return [
-    game.title,
-    game.genre,
-    game.season.title,
-    game.season.type,
-    game.season.startDate,
-    game.season.endDate,
-  ]
-    .join(" ")
-    .toLowerCase()
-    .includes(normalizedSearch);
-}
-
-export function MyGamesPage({ games }: { games: Game[] }) {
+export function MyGamesPage({ games }: { games: GameSeasonCard[] }) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { followedGameIds } = useFollowedGames();
@@ -44,9 +28,10 @@ export function MyGamesPage({ games }: { games: Game[] }) {
 
   const followedGames = useMemo(
     () =>
-      games
-        .filter((game) => followedGameIds.includes(game.id))
-        .filter((game) => gameMatchesSearch(game, debouncedSearch)),
+      getSearchFilteredSeasonCards(
+        getFollowedSeasonCards(games, followedGameIds),
+        debouncedSearch
+      ),
     [debouncedSearch, followedGameIds, games]
   );
 

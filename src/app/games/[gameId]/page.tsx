@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/ui/card";
-import { games } from "@/src/data/games";
+import { getSeasonCardById, getSeasonCardStaticParams } from "@/src/features";
 import {
   formatSeasonDate,
   getRemainingTime,
@@ -22,14 +22,12 @@ type GameDetailPageProps = {
 };
 
 export function generateStaticParams() {
-  return games.map((game) => ({
-    gameId: game.id,
-  }));
+  return getSeasonCardStaticParams();
 }
 
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const { gameId } = await params;
-  const game = games.find((item) => item.id === gameId);
+  const game = getSeasonCardById(gameId);
 
   if (!game) {
     return (
