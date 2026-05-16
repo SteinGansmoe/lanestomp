@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Clock3, ExternalLink } from "lucide-react";
 
+import { FollowGameButton } from "@/src/components/follow-game-button";
 import { SiteHeader } from "@/src/components/site-header";
 import { Badge } from "@/src/components/ui/badge";
 import {
@@ -93,6 +94,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               <Badge className="w-fit border-violet-300/20 bg-violet-500/50 px-3 py-1 text-violet-100 backdrop-blur">
                 {game.season.type}
               </Badge>
+              <FollowGameButton className="w-fit backdrop-blur" gameId={game.id} />
             </div>
           </section>
 

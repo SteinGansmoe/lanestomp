@@ -12,6 +12,7 @@ import { GameCard } from "@/src/components/game-card";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
 import type { Game } from "@/src/data/games";
+import { useFollowedGames } from "@/src/hooks/use-followed-games";
 
 const dayInMs = 1000 * 60 * 60 * 24;
 
@@ -107,6 +108,7 @@ function SeasonSection({
 export function SeasonDashboard({ games }: { games: Game[] }) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const { followedGameIds } = useFollowedGames();
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -123,6 +125,9 @@ export function SeasonDashboard({ games }: { games: Game[] }) {
   const activeGames = filteredGames.filter(isActiveSeason);
   const startingSoonGames = filteredGames.filter(isStartingSoon);
   const endingSoonGames = filteredGames.filter(isEndingSoon);
+  const followedGames = filteredGames.filter((game) =>
+    followedGameIds.includes(game.id)
+  );
 
   const stats = [
     {
@@ -189,6 +194,13 @@ export function SeasonDashboard({ games }: { games: Game[] }) {
             );
           })}
         </div>
+
+        <SeasonSection
+          borderClassName="border-sky-400"
+          emptyMessage="No followed games yet. Follow games to keep them here."
+          games={followedGames}
+          title="My Games"
+        />
 
         <SeasonSection
           borderClassName="border-violet-400"

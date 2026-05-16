@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,6 +12,7 @@ import {
 
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
+import { FollowGameButton } from "@/src/components/follow-game-button";
 import { Card, CardContent } from "@/src/components/ui/card";
 import type { Game } from "@/src/data/games";
 import {
@@ -59,6 +62,7 @@ export function GameCard({ game }: { game: Game }) {
           <Badge className="h-6 w-fit border-violet-300/20 bg-violet-500/20 px-2.5 text-[11px] text-violet-200">
             {game.season.type}
           </Badge>
+          <FollowGameButton className="w-fit" gameId={game.id} />
           <p className="text-base font-medium text-zinc-100">
             {game.season.title}
           </p>
