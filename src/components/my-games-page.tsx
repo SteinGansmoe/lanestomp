@@ -52,7 +52,7 @@ export function MyGamesPage({ games }: { games: Game[] }) {
 
   return (
     <main className="min-h-screen bg-[#050b18] text-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-10">
         <SiteHeader searchValue={search} onSearchChange={setSearch} />
 
         <div>

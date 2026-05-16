@@ -34,7 +34,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   if (!game) {
     return (
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
           <Link
             className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
@@ -63,7 +63,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
         <div className="flex max-w-5xl flex-col gap-6">
@@ -94,47 +94,50 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               <Badge className="w-fit border-violet-300/20 bg-violet-500/50 px-3 py-1 text-violet-100 backdrop-blur">
                 {game.season.type}
               </Badge>
-              <FollowGameButton className="w-fit backdrop-blur" gameId={game.id} />
+              <FollowGameButton
+                className="w-fit backdrop-blur"
+                gameId={game.id}
+              />
             </div>
           </section>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-white/10 bg-[#10182b]/90 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm text-zinc-400">
-                <CalendarDays className="size-4" aria-hidden="true" />
-                Start date
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="font-mono text-2xl font-semibold">
-              {formatSeasonDate(game.season.startDate)}
-            </CardContent>
-          </Card>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="border-white/10 bg-[#10182b]/90 text-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm text-zinc-400">
+                  <CalendarDays className="size-4" aria-hidden="true" />
+                  Start date
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="font-mono text-2xl font-semibold">
+                {formatSeasonDate(game.season.startDate)}
+              </CardContent>
+            </Card>
 
-          <Card className="border-white/10 bg-[#10182b]/90 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm text-zinc-400">
-                <CalendarDays className="size-4" aria-hidden="true" />
-                End date
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="font-mono text-2xl font-semibold">
-              {formatSeasonDate(game.season.endDate)}
-            </CardContent>
-          </Card>
+            <Card className="border-white/10 bg-[#10182b]/90 text-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm text-zinc-400">
+                  <CalendarDays className="size-4" aria-hidden="true" />
+                  End date
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="font-mono text-2xl font-semibold">
+                {formatSeasonDate(game.season.endDate)}
+              </CardContent>
+            </Card>
 
-          <Card className="border-white/10 bg-[#10182b]/90 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm text-zinc-400">
-                <Clock3 className="size-4" aria-hidden="true" />
-                Ends in
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="font-mono text-2xl font-semibold text-rose-400">
-              {getRemainingTime(game.season.endDate)}
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="border-white/10 bg-[#10182b]/90 text-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm text-zinc-400">
+                  <Clock3 className="size-4" aria-hidden="true" />
+                  Ends in
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="font-mono text-2xl font-semibold text-rose-400">
+                {getRemainingTime(game.season.endDate)}
+              </CardContent>
+            </Card>
+          </div>
 
         <Card className="border-white/10 bg-[#10182b]/90 text-white">
           <CardHeader>
@@ -158,6 +161,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           <CardContent className="grid gap-3 sm:grid-cols-3">
             {game.resources.map((resource) => (
               <a
+                target="_blank"
                 className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 transition hover:bg-white/10"
                 href={resource.href}
                 key={resource.label}
