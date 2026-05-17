@@ -65,7 +65,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
       ) : null}
       <div className="absolute inset-0 bg-linear-to-r from-transparent via-[#081120]/35 to-[#081120]" />
       <CardContent className="relative grid min-h-32 gap-0 p-0 lg:grid-cols-[minmax(0,1fr)_228px_304px]">
-        <div className="flex min-w-0 items-center gap-5 px-5 py-5 md:px-8">
+        <div className="flex min-w-0 flex-col items-center justify-center gap-5 px-5 py-5 text-center sm:flex-row sm:justify-start sm:text-left md:px-8">
           <div className="relative hidden size-[86px] shrink-0 overflow-hidden rounded-lg border border-violet-400/60 bg-black/25 shadow-lg shadow-violet-950/30 sm:flex">
             {game.image ? (
               <Image
@@ -84,7 +84,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
           </div>
 
           <div className="min-w-0">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center justify-center gap-2 sm:justify-start">
               <h3 className="truncate text-lg font-semibold text-zinc-50">
                 <Link
                   className="transition hover:text-violet-200"
@@ -100,7 +100,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
             <p className="mt-2 text-base font-semibold text-zinc-50">
               {game.season.title}
             </p>
-            <div className="mt-3 flex items-center gap-2 text-sm text-zinc-400">
+            <div className="mt-3 flex items-center justify-center gap-2 text-sm text-zinc-400 sm:justify-start">
               <CalendarDays className="size-3.5" aria-hidden="true" />
               <span>
                 {startDate} - {endDate}
@@ -109,7 +109,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col justify-center gap-2 border-t border-white/10 px-5 py-5 lg:border-l lg:border-t-0 lg:px-8">
+        <div className="flex min-w-0 flex-col items-center justify-center gap-2 border-t border-white/10 px-5 py-5 text-center sm:items-start sm:text-left lg:border-l lg:border-t-0 lg:px-8">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <Clock3 className="size-3.5" aria-hidden="true" />
             <span>Ends in</span>
@@ -130,7 +130,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
           </div>
         </div>
 
-        <div className="flex min-w-0 items-center gap-3 border-t border-white/10 px-5 py-5 lg:border-l lg:border-t-0 lg:px-8">
+        <div className="flex min-w-0 items-center justify-center gap-3 border-t border-white/10 px-5 py-5 sm:justify-start lg:border-l lg:border-t-0 lg:px-8">
           <ActionIconLink
             href={`/games/${game.id}`}
             icon={ExternalLink}
@@ -145,7 +145,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
             showLabel={false}
           />
           <ActionIconButton
-            className="ml-auto border-transparent bg-transparent text-zinc-500 hover:bg-transparent hover:text-zinc-300"
+            className="border-transparent bg-transparent text-zinc-500 hover:bg-transparent hover:text-zinc-300 sm:ml-auto"
             icon={MoreVertical}
             label="More actions"
           />
