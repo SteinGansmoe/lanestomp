@@ -130,27 +130,29 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/70 text-white shadow-xl shadow-black/20 ring-1 ring-white/5 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
             return (
-              <Card
+              <div
                 key={stat.label}
-                className="flex-row items-center gap-4 border-white/10 bg-[#10182b]/90 p-5 text-white"
+                className="flex min-h-16 items-center gap-3 border-white/10 px-4 py-3 sm:[&:nth-child(even)]:border-l lg:border-l lg:first:border-l-0"
               >
                 <div
-                  className={`flex size-14 items-center justify-center rounded-full ${stat.className}`}
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-full shadow-lg shadow-black/20 ring-1 ring-white/10 ${stat.className}`}
                 >
-                  <Icon className="size-6" aria-hidden="true" />
+                  <Icon className="size-5" aria-hidden="true" />
                 </div>
-                <div>
-                  <p className="font-mono text-3xl font-semibold">
+                <div className="min-w-0">
+                  <p className="font-mono text-xl font-semibold leading-none text-white">
                     {stat.value}
                   </p>
-                  <p className="text-sm text-zinc-400">{stat.label}</p>
+                  <p className="mt-1 truncate text-xs text-zinc-400">
+                    {stat.label}
+                  </p>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
