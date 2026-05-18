@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
-  Gamepad2,
   Home,
   Menu,
   Newspaper,
@@ -122,9 +121,14 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
 function BrandLink() {
   return (
     <Link className="flex items-center gap-3" href="/">
-      <div className="flex size-10 items-center justify-center rounded-lg bg-violet-500 text-white">
-        <Gamepad2 className="size-5" aria-hidden="true" />
-      </div>
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="size-10 rounded-lg shadow-lg shadow-violet-950/30"
+        height={40}
+        src="/seasontracker-logo.svg"
+        width={40}
+      />
       <span className="font-mono text-xl font-semibold">SeasonTracker</span>
     </Link>
   );

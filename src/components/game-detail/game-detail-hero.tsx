@@ -32,20 +32,16 @@ export function GameDetailHero({
     .slice(0, 3);
 
   return (
-    <section
-      className="relative overflow-hidden rounded-xl border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/25 ring-1 ring-white/5 sm:p-7"
-    >
+    <section className="relative overflow-hidden rounded-xl border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/25 ring-1 ring-white/5 sm:p-7">
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={heroBackgroundImage}
         aria-hidden="true"
       />
-      <div className="absolute inset-0" aria-hidden="true" />
-      <div className="absolute inset-y-0 left-0 w-full sm:w-3/5" aria-hidden="true" />
 
       <div className="relative">
         <Link
-          className="inline-flex w-fit items-center gap-2 text-sm text-violet-300 transition hover:text-violet-100"
+          className="inline-flex w-fit items-center gap-2 rounded-md bg-[#081120]/35 px-2 py-1 text-sm text-violet-200 shadow-lg shadow-black/20 transition hover:text-violet-100"
           href="/"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
@@ -70,7 +66,7 @@ export function GameDetailHero({
             <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
           </div>
 
-          <div className="max-w-xl self-end sm:self-auto">
+          <div className="max-w-xl self-end rounded-lg bg-[#081120]/45 p-4 shadow-2xl shadow-black/35 ring-1 ring-white/10 sm:self-auto">
             <Badge className="w-fit border-violet-300/20 bg-violet-500/50 px-3 py-1 text-violet-100 backdrop-blur">
               {season.type}
             </Badge>
