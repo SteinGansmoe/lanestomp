@@ -1,0 +1,66 @@
+import type { RelatedGame } from "@/src/features/related-games/types";
+
+const seedTimestamp = "2026-05-18T00:00:00.000Z";
+
+export const relatedGames: RelatedGame[] = [
+  {
+    id: "diablo-4-last-epoch",
+    gameId: "diablo-4",
+    relatedGameId: "last-epoch",
+    type: "same-genre",
+    isFeatured: true,
+    isVerified: true,
+    createdAt: seedTimestamp,
+    updatedAt: seedTimestamp,
+  },
+  {
+    id: "diablo-4-path-of-exile",
+    gameId: "diablo-4",
+    relatedGameId: "path-of-exile",
+    type: "same-genre",
+    isFeatured: true,
+    isVerified: true,
+    createdAt: seedTimestamp,
+    updatedAt: seedTimestamp,
+  },
+  {
+    id: "last-epoch-diablo-4",
+    gameId: "last-epoch",
+    relatedGameId: "diablo-4",
+    type: "same-genre",
+    isFeatured: true,
+    isVerified: true,
+    createdAt: seedTimestamp,
+    updatedAt: seedTimestamp,
+  },
+  {
+    id: "last-epoch-path-of-exile",
+    gameId: "last-epoch",
+    relatedGameId: "path-of-exile",
+    type: "same-genre",
+    isFeatured: true,
+    isVerified: true,
+    createdAt: seedTimestamp,
+    updatedAt: seedTimestamp,
+  },
+  {
+    id: "path-of-exile-diablo-4",
+    gameId: "path-of-exile",
+    relatedGameId: "diablo-4",
+    type: "same-genre",
+    isFeatured: true,
+    isVerified: true,
+    createdAt: seedTimestamp,
+    updatedAt: seedTimestamp,
+  },
+  {
+    id: "world-of-warcraft-diablo-4",
+    gameId: "world-of-warcraft",
+    relatedGameId: "diablo-4",
+    type: "same-creator",
+    isFeatured: true,
+    isVerified: true,
+    createdAt: seedTimestamp,
+    updatedAt: seedTimestamp,
+  },
+];

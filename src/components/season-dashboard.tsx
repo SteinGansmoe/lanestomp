@@ -123,10 +123,10 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
 
         <div>
           <h1 className="font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
-            Welcome back!
+            Welcome!
           </h1>
           <p className="mt-2 text-base text-zinc-400">
-            Here&apos;s what&apos;s happening in your games.
+            Site is currently under construction, check back later for more features and improvements.
           </p>
         </div>
 

@@ -50,7 +50,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
     >
       {backgroundImage ? (
         <div
-          className="absolute inset-y-0 left-0 w-[42%]"
+          className="absolute inset-y-0 left-0 hidden w-[42%] sm:block"
           style={{
             backgroundImage: `url('${backgroundImage}')`,
             backgroundPosition: "center 32%",

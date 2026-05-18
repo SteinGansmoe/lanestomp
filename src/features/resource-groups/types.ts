@@ -1,18 +1,13 @@
-export type EventType = "season-start" | "season-end" | "patch" | "event";
-
-export type GameEvent = {
+export type ResourceGroup = {
   createdAt: string;
   description?: string;
-  endDate?: string;
   gameId: string;
   id: string;
   isFeatured?: boolean;
   isOfficial?: boolean;
   isVerified?: boolean;
-  seasonId?: string;
+  resourceIds: string[];
   sourceUrl?: string;
-  startDate: string;
   title: string;
-  type: EventType;
   updatedAt: string;
 };

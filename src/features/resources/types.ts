@@ -21,7 +21,11 @@ export type Resource = ResourceProvider & {
   featured?: boolean;
   gameId: string;
   id: string;
+  isFeatured?: boolean;
+  isOfficial?: boolean;
+  isVerified?: boolean;
   label: string;
+  sourceUrl?: string;
   tags?: string[];
   url: string;
 };
