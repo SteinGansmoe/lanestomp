@@ -94,8 +94,7 @@ export function SiteFooter() {
             with Blizzard, Riot Games, Grinding Gear Games or other publishers.
           </p>
           <p className="mt-6 inline-flex items-center gap-2 text-sm text-zinc-300">
-            Built by Stein Gansmoe
-            <Heart className="size-4 fill-violet-400 text-violet-400" aria-hidden="true" />
+            Built by Stein with <Heart className="size-4 text-red-500" aria-hidden="true" /> for gamers.
           </p>
         </section>
       </div>
