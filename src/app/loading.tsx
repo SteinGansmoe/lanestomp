@@ -33,7 +33,7 @@ export default function Loading() {
         <section className="space-y-4">
           <div className="h-7 w-44 rounded bg-white/10" />
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
-            Loading games from Supabase...
+            Loading SeasonTracker...
           </Card>
         </section>
       </section>

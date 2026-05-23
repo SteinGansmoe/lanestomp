@@ -16,6 +16,7 @@ const navigationLinks = [
   { href: "#", label: "Calendar" },
   { href: "/my-games", label: "My Games" },
   { href: "#", label: "News" },
+  { href: "/login", label: "Login" },
 ];
 
 const resourceLinks = [
