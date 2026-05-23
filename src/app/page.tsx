@@ -3,8 +3,7 @@ import { Gamepad2 } from "lucide-react";
 import { SeasonDashboard } from "@/src/components/season-dashboard";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
-import { gamesSeed } from "@/src/features/games/seed";
-import type { Game } from "@/src/features/games/types";
+import type { Game, GameGenre } from "@/src/features/games/types";
 import { resources, seasons } from "@/src/features";
 import { getGamesWithSeasons } from "@/src/features";
 import { supabase } from "@/src/lib/supabase";
@@ -18,6 +17,40 @@ type SupabaseGame = {
 };
 
 const supabaseFetchTimeoutMs = 8_000;
+const gameDisplayAssets: Record<
+  string,
+  {
+    detailImage: string;
+    genre: GameGenre;
+    image: string;
+  }
+> = {
+  "diablo-4": {
+    detailImage: "/images/d4-detailpage.png",
+    genre: "ARPG",
+    image: "/images/d4-icon.jpg",
+  },
+  "last-epoch": {
+    detailImage: "/images/le-detailpage.png",
+    genre: "ARPG",
+    image: "/images/le-icon3.png",
+  },
+  "league-of-legends": {
+    detailImage: "",
+    genre: "MOBA",
+    image: "/images/lol-icon.png",
+  },
+  "path-of-exile": {
+    detailImage: "",
+    genre: "ARPG",
+    image: "/images/poe1-icon3.png",
+  },
+  "world-of-warcraft": {
+    detailImage: "",
+    genre: "MMORPG",
+    image: "/images/WoW-icon.png",
+  },
+};
 
 async function getSupabaseGames() {
   if (!supabase) {
@@ -55,16 +88,14 @@ async function getSupabaseGames() {
 }
 
 function toDashboardGame(game: SupabaseGame): Game {
-  const mockGame = gamesSeed.find(
-    (item) => item.id === game.id || item.slug === game.slug
-  );
+  const displayAssets = gameDisplayAssets[game.slug];
 
   return {
     createdAt: game.created_at,
-    detailImage: mockGame?.detailImage ?? "",
-    genre: mockGame?.genre ?? "ARPG",
+    detailImage: displayAssets?.detailImage ?? "",
+    genre: displayAssets?.genre ?? "ARPG",
     id: game.id,
-    image: game.icon_url ?? mockGame?.image ?? "",
+    image: game.icon_url ?? displayAssets?.image ?? "",
     slug: game.slug,
     title: game.name,
     updatedAt: game.created_at,
