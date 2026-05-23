@@ -3,15 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarDays,
   Home,
-  LogIn,
   Menu,
   Newspaper,
   Search,
-  ShieldCheck,
   Star,
   X,
 } from "lucide-react";
@@ -23,8 +21,6 @@ import {
   getSupportedGames,
 } from "@/src/features/games/selectors";
 import type { Game } from "@/src/features/games/types";
-import { isAdminUser } from "@/src/lib/admin";
-import { supabase } from "@/src/lib/supabase";
 
 const navItems = [
   { href: "/", icon: Home, label: "Dashboard" },
@@ -47,62 +43,11 @@ function getInitials(title: string) {
 }
 
 export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
-  const [authLink, setAuthLink] = useState<{
-    href: string;
-    label: string;
-    type: "admin" | "login";
-  } | null>({ href: "/login", label: "Login", type: "login" });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
   const pathname = usePathname();
   const currentSearch = searchValue ?? localSearch;
   const supportedGames = useMemo(() => getSupportedGames(), []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadAuthLink() {
-      if (!supabase) {
-        return;
-      }
-
-      const { data } = await supabase.auth.getUser();
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (isAdminUser(data.user)) {
-        setAuthLink({ href: "/admin", label: "Admin", type: "admin" });
-        return;
-      }
-
-      setAuthLink(
-        data.user ? null : { href: "/login", label: "Login", type: "login" }
-      );
-    }
-
-    loadAuthLink();
-
-    const { data: listener } =
-      supabase?.auth.onAuthStateChange((_event, session) => {
-        if (isAdminUser(session?.user ?? null)) {
-          setAuthLink({ href: "/admin", label: "Admin", type: "admin" });
-          return;
-        }
-
-        setAuthLink(
-          session?.user
-            ? null
-            : { href: "/login", label: "Login", type: "login" }
-        );
-      }) ?? { data: null };
-
-    return () => {
-      isMounted = false;
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
 
   function handleSearchChange(value: string) {
     if (onSearchChange) {
@@ -151,12 +96,6 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
               onNavigate={() => setIsMenuOpen(false)}
               pathname={pathname}
             />
-            <AuthNavigationLink
-              className="mt-5"
-              link={authLink}
-              onNavigate={() => setIsMenuOpen(false)}
-              pathname={pathname}
-            />
           </div>
         ) : null}
       </header>
@@ -174,49 +113,8 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
           pathname={pathname}
         />
         <NavigationLinks className="mt-8" pathname={pathname} />
-        <AuthNavigationLink
-          className="mt-auto"
-          link={authLink}
-          pathname={pathname}
-        />
       </aside>
     </>
-  );
-}
-
-function AuthNavigationLink({
-  className,
-  link,
-  onNavigate,
-  pathname,
-}: {
-  className?: string;
-  link: { href: string; label: string; type: "admin" | "login" } | null;
-  onNavigate?: () => void;
-  pathname: string;
-}) {
-  if (!link) {
-    return null;
-  }
-
-  const Icon = link.type === "admin" ? ShieldCheck : LogIn;
-  const isActive = pathname === link.href;
-
-  return (
-    <nav className={className} aria-label="Account">
-      <Link
-        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
-          isActive
-            ? "bg-violet-500/20 text-violet-100"
-            : "text-zinc-400 hover:bg-white/5 hover:text-zinc-100"
-        }`}
-        href={link.href}
-        onClick={onNavigate}
-      >
-        <Icon className="size-4" aria-hidden="true" />
-        {link.label}
-      </Link>
-    </nav>
   );
 }
 

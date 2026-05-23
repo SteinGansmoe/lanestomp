@@ -11,12 +11,13 @@ import {
   Send,
 } from "lucide-react";
 
+import { FooterAuthLinks } from "@/src/components/footer-auth-links";
+
 const navigationLinks = [
   { href: "/", label: "Dashboard" },
   { href: "#", label: "Calendar" },
   { href: "/my-games", label: "My Games" },
   { href: "#", label: "News" },
-  { href: "/login", label: "Login" },
 ];
 
 const resourceLinks = [
@@ -103,10 +104,13 @@ export function SiteFooter() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-4 text-sm text-zinc-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
           <p>&copy; 2026 SeasonTracker. All rights reserved.</p>
-          <p className="inline-flex items-center gap-2">
-            Made for gamers, by a gamer.
-            <Gamepad2 className="size-5 text-zinc-400" aria-hidden="true" />
-          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <FooterAuthLinks />
+            <p className="inline-flex items-center gap-2">
+              Made for gamers, by a gamer.
+              <Gamepad2 className="size-5 text-zinc-400" aria-hidden="true" />
+            </p>
+          </div>
         </div>
       </div>
     </footer>

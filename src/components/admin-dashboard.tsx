@@ -48,9 +48,15 @@ export function AdminDashboard() {
 
   useEffect(() => {
     let isMounted = true;
+    let redirectTimeoutId: number | undefined;
 
     async function loadAdminData() {
+      redirectTimeoutId = window.setTimeout(() => {
+        window.location.replace("/login");
+      }, sessionCheckTimeoutMs + 1_000);
+
       if (!supabase) {
+        window.clearTimeout(redirectTimeoutId);
         setError("Supabase is not configured.");
         setIsLoading(false);
         return;
@@ -61,13 +67,16 @@ export function AdminDashboard() {
       const sessionUser = sessionData.session?.user ?? null;
 
       if (!isMounted) {
+        window.clearTimeout(redirectTimeoutId);
         return;
       }
 
       if (sessionError || !sessionUser) {
-        router.replace("/login");
+        window.location.replace("/login");
         return;
       }
+
+      window.clearTimeout(redirectTimeoutId);
 
       if (!isAdminUser(sessionUser)) {
         setUser(sessionUser);
@@ -114,6 +123,7 @@ export function AdminDashboard() {
 
     return () => {
       isMounted = false;
+      window.clearTimeout(redirectTimeoutId);
     };
   }, [router]);
 
