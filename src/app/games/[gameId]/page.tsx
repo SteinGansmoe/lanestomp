@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { connection } from "next/server";
 
 import {
   CommunityLinks,
@@ -14,6 +15,7 @@ import {
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import {
+  getGameDetailByGameId,
   getGameDetailBySeasonSlug,
   getPrimarySeasonRouteForGame,
   getSeasonCardStaticParams,
@@ -43,10 +45,16 @@ export function generateStaticParams() {
 }
 
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
-  const { gameId } = await params;
-  const game = getGameDetailBySeasonSlug(gameId);
+  await connection();
 
-  if (!game) {
+  const { gameId } = await params;
+  const seasonResult = await getSupabaseSeasonBySlug(gameId);
+  const game =
+    seasonResult.season ?
+      getGameDetailByGameId(seasonResult.season.gameId)
+    : getGameDetailBySeasonSlug(gameId);
+
+  if (seasonResult.error || !game) {
     return (
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
@@ -61,7 +69,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           <Card className="mt-8 border-white/10 bg-[#10182b]/90 p-8 text-white">
             <CardTitle className="font-mono text-2xl">Game not found</CardTitle>
             <p className="mt-3 text-zinc-400">
-              We could not find a game matching that page.
+              {seasonResult.error ??
+                "We could not find a game matching that page."}
             </p>
           </Card>
         </div>
@@ -102,7 +111,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const gameWithLiveSeasons = {
     ...game,
     seasons: seasonsResult.seasons,
-    selectedSeason: getFeaturedSeason(seasonsResult.seasons),
+    selectedSeason: seasonResult.season ?? getFeaturedSeason(seasonsResult.seasons),
   };
   const selectedSeason = gameWithLiveSeasons.selectedSeason;
 
@@ -207,9 +216,46 @@ async function getSupabaseSeasonsForGame(gameId: string) {
   }
 }
 
+async function getSupabaseSeasonBySlug(slug: string) {
+  if (!supabase) {
+    return {
+      error:
+        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
+      season: null,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("seasons")
+      .select("id, game_id, name, slug, starts_at, ends_at, description, created_at")
+      .eq("slug", slug)
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs))
+      .maybeSingle();
+
+    if (error) {
+      return {
+        error: error.message,
+        season: null,
+      };
+    }
+
+    return {
+      error: null,
+      season: data ? toSeason(data as SupabaseSeason) : null,
+    };
+  } catch (error) {
+    return {
+      error: getErrorMessage(error),
+      season: null,
+    };
+  }
+}
+
 function toSeason(season: SupabaseSeason): Season {
   return {
     createdAt: season.created_at,
+    description: season.description,
     endDate: toDateOnly(season.ends_at),
     gameId: season.game_id,
     id: season.id,

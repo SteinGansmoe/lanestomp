@@ -1,10 +1,12 @@
 import { Gamepad2 } from "lucide-react";
+import { connection } from "next/server";
 
 import { SeasonDashboard } from "@/src/components/season-dashboard";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
 import type { Game, GameGenre } from "@/src/features/games/types";
-import { resources, seasons } from "@/src/features";
+import type { Season } from "@/src/features";
+import { resources } from "@/src/features";
 import { getGamesWithSeasons } from "@/src/features";
 import { supabase } from "@/src/lib/supabase";
 
@@ -14,6 +16,17 @@ type SupabaseGame = {
   id: string;
   name: string;
   slug: string;
+};
+
+type SupabaseSeason = {
+  created_at: string;
+  description: string | null;
+  ends_at: string;
+  game_id: string;
+  id: string;
+  name: string;
+  slug: string;
+  starts_at: string;
 };
 
 const supabaseFetchTimeoutMs = 8_000;
@@ -87,6 +100,41 @@ async function getSupabaseGames() {
   }
 }
 
+async function getSupabaseSeasons() {
+  if (!supabase) {
+    return {
+      error:
+        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
+      seasons: [],
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("seasons")
+      .select("id, game_id, name, slug, starts_at, ends_at, description, created_at")
+      .order("starts_at", { ascending: true })
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs));
+
+    if (error) {
+      return {
+        error: error.message,
+        seasons: [],
+      };
+    }
+
+    return {
+      error: null,
+      seasons: ((data ?? []) as SupabaseSeason[]).map(toSeason),
+    };
+  } catch (error) {
+    return {
+      error: getErrorMessage(error),
+      seasons: [],
+    };
+  }
+}
+
 function toDashboardGame(game: SupabaseGame): Game {
   const displayAssets = gameDisplayAssets[game.slug];
 
@@ -102,6 +150,25 @@ function toDashboardGame(game: SupabaseGame): Game {
   };
 }
 
+function toSeason(season: SupabaseSeason): Season {
+  return {
+    createdAt: season.created_at,
+    description: season.description,
+    endDate: toDateOnly(season.ends_at),
+    gameId: season.game_id,
+    id: season.id,
+    slug: season.slug,
+    startDate: toDateOnly(season.starts_at),
+    title: season.name,
+    type: "Season",
+    updatedAt: season.created_at,
+  };
+}
+
+function toDateOnly(value: string) {
+  return value.slice(0, 10);
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -111,16 +178,29 @@ function getErrorMessage(error: unknown) {
 }
 
 export default async function Home() {
-  const { error, games: supabaseGames } = await getSupabaseGames();
+  await connection();
 
-  if (error) {
-    return <DashboardDataError message={error} />;
+  const [gamesResult, seasonsResult] = await Promise.all([
+    getSupabaseGames(),
+    getSupabaseSeasons(),
+  ]);
+
+  if (gamesResult.error || seasonsResult.error) {
+    return (
+      <DashboardDataError
+        message={
+          gamesResult.error ??
+          seasonsResult.error ??
+          "Could not load Supabase data."
+        }
+      />
+    );
   }
 
   const games = getGamesWithSeasons({
-    games: supabaseGames,
+    games: gamesResult.games,
     resources,
-    seasons,
+    seasons: seasonsResult.seasons,
   });
 
   return <SeasonDashboard games={games} />;

@@ -20,7 +20,7 @@ export function GameDetailHero({
 }: {
   followGameId: string;
   game: Pick<Game, "detailImage" | "id" | "image" | "title">;
-  season: Pick<Season, "title" | "type">;
+  season: Pick<Season, "description" | "title" | "type">;
 }) {
   const heroBackgroundImage = game.detailImage
     ? { backgroundImage: `url('${game.detailImage}')` }
@@ -77,8 +77,8 @@ export function GameDetailHero({
               {season.title}
             </p>
             <p className="mt-5 max-w-lg text-sm leading-6 text-zinc-300">
-              Track the active season, upcoming events, resources, creators, and
-              community links in one place.
+              {season.description?.trim() ||
+                "Track the active season, upcoming events, resources, creators, and community links in one place."}
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
