@@ -630,9 +630,15 @@ function SeasonForm({
           required
           value={form.game_id}
         >
-          <option value="">Select game</option>
+          <option className={selectOptionClassName} value="">
+            Select game
+          </option>
           {games.map((game) => (
-            <option key={game.id} value={game.id}>
+            <option
+              className={selectOptionClassName}
+              key={game.id}
+              value={game.id}
+            >
               {game.name}
             </option>
           ))}
@@ -741,7 +747,8 @@ function SeasonForm({
 }
 
 const fieldClassName =
-  "w-full rounded-lg border border-white/10 bg-white/5 px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50";
+  "w-full rounded-lg border border-white/10 bg-[#111a2c] px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50";
+const selectOptionClassName = "bg-[#10182b] text-zinc-100";
 
 function formatDate(value: string) {
   return value.slice(0, 10);
