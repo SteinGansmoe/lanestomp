@@ -1,0 +1,912 @@
+"use client";
+
+import {
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+  ViewTransition,
+} from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, LockKeyhole, LogOut } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
+
+import { AdminNavigation } from "./admin-nav";
+import { AdminOverview } from "./admin-overview";
+import {
+  emptyAdminData,
+  emptyGameForm,
+  emptyResourceForm,
+  emptySeasonForm,
+  missingResourcesTableMessage,
+  sessionCheckTimeoutMs,
+} from "./constants";
+import {
+  isMissingGameResourcesTableError,
+  toDateTimeLocalValue,
+  toIsoDateTime,
+} from "./helpers";
+import { AdminGamesSection } from "./games/game-section";
+import { AdminResourcesSection } from "./resources/resource-section";
+import { AdminSeasonsSection } from "./seasons/season-section";
+import type {
+  AdminData,
+  AdminGame,
+  AdminResource,
+  AdminSeason,
+  AdminSection,
+  GameFormState,
+  ResourceFormState,
+  SeasonFormState,
+} from "./types";
+import { Button } from "@/src/components/ui/button";
+import { Card } from "@/src/components/ui/card";
+import { supabase } from "@/src/lib/supabase";
+
+type SessionResult = Awaited<ReturnType<NonNullable<typeof supabase>["auth"]["getSession"]>>;
+
+let cachedAdminData: AdminData | null = null;
+let cachedAdminUser: User | null = null;
+
+export function AdminDashboard({ section }: { section: AdminSection }) {
+  const [adminData, setAdminData] = useState<AdminData>(
+    () => cachedAdminData ?? emptyAdminData
+  );
+  const [createResourceForm, setCreateResourceForm] =
+    useState<ResourceFormState>(emptyResourceForm);
+  const [createResourceStatus, setCreateResourceStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [createGameForm, setCreateGameForm] =
+    useState<GameFormState>(emptyGameForm);
+  const [createGameStatus, setCreateGameStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [createForm, setCreateForm] = useState<SeasonFormState>(emptySeasonForm);
+  const [createStatus, setCreateStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [editGameForm, setEditGameForm] =
+    useState<GameFormState>(emptyGameForm);
+  const [editingGameId, setEditingGameId] = useState<string | null>(null);
+  const [editGameStatus, setEditGameStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [editForm, setEditForm] = useState<SeasonFormState>(emptySeasonForm);
+  const [editingSeasonId, setEditingSeasonId] = useState<string | null>(null);
+  const [editStatus, setEditStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [editResourceForm, setEditResourceForm] =
+    useState<ResourceFormState>(emptyResourceForm);
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(
+    null
+  );
+  const [editResourceStatus, setEditResourceStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
+  const [resourcesSetupMessage, setResourcesSetupMessage] = useState<
+    string | null
+  >(null);
+  const [user, setUser] = useState<User | null>(() => cachedAdminUser);
+  const router = useRouter();
+  const pageTitle =
+    section === "games" ? "Game management"
+    : section === "resources" ? "Resource management"
+    : section === "seasons" ? "Season management"
+    : "Admin dashboard";
+
+  useEffect(() => {
+    let isMounted = true;
+    let redirectTimeoutId: number | undefined;
+
+    async function loadAdminData() {
+      redirectTimeoutId = window.setTimeout(() => {
+        window.location.replace("/login");
+      }, sessionCheckTimeoutMs + 1_000);
+
+      if (!supabase) {
+        window.clearTimeout(redirectTimeoutId);
+        setError("Supabase is not configured.");
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: sessionData, error: sessionError } =
+        await getSessionWithTimeout();
+      const sessionUser = sessionData.session?.user ?? null;
+
+      if (!isMounted) {
+        window.clearTimeout(redirectTimeoutId);
+        return;
+      }
+
+      if (sessionError || !sessionUser) {
+        window.location.replace("/login");
+        return;
+      }
+
+      window.clearTimeout(redirectTimeoutId);
+
+      cachedAdminUser = sessionUser;
+      setUser(sessionUser);
+
+      const [gamesResult, resourcesResult, seasonsResult] = await Promise.all([
+        supabase
+          .from("games")
+          .select("id, name, slug, description, icon_url, created_at")
+          .order("name", { ascending: true }),
+        supabase
+          .from("game_resources")
+          .select(
+            "id, game_id, title, label, url, icon, sort_order, is_active"
+          )
+          .order("game_id", { ascending: true })
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("seasons")
+          .select("id, game_id, name, slug, starts_at, ends_at, description")
+          .order("starts_at", { ascending: true }),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      const isMissingResourcesTable = isMissingGameResourcesTableError(
+        resourcesResult.error
+      );
+
+      if (
+        gamesResult.error ||
+        seasonsResult.error ||
+        (resourcesResult.error && !isMissingResourcesTable)
+      ) {
+        setError(
+          gamesResult.error?.message ??
+            seasonsResult.error?.message ??
+            resourcesResult.error?.message ??
+            "Could not load admin data."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      setResourcesSetupMessage(
+        isMissingResourcesTable ? missingResourcesTableMessage : null
+      );
+
+      const nextAdminData = {
+        games: (gamesResult.data ?? []) as AdminGame[],
+        resources: isMissingResourcesTable
+          ? []
+          : ((resourcesResult.data ?? []) as AdminResource[]),
+        seasons: (seasonsResult.data ?? []) as AdminSeason[],
+      };
+
+      cachedAdminData = nextAdminData;
+      setAdminData(nextAdminData);
+      setIsLoading(false);
+    }
+
+    loadAdminData();
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(redirectTimeoutId);
+    };
+  }, [router]);
+
+  const gameNamesById = useMemo(
+    () =>
+      new Map(adminData.games.map((game) => [game.id, game.name] as const)),
+    [adminData.games]
+  );
+
+  async function reloadAdminData() {
+    if (!supabase) {
+      setError("Supabase is not configured.");
+      return false;
+    }
+
+    const [gamesResult, resourcesResult, seasonsResult] = await Promise.all([
+      supabase
+        .from("games")
+        .select("id, name, slug, description, icon_url, created_at")
+        .order("name", { ascending: true }),
+      supabase
+        .from("game_resources")
+        .select(
+          "id, game_id, title, label, url, icon, sort_order, is_active"
+        )
+        .order("game_id", { ascending: true })
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("seasons")
+        .select("id, game_id, name, slug, starts_at, ends_at, description")
+        .order("starts_at", { ascending: true }),
+    ]);
+
+    const isMissingResourcesTable = isMissingGameResourcesTableError(
+      resourcesResult.error
+    );
+
+    if (
+      gamesResult.error ||
+      seasonsResult.error ||
+      (resourcesResult.error && !isMissingResourcesTable)
+    ) {
+      setError(
+        gamesResult.error?.message ??
+          seasonsResult.error?.message ??
+          resourcesResult.error?.message ??
+          "Could not load admin data."
+      );
+      return false;
+    }
+
+    setResourcesSetupMessage(
+      isMissingResourcesTable ? missingResourcesTableMessage : null
+    );
+
+    const nextAdminData = {
+      games: (gamesResult.data ?? []) as AdminGame[],
+      resources: isMissingResourcesTable
+        ? []
+        : ((resourcesResult.data ?? []) as AdminResource[]),
+      seasons: (seasonsResult.data ?? []) as AdminSeason[],
+    };
+
+    cachedAdminData = nextAdminData;
+    setAdminData(nextAdminData);
+    return true;
+  }
+
+  function getResourceFormError(form: ResourceFormState) {
+    if (
+      !form.id.trim() ||
+      !form.game_id ||
+      !form.title.trim() ||
+      !form.label.trim() ||
+      !form.url.trim()
+    ) {
+      return "ID, game, title, label, and URL are required.";
+    }
+
+    return null;
+  }
+
+  function getResourcePayload(form: ResourceFormState) {
+    return {
+      game_id: form.game_id,
+      icon: form.icon,
+      id: form.id.trim(),
+      is_active: form.is_active,
+      label: form.label.trim(),
+      sort_order: Number.parseInt(form.sort_order, 10) || 0,
+      title: form.title.trim(),
+      url: form.url.trim(),
+    };
+  }
+
+  async function handleCreateResource(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateResourceStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getResourceFormError(createResourceForm);
+
+    if (validationError) {
+      setCreateResourceStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateResourceStatus({
+      error: null,
+      isLoading: true,
+      success: null,
+    });
+
+    const { error: createError } = await supabase
+      .from("game_resources")
+      .insert(getResourcePayload(createResourceForm));
+
+    if (createError) {
+      setCreateResourceStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateResourceForm({
+      ...emptyResourceForm,
+      game_id: createResourceForm.game_id,
+    });
+    setCreateResourceStatus({
+      error: null,
+      isLoading: false,
+      success: "Resource created.",
+    });
+  }
+
+  function startEditingResource(resource: AdminResource) {
+    setEditingResourceId(resource.id);
+    setEditResourceStatus({ error: null, isLoading: false, success: null });
+    setEditResourceForm({
+      game_id: resource.game_id,
+      icon: resource.icon,
+      id: resource.id,
+      is_active: resource.is_active,
+      label: resource.label,
+      sort_order: String(resource.sort_order),
+      title: resource.title,
+      url: resource.url,
+    });
+  }
+
+  function stopEditingResource() {
+    setEditingResourceId(null);
+    setEditResourceForm(emptyResourceForm);
+    setEditResourceStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateResource(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingResourceId) {
+      return;
+    }
+
+    const validationError = getResourceFormError(editResourceForm);
+
+    if (validationError) {
+      setEditResourceStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditResourceStatus({ error: null, isLoading: true, success: null });
+
+    const payload = getResourcePayload(editResourceForm);
+    const { error: updateError } = await supabase
+      .from("game_resources")
+      .update({
+        game_id: payload.game_id,
+        icon: payload.icon,
+        is_active: payload.is_active,
+        label: payload.label,
+        sort_order: payload.sort_order,
+        title: payload.title,
+        url: payload.url,
+      })
+      .eq("id", editingResourceId);
+
+    if (updateError) {
+      setEditResourceStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingResourceId(null);
+    setEditResourceStatus({
+      error: null,
+      isLoading: false,
+      success: "Resource updated.",
+    });
+  }
+
+  async function handleDeleteResource(resource: AdminResource) {
+    if (
+      !supabase ||
+      !window.confirm(`Delete "${resource.title}" from game resources?`)
+    ) {
+      return;
+    }
+
+    setEditResourceStatus({ error: null, isLoading: true, success: null });
+
+    const { error: deleteError } = await supabase
+      .from("game_resources")
+      .delete()
+      .eq("id", resource.id);
+
+    if (deleteError) {
+      setEditResourceStatus({
+        error: deleteError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (editingResourceId === resource.id) {
+      setEditingResourceId(null);
+      setEditResourceForm(emptyResourceForm);
+    }
+
+    await reloadAdminData();
+    setEditResourceStatus({
+      error: null,
+      isLoading: false,
+      success: "Resource deleted.",
+    });
+  }
+
+  function getGameFormError(form: GameFormState) {
+    if (!form.id || !form.name || !form.slug) {
+      return "Game ID, name, and slug are required.";
+    }
+
+    return null;
+  }
+
+  function getGamePayload(form: GameFormState) {
+    return {
+      description: form.description.trim() || null,
+      icon_url: form.icon_url.trim() || null,
+      id: form.id.trim(),
+      name: form.name.trim(),
+      slug: form.slug.trim(),
+    };
+  }
+
+  async function handleCreateGame(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateGameStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getGameFormError(createGameForm);
+
+    if (validationError) {
+      setCreateGameStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateGameStatus({ error: null, isLoading: true, success: null });
+
+    const { error: createError } = await supabase
+      .from("games")
+      .insert(getGamePayload(createGameForm));
+
+    if (createError) {
+      setCreateGameStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateGameForm(emptyGameForm);
+    setCreateGameStatus({
+      error: null,
+      isLoading: false,
+      success: "Game created.",
+    });
+  }
+
+  function startEditingGame(game: AdminGame) {
+    setEditingGameId(game.id);
+    setEditGameStatus({ error: null, isLoading: false, success: null });
+    setEditGameForm({
+      description: game.description ?? "",
+      icon_url: game.icon_url ?? "",
+      id: game.id,
+      name: game.name,
+      slug: game.slug,
+    });
+  }
+
+  function stopEditingGame() {
+    setEditingGameId(null);
+    setEditGameForm(emptyGameForm);
+    setEditGameStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateGame(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingGameId) {
+      return;
+    }
+
+    const validationError = getGameFormError(editGameForm);
+
+    if (validationError) {
+      setEditGameStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditGameStatus({ error: null, isLoading: true, success: null });
+
+    const payload = getGamePayload(editGameForm);
+    const { error: updateError } = await supabase
+      .from("games")
+      .update({
+        description: payload.description,
+        icon_url: payload.icon_url,
+        name: payload.name,
+        slug: payload.slug,
+      })
+      .eq("id", editingGameId);
+
+    if (updateError) {
+      setEditGameStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingGameId(null);
+    setEditGameStatus({
+      error: null,
+      isLoading: false,
+      success: "Game updated.",
+    });
+  }
+
+  function getSeasonFormError(form: SeasonFormState) {
+    if (!form.game_id || !form.name || !form.slug || !form.starts_at) {
+      return "Game, name, slug, and start date are required.";
+    }
+
+    return null;
+  }
+
+  function getSeasonPayload(form: SeasonFormState) {
+    return {
+      description: form.description.trim() || null,
+      ends_at: toIsoDateTime(form.ends_at || form.starts_at),
+      game_id: form.game_id,
+      name: form.name.trim(),
+      slug: form.slug.trim(),
+      starts_at: toIsoDateTime(form.starts_at),
+    };
+  }
+
+  async function handleCreateSeason(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getSeasonFormError(createForm);
+
+    if (validationError) {
+      setCreateStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateStatus({ error: null, isLoading: true, success: null });
+
+    const payload = getSeasonPayload(createForm);
+    const { error: createError } = await supabase.from("seasons").insert({
+      id: `${payload.game_id}-${payload.slug}`,
+      ...payload,
+    });
+
+    if (createError) {
+      setCreateStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateForm({ ...emptySeasonForm, game_id: createForm.game_id });
+    setCreateStatus({
+      error: null,
+      isLoading: false,
+      success: "Season created.",
+    });
+  }
+
+  function startEditingSeason(season: AdminSeason) {
+    setEditingSeasonId(season.id);
+    setEditStatus({ error: null, isLoading: false, success: null });
+    setEditForm({
+      description: season.description ?? "",
+      ends_at: toDateTimeLocalValue(season.ends_at),
+      game_id: season.game_id,
+      name: season.name,
+      slug: season.slug,
+      starts_at: toDateTimeLocalValue(season.starts_at),
+    });
+  }
+
+  function stopEditingSeason() {
+    setEditingSeasonId(null);
+    setEditForm(emptySeasonForm);
+    setEditStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateSeason(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingSeasonId) {
+      return;
+    }
+
+    const validationError = getSeasonFormError(editForm);
+
+    if (validationError) {
+      setEditStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditStatus({ error: null, isLoading: true, success: null });
+
+    const { error: updateError } = await supabase
+      .from("seasons")
+      .update(getSeasonPayload(editForm))
+      .eq("id", editingSeasonId);
+
+    if (updateError) {
+      setEditStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingSeasonId(null);
+    setEditStatus({
+      error: null,
+      isLoading: false,
+      success: "Season updated.",
+    });
+  }
+
+  async function handleSignOut() {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+
+    cachedAdminData = null;
+    cachedAdminUser = null;
+    router.replace("/login");
+    router.refresh();
+  }
+
+  return (
+    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
+            href="/"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Back to dashboard
+          </Link>
+
+          <Button
+            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+            onClick={handleSignOut}
+            type="button"
+            variant="ghost"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            Sign out
+          </Button>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
+              <LockKeyhole className="size-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h1 className="font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                {pageTitle}
+              </h1>
+              <p className="mt-1 text-sm text-zinc-400">
+                {user?.email ?? "Checking admin session..."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
+            Loading admin data from Supabase...
+          </Card>
+        ) : null}
+
+        {error && !isLoading ? (
+          <Card className="border-rose-400/20 bg-[#10182b]/90 p-8 text-rose-100">
+            {error}
+          </Card>
+        ) : null}
+
+        {!isLoading && !error ? (
+          <>
+            <AdminNavigation activeSection={section} />
+
+            {resourcesSetupMessage ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
+                {resourcesSetupMessage}
+              </Card>
+            ) : null}
+
+            <ViewTransition
+              key={section}
+              name="admin-section-content"
+              enter={{
+                "admin-section": "admin-section-enter",
+                default: "none",
+              }}
+              exit={{
+                "admin-section": "admin-section-exit",
+                default: "none",
+              }}
+              default="none"
+            >
+              <div className="contents">
+                {section === "overview" ? (
+                  <AdminOverview
+                    gamesCount={adminData.games.length}
+                    resourcesCount={adminData.resources.length}
+                    seasonsCount={adminData.seasons.length}
+                  />
+                ) : null}
+
+                {section === "resources" ? (
+                  <AdminResourcesSection
+                    createForm={createResourceForm}
+                    createStatus={createResourceStatus}
+                    editForm={editResourceForm}
+                    editStatus={editResourceStatus}
+                    editingResourceId={editingResourceId}
+                    gameNamesById={gameNamesById}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingResource}
+                    onCreateChange={setCreateResourceForm}
+                    onCreateSubmit={handleCreateResource}
+                    onDelete={handleDeleteResource}
+                    onEditChange={setEditResourceForm}
+                    onEditSubmit={handleUpdateResource}
+                    onStartEdit={startEditingResource}
+                    resources={adminData.resources}
+                  />
+                ) : null}
+
+                {section === "games" ? (
+                  <AdminGamesSection
+                    createForm={createGameForm}
+                    createStatus={createGameStatus}
+                    editForm={editGameForm}
+                    editStatus={editGameStatus}
+                    editingGameId={editingGameId}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingGame}
+                    onCreateChange={setCreateGameForm}
+                    onCreateSubmit={handleCreateGame}
+                    onEditChange={setEditGameForm}
+                    onEditSubmit={handleUpdateGame}
+                    onStartEdit={startEditingGame}
+                  />
+                ) : null}
+
+                {section === "seasons" ? (
+                  <AdminSeasonsSection
+                    createForm={createForm}
+                    createStatus={createStatus}
+                    editForm={editForm}
+                    editStatus={editStatus}
+                    editingSeasonId={editingSeasonId}
+                    gameNamesById={gameNamesById}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingSeason}
+                    onCreateChange={setCreateForm}
+                    onCreateSubmit={handleCreateSeason}
+                    onEditChange={setEditForm}
+                    onEditSubmit={handleUpdateSeason}
+                    onStartEdit={startEditingSeason}
+                    seasons={adminData.seasons}
+                  />
+                ) : null}
+              </div>
+            </ViewTransition>
+          </>
+        ) : null}
+      </section>
+    </main>
+  );
+}
+
+function getSessionWithTimeout(): Promise<SessionResult> {
+  if (!supabase) {
+    return Promise.resolve({
+      data: { session: null },
+      error: null,
+    });
+  }
+
+  return Promise.race([
+    supabase.auth.getSession(),
+    new Promise<SessionResult>((resolve) => {
+      window.setTimeout(() => {
+        resolve({
+          data: { session: null },
+          error: null,
+        });
+      }, sessionCheckTimeoutMs);
+    }),
+  ]);
+}
