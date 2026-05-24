@@ -1,6 +1,12 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+  ViewTransition,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,6 +28,8 @@ import { supabase } from "@/src/lib/supabase";
 
 type AdminGame = {
   created_at: string;
+  description: string | null;
+  icon_url: string | null;
   id: string;
   name: string;
   slug: string;
@@ -42,6 +50,16 @@ type AdminData = {
   seasons: AdminSeason[];
 };
 
+type AdminSection = "games" | "overview" | "seasons";
+
+type GameFormState = {
+  description: string;
+  icon_url: string;
+  id: string;
+  name: string;
+  slug: string;
+};
+
 type SeasonFormState = {
   description: string;
   ends_at: string;
@@ -54,6 +72,13 @@ type SeasonFormState = {
 type SessionResult = Awaited<ReturnType<NonNullable<typeof supabase>["auth"]["getSession"]>>;
 
 const sessionCheckTimeoutMs = 2_000;
+const emptyGameForm: GameFormState = {
+  description: "",
+  icon_url: "",
+  id: "",
+  name: "",
+  slug: "",
+};
 const emptySeasonForm: SeasonFormState = {
   description: "",
   ends_at: "",
@@ -63,13 +88,28 @@ const emptySeasonForm: SeasonFormState = {
   starts_at: "",
 };
 
-export function AdminDashboard() {
+export function AdminDashboard({ section }: { section: AdminSection }) {
   const [adminData, setAdminData] = useState<AdminData>({
     games: [],
     seasons: [],
   });
+  const [createGameForm, setCreateGameForm] =
+    useState<GameFormState>(emptyGameForm);
+  const [createGameStatus, setCreateGameStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
   const [createForm, setCreateForm] = useState<SeasonFormState>(emptySeasonForm);
   const [createStatus, setCreateStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [editGameForm, setEditGameForm] =
+    useState<GameFormState>(emptyGameForm);
+  const [editingGameId, setEditingGameId] = useState<string | null>(null);
+  const [editGameStatus, setEditGameStatus] = useState<{
     error: string | null;
     isLoading: boolean;
     success: string | null;
@@ -85,6 +125,10 @@ export function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+  const pageTitle =
+    section === "games" ? "Game management"
+    : section === "seasons" ? "Season management"
+    : "Admin dashboard";
 
   useEffect(() => {
     let isMounted = true;
@@ -123,7 +167,7 @@ export function AdminDashboard() {
       const [gamesResult, seasonsResult] = await Promise.all([
         supabase
           .from("games")
-          .select("id, name, slug, created_at")
+          .select("id, name, slug, description, icon_url, created_at")
           .order("name", { ascending: true }),
         supabase
           .from("seasons")
@@ -175,7 +219,7 @@ export function AdminDashboard() {
     const [gamesResult, seasonsResult] = await Promise.all([
       supabase
         .from("games")
-        .select("id, name, slug, created_at")
+        .select("id, name, slug, description, icon_url, created_at")
         .order("name", { ascending: true }),
       supabase
         .from("seasons")
@@ -197,6 +241,138 @@ export function AdminDashboard() {
       seasons: (seasonsResult.data ?? []) as AdminSeason[],
     });
     return true;
+  }
+
+  function getGameFormError(form: GameFormState) {
+    if (!form.id || !form.name || !form.slug) {
+      return "Game ID, name, and slug are required.";
+    }
+
+    return null;
+  }
+
+  function getGamePayload(form: GameFormState) {
+    return {
+      description: form.description.trim() || null,
+      icon_url: form.icon_url.trim() || null,
+      id: form.id.trim(),
+      name: form.name.trim(),
+      slug: form.slug.trim(),
+    };
+  }
+
+  async function handleCreateGame(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateGameStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getGameFormError(createGameForm);
+
+    if (validationError) {
+      setCreateGameStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateGameStatus({ error: null, isLoading: true, success: null });
+
+    const { error: createError } = await supabase
+      .from("games")
+      .insert(getGamePayload(createGameForm));
+
+    if (createError) {
+      setCreateGameStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateGameForm(emptyGameForm);
+    setCreateGameStatus({
+      error: null,
+      isLoading: false,
+      success: "Game created.",
+    });
+  }
+
+  function startEditingGame(game: AdminGame) {
+    setEditingGameId(game.id);
+    setEditGameStatus({ error: null, isLoading: false, success: null });
+    setEditGameForm({
+      description: game.description ?? "",
+      icon_url: game.icon_url ?? "",
+      id: game.id,
+      name: game.name,
+      slug: game.slug,
+    });
+  }
+
+  function stopEditingGame() {
+    setEditingGameId(null);
+    setEditGameForm(emptyGameForm);
+    setEditGameStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateGame(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingGameId) {
+      return;
+    }
+
+    const validationError = getGameFormError(editGameForm);
+
+    if (validationError) {
+      setEditGameStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditGameStatus({ error: null, isLoading: true, success: null });
+
+    const payload = getGamePayload(editGameForm);
+    const { error: updateError } = await supabase
+      .from("games")
+      .update({
+        description: payload.description,
+        icon_url: payload.icon_url,
+        name: payload.name,
+        slug: payload.slug,
+      })
+      .eq("id", editingGameId);
+
+    if (updateError) {
+      setEditGameStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingGameId(null);
+    setEditGameStatus({
+      error: null,
+      isLoading: false,
+      success: "Game updated.",
+    });
   }
 
   function getSeasonFormError(form: SeasonFormState) {
@@ -368,7 +544,7 @@ export function AdminDashboard() {
             </div>
             <div>
               <h1 className="font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
-                Admin dashboard
+                {pageTitle}
               </h1>
               <p className="mt-1 text-sm text-zinc-400">
                 {user?.email ?? "Checking admin session..."}
@@ -391,109 +567,66 @@ export function AdminDashboard() {
 
         {!isLoading && !error ? (
           <>
-            <div className="grid gap-4 md:grid-cols-2">
-              <AdminStatCard
-                label="Games"
-                value={adminData.games.length}
-              />
-              <AdminStatCard
-                label="Seasons"
-                value={adminData.seasons.length}
-              />
-            </div>
+            <AdminNavigation activeSection={section} />
 
-            <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-              <SeasonFormCard
-                form={createForm}
-                games={adminData.games}
-                onChange={setCreateForm}
-                onSubmit={handleCreateSeason}
-                status={createStatus}
-                submitLabel="Create season"
-                title="Create season"
-              />
+            <ViewTransition
+              key={section}
+              name="admin-section-content"
+              enter={{
+                "admin-section": "admin-section-enter",
+                default: "none",
+              }}
+              exit={{
+                "admin-section": "admin-section-exit",
+                default: "none",
+              }}
+              default="none"
+            >
+              <div className="contents">
+                {section === "overview" ? (
+                  <AdminOverview
+                    gamesCount={adminData.games.length}
+                    seasonsCount={adminData.seasons.length}
+                  />
+                ) : null}
 
-              <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
-                <CardHeader>
-                  <CardTitle className="font-mono text-xl">
-                    Edit season
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {editingSeasonId ? (
-                    <SeasonForm
-                      form={editForm}
-                      games={adminData.games}
-                      onCancel={stopEditingSeason}
-                      onChange={setEditForm}
-                      onSubmit={handleUpdateSeason}
-                      status={editStatus}
-                      submitLabel="Save changes"
-                    />
-                  ) : (
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
-                      Select a season below to edit its schedule details.
-                      {editStatus.success ? (
-                        <p className="mt-3 text-emerald-200">
-                          {editStatus.success}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                {section === "games" ? (
+                  <AdminGamesSection
+                    createForm={createGameForm}
+                    createStatus={createGameStatus}
+                    editForm={editGameForm}
+                    editStatus={editGameStatus}
+                    editingGameId={editingGameId}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingGame}
+                    onCreateChange={setCreateGameForm}
+                    onCreateSubmit={handleCreateGame}
+                    onEditChange={setEditGameForm}
+                    onEditSubmit={handleUpdateGame}
+                    onStartEdit={startEditingGame}
+                  />
+                ) : null}
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <AdminListCard title="Games">
-                {adminData.games.map((game) => (
-                  <li
-                    className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
-                    key={game.id}
-                  >
-                    <p className="font-semibold text-white">{game.name}</p>
-                    <p className="mt-1 font-mono text-xs text-zinc-500">
-                      {game.slug}
-                    </p>
-                  </li>
-                ))}
-              </AdminListCard>
-
-              <AdminListCard title="Seasons">
-                {adminData.seasons.map((season) => (
-                  <li
-                    className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
-                    key={season.id}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-white">
-                          {season.name}
-                        </p>
-                        <p className="mt-1 text-sm text-zinc-400">
-                          {gameNamesById.get(season.game_id) ??
-                            season.game_id}
-                        </p>
-                      </div>
-                      <p className="font-mono text-xs text-zinc-500">
-                        {formatDate(season.starts_at)} -{" "}
-                        {formatDate(season.ends_at)}
-                      </p>
-                    </div>
-                    <Button
-                      className="mt-4 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                      onClick={() => startEditingSeason(season)}
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Pencil className="size-3.5" aria-hidden="true" />
-                      Edit
-                    </Button>
-                  </li>
-                ))}
-              </AdminListCard>
-            </div>
+                {section === "seasons" ? (
+                  <AdminSeasonsSection
+                    createForm={createForm}
+                    createStatus={createStatus}
+                    editForm={editForm}
+                    editStatus={editStatus}
+                    editingSeasonId={editingSeasonId}
+                    gameNamesById={gameNamesById}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingSeason}
+                    onCreateChange={setCreateForm}
+                    onCreateSubmit={handleCreateSeason}
+                    onEditChange={setEditForm}
+                    onEditSubmit={handleUpdateSeason}
+                    onStartEdit={startEditingSeason}
+                    seasons={adminData.seasons}
+                  />
+                ) : null}
+              </div>
+            </ViewTransition>
           </>
         ) : null}
       </section>
@@ -538,6 +671,316 @@ function AdminStatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
+function AdminNavigation({ activeSection }: { activeSection: AdminSection }) {
+  return (
+    <nav className="flex flex-wrap gap-3" aria-label="Admin sections">
+      {[
+        { href: "/admin", label: "Overview", section: "overview" },
+        { href: "/admin/games", label: "Games", section: "games" },
+        { href: "/admin/seasons", label: "Seasons", section: "seasons" },
+      ].map((item) => {
+        const isActive = item.section === activeSection;
+
+        return (
+          <Link
+            className={`rounded-md border px-4 py-2 text-sm transition ${
+              isActive
+                ? "border-violet-300/30 bg-violet-500/30 text-violet-100"
+                : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
+            }`}
+            href={item.href}
+            key={item.href}
+            transitionTypes={["admin-section"]}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function AdminOverview({
+  gamesCount,
+  seasonsCount,
+}: {
+  gamesCount: number;
+  seasonsCount: number;
+}) {
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <AdminStatCard label="Games" value={gamesCount} />
+        <AdminStatCard label="Seasons" value={seasonsCount} />
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <AdminSectionCard
+          count={gamesCount}
+          href="/admin/games"
+          label="Manage games"
+          summary="Create and edit game names, slugs, descriptions, and icons."
+        />
+        <AdminSectionCard
+          count={seasonsCount}
+          href="/admin/seasons"
+          label="Manage seasons"
+          summary="Create and edit season schedules, slugs, and descriptions."
+        />
+      </div>
+    </>
+  );
+}
+
+function AdminSectionCard({
+  count,
+  href,
+  label,
+  summary,
+}: {
+  count: number;
+  href: string;
+  label: string;
+  summary: string;
+}) {
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 p-5 text-white shadow-xl shadow-black/15">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-mono text-xl font-semibold">{label}</p>
+          <p className="mt-2 text-sm leading-6 text-zinc-400">{summary}</p>
+        </div>
+        <p className="font-mono text-3xl font-semibold text-violet-100">
+          {count}
+        </p>
+      </div>
+      <Button
+        asChild
+        className="mt-5 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+        variant="ghost"
+      >
+        <Link href={href} transitionTypes={["admin-section"]}>
+          <Pencil className="size-3.5" aria-hidden="true" />
+          Open section
+        </Link>
+      </Button>
+    </Card>
+  );
+}
+
+function AdminGamesSection({
+  createForm,
+  createStatus,
+  editForm,
+  editStatus,
+  editingGameId,
+  games,
+  onCancelEdit,
+  onCreateChange,
+  onCreateSubmit,
+  onEditChange,
+  onEditSubmit,
+  onStartEdit,
+}: {
+  createForm: GameFormState;
+  createStatus: {
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  };
+  editForm: GameFormState;
+  editStatus: { error: string | null; isLoading: boolean; success: string | null };
+  editingGameId: string | null;
+  games: AdminGame[];
+  onCancelEdit: () => void;
+  onCreateChange: (form: GameFormState) => void;
+  onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onEditChange: (form: GameFormState) => void;
+  onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onStartEdit: (game: AdminGame) => void;
+}) {
+  return (
+    <>
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <GameFormCard
+          form={createForm}
+          onChange={onCreateChange}
+          onSubmit={onCreateSubmit}
+          status={createStatus}
+          submitLabel="Create game"
+          title="Create game"
+        />
+
+        <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+          <CardHeader>
+            <CardTitle className="font-mono text-xl">Edit game</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {editingGameId ? (
+              <GameForm
+                form={editForm}
+                onCancel={onCancelEdit}
+                onChange={onEditChange}
+                onSubmit={onEditSubmit}
+                status={editStatus}
+                submitLabel="Save changes"
+              />
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
+                Select a game below to edit its details.
+                {editStatus.success ? (
+                  <p className="mt-3 text-emerald-200">
+                    {editStatus.success}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <AdminListCard title="Games">
+        {games.map((game) => (
+          <li
+            className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
+            key={game.id}
+          >
+            <p className="font-semibold text-white">{game.name}</p>
+            <p className="mt-1 font-mono text-xs text-zinc-500">{game.slug}</p>
+            {game.description ? (
+              <p className="mt-3 text-sm text-zinc-400">{game.description}</p>
+            ) : null}
+            {game.icon_url ? (
+              <p className="mt-2 truncate font-mono text-xs text-zinc-500">
+                {game.icon_url}
+              </p>
+            ) : null}
+            <Button
+              className="mt-4 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              onClick={() => onStartEdit(game)}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil className="size-3.5" aria-hidden="true" />
+              Edit
+            </Button>
+          </li>
+        ))}
+      </AdminListCard>
+    </>
+  );
+}
+
+function AdminSeasonsSection({
+  createForm,
+  createStatus,
+  editForm,
+  editStatus,
+  editingSeasonId,
+  gameNamesById,
+  games,
+  onCancelEdit,
+  onCreateChange,
+  onCreateSubmit,
+  onEditChange,
+  onEditSubmit,
+  onStartEdit,
+  seasons,
+}: {
+  createForm: SeasonFormState;
+  createStatus: {
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  };
+  editForm: SeasonFormState;
+  editStatus: { error: string | null; isLoading: boolean; success: string | null };
+  editingSeasonId: string | null;
+  gameNamesById: Map<string, string>;
+  games: AdminGame[];
+  onCancelEdit: () => void;
+  onCreateChange: (form: SeasonFormState) => void;
+  onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onEditChange: (form: SeasonFormState) => void;
+  onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onStartEdit: (season: AdminSeason) => void;
+  seasons: AdminSeason[];
+}) {
+  return (
+    <>
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <SeasonFormCard
+          form={createForm}
+          games={games}
+          onChange={onCreateChange}
+          onSubmit={onCreateSubmit}
+          status={createStatus}
+          submitLabel="Create season"
+          title="Create season"
+        />
+
+        <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+          <CardHeader>
+            <CardTitle className="font-mono text-xl">Edit season</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {editingSeasonId ? (
+              <SeasonForm
+                form={editForm}
+                games={games}
+                onCancel={onCancelEdit}
+                onChange={onEditChange}
+                onSubmit={onEditSubmit}
+                status={editStatus}
+                submitLabel="Save changes"
+              />
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
+                Select a season below to edit its schedule details.
+                {editStatus.success ? (
+                  <p className="mt-3 text-emerald-200">{editStatus.success}</p>
+                ) : null}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <AdminListCard title="Seasons">
+        {seasons.map((season) => (
+          <li
+            className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
+            key={season.id}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-white">{season.name}</p>
+                <p className="mt-1 text-sm text-zinc-400">
+                  {gameNamesById.get(season.game_id) ?? season.game_id}
+                </p>
+              </div>
+              <p className="font-mono text-xs text-zinc-500">
+                {formatDate(season.starts_at)} - {formatDate(season.ends_at)}
+              </p>
+            </div>
+            <Button
+              className="mt-4 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              onClick={() => onStartEdit(season)}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil className="size-3.5" aria-hidden="true" />
+              Edit
+            </Button>
+          </li>
+        ))}
+      </AdminListCard>
+    </>
+  );
+}
+
 function AdminListCard({
   children,
   title,
@@ -554,6 +997,164 @@ function AdminListCard({
         <ul className="space-y-3">{children}</ul>
       </CardContent>
     </Card>
+  );
+}
+
+function GameFormCard({
+  form,
+  onChange,
+  onSubmit,
+  status,
+  submitLabel,
+  title,
+}: {
+  form: GameFormState;
+  onChange: (form: GameFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  status: { error: string | null; isLoading: boolean; success: string | null };
+  submitLabel: string;
+  title: string;
+}) {
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <CardTitle className="font-mono text-xl">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <GameForm
+          form={form}
+          onChange={onChange}
+          onSubmit={onSubmit}
+          status={status}
+          submitLabel={submitLabel}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function GameForm({
+  form,
+  onCancel,
+  onChange,
+  onSubmit,
+  status,
+  submitLabel,
+}: {
+  form: GameFormState;
+  onCancel?: () => void;
+  onChange: (form: GameFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  status: { error: string | null; isLoading: boolean; success: string | null };
+  submitLabel: string;
+}) {
+  const SubmitIcon = submitLabel.startsWith("Save") ? Save : Plus;
+
+  function updateField(field: keyof GameFormState, value: string) {
+    onChange({
+      ...form,
+      [field]: value,
+    });
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Game ID</span>
+          <Input
+            className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+            disabled={status.isLoading || Boolean(onCancel)}
+            onChange={(event) => updateField("id", event.target.value)}
+            placeholder="diablo-4"
+            required
+            value={form.id}
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Slug</span>
+          <Input
+            className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+            disabled={status.isLoading}
+            onChange={(event) => updateField("slug", event.target.value)}
+            placeholder="diablo-4"
+            required
+            value={form.slug}
+          />
+        </label>
+      </div>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Name</span>
+        <Input
+          className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+          disabled={status.isLoading}
+          onChange={(event) => updateField("name", event.target.value)}
+          placeholder="Diablo IV"
+          required
+          value={form.name}
+        />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Icon URL</span>
+        <Input
+          className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+          disabled={status.isLoading}
+          onChange={(event) => updateField("icon_url", event.target.value)}
+          placeholder="/images/d4-icon.jpg"
+          value={form.icon_url}
+        />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Description</span>
+        <textarea
+          className={`${fieldClassName} min-h-24 resize-y py-2`}
+          disabled={status.isLoading}
+          onChange={(event) => updateField("description", event.target.value)}
+          placeholder="Optional game description"
+          value={form.description}
+        />
+      </label>
+
+      {status.error ? (
+        <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+          {status.error}
+        </p>
+      ) : null}
+
+      {status.success ? (
+        <p className="rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+          {status.success}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap gap-3">
+        <Button
+          className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+          disabled={status.isLoading}
+          type="submit"
+        >
+          <SubmitIcon className="size-4" aria-hidden="true" />
+          {status.isLoading ? "Saving..." : submitLabel}
+        </Button>
+
+        {onCancel ? (
+          <Button
+            className="h-10 border-white/10 bg-white/5 px-4 text-zinc-100 hover:bg-white/10"
+            disabled={status.isLoading}
+            onClick={onCancel}
+            type="button"
+            variant="ghost"
+          >
+            <X className="size-4" aria-hidden="true" />
+            Cancel
+          </Button>
+        ) : null}
+      </div>
+    </form>
   );
 }
 

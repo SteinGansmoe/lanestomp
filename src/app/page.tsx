@@ -12,6 +12,7 @@ import { supabase } from "@/src/lib/supabase";
 
 type SupabaseGame = {
   created_at: string;
+  description: string | null;
   icon_url: string | null;
   id: string;
   name: string;
@@ -77,7 +78,7 @@ async function getSupabaseGames() {
   try {
     const { data, error } = await supabase
       .from("games")
-      .select("id, name, slug, icon_url, created_at")
+      .select("id, name, slug, description, icon_url, created_at")
       .order("name", { ascending: true })
       .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs));
 
@@ -140,6 +141,7 @@ function toDashboardGame(game: SupabaseGame): Game {
 
   return {
     createdAt: game.created_at,
+    description: game.description,
     detailImage: displayAssets?.detailImage ?? "",
     genre: displayAssets?.genre ?? "ARPG",
     id: game.id,

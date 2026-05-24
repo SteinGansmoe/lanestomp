@@ -38,6 +38,15 @@ type SupabaseSeason = {
   starts_at: string;
 };
 
+type SupabaseGame = {
+  created_at: string;
+  description: string | null;
+  icon_url: string | null;
+  id: string;
+  name: string;
+  slug: string;
+};
+
 const supabaseFetchTimeoutMs = 8_000;
 
 export function generateStaticParams() {
@@ -80,6 +89,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   }
 
   const seasonsResult = await getSupabaseSeasonsForGame(game.id);
+  const liveGameResult = await getSupabaseGameById(game.id);
 
   if (seasonsResult.error) {
     return (
@@ -110,7 +120,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   }
 
   const gameWithLiveSeasons = {
-    ...game,
+    ...mergeLiveGameData(game, liveGameResult.game),
     seasons: seasonsResult.seasons,
     selectedSeason: seasonResult.season ?? getFeaturedSeason(seasonsResult.seasons),
   };
@@ -180,6 +190,37 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       </div>
     </main>
   );
+}
+
+async function getSupabaseGameById(gameId: string) {
+  if (!supabase) {
+    return {
+      game: null,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("games")
+      .select("id, name, slug, description, icon_url, created_at")
+      .eq("id", gameId)
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs))
+      .maybeSingle();
+
+    if (error) {
+      return {
+        game: null,
+      };
+    }
+
+    return {
+      game: data ? (data as SupabaseGame) : null,
+    };
+  } catch {
+    return {
+      game: null,
+    };
+  }
 }
 
 async function getSupabaseSeasonsForGame(gameId: string) {
@@ -266,6 +307,22 @@ function toSeason(season: SupabaseSeason): Season {
     title: season.name,
     type: "Season",
     updatedAt: season.created_at,
+  };
+}
+
+function mergeLiveGameData<TGame extends { image: string; title: string }>(
+  game: TGame,
+  liveGame: SupabaseGame | null
+) {
+  if (!liveGame) {
+    return game;
+  }
+
+  return {
+    ...game,
+    description: liveGame.description,
+    image: liveGame.icon_url ?? game.image,
+    title: liveGame.name,
   };
 }
 
