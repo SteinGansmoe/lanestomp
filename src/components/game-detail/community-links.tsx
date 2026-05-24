@@ -38,7 +38,7 @@ export function CommunityLinks({ links }: { links: CommunityLink[] }) {
                     {link.label}
                   </span>
                   <span className="block text-sm capitalize text-zinc-400">
-                    {link.type}
+                    {link.typeLabel ?? link.type}
                   </span>
                 </span>
                 <ExternalLink

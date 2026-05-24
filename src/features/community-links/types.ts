@@ -15,6 +15,7 @@ export type CommunityLink = {
   label: string;
   sourceUrl?: string;
   type: CommunityLinkType;
+  typeLabel?: string;
   updatedAt: string;
   url: string;
 };

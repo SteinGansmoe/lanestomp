@@ -17,6 +17,7 @@ import {
   Pencil,
   Plus,
   Save,
+  Trash2,
   X,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
@@ -45,12 +46,35 @@ type AdminSeason = {
   starts_at: string;
 };
 
+type AdminResource = {
+  game_id: string;
+  icon: string;
+  id: string;
+  is_active: boolean;
+  label: string;
+  sort_order: number;
+  title: string;
+  url: string;
+};
+
 type AdminData = {
   games: AdminGame[];
+  resources: AdminResource[];
   seasons: AdminSeason[];
 };
 
-type AdminSection = "games" | "overview" | "seasons";
+type AdminSection = "games" | "overview" | "resources" | "seasons";
+
+type ResourceFormState = {
+  game_id: string;
+  icon: string;
+  id: string;
+  is_active: boolean;
+  label: string;
+  sort_order: string;
+  title: string;
+  url: string;
+};
 
 type GameFormState = {
   description: string;
@@ -87,10 +111,23 @@ const emptySeasonForm: SeasonFormState = {
   slug: "",
   starts_at: "",
 };
+const emptyResourceForm: ResourceFormState = {
+  game_id: "",
+  icon: "forum",
+  id: "",
+  is_active: true,
+  label: "",
+  sort_order: "0",
+  title: "",
+  url: "",
+};
 const emptyAdminData: AdminData = {
   games: [],
+  resources: [],
   seasons: [],
 };
+const missingResourcesTableMessage =
+  "Community resources are not set up in Supabase yet. Apply the game_resources migration to enable the Resources admin page.";
 
 let cachedAdminData: AdminData | null = null;
 let cachedAdminUser: User | null = null;
@@ -99,6 +136,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [adminData, setAdminData] = useState<AdminData>(
     () => cachedAdminData ?? emptyAdminData
   );
+  const [createResourceForm, setCreateResourceForm] =
+    useState<ResourceFormState>(emptyResourceForm);
+  const [createResourceStatus, setCreateResourceStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
   const [createGameForm, setCreateGameForm] =
     useState<GameFormState>(emptyGameForm);
   const [createGameStatus, setCreateGameStatus] = useState<{
@@ -127,12 +171,26 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     isLoading: boolean;
     success: string | null;
   }>({ error: null, isLoading: false, success: null });
+  const [editResourceForm, setEditResourceForm] =
+    useState<ResourceFormState>(emptyResourceForm);
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(
+    null
+  );
+  const [editResourceStatus, setEditResourceStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
+  const [resourcesSetupMessage, setResourcesSetupMessage] = useState<
+    string | null
+  >(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
   const router = useRouter();
   const pageTitle =
     section === "games" ? "Game management"
+    : section === "resources" ? "Resource management"
     : section === "seasons" ? "Season management"
     : "Admin dashboard";
 
@@ -171,11 +229,19 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       cachedAdminUser = sessionUser;
       setUser(sessionUser);
 
-      const [gamesResult, seasonsResult] = await Promise.all([
+      const [gamesResult, resourcesResult, seasonsResult] = await Promise.all([
         supabase
           .from("games")
           .select("id, name, slug, description, icon_url, created_at")
           .order("name", { ascending: true }),
+        supabase
+          .from("game_resources")
+          .select(
+            "id, game_id, title, label, url, icon, sort_order, is_active"
+          )
+          .order("game_id", { ascending: true })
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
         supabase
           .from("seasons")
           .select("id, game_id, name, slug, starts_at, ends_at, description")
@@ -186,18 +252,34 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         return;
       }
 
-      if (gamesResult.error || seasonsResult.error) {
+      const isMissingResourcesTable = isMissingGameResourcesTableError(
+        resourcesResult.error
+      );
+
+      if (
+        gamesResult.error ||
+        seasonsResult.error ||
+        (resourcesResult.error && !isMissingResourcesTable)
+      ) {
         setError(
           gamesResult.error?.message ??
             seasonsResult.error?.message ??
+            resourcesResult.error?.message ??
             "Could not load admin data."
         );
         setIsLoading(false);
         return;
       }
 
+      setResourcesSetupMessage(
+        isMissingResourcesTable ? missingResourcesTableMessage : null
+      );
+
       const nextAdminData = {
         games: (gamesResult.data ?? []) as AdminGame[],
+        resources: isMissingResourcesTable
+          ? []
+          : ((resourcesResult.data ?? []) as AdminResource[]),
         seasons: (seasonsResult.data ?? []) as AdminSeason[],
       };
 
@@ -226,34 +308,249 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return false;
     }
 
-    const [gamesResult, seasonsResult] = await Promise.all([
+    const [gamesResult, resourcesResult, seasonsResult] = await Promise.all([
       supabase
         .from("games")
         .select("id, name, slug, description, icon_url, created_at")
         .order("name", { ascending: true }),
+      supabase
+        .from("game_resources")
+        .select(
+          "id, game_id, title, label, url, icon, sort_order, is_active"
+        )
+        .order("game_id", { ascending: true })
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
       supabase
         .from("seasons")
         .select("id, game_id, name, slug, starts_at, ends_at, description")
         .order("starts_at", { ascending: true }),
     ]);
 
-    if (gamesResult.error || seasonsResult.error) {
+    const isMissingResourcesTable = isMissingGameResourcesTableError(
+      resourcesResult.error
+    );
+
+    if (
+      gamesResult.error ||
+      seasonsResult.error ||
+      (resourcesResult.error && !isMissingResourcesTable)
+    ) {
       setError(
         gamesResult.error?.message ??
           seasonsResult.error?.message ??
+          resourcesResult.error?.message ??
           "Could not load admin data."
       );
       return false;
     }
 
+    setResourcesSetupMessage(
+      isMissingResourcesTable ? missingResourcesTableMessage : null
+    );
+
     const nextAdminData = {
       games: (gamesResult.data ?? []) as AdminGame[],
+      resources: isMissingResourcesTable
+        ? []
+        : ((resourcesResult.data ?? []) as AdminResource[]),
       seasons: (seasonsResult.data ?? []) as AdminSeason[],
     };
 
     cachedAdminData = nextAdminData;
     setAdminData(nextAdminData);
     return true;
+  }
+
+  function getResourceFormError(form: ResourceFormState) {
+    if (
+      !form.id.trim() ||
+      !form.game_id ||
+      !form.title.trim() ||
+      !form.label.trim() ||
+      !form.url.trim()
+    ) {
+      return "ID, game, title, label, and URL are required.";
+    }
+
+    return null;
+  }
+
+  function getResourcePayload(form: ResourceFormState) {
+    return {
+      game_id: form.game_id,
+      icon: form.icon,
+      id: form.id.trim(),
+      is_active: form.is_active,
+      label: form.label.trim(),
+      sort_order: Number.parseInt(form.sort_order, 10) || 0,
+      title: form.title.trim(),
+      url: form.url.trim(),
+    };
+  }
+
+  async function handleCreateResource(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateResourceStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getResourceFormError(createResourceForm);
+
+    if (validationError) {
+      setCreateResourceStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateResourceStatus({
+      error: null,
+      isLoading: true,
+      success: null,
+    });
+
+    const { error: createError } = await supabase
+      .from("game_resources")
+      .insert(getResourcePayload(createResourceForm));
+
+    if (createError) {
+      setCreateResourceStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateResourceForm({
+      ...emptyResourceForm,
+      game_id: createResourceForm.game_id,
+    });
+    setCreateResourceStatus({
+      error: null,
+      isLoading: false,
+      success: "Resource created.",
+    });
+  }
+
+  function startEditingResource(resource: AdminResource) {
+    setEditingResourceId(resource.id);
+    setEditResourceStatus({ error: null, isLoading: false, success: null });
+    setEditResourceForm({
+      game_id: resource.game_id,
+      icon: resource.icon,
+      id: resource.id,
+      is_active: resource.is_active,
+      label: resource.label,
+      sort_order: String(resource.sort_order),
+      title: resource.title,
+      url: resource.url,
+    });
+  }
+
+  function stopEditingResource() {
+    setEditingResourceId(null);
+    setEditResourceForm(emptyResourceForm);
+    setEditResourceStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateResource(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingResourceId) {
+      return;
+    }
+
+    const validationError = getResourceFormError(editResourceForm);
+
+    if (validationError) {
+      setEditResourceStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditResourceStatus({ error: null, isLoading: true, success: null });
+
+    const payload = getResourcePayload(editResourceForm);
+    const { error: updateError } = await supabase
+      .from("game_resources")
+      .update({
+        game_id: payload.game_id,
+        icon: payload.icon,
+        is_active: payload.is_active,
+        label: payload.label,
+        sort_order: payload.sort_order,
+        title: payload.title,
+        url: payload.url,
+      })
+      .eq("id", editingResourceId);
+
+    if (updateError) {
+      setEditResourceStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingResourceId(null);
+    setEditResourceStatus({
+      error: null,
+      isLoading: false,
+      success: "Resource updated.",
+    });
+  }
+
+  async function handleDeleteResource(resource: AdminResource) {
+    if (
+      !supabase ||
+      !window.confirm(`Delete "${resource.title}" from game resources?`)
+    ) {
+      return;
+    }
+
+    setEditResourceStatus({ error: null, isLoading: true, success: null });
+
+    const { error: deleteError } = await supabase
+      .from("game_resources")
+      .delete()
+      .eq("id", resource.id);
+
+    if (deleteError) {
+      setEditResourceStatus({
+        error: deleteError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (editingResourceId === resource.id) {
+      setEditingResourceId(null);
+      setEditResourceForm(emptyResourceForm);
+    }
+
+    await reloadAdminData();
+    setEditResourceStatus({
+      error: null,
+      isLoading: false,
+      success: "Resource deleted.",
+    });
   }
 
   function getGameFormError(form: GameFormState) {
@@ -584,6 +881,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           <>
             <AdminNavigation activeSection={section} />
 
+            {resourcesSetupMessage ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
+                {resourcesSetupMessage}
+              </Card>
+            ) : null}
+
             <ViewTransition
               key={section}
               name="admin-section-content"
@@ -601,7 +904,28 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 {section === "overview" ? (
                   <AdminOverview
                     gamesCount={adminData.games.length}
+                    resourcesCount={adminData.resources.length}
                     seasonsCount={adminData.seasons.length}
+                  />
+                ) : null}
+
+                {section === "resources" ? (
+                  <AdminResourcesSection
+                    createForm={createResourceForm}
+                    createStatus={createResourceStatus}
+                    editForm={editResourceForm}
+                    editStatus={editResourceStatus}
+                    editingResourceId={editingResourceId}
+                    gameNamesById={gameNamesById}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingResource}
+                    onCreateChange={setCreateResourceForm}
+                    onCreateSubmit={handleCreateResource}
+                    onDelete={handleDeleteResource}
+                    onEditChange={setEditResourceForm}
+                    onEditSubmit={handleUpdateResource}
+                    onStartEdit={startEditingResource}
+                    resources={adminData.resources}
                   />
                 ) : null}
 
@@ -693,6 +1017,7 @@ function AdminNavigation({ activeSection }: { activeSection: AdminSection }) {
         { href: "/admin", label: "Overview", section: "overview" },
         { href: "/admin/games", label: "Games", section: "games" },
         { href: "/admin/seasons", label: "Seasons", section: "seasons" },
+        { href: "/admin/resources", label: "Resources", section: "resources" },
       ].map((item) => {
         const isActive = item.section === activeSection;
 
@@ -717,19 +1042,22 @@ function AdminNavigation({ activeSection }: { activeSection: AdminSection }) {
 
 function AdminOverview({
   gamesCount,
+  resourcesCount,
   seasonsCount,
 }: {
   gamesCount: number;
+  resourcesCount: number;
   seasonsCount: number;
 }) {
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <AdminStatCard label="Games" value={gamesCount} />
         <AdminStatCard label="Seasons" value={seasonsCount} />
+        <AdminStatCard label="Resources" value={resourcesCount} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <AdminSectionCard
           count={gamesCount}
           href="/admin/games"
@@ -741,6 +1069,12 @@ function AdminOverview({
           href="/admin/seasons"
           label="Manage seasons"
           summary="Create and edit season schedules, slugs, and descriptions."
+        />
+        <AdminSectionCard
+          count={resourcesCount}
+          href="/admin/resources"
+          label="Manage resources"
+          summary="Create and edit game detail community resource cards."
         />
       </div>
     </>
@@ -780,6 +1114,143 @@ function AdminSectionCard({
         </Link>
       </Button>
     </Card>
+  );
+}
+
+function AdminResourcesSection({
+  createForm,
+  createStatus,
+  editForm,
+  editStatus,
+  editingResourceId,
+  gameNamesById,
+  games,
+  onCancelEdit,
+  onCreateChange,
+  onCreateSubmit,
+  onDelete,
+  onEditChange,
+  onEditSubmit,
+  onStartEdit,
+  resources,
+}: {
+  createForm: ResourceFormState;
+  createStatus: {
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  };
+  editForm: ResourceFormState;
+  editStatus: { error: string | null; isLoading: boolean; success: string | null };
+  editingResourceId: string | null;
+  gameNamesById: Map<string, string>;
+  games: AdminGame[];
+  onCancelEdit: () => void;
+  onCreateChange: (form: ResourceFormState) => void;
+  onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete: (resource: AdminResource) => void;
+  onEditChange: (form: ResourceFormState) => void;
+  onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onStartEdit: (resource: AdminResource) => void;
+  resources: AdminResource[];
+}) {
+  return (
+    <>
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <ResourceFormCard
+          form={createForm}
+          games={games}
+          onChange={onCreateChange}
+          onSubmit={onCreateSubmit}
+          status={createStatus}
+          submitLabel="Create resource"
+          title="Create resource"
+        />
+
+        <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+          <CardHeader>
+            <CardTitle className="font-mono text-xl">Edit resource</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {editingResourceId ? (
+              <ResourceForm
+                form={editForm}
+                games={games}
+                onCancel={onCancelEdit}
+                onChange={onEditChange}
+                onSubmit={onEditSubmit}
+                status={editStatus}
+                submitLabel="Save changes"
+              />
+            ) : (
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
+                Select a resource below to edit it.
+                {editStatus.success ? (
+                  <p className="mt-3 text-emerald-200">{editStatus.success}</p>
+                ) : null}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <AdminListCard title="Resources">
+        {resources.map((resource) => (
+          <li
+            className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
+            key={resource.id}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-white">{resource.title}</p>
+                <p className="mt-1 text-sm text-zinc-400">
+                  {gameNamesById.get(resource.game_id) ?? resource.game_id}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <span
+                  className={`rounded-md border px-2 py-1 text-xs ${
+                    resource.is_active
+                      ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
+                      : "border-white/10 bg-white/5 text-zinc-400"
+                  }`}
+                >
+                  {resource.is_active ? "Active" : "Hidden"}
+                </span>
+                <span className="font-mono text-xs text-zinc-500">
+                  Order {resource.sort_order}
+                </span>
+              </div>
+            </div>
+            <p className="mt-3 font-mono text-xs text-zinc-500">
+              {resource.label} / {resource.icon} - {resource.url}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                onClick={() => onStartEdit(resource)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Pencil className="size-3.5" aria-hidden="true" />
+                Edit
+              </Button>
+              <Button
+                className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                onClick={() => onDelete(resource)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 className="size-3.5" aria-hidden="true" />
+                Delete
+              </Button>
+            </div>
+          </li>
+        ))}
+      </AdminListCard>
+    </>
   );
 }
 
@@ -1012,6 +1483,228 @@ function AdminListCard({
         <ul className="space-y-3">{children}</ul>
       </CardContent>
     </Card>
+  );
+}
+
+function ResourceFormCard({
+  form,
+  games,
+  onChange,
+  onSubmit,
+  status,
+  submitLabel,
+  title,
+}: {
+  form: ResourceFormState;
+  games: AdminGame[];
+  onChange: (form: ResourceFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  status: { error: string | null; isLoading: boolean; success: string | null };
+  submitLabel: string;
+  title: string;
+}) {
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <CardTitle className="font-mono text-xl">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResourceForm
+          form={form}
+          games={games}
+          onChange={onChange}
+          onSubmit={onSubmit}
+          status={status}
+          submitLabel={submitLabel}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ResourceForm({
+  form,
+  games,
+  onCancel,
+  onChange,
+  onSubmit,
+  status,
+  submitLabel,
+}: {
+  form: ResourceFormState;
+  games: AdminGame[];
+  onCancel?: () => void;
+  onChange: (form: ResourceFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  status: { error: string | null; isLoading: boolean; success: string | null };
+  submitLabel: string;
+}) {
+  const SubmitIcon = submitLabel.startsWith("Save") ? Save : Plus;
+
+  function updateField(
+    field: keyof ResourceFormState,
+    value: boolean | string
+  ) {
+    onChange({
+      ...form,
+      [field]: value,
+    });
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Game</span>
+        <select
+          className={fieldClassName}
+          disabled={status.isLoading}
+          onChange={(event) => updateField("game_id", event.target.value)}
+          required
+          value={form.game_id}
+        >
+          <option className={selectOptionClassName} value="">
+            Select game
+          </option>
+          {games.map((game) => (
+            <option
+              className={selectOptionClassName}
+              key={game.id}
+              value={game.id}
+            >
+              {game.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Resource ID</span>
+        <Input
+          className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+          disabled={status.isLoading || Boolean(onCancel)}
+          onChange={(event) => updateField("id", event.target.value)}
+          placeholder="diablo-4-official-forums"
+          required
+          value={form.id}
+        />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Title</span>
+        <Input
+          className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+          disabled={status.isLoading}
+          onChange={(event) => updateField("title", event.target.value)}
+          placeholder="Official Forums"
+          required
+          value={form.title}
+        />
+      </label>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Label</span>
+          <Input
+            className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+            disabled={status.isLoading}
+            onChange={(event) => updateField("label", event.target.value)}
+            placeholder="Forum"
+            required
+            value={form.label}
+          />
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Icon</span>
+          <select
+            className={fieldClassName}
+            disabled={status.isLoading}
+            onChange={(event) => updateField("icon", event.target.value)}
+            value={form.icon}
+          >
+            {["discord", "forum", "reddit", "social", "video"].map((icon) => (
+              <option className={selectOptionClassName} key={icon} value={icon}>
+                {icon}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">URL</span>
+        <Input
+          className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+          disabled={status.isLoading}
+          onChange={(event) => updateField("url", event.target.value)}
+          placeholder="https://example.com"
+          required
+          value={form.url}
+        />
+      </label>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Sort order</span>
+          <Input
+            className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+            disabled={status.isLoading}
+            onChange={(event) => updateField("sort_order", event.target.value)}
+            type="number"
+            value={form.sort_order}
+          />
+        </label>
+
+        <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
+          <input
+            checked={form.is_active}
+            className="size-4 accent-violet-500"
+            disabled={status.isLoading}
+            onChange={(event) =>
+              updateField("is_active", event.target.checked)
+            }
+            type="checkbox"
+          />
+          Active on game detail page
+        </label>
+      </div>
+
+      {status.error ? (
+        <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+          {status.error}
+        </p>
+      ) : null}
+
+      {status.success ? (
+        <p className="rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+          {status.success}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap gap-3">
+        <Button
+          className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+          disabled={status.isLoading}
+          type="submit"
+        >
+          <SubmitIcon className="size-4" aria-hidden="true" />
+          {status.isLoading ? "Saving..." : submitLabel}
+        </Button>
+
+        {onCancel ? (
+          <Button
+            className="h-10 border-white/10 bg-white/5 px-4 text-zinc-100 hover:bg-white/10"
+            disabled={status.isLoading}
+            onClick={onCancel}
+            type="button"
+            variant="ghost"
+          >
+            <X className="size-4" aria-hidden="true" />
+            Cancel
+          </Button>
+        ) : null}
+      </div>
+    </form>
   );
 }
 
@@ -1365,6 +2058,18 @@ function SeasonForm({
 const fieldClassName =
   "w-full rounded-lg border border-white/10 bg-[#111a2c] px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50";
 const selectOptionClassName = "bg-[#10182b] text-zinc-100";
+
+function isMissingGameResourcesTableError(
+  error: { code?: string; message?: string } | null
+) {
+  return (
+    error?.code === "PGRST205" ||
+    Boolean(
+      error?.message?.includes("game_resources") &&
+        error.message.includes("schema cache")
+    )
+  );
+}
 
 function formatDate(value: string) {
   return value.slice(0, 10);

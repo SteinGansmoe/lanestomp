@@ -19,6 +19,8 @@ import {
   getGameDetailBySeasonSlug,
   getPrimarySeasonRouteForGame,
   getSeasonCardStaticParams,
+  type CommunityLink,
+  type CommunityLinkType,
   type Season,
 } from "@/src/features";
 import { supabase } from "@/src/lib/supabase";
@@ -47,7 +49,24 @@ type SupabaseGame = {
   slug: string;
 };
 
+type SupabaseResource = {
+  created_at: string;
+  game_id: string;
+  icon: string;
+  id: string;
+  label: string;
+  title: string;
+  url: string;
+};
+
 const supabaseFetchTimeoutMs = 8_000;
+const communityLinkTypes = [
+  "discord",
+  "forum",
+  "reddit",
+  "social",
+  "video",
+] satisfies CommunityLinkType[];
 
 export function generateStaticParams() {
   return getSeasonCardStaticParams();
@@ -88,10 +107,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     );
   }
 
-  const seasonsResult = await getSupabaseSeasonsForGame(game.id);
-  const liveGameResult = await getSupabaseGameById(game.id);
+  const [seasonsResult, liveGameResult, resourcesResult] = await Promise.all([
+    getSupabaseSeasonsForGame(game.id),
+    getSupabaseGameById(game.id),
+    getSupabaseResourcesForGame(game.id),
+  ]);
 
-  if (seasonsResult.error) {
+  if (seasonsResult.error || resourcesResult.error) {
     return (
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
@@ -105,13 +127,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           </Link>
           <Card className="mt-8 border-rose-400/20 bg-[#10182b]/90 p-8 text-white">
             <CardTitle className="font-mono text-2xl">
-              Could not load seasons
+              Could not load game details
             </CardTitle>
             <p className="mt-3 text-zinc-400">
-              Season Tracker could not fetch seasons from Supabase right now.
+              Season Tracker could not fetch this game detail content from Supabase right now.
             </p>
             <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-rose-100">
-              {seasonsResult.error}
+              {seasonsResult.error ?? resourcesResult.error}
             </p>
           </Card>
         </div>
@@ -121,6 +143,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const gameWithLiveSeasons = {
     ...mergeLiveGameData(game, liveGameResult.game),
+    communityLinks: resourcesResult.resources,
     seasons: seasonsResult.seasons,
     selectedSeason: seasonResult.season ?? getFeaturedSeason(seasonsResult.seasons),
   };
@@ -259,6 +282,44 @@ async function getSupabaseSeasonsForGame(gameId: string) {
   }
 }
 
+async function getSupabaseResourcesForGame(gameId: string) {
+  if (!supabase) {
+    return {
+      error:
+        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
+      resources: [],
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("game_resources")
+      .select("id, game_id, title, label, url, icon, created_at")
+      .eq("game_id", gameId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs));
+
+    if (error) {
+      return {
+        error: error.message,
+        resources: [],
+      };
+    }
+
+    return {
+      error: null,
+      resources: ((data ?? []) as SupabaseResource[]).map(toCommunityLink),
+    };
+  } catch (error) {
+    return {
+      error: getErrorMessage(error),
+      resources: [],
+    };
+  }
+}
+
 async function getSupabaseSeasonBySlug(slug: string) {
   if (!supabase) {
     return {
@@ -295,6 +356,20 @@ async function getSupabaseSeasonBySlug(slug: string) {
   }
 }
 
+function toCommunityLink(resource: SupabaseResource): CommunityLink {
+  return {
+    createdAt: resource.created_at,
+    gameId: resource.game_id,
+    id: resource.id,
+    label: resource.title,
+    sourceUrl: resource.url,
+    type: getCommunityLinkType(resource.icon),
+    typeLabel: resource.label,
+    updatedAt: resource.created_at,
+    url: resource.url,
+  };
+}
+
 function toSeason(season: SupabaseSeason): Season {
   return {
     createdAt: season.created_at,
@@ -308,6 +383,12 @@ function toSeason(season: SupabaseSeason): Season {
     type: "Season",
     updatedAt: season.created_at,
   };
+}
+
+function getCommunityLinkType(icon: string): CommunityLinkType {
+  return communityLinkTypes.includes(icon as CommunityLinkType) ?
+      (icon as CommunityLinkType)
+    : "forum";
 }
 
 function mergeLiveGameData<TGame extends { image: string; title: string }>(
