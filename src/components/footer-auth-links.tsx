@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 
 type FooterAuthLink = {
@@ -20,12 +19,10 @@ export function FooterAuthLinks() {
   useEffect(() => {
     let isMounted = true;
 
-    function getAuthLink(user: Parameters<typeof isAdminUser>[0]) {
-      if (isAdminUser(user)) {
-        return { href: "/admin", label: "Admin" };
-      }
-
-      return user ? null : { href: "/login", label: "Login" };
+    function getAuthLink(isSignedIn: boolean) {
+      return isSignedIn
+        ? { href: "/admin", label: "Admin" }
+        : { href: "/login", label: "Login" };
     }
 
     async function loadAuthLink() {
@@ -36,7 +33,7 @@ export function FooterAuthLinks() {
       const { data } = await supabase.auth.getUser();
 
       if (isMounted) {
-        setAuthLink(getAuthLink(data.user));
+        setAuthLink(getAuthLink(Boolean(data.user)));
       }
     }
 
@@ -44,7 +41,7 @@ export function FooterAuthLinks() {
 
     const { data: listener } =
       supabase?.auth.onAuthStateChange((_event, session) => {
-        setAuthLink(getAuthLink(session?.user ?? null));
+        setAuthLink(getAuthLink(Boolean(session?.user)));
       }) ?? { data: null };
 
     return () => {

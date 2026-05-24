@@ -7,7 +7,6 @@ import { LockKeyhole } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
-import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 
 export function AdminLoginForm() {
@@ -36,7 +35,7 @@ export function AdminLoginForm() {
       }
 
       if (user) {
-        router.replace(isAdminUser(user) ? "/admin" : "/");
+        router.replace("/admin");
         return;
       }
 
@@ -73,7 +72,7 @@ export function AdminLoginForm() {
       return;
     }
 
-    router.replace(isAdminUser(data.user) ? "/admin" : "/");
+    router.replace(data.user ? "/admin" : "/");
     router.refresh();
   }
 
