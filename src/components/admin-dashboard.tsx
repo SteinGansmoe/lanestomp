@@ -87,12 +87,18 @@ const emptySeasonForm: SeasonFormState = {
   slug: "",
   starts_at: "",
 };
+const emptyAdminData: AdminData = {
+  games: [],
+  seasons: [],
+};
+
+let cachedAdminData: AdminData | null = null;
+let cachedAdminUser: User | null = null;
 
 export function AdminDashboard({ section }: { section: AdminSection }) {
-  const [adminData, setAdminData] = useState<AdminData>({
-    games: [],
-    seasons: [],
-  });
+  const [adminData, setAdminData] = useState<AdminData>(
+    () => cachedAdminData ?? emptyAdminData
+  );
   const [createGameForm, setCreateGameForm] =
     useState<GameFormState>(emptyGameForm);
   const [createGameStatus, setCreateGameStatus] = useState<{
@@ -122,8 +128,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     success: string | null;
   }>({ error: null, isLoading: false, success: null });
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
+  const [user, setUser] = useState<User | null>(() => cachedAdminUser);
   const router = useRouter();
   const pageTitle =
     section === "games" ? "Game management"
@@ -162,6 +168,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       window.clearTimeout(redirectTimeoutId);
 
+      cachedAdminUser = sessionUser;
       setUser(sessionUser);
 
       const [gamesResult, seasonsResult] = await Promise.all([
@@ -189,10 +196,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         return;
       }
 
-      setAdminData({
+      const nextAdminData = {
         games: (gamesResult.data ?? []) as AdminGame[],
         seasons: (seasonsResult.data ?? []) as AdminSeason[],
-      });
+      };
+
+      cachedAdminData = nextAdminData;
+      setAdminData(nextAdminData);
       setIsLoading(false);
     }
 
@@ -236,10 +246,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return false;
     }
 
-    setAdminData({
+    const nextAdminData = {
       games: (gamesResult.data ?? []) as AdminGame[],
       seasons: (seasonsResult.data ?? []) as AdminSeason[],
-    });
+    };
+
+    cachedAdminData = nextAdminData;
+    setAdminData(nextAdminData);
     return true;
   }
 
@@ -510,6 +523,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       await supabase.auth.signOut();
     }
 
+    cachedAdminData = null;
+    cachedAdminUser = null;
     router.replace("/login");
     router.refresh();
   }

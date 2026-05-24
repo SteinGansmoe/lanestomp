@@ -25,6 +25,7 @@
 .DS_Store
 *.pem
 IDEAS.md
+IMPROVEMENTS.md
 
 # debug
 npm-debug.log*
