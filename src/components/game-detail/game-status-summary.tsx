@@ -10,12 +10,14 @@ import {
 
 export function GameStatusSummary({
   nextEvent,
+  now,
   season,
 }: {
   nextEvent?: Pick<GameEvent, "startDate" | "title">;
+  now: Date;
   season: Pick<Season, "endDate" | "startDate" | "title">;
 }) {
-  const progress = getSeasonProgress(season.startDate, season.endDate);
+  const progress = getSeasonProgress(season.startDate, season.endDate, now);
 
   const items = [
     {
@@ -28,7 +30,7 @@ export function GameStatusSummary({
     {
       label: "Season progress",
       value: `${progress}%`,
-      detail: `${getRemainingTime(season.endDate)} left`,
+      detail: `${getRemainingTime(season.endDate, now)} left`,
       icon: ShieldCheck,
       iconClassName: "bg-emerald-500/15 text-emerald-300",
       progress,
@@ -43,7 +45,7 @@ export function GameStatusSummary({
     {
       label: "Season ends",
       value: formatSeasonDate(season.endDate),
-      detail: `${getRemainingTime(season.endDate)} left`,
+      detail: `${getRemainingTime(season.endDate, now)} left`,
       icon: CalendarDays,
       iconClassName: "bg-violet-500/15 text-violet-300",
     },

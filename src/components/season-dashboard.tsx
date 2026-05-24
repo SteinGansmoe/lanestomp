@@ -27,10 +27,12 @@ function SeasonSection({
   emptyMessage,
   games,
   title,
+  now,
 }: {
   borderClassName: string;
   emptyMessage: string;
   games: GameSeasonCard[];
+  now: Date;
   title: string;
 }) {
   return (
@@ -49,7 +51,7 @@ function SeasonSection({
       {games.length > 0 ? (
         <div className="space-y-4">
           {games.map((game) => (
-            <GameCard key={game.id} game={game} />
+            <GameCard key={game.id} game={game} now={now} />
           ))}
         </div>
       ) : (
@@ -61,9 +63,16 @@ function SeasonSection({
   );
 }
 
-export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
+export function SeasonDashboard({
+  games,
+  now,
+}: {
+  games: GameSeasonCard[];
+  now: string;
+}) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const currentDate = useMemo(() => new Date(now), [now]);
   const { followedGameIds } = useFollowedGames();
 
   useEffect(() => {
@@ -80,13 +89,13 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
   );
   const dashboardData = useMemo(
     () => ({
-      activeGames: getActiveSeasonCards(filteredGames),
-      endingSoonGames: getEndingSoonSeasonCards(filteredGames),
+      activeGames: getActiveSeasonCards(filteredGames, currentDate),
+      endingSoonGames: getEndingSoonSeasonCards(filteredGames, currentDate),
       followedGames: getFollowedSeasonCards(filteredGames, followedGameIds),
-      startingSoonGames: getStartingSoonSeasonCards(filteredGames),
-      stats: getDashboardStats(filteredGames),
+      startingSoonGames: getStartingSoonSeasonCards(filteredGames, currentDate),
+      stats: getDashboardStats(filteredGames, currentDate),
     }),
-    [filteredGames, followedGameIds]
+    [currentDate, filteredGames, followedGameIds]
   );
 
   const stats = [
@@ -161,6 +170,7 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
           borderClassName="border-sky-400"
           emptyMessage="No followed games yet. Follow games to keep them here."
           games={dashboardData.followedGames}
+          now={currentDate}
           title="My Games"
         />
 
@@ -168,6 +178,7 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
           borderClassName="border-violet-400"
           emptyMessage="No active seasons match your search."
           games={dashboardData.activeGames}
+          now={currentDate}
           title="Active Seasons"
         />
 
@@ -175,6 +186,7 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
           borderClassName="border-emerald-400"
           emptyMessage="No seasons are starting soon."
           games={dashboardData.startingSoonGames}
+          now={currentDate}
           title="Starting Soon"
         />
 
@@ -182,6 +194,7 @@ export function SeasonDashboard({ games }: { games: GameSeasonCard[] }) {
           borderClassName="border-rose-400"
           emptyMessage="No seasons are ending soon."
           games={dashboardData.endingSoonGames}
+          now={currentDate}
           title="Ending Soon"
         />
       </section>

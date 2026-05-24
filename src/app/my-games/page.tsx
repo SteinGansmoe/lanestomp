@@ -3,6 +3,7 @@ import { getGamesWithSeasons } from "@/src/features";
 
 export default function Page() {
   const games = getGamesWithSeasons();
+  const now = new Date().toISOString();
 
-  return <MyGamesPage games={games} />;
+  return <MyGamesPage games={games} now={now} />;
 }

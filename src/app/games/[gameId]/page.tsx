@@ -47,6 +47,7 @@ export function generateStaticParams() {
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
   await connection();
 
+  const now = new Date();
   const { gameId } = await params;
   const seasonResult = await getSupabaseSeasonBySlug(gameId);
   const game =
@@ -161,6 +162,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           />
           <GameStatusSummary
             nextEvent={nextTimelineEvent}
+            now={now}
             season={selectedSeason}
           />
           <GameTimeline events={gameWithLiveSeasons.timelineEvents} />

@@ -33,8 +33,18 @@ function getGameCardBackground(game: GameSeasonCard) {
   return gameCardBackgrounds[game.gameId] ?? game.detailImage ?? game.image;
 }
 
-export function GameCard({ game }: { game: GameSeasonCard }) {
-  const progress = getSeasonProgress(game.season.startDate, game.season.endDate);
+export function GameCard({
+  game,
+  now,
+}: {
+  game: GameSeasonCard;
+  now: Date;
+}) {
+  const progress = getSeasonProgress(
+    game.season.startDate,
+    game.season.endDate,
+    now
+  );
   const startDate = formatSeasonDate(game.season.startDate);
   const endDate = formatSeasonDate(game.season.endDate);
   const backgroundImage = getGameCardBackground(game);
@@ -115,7 +125,7 @@ export function GameCard({ game }: { game: GameSeasonCard }) {
             <span>Ends in</span>
           </div>
           <p className="whitespace-nowrap font-mono text-lg font-bold text-rose-400 sm:text-xl">
-            {getRemainingTime(game.season.endDate)}
+            {getRemainingTime(game.season.endDate, now)}
           </p>
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-full max-w-36 overflow-hidden rounded-full bg-slate-700/70">

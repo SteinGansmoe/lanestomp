@@ -13,9 +13,16 @@ import {
 } from "@/src/features/games/selectors";
 import { useFollowedGames } from "@/src/hooks/use-followed-games";
 
-export function MyGamesPage({ games }: { games: GameSeasonCard[] }) {
+export function MyGamesPage({
+  games,
+  now,
+}: {
+  games: GameSeasonCard[];
+  now: string;
+}) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const currentDate = useMemo(() => new Date(now), [now]);
   const { followedGameIds } = useFollowedGames();
 
   useEffect(() => {
@@ -63,7 +70,7 @@ export function MyGamesPage({ games }: { games: GameSeasonCard[] }) {
             </div>
             <div className="space-y-4">
               {followedGames.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard key={game.id} game={game} now={currentDate} />
               ))}
             </div>
           </section>

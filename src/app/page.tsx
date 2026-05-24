@@ -180,6 +180,7 @@ function getErrorMessage(error: unknown) {
 export default async function Home() {
   await connection();
 
+  const now = new Date().toISOString();
   const [gamesResult, seasonsResult] = await Promise.all([
     getSupabaseGames(),
     getSupabaseSeasons(),
@@ -203,7 +204,7 @@ export default async function Home() {
     seasons: seasonsResult.seasons,
   });
 
-  return <SeasonDashboard games={games} />;
+  return <SeasonDashboard games={games} now={now} />;
 }
 
 function DashboardDataError({ message }: { message: string }) {
