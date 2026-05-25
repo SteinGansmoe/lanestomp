@@ -47,6 +47,7 @@ import type {
   SeasonFormState,
   TimelineEventFormState,
 } from "./types";
+import { SiteHeader } from "@/src/components/site-header";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
 import { supabase } from "@/src/lib/supabase";
@@ -1030,7 +1031,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+        <SiteHeader />
+
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link
             className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
