@@ -218,6 +218,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           <GameDetailHero
             followGameId={selectedSeason.slug}
             game={gameWithLiveSeasons}
+            planningHref={`/games/${selectedSeason.slug}/planning`}
             season={selectedSeason}
           />
           <GameStatusSummary

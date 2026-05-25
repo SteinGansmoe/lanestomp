@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ClipboardCheck,
   ExternalLink,
   Gamepad2,
   Heart,
@@ -16,10 +17,12 @@ import type { Game, Season } from "@/src/features";
 export function GameDetailHero({
   followGameId,
   game,
+  planningHref,
   season,
 }: {
   followGameId: string;
   game: Pick<Game, "description" | "detailImage" | "id" | "image" | "title">;
+  planningHref: string;
   season: Pick<Season, "title" | "type">;
 }) {
   const heroBackgroundImage = game.detailImage
@@ -86,6 +89,11 @@ export function GameDetailHero({
                 className="h-10 rounded-md border-violet-300/20 bg-violet-500/45 px-4 text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500/55"
                 gameId={followGameId}
               />
+              <HeroIconLink
+                href={planningHref}
+                icon={ClipboardCheck}
+                label="Planning board"
+              />
               <HeroIconButton icon={ExternalLink} label="Open official site" />
               <HeroIconButton icon={Gamepad2} label="Game hub" />
               <HeroIconButton icon={Trophy} label="Season rewards" />
@@ -95,6 +103,27 @@ export function GameDetailHero({
         </div>
       </div>
     </section>
+  );
+}
+
+function HeroIconLink({
+  href,
+  icon: Icon,
+  label,
+}: {
+  href: string;
+  icon: typeof Heart;
+  label: string;
+}) {
+  return (
+    <Link
+      aria-label={label}
+      className="flex size-10 shrink-0 items-center justify-center rounded-md border border-emerald-300/20 bg-emerald-500/15 text-emerald-100 transition hover:bg-emerald-500/25 hover:text-white"
+      href={href}
+      title={label}
+    >
+      <Icon className="size-4" aria-hidden="true" />
+    </Link>
   );
 }
 
