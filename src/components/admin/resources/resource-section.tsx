@@ -3,7 +3,8 @@ import { Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
-import { AdminListCard } from "../shared/admin-list-card";
+import { groupAdminItemsByGame } from "../helpers";
+import { AdminGroupedListCard } from "../shared/admin-grouped-list-card";
 import type { AdminGame, AdminResource, FormStatus, ResourceFormState } from "../types";
 import { ResourceForm, ResourceFormCard } from "./resource-form";
 
@@ -40,6 +41,12 @@ export function AdminResourcesSection({
   onStartEdit: (resource: AdminResource) => void;
   resources: AdminResource[];
 }) {
+  const resourceGroups = groupAdminItemsByGame(
+    resources,
+    games,
+    gameNamesById
+  );
+
   return (
     <>
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -80,62 +87,76 @@ export function AdminResourcesSection({
         </Card>
       </div>
 
-      <AdminListCard title="Resources">
-        {resources.map((resource) => (
-          <li
-            className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
-            key={resource.id}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold text-white">{resource.title}</p>
-                <p className="mt-1 text-sm text-zinc-400">
-                  {gameNamesById.get(resource.game_id) ?? resource.game_id}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <span
-                  className={`rounded-md border px-2 py-1 text-xs ${
-                    resource.is_active
-                      ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
-                      : "border-white/10 bg-white/5 text-zinc-400"
-                  }`}
+      <AdminGroupedListCard
+        emptyMessage="No resources found."
+        groups={resourceGroups.map((group) => ({
+          children: (
+            <ul className="space-y-3 p-4">
+              {group.items.map((resource) => (
+                <li
+                  className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
+                  key={resource.id}
                 >
-                  {resource.is_active ? "Active" : "Hidden"}
-                </span>
-                <span className="font-mono text-xs text-zinc-500">
-                  Order {resource.sort_order}
-                </span>
-              </div>
-            </div>
-            <p className="mt-3 font-mono text-xs text-zinc-500">
-              {resource.label} / {resource.icon} - {resource.url}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button
-                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                onClick={() => onStartEdit(resource)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <Pencil className="size-3.5" aria-hidden="true" />
-                Edit
-              </Button>
-              <Button
-                className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
-                onClick={() => onDelete(resource)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <Trash2 className="size-3.5" aria-hidden="true" />
-                Delete
-              </Button>
-            </div>
-          </li>
-        ))}
-      </AdminListCard>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-white">
+                        {resource.title}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {resource.label} / {resource.icon}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span
+                        className={`rounded-md border px-2 py-1 text-xs ${
+                          resource.is_active
+                            ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
+                            : "border-white/10 bg-white/5 text-zinc-400"
+                        }`}
+                      >
+                        {resource.is_active ? "Active" : "Hidden"}
+                      </span>
+                      <span className="font-mono text-xs text-zinc-500">
+                        Order {resource.sort_order}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-3 font-mono text-xs text-zinc-500">
+                    {resource.url}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Button
+                      className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                      onClick={() => onStartEdit(resource)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Pencil className="size-3.5" aria-hidden="true" />
+                      Edit
+                    </Button>
+                    <Button
+                      className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                      onClick={() => onDelete(resource)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Trash2 className="size-3.5" aria-hidden="true" />
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ),
+          count: group.items.length,
+          id: group.gameId,
+          title: group.gameName,
+        }))}
+        storageKey="seasontracker.admin.resources.collapsedGroups"
+        title="Resources"
+      />
     </>
   );
 }
