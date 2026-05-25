@@ -214,29 +214,27 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
-        <div className="flex max-w-6xl flex-col gap-6">
+        <div className="flex w-full max-w-7xl flex-col gap-0">
           <GameDetailHero
             followGameId={selectedSeason.gameId}
             game={gameWithLiveSeasons}
             planningHref={`/games/${selectedSeason.id}/planning`}
             season={selectedSeason}
           />
-          <GameStatusSummary
-            nextEvent={nextTimelineEvent}
-            now={now}
-            season={selectedSeason}
-          />
-          <GameTimeline events={gameWithLiveSeasons.timelineEvents} />
-          <ResourceGroups groups={gameWithLiveSeasons.resourceGroups} />
-          <PopularCreators creators={gameWithLiveSeasons.creators} />
-          <CommunityLinks links={gameWithLiveSeasons.communityLinks} />
-          <RelatedGames games={relatedGames} />
-
-          <Card className="border-white/10 bg-[#10182b]/90 p-5 text-white">
-            <p className="text-sm text-zinc-400">
-              Following this game keeps it visible on your My Games page.
-            </p>
-          </Card>
+          <div className="relative z-10 -mt-44 lg:-mt-48">
+            <GameStatusSummary
+              nextEvent={nextTimelineEvent}
+              now={now}
+              season={selectedSeason}
+            />
+          </div>
+          <div className="relative z-10 mt-6 flex flex-col gap-6">
+            <GameTimeline events={gameWithLiveSeasons.timelineEvents} />
+            <ResourceGroups groups={gameWithLiveSeasons.resourceGroups} />
+            <PopularCreators creators={gameWithLiveSeasons.creators} />
+            <CommunityLinks links={gameWithLiveSeasons.communityLinks} />
+            <RelatedGames games={relatedGames} />
+          </div>
         </div>
       </div>
     </main>

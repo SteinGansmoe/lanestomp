@@ -52,18 +52,18 @@ export function GameStatusSummary({
   ];
 
   return (
-    <Card className="grid gap-0 overflow-hidden border-white/10 bg-[#10182b]/90 p-0 text-white shadow-xl shadow-black/15 md:grid-cols-2 xl:grid-cols-4">
+    <Card className="grid gap-0 overflow-hidden border-white/10 bg-white/[0.045] p-0 text-white shadow-none ring-1 ring-white/5 backdrop-blur-md md:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => {
         const Icon = item.icon;
 
         return (
           <div
-            className="min-w-0 border-white/10 p-5 md:border-l md:first:border-l-0"
+            className="min-w-0 border-white/10 p-5 transition hover:bg-white/[0.035] md:border-l md:first:border-l-0"
             key={item.label}
           >
             <div className="flex items-start gap-4">
               <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-md ${item.iconClassName}`}
+                className={`flex size-10 shrink-0 items-center justify-center rounded-full ${item.iconClassName}`}
               >
                 <Icon className="size-5" aria-hidden="true" />
               </div>
@@ -75,7 +75,7 @@ export function GameStatusSummary({
                 {typeof item.progress === "number" ? (
                   <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-700/70">
                     <div
-                      className="h-full rounded-full bg-linear-to-r from-rose-400 to-pink-500"
+                      className="h-full rounded-full bg-linear-to-r from-rose-400 via-violet-400 to-emerald-300"
                       style={{ width: `${item.progress}%` }}
                     />
                   </div>

@@ -12,7 +12,7 @@ export function DetailSection({
   title: string;
 }) {
   return (
-    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+    <Card className="border-white/10 bg-white/[0.035] text-white shadow-none ring-1 ring-white/5 backdrop-blur-md">
       <CardHeader className="flex-row items-center justify-between gap-4">
         <CardTitle className="font-mono text-xl font-semibold">{title}</CardTitle>
         {action}
@@ -41,7 +41,7 @@ export function DetailActionLink({
 
 export function DetailEmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.03] p-6 text-sm leading-6 text-zinc-400">
+    <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.025] p-6 text-sm leading-6 text-zinc-400">
       {message}
     </div>
   );
