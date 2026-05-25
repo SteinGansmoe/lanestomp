@@ -150,7 +150,7 @@ export function GameCard({
           <ActionIconButton icon={Trophy} label="Season rewards" />
           <FollowGameButton
             className="size-10 rounded-md border-violet-300/10 bg-violet-500/35 p-0 text-white shadow-lg shadow-violet-950/20 hover:bg-violet-500/45"
-            gameId={game.id}
+            gameId={game.gameId}
             iconClassName="size-5"
             showLabel={false}
           />

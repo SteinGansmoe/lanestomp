@@ -26,6 +26,7 @@
 *.pem
 IDEAS.md
 IMPROVEMENTS.md
+TODOS.md
 
 # debug
 npm-debug.log*

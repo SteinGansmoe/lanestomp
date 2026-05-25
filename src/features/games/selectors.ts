@@ -310,7 +310,7 @@ export function getFollowedSeasonCards(
   games: GameSeasonCard[],
   followedGameIds: string[]
 ) {
-  return games.filter((game) => followedGameIds.includes(game.id));
+  return games.filter((game) => followedGameIds.includes(game.gameId));
 }
 
 export function getDashboardStats(
