@@ -23,7 +23,7 @@ import {
 import type { Game } from "@/src/features/games/types";
 
 const navItems = [
-  { href: "/", icon: Home, label: "Dashboard" },
+  { href: "/", icon: Home, label: "Home" },
   { href: "#", icon: CalendarDays, label: "Calendar" },
   { href: "/my-games", icon: Star, label: "My Games" },
   { href: "#", icon: Newspaper, label: "News" },

@@ -31,33 +31,73 @@ export function GameTimeline({ events }: { events: GameEvent[] }) {
 
     return left.startDate.localeCompare(right.startDate);
   });
+  const hasManyEvents = orderedEvents.length > 5;
+  const timelineStyle =
+    hasManyEvents ? undefined : {
+        gridTemplateColumns: `repeat(${orderedEvents.length}, minmax(0, 1fr))`,
+      };
 
   return (
     <DetailSection title="Upcoming timeline">
       {events.length > 0 ? (
-        <div className="grid gap-3">
+        <div
+          className={`relative ${
+            hasManyEvents ?
+              "grid gap-5 md:grid-cols-2 md:gap-x-8"
+            : "grid gap-0 md:gap-4"
+          }`}
+          style={timelineStyle}
+        >
+          <div
+            className="absolute bottom-3 left-[17px] top-3 w-px bg-slate-600/70 md:hidden"
+            aria-hidden="true"
+          />
+          {!hasManyEvents ? (
+            <div
+              className="absolute left-[17px] right-0 top-11 hidden h-px bg-slate-600/70 md:block"
+              aria-hidden="true"
+            />
+          ) : null}
           {orderedEvents.map((event) => {
             const Icon = eventIcons[event.type];
 
             return (
               <article
-                className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-[auto_1fr] sm:items-start"
+                className={`relative grid grid-cols-[auto_1fr] gap-3 pb-7 last:pb-0 ${
+                  hasManyEvents ?
+                    "md:pb-2"
+                  : "md:block md:min-h-36 md:pb-0 md:pr-4"
+                }`}
                 key={event.id}
               >
-                <div className="flex items-center gap-3 sm:block">
+                <div
+                  className={`relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border bg-[#10182b] ${eventStyles[event.type]}`}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                </div>
+                {!hasManyEvents ? (
                   <div
-                    className={`flex size-9 shrink-0 items-center justify-center rounded-full border ${eventStyles[event.type]}`}
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                  </div>
-                  <p className="font-mono text-xs uppercase tracking-normal text-zinc-500 sm:mt-2 sm:text-center">
+                    className="absolute left-[17px] top-9 hidden h-8 w-px bg-slate-600/70 md:block"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <div
+                  className={`min-w-0 ${
+                    hasManyEvents ?
+                      "rounded-lg border border-white/10 bg-white/[0.03] p-3"
+                    : "md:ml-8 md:mt-8 md:pl-3"
+                  }`}
+                >
+                  <p className="font-mono text-xs uppercase tracking-normal text-zinc-500">
                     {formatSeasonDate(event.startDate)}
                   </p>
-                </div>
-                <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-white">{event.title}</h3>
-                    <span className={`rounded-md border px-2 py-1 text-xs ${eventStyles[event.type]}`}>
+                    <h3 className="mt-1 font-semibold text-white">
+                      {event.title}
+                    </h3>
+                    <span
+                      className={`rounded-md border px-2 py-1 text-xs ${eventStyles[event.type]}`}
+                    >
                       {event.type.replace("-", " ")}
                     </span>
                     {event.isFeatured ? (
