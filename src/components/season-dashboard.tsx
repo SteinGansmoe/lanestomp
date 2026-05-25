@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
+  ChevronDown,
   ChevronRight,
   Clock3,
   Flame,
@@ -31,6 +32,7 @@ import { cn } from "@/src/lib/utils";
 import { useFollowedGames } from "@/src/hooks/use-followed-games";
 
 type DashboardFilter = "all" | "active" | "arpg" | "moba" | "followed" | "mmo" | "starting";
+type DashboardSectionId = "active" | "followed" | "starting";
 
 type SeasonSectionConfig = {
   accentClassName: string;
@@ -38,8 +40,11 @@ type SeasonSectionConfig = {
   emptyMessage: string;
   games: GameSeasonCard[];
   icon: typeof CalendarClock;
+  id: DashboardSectionId;
   title: string;
 };
+
+type CollapsedSections = Record<DashboardSectionId, boolean>;
 
 const filterChips: Array<{ label: string; value: DashboardFilter }> = [
   { label: "All", value: "all" },
@@ -50,6 +55,12 @@ const filterChips: Array<{ label: string; value: DashboardFilter }> = [
   { label: "ARPG", value: "arpg" },
   { label: "MOBA", value: "moba" },
 ];
+const collapsedSectionsStorageKey = "seasontracker.dashboardCollapsedSections";
+const defaultCollapsedSections: CollapsedSections = {
+  active: false,
+  followed: false,
+  starting: false,
+};
 
 function getInitials(title: string) {
   return title
@@ -177,18 +188,30 @@ function FilterChips({
 
 function SeasonSection({
   accentClassName,
+  collapsed,
   description,
   emptyMessage,
   games,
   icon: Icon,
+  id,
   now,
+  onToggle,
   title,
 }: SeasonSectionConfig & {
+  collapsed: boolean;
   now: Date;
+  onToggle: () => void;
 }) {
+  const contentId = `dashboard-section-${id}`;
+
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/80 shadow-xl shadow-black/20 ring-1 ring-white/5">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-4 sm:px-5">
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-3 px-4 py-4 transition-colors sm:px-5",
+          collapsed ? "" : "border-b border-white/10"
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3">
           <div
             className={cn(
@@ -205,20 +228,52 @@ function SeasonSection({
             <p className="mt-0.5 text-sm text-zinc-400">{description}</p>
           </div>
         </div>
-        <Badge className="border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
-          {games.length}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge className="border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
+            {games.length}
+          </Badge>
+          <button
+            aria-controls={contentId}
+            aria-expanded={!collapsed}
+            aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
+            className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+            onClick={onToggle}
+            type="button"
+          >
+            <ChevronDown
+              className={cn(
+                "size-4 transition-transform duration-200",
+                collapsed ? "-rotate-90" : "rotate-0"
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </div>
 
-      {games.length > 0 ? (
-        <ul className="divide-y divide-white/10">
-          {games.map((game) => (
-            <SeasonRow game={game} key={game.id} now={now} />
-          ))}
-        </ul>
-      ) : (
-        <div className="p-5 text-sm text-zinc-400">{emptyMessage}</div>
-      )}
+      <div
+        aria-hidden={collapsed}
+        className={cn(
+          "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+          collapsed
+            ? "pointer-events-none grid-rows-[0fr] opacity-0"
+            : "grid-rows-[1fr] opacity-100"
+        )}
+        id={contentId}
+        inert={collapsed ? true : undefined}
+      >
+        <div className="overflow-hidden">
+          {games.length > 0 ? (
+            <ul className="divide-y divide-white/10">
+              {games.map((game) => (
+                <SeasonRow game={game} key={game.id} now={now} />
+              ))}
+            </ul>
+          ) : (
+            <div className="p-5 text-sm text-zinc-400">{emptyMessage}</div>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -311,8 +366,43 @@ export function SeasonDashboard({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<DashboardFilter>("all");
+  const [collapsedSections, setCollapsedSections] = useState<CollapsedSections>(
+    defaultCollapsedSections
+  );
   const currentDate = useMemo(() => new Date(now), [now]);
   const { followedGameIds } = useFollowedGames();
+
+  useEffect(() => {
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const storedValue = window.localStorage.getItem(
+        collapsedSectionsStorageKey
+      );
+
+      if (!storedValue) {
+        return;
+      }
+
+      try {
+        const parsedValue: unknown = JSON.parse(storedValue);
+
+        if (!parsedValue || typeof parsedValue !== "object") {
+          return;
+        }
+
+        const savedSections = parsedValue as Partial<CollapsedSections>;
+
+        setCollapsedSections({
+          active: Boolean(savedSections.active),
+          followed: Boolean(savedSections.followed),
+          starting: Boolean(savedSections.starting),
+        });
+      } catch {
+        window.localStorage.removeItem(collapsedSectionsStorageKey);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -372,6 +462,23 @@ export function SeasonDashboard({
       className: "bg-rose-500/20 text-rose-200",
     },
   ];
+
+  function toggleSection(sectionId: DashboardSectionId) {
+    setCollapsedSections((currentSections) => {
+      const nextSections = {
+        ...currentSections,
+        [sectionId]: !currentSections[sectionId],
+      };
+
+      window.localStorage.setItem(
+        collapsedSectionsStorageKey,
+        JSON.stringify(nextSections)
+      );
+
+      return nextSections;
+    });
+  }
+
   const sections = getVisibleSections(
     [
       {
@@ -380,6 +487,7 @@ export function SeasonDashboard({
         emptyMessage: "No active seasons match the current filters.",
         games: dashboardData.activeGames,
         icon: Flame,
+        id: "active",
         title: "Active Seasons",
       },
       {
@@ -388,6 +496,7 @@ export function SeasonDashboard({
         emptyMessage: "No seasons are starting soon.",
         games: dashboardData.startingSoonGames,
         icon: Hourglass,
+        id: "starting",
         title: "Starting Soon",
       },
       {
@@ -396,6 +505,7 @@ export function SeasonDashboard({
         emptyMessage: "No followed games yet. Follow games to keep them here.",
         games: dashboardData.followedGames,
         icon: Layers3,
+        id: "followed",
         title: "Followed Games",
       },
     ],
@@ -440,7 +550,13 @@ export function SeasonDashboard({
 
         <div className="grid gap-5">
           {sections.map((section) => (
-            <SeasonSection key={section.title} now={currentDate} {...section} />
+            <SeasonSection
+              collapsed={collapsedSections[section.id]}
+              key={section.id}
+              now={currentDate}
+              onToggle={() => toggleSection(section.id)}
+              {...section}
+            />
           ))}
         </div>
       </section>
