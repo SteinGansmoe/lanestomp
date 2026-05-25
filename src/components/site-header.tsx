@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 
+import { AuthenticatedTopbar } from "@/src/components/authenticated-topbar";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import {
@@ -24,9 +25,9 @@ import type { Game } from "@/src/features/games/types";
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "#", icon: CalendarDays, label: "Calendar" },
+  { href: "#", icon: CalendarDays, label: "Calendar *coming soon*" },
   { href: "/my-games", icon: Star, label: "My Games" },
-  { href: "#", icon: Newspaper, label: "News" },
+  { href: "#", icon: Newspaper, label: "News *coming soon*" },
 ];
 
 type SiteHeaderProps = {
@@ -63,19 +64,22 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
       <header className="border-b border-white/10 pb-5 lg:hidden">
         <div className="flex items-center justify-between gap-4">
           <BrandLink />
-          <Button
-            aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={isMenuOpen}
-            className="size-10 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-            onClick={() => setIsMenuOpen((current) => !current)}
-            variant="ghost"
-          >
-            {isMenuOpen ? (
-              <X className="size-5" aria-hidden="true" />
-            ) : (
-              <Menu className="size-5" aria-hidden="true" />
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <AuthenticatedTopbar compact />
+            <Button
+              aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={isMenuOpen}
+              className="size-10 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              onClick={() => setIsMenuOpen((current) => !current)}
+              variant="ghost"
+            >
+              {isMenuOpen ? (
+                <X className="size-5" aria-hidden="true" />
+              ) : (
+                <Menu className="size-5" aria-hidden="true" />
+              )}
+            </Button>
+          </div>
         </div>
 
         <SearchInput
@@ -114,6 +118,18 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
         />
         <NavigationLinks className="mt-8" pathname={pathname} />
       </aside>
+
+      <header className="hidden items-center justify-between gap-4 border-b border-white/10 pb-5 lg:flex">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
+            SeasonTracker
+          </p>
+          <p className="mt-1 text-sm text-zinc-400">
+            Track seasons, events, and followed games.
+          </p>
+        </div>
+        <AuthenticatedTopbar />
+      </header>
     </>
   );
 }
