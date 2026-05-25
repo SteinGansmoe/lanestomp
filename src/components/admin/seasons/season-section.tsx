@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -19,6 +19,7 @@ export function AdminSeasonsSection({
   onCancelEdit,
   onCreateChange,
   onCreateSubmit,
+  onDelete,
   onEditChange,
   onEditSubmit,
   onStartEdit,
@@ -34,6 +35,7 @@ export function AdminSeasonsSection({
   onCancelEdit: () => void;
   onCreateChange: (form: SeasonFormState) => void;
   onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete: (season: AdminSeason) => void;
   onEditChange: (form: SeasonFormState) => void;
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onStartEdit: (season: AdminSeason) => void;
@@ -72,6 +74,11 @@ export function AdminSeasonsSection({
             ) : (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
                 Select a season below to edit its schedule details.
+                {editStatus.error ? (
+                  <p className="mt-3 rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-rose-100">
+                    {editStatus.error}
+                  </p>
+                ) : null}
                 {editStatus.success ? (
                   <p className="mt-3 text-emerald-200">{editStatus.success}</p>
                 ) : null}
@@ -103,16 +110,28 @@ export function AdminSeasonsSection({
                       {formatDate(season.ends_at)}
                     </p>
                   </div>
-                  <Button
-                    className="mt-4 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                    onClick={() => onStartEdit(season)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Pencil className="size-3.5" aria-hidden="true" />
-                    Edit
-                  </Button>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Button
+                      className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                      onClick={() => onStartEdit(season)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Pencil className="size-3.5" aria-hidden="true" />
+                      Edit
+                    </Button>
+                    <Button
+                      className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                      onClick={() => onDelete(season)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Trash2 className="size-3.5" aria-hidden="true" />
+                      Delete
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>

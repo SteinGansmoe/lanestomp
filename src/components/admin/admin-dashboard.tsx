@@ -980,6 +980,43 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  async function handleDeleteSeason(season: AdminSeason) {
+    if (
+      !supabase ||
+      !window.confirm(`Delete "${season.name}" from seasons?`)
+    ) {
+      return;
+    }
+
+    setEditStatus({ error: null, isLoading: true, success: null });
+
+    const { error: deleteError } = await supabase
+      .from("seasons")
+      .delete()
+      .eq("id", season.id);
+
+    if (deleteError) {
+      setEditStatus({
+        error: deleteError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (editingSeasonId === season.id) {
+      setEditingSeasonId(null);
+      setEditForm(emptySeasonForm);
+    }
+
+    await reloadAdminData();
+    setEditStatus({
+      error: null,
+      isLoading: false,
+      success: "Season deleted.",
+    });
+  }
+
   async function handleSignOut() {
     if (supabase) {
       await supabase.auth.signOut();
@@ -1130,6 +1167,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onCancelEdit={stopEditingSeason}
                     onCreateChange={setCreateForm}
                     onCreateSubmit={handleCreateSeason}
+                    onDelete={handleDeleteSeason}
                     onEditChange={setEditForm}
                     onEditSubmit={handleUpdateSeason}
                     onStartEdit={startEditingSeason}

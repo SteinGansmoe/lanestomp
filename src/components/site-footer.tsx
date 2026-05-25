@@ -14,7 +14,7 @@ import {
 import { FooterAuthLinks } from "@/src/components/footer-auth-links";
 
 const navigationLinks = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", label: "Home" },
   { href: "#", label: "Calendar" },
   { href: "/my-games", label: "My Games" },
   { href: "#", label: "News" },
