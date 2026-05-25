@@ -21,6 +21,8 @@ import {
   getSeasonCardStaticParams,
   type CommunityLink,
   type CommunityLinkType,
+  type EventType,
+  type GameEvent,
   type Season,
 } from "@/src/features";
 import { supabase } from "@/src/lib/supabase";
@@ -59,6 +61,18 @@ type SupabaseResource = {
   url: string;
 };
 
+type SupabaseTimelineEvent = {
+  created_at: string;
+  description: string | null;
+  event_date: string;
+  event_type: string;
+  game_id: string;
+  id: string;
+  is_pinned: boolean;
+  season_id: string | null;
+  title: string;
+};
+
 const supabaseFetchTimeoutMs = 8_000;
 const communityLinkTypes = [
   "discord",
@@ -67,6 +81,12 @@ const communityLinkTypes = [
   "social",
   "video",
 ] satisfies CommunityLinkType[];
+const eventTypes = [
+  "event",
+  "patch",
+  "season-end",
+  "season-start",
+] satisfies EventType[];
 
 export function generateStaticParams() {
   return getSeasonCardStaticParams();
@@ -107,13 +127,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     );
   }
 
-  const [seasonsResult, liveGameResult, resourcesResult] = await Promise.all([
-    getSupabaseSeasonsForGame(game.id),
-    getSupabaseGameById(game.id),
-    getSupabaseResourcesForGame(game.id),
-  ]);
+  const [seasonsResult, liveGameResult, resourcesResult, timelineResult] =
+    await Promise.all([
+      getSupabaseSeasonsForGame(game.id),
+      getSupabaseGameById(game.id),
+      getSupabaseResourcesForGame(game.id),
+      getSupabaseTimelineEventsForGame(game.id),
+    ]);
 
-  if (seasonsResult.error || resourcesResult.error) {
+  if (seasonsResult.error || resourcesResult.error || timelineResult.error) {
     return (
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
@@ -133,7 +155,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               Season Tracker could not fetch this game detail content from Supabase right now.
             </p>
             <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-rose-100">
-              {seasonsResult.error ?? resourcesResult.error}
+              {seasonsResult.error ??
+                resourcesResult.error ??
+                timelineResult.error}
             </p>
           </Card>
         </div>
@@ -145,6 +169,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     ...mergeLiveGameData(game, liveGameResult.game),
     communityLinks: resourcesResult.resources,
     seasons: seasonsResult.seasons,
+    timelineEvents: timelineResult.events,
     selectedSeason: seasonResult.season ?? getFeaturedSeason(seasonsResult.seasons),
   };
   const selectedSeason = gameWithLiveSeasons.selectedSeason;
@@ -174,7 +199,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     );
   }
 
-  const nextTimelineEvent = getNextTimelineEvent(game.timelineEvents);
+  const nextTimelineEvent = getNextTimelineEvent(
+    gameWithLiveSeasons.timelineEvents
+  );
   const relatedGames: RelatedGameCard[] = gameWithLiveSeasons.relatedGames.map(
     (relatedGame) => ({
       ...relatedGame,
@@ -320,6 +347,53 @@ async function getSupabaseResourcesForGame(gameId: string) {
   }
 }
 
+async function getSupabaseTimelineEventsForGame(gameId: string) {
+  if (!supabase) {
+    return {
+      error:
+        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
+      events: [],
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("timeline_events")
+      .select(
+        "id, game_id, season_id, title, description, event_date, event_type, is_pinned, created_at"
+      )
+      .eq("game_id", gameId)
+      .order("is_pinned", { ascending: false })
+      .order("event_date", { ascending: true })
+      .order("created_at", { ascending: true })
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs));
+
+    if (isMissingTimelineEventsTableError(error)) {
+      return {
+        error: null,
+        events: [],
+      };
+    }
+
+    if (error) {
+      return {
+        error: error.message,
+        events: [],
+      };
+    }
+
+    return {
+      error: null,
+      events: ((data ?? []) as SupabaseTimelineEvent[]).map(toTimelineEvent),
+    };
+  } catch (error) {
+    return {
+      error: getErrorMessage(error),
+      events: [],
+    };
+  }
+}
+
 async function getSupabaseSeasonBySlug(slug: string) {
   if (!supabase) {
     return {
@@ -385,10 +459,29 @@ function toSeason(season: SupabaseSeason): Season {
   };
 }
 
+function toTimelineEvent(event: SupabaseTimelineEvent): GameEvent {
+  return {
+    createdAt: event.created_at,
+    description: event.description ?? undefined,
+    gameId: event.game_id,
+    id: event.id,
+    isFeatured: event.is_pinned,
+    seasonId: event.season_id ?? undefined,
+    startDate: toDateOnly(event.event_date),
+    title: event.title,
+    type: getEventType(event.event_type),
+    updatedAt: event.created_at,
+  };
+}
+
 function getCommunityLinkType(icon: string): CommunityLinkType {
   return communityLinkTypes.includes(icon as CommunityLinkType) ?
       (icon as CommunityLinkType)
     : "forum";
+}
+
+function getEventType(type: string): EventType {
+  return eventTypes.includes(type as EventType) ? (type as EventType) : "event";
 }
 
 function mergeLiveGameData<TGame extends { image: string; title: string }>(
@@ -454,6 +547,18 @@ function getErrorMessage(error: unknown) {
   }
 
   return "Unknown Supabase error.";
+}
+
+function isMissingTimelineEventsTableError(
+  error: { code?: string; message?: string } | null
+) {
+  return (
+    error?.code === "PGRST205" ||
+    Boolean(
+      error?.message?.includes("timeline_events") &&
+        error.message.includes("schema cache")
+    )
+  );
 }
 
 function getNextTimelineEvent(events: { startDate: string; title: string }[]) {

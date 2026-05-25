@@ -1,7 +1,6 @@
-import { ArrowRight, CalendarClock, CircleDot, Gift, Sparkles } from "lucide-react";
+import { CalendarClock, CircleDot, Gift, Pin, Sparkles } from "lucide-react";
 
 import {
-  DetailActionLink,
   DetailEmptyState,
   DetailSection,
 } from "@/src/components/game-detail/shared";
@@ -23,45 +22,51 @@ const eventIcons = {
 };
 
 export function GameTimeline({ events }: { events: GameEvent[] }) {
+  const orderedEvents = [...events].sort((left, right) => {
+    const pinnedOrder = Number(right.isFeatured) - Number(left.isFeatured);
+
+    if (pinnedOrder !== 0) {
+      return pinnedOrder;
+    }
+
+    return left.startDate.localeCompare(right.startDate);
+  });
+
   return (
-    <DetailSection
-      action={
-        <DetailActionLink href="#">
-          View full calendar
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </DetailActionLink>
-      }
-      title="Upcoming timeline"
-    >
+    <DetailSection title="Upcoming timeline">
       {events.length > 0 ? (
-        <div className="relative flex flex-col gap-0 md:grid md:grid-cols-4 md:gap-0">
-          <div
-            className="absolute left-0 right-0 top-4 hidden h-1 rounded-full bg-slate-600/70 md:block"
-            aria-hidden="true"
-          />
-          {events.map((event) => {
+        <div className="grid gap-3">
+          {orderedEvents.map((event) => {
             const Icon = eventIcons[event.type];
 
             return (
-              <article className="relative pb-10 md:min-h-36 md:pb-0 md:pr-8" key={event.id}>
-                <div className="absolute left-0 top-0 z-10 flex size-9 items-center justify-center rounded-full bg-[#10182b] md:static">
+              <article
+                className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-[auto_1fr] sm:items-start"
+                key={event.id}
+              >
+                <div className="flex items-center gap-3 sm:block">
                   <div
-                    className={`flex size-9 items-center justify-center rounded-full border ${eventStyles[event.type]}`}
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full border ${eventStyles[event.type]}`}
                   >
                     <Icon className="size-4" aria-hidden="true" />
                   </div>
-                </div>
-                <div
-                  className="absolute bottom-0 left-[17px] top-10 w-px bg-slate-600/70 md:block"
-                  aria-hidden="true"
-                />
-                <div className="ml-14 rounded-lg border border-white/10 bg-white/[0.03] p-4 md:ml-8 md:mt-7 md:border-0 md:bg-transparent md:p-0">
-                  <p className="text-sm text-zinc-400">
+                  <p className="font-mono text-xs uppercase tracking-normal text-zinc-500 sm:mt-2 sm:text-center">
                     {formatSeasonDate(event.startDate)}
                   </p>
-                  <h3 className="mt-2 font-semibold text-white">
-                    {event.title}
-                  </h3>
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-white">{event.title}</h3>
+                    <span className={`rounded-md border px-2 py-1 text-xs ${eventStyles[event.type]}`}>
+                      {event.type.replace("-", " ")}
+                    </span>
+                    {event.isFeatured ? (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-100">
+                        <Pin className="size-3" aria-hidden="true" />
+                        Pinned
+                      </span>
+                    ) : null}
+                  </div>
                   {event.description ? (
                     <p className="mt-2 text-sm leading-5 text-zinc-400">
                       {event.description}

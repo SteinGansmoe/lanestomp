@@ -52,6 +52,26 @@ export function isMissingGameResourcesTableError(
   );
 }
 
+export function isMissingTimelineEventsTableError(
+  error: { code?: string; message?: string } | null
+) {
+  return (
+    error?.code === "PGRST205" ||
+    Boolean(
+      error?.message?.includes("timeline_events") &&
+        error.message.includes("schema cache")
+    )
+  );
+}
+
+export function toSlug(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function formatDate(value: string) {
   return value.slice(0, 10);
 }

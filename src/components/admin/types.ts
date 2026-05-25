@@ -28,13 +28,25 @@ export type AdminResource = {
   url: string;
 };
 
+export type AdminTimelineEvent = {
+  description: string | null;
+  event_date: string;
+  event_type: string;
+  game_id: string;
+  id: string;
+  is_pinned: boolean;
+  season_id: string | null;
+  title: string;
+};
+
 export type AdminData = {
   games: AdminGame[];
   resources: AdminResource[];
   seasons: AdminSeason[];
+  timelineEvents: AdminTimelineEvent[];
 };
 
-export type AdminSection = "games" | "overview" | "resources" | "seasons";
+export type AdminSection = "games" | "overview" | "resources" | "seasons" | "timeline";
 
 export type ResourceFormState = {
   game_id: string;
@@ -62,6 +74,16 @@ export type SeasonFormState = {
   name: string;
   slug: string;
   starts_at: string;
+};
+
+export type TimelineEventFormState = {
+  description: string;
+  event_date: string;
+  event_type: string;
+  game_id: string;
+  is_pinned: boolean;
+  season_id: string;
+  title: string;
 };
 
 export type FormStatus = {

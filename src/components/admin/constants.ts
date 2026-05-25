@@ -1,4 +1,10 @@
-import type { AdminData, GameFormState, ResourceFormState, SeasonFormState } from "./types";
+import type {
+  AdminData,
+  GameFormState,
+  ResourceFormState,
+  SeasonFormState,
+  TimelineEventFormState,
+} from "./types";
 
 export const sessionCheckTimeoutMs = 2_000;
 
@@ -30,14 +36,27 @@ export const emptyResourceForm: ResourceFormState = {
   url: "",
 };
 
+export const emptyTimelineEventForm: TimelineEventFormState = {
+  description: "",
+  event_date: "",
+  event_type: "event",
+  game_id: "",
+  is_pinned: false,
+  season_id: "",
+  title: "",
+};
+
 export const emptyAdminData: AdminData = {
   games: [],
   resources: [],
   seasons: [],
+  timelineEvents: [],
 };
 
 export const missingResourcesTableMessage =
   "Community resources are not set up in Supabase yet. Apply the game_resources migration to enable the Resources admin page.";
+export const missingTimelineEventsTableMessage =
+  "Timeline events are not set up in Supabase yet. Apply the timeline_events migration to enable the Timeline admin page.";
 
 export const fieldClassName =
   "w-full rounded-lg border border-white/10 bg-[#111a2c] px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50";

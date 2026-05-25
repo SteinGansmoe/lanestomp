@@ -19,26 +19,33 @@ import {
   emptyGameForm,
   emptyResourceForm,
   emptySeasonForm,
+  emptyTimelineEventForm,
   missingResourcesTableMessage,
+  missingTimelineEventsTableMessage,
   sessionCheckTimeoutMs,
 } from "./constants";
 import {
   isMissingGameResourcesTableError,
+  isMissingTimelineEventsTableError,
   toDateTimeLocalValue,
   toIsoDateTime,
+  toSlug,
 } from "./helpers";
 import { AdminGamesSection } from "./games/game-section";
 import { AdminResourcesSection } from "./resources/resource-section";
 import { AdminSeasonsSection } from "./seasons/season-section";
+import { AdminTimelineSection } from "./timeline/timeline-section";
 import type {
   AdminData,
   AdminGame,
   AdminResource,
   AdminSeason,
   AdminSection,
+  AdminTimelineEvent,
   GameFormState,
   ResourceFormState,
   SeasonFormState,
+  TimelineEventFormState,
 } from "./types";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
@@ -98,9 +105,29 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     isLoading: boolean;
     success: string | null;
   }>({ error: null, isLoading: false, success: null });
+  const [createTimelineForm, setCreateTimelineForm] =
+    useState<TimelineEventFormState>(emptyTimelineEventForm);
+  const [createTimelineStatus, setCreateTimelineStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [editTimelineForm, setEditTimelineForm] =
+    useState<TimelineEventFormState>(emptyTimelineEventForm);
+  const [editingTimelineEventId, setEditingTimelineEventId] = useState<
+    string | null
+  >(null);
+  const [editTimelineStatus, setEditTimelineStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
   const [resourcesSetupMessage, setResourcesSetupMessage] = useState<
+    string | null
+  >(null);
+  const [timelineSetupMessage, setTimelineSetupMessage] = useState<
     string | null
   >(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
@@ -109,6 +136,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     section === "games" ? "Game management"
     : section === "resources" ? "Resource management"
     : section === "seasons" ? "Season management"
+    : section === "timeline" ? "Timeline management"
     : "Admin dashboard";
 
   useEffect(() => {
@@ -146,24 +174,34 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       cachedAdminUser = sessionUser;
       setUser(sessionUser);
 
-      const [gamesResult, resourcesResult, seasonsResult] = await Promise.all([
-        supabase
-          .from("games")
-          .select("id, name, slug, description, icon_url, created_at")
-          .order("name", { ascending: true }),
-        supabase
-          .from("game_resources")
-          .select(
-            "id, game_id, title, label, url, icon, sort_order, is_active"
-          )
-          .order("game_id", { ascending: true })
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("seasons")
-          .select("id, game_id, name, slug, starts_at, ends_at, description")
-          .order("starts_at", { ascending: true }),
-      ]);
+      const [gamesResult, resourcesResult, seasonsResult, timelineResult] =
+        await Promise.all([
+          supabase
+            .from("games")
+            .select("id, name, slug, description, icon_url, created_at")
+            .order("name", { ascending: true }),
+          supabase
+            .from("game_resources")
+            .select(
+              "id, game_id, title, label, url, icon, sort_order, is_active"
+            )
+            .order("game_id", { ascending: true })
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("seasons")
+            .select("id, game_id, name, slug, starts_at, ends_at, description")
+            .order("starts_at", { ascending: true }),
+          supabase
+            .from("timeline_events")
+            .select(
+              "id, game_id, season_id, title, description, event_date, event_type, is_pinned"
+            )
+            .order("game_id", { ascending: true })
+            .order("is_pinned", { ascending: false })
+            .order("event_date", { ascending: true })
+            .order("created_at", { ascending: true }),
+        ]);
 
       if (!isMounted) {
         return;
@@ -172,16 +210,21 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       const isMissingResourcesTable = isMissingGameResourcesTableError(
         resourcesResult.error
       );
+      const isMissingTimelineTable = isMissingTimelineEventsTableError(
+        timelineResult.error
+      );
 
       if (
         gamesResult.error ||
         seasonsResult.error ||
-        (resourcesResult.error && !isMissingResourcesTable)
+        (resourcesResult.error && !isMissingResourcesTable) ||
+        (timelineResult.error && !isMissingTimelineTable)
       ) {
         setError(
           gamesResult.error?.message ??
             seasonsResult.error?.message ??
-            resourcesResult.error?.message ??
+            (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
+            (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
             "Could not load admin data."
         );
         setIsLoading(false);
@@ -191,6 +234,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setResourcesSetupMessage(
         isMissingResourcesTable ? missingResourcesTableMessage : null
       );
+      setTimelineSetupMessage(
+        isMissingTimelineTable ? missingTimelineEventsTableMessage : null
+      );
 
       const nextAdminData = {
         games: (gamesResult.data ?? []) as AdminGame[],
@@ -198,6 +244,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           ? []
           : ((resourcesResult.data ?? []) as AdminResource[]),
         seasons: (seasonsResult.data ?? []) as AdminSeason[],
+        timelineEvents: isMissingTimelineTable
+          ? []
+          : ((timelineResult.data ?? []) as AdminTimelineEvent[]),
       };
 
       cachedAdminData = nextAdminData;
@@ -225,38 +274,51 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return false;
     }
 
-    const [gamesResult, resourcesResult, seasonsResult] = await Promise.all([
-      supabase
-        .from("games")
-        .select("id, name, slug, description, icon_url, created_at")
-        .order("name", { ascending: true }),
-      supabase
-        .from("game_resources")
-        .select(
-          "id, game_id, title, label, url, icon, sort_order, is_active"
-        )
-        .order("game_id", { ascending: true })
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("seasons")
-        .select("id, game_id, name, slug, starts_at, ends_at, description")
-        .order("starts_at", { ascending: true }),
-    ]);
+    const [gamesResult, resourcesResult, seasonsResult, timelineResult] =
+      await Promise.all([
+        supabase
+          .from("games")
+          .select("id, name, slug, description, icon_url, created_at")
+          .order("name", { ascending: true }),
+        supabase
+          .from("game_resources")
+          .select("id, game_id, title, label, url, icon, sort_order, is_active")
+          .order("game_id", { ascending: true })
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("seasons")
+          .select("id, game_id, name, slug, starts_at, ends_at, description")
+          .order("starts_at", { ascending: true }),
+        supabase
+          .from("timeline_events")
+          .select(
+            "id, game_id, season_id, title, description, event_date, event_type, is_pinned"
+          )
+          .order("game_id", { ascending: true })
+          .order("is_pinned", { ascending: false })
+          .order("event_date", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
 
     const isMissingResourcesTable = isMissingGameResourcesTableError(
       resourcesResult.error
+    );
+    const isMissingTimelineTable = isMissingTimelineEventsTableError(
+      timelineResult.error
     );
 
     if (
       gamesResult.error ||
       seasonsResult.error ||
-      (resourcesResult.error && !isMissingResourcesTable)
+      (resourcesResult.error && !isMissingResourcesTable) ||
+      (timelineResult.error && !isMissingTimelineTable)
     ) {
       setError(
         gamesResult.error?.message ??
           seasonsResult.error?.message ??
-          resourcesResult.error?.message ??
+          (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
+          (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
           "Could not load admin data."
       );
       return false;
@@ -265,6 +327,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setResourcesSetupMessage(
       isMissingResourcesTable ? missingResourcesTableMessage : null
     );
+    setTimelineSetupMessage(
+      isMissingTimelineTable ? missingTimelineEventsTableMessage : null
+    );
 
     const nextAdminData = {
       games: (gamesResult.data ?? []) as AdminGame[],
@@ -272,6 +337,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         ? []
         : ((resourcesResult.data ?? []) as AdminResource[]),
       seasons: (seasonsResult.data ?? []) as AdminSeason[],
+      timelineEvents: isMissingTimelineTable
+        ? []
+        : ((timelineResult.data ?? []) as AdminTimelineEvent[]),
     };
 
     cachedAdminData = nextAdminData;
@@ -467,6 +535,186 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       error: null,
       isLoading: false,
       success: "Resource deleted.",
+    });
+  }
+
+  function getTimelineFormError(form: TimelineEventFormState) {
+    if (!form.game_id || !form.title.trim() || !form.event_date) {
+      return "Game, title, and event date are required.";
+    }
+
+    return null;
+  }
+
+  function getTimelineEventPayload(form: TimelineEventFormState) {
+    return {
+      description: form.description.trim() || null,
+      event_date: toIsoDateTime(form.event_date),
+      event_type: form.event_type,
+      game_id: form.game_id,
+      is_pinned: form.is_pinned,
+      season_id: form.season_id || null,
+      title: form.title.trim(),
+    };
+  }
+
+  function getTimelineEventId(form: TimelineEventFormState) {
+    const datePart = form.event_date.slice(0, 10) || "event";
+    const titlePart = toSlug(form.title) || "event";
+
+    return `${form.game_id}-${datePart}-${titlePart}`;
+  }
+
+  async function handleCreateTimelineEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateTimelineStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getTimelineFormError(createTimelineForm);
+
+    if (validationError) {
+      setCreateTimelineStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateTimelineStatus({ error: null, isLoading: true, success: null });
+
+    const { error: createError } = await supabase
+      .from("timeline_events")
+      .insert({
+        id: getTimelineEventId(createTimelineForm),
+        ...getTimelineEventPayload(createTimelineForm),
+      });
+
+    if (createError) {
+      setCreateTimelineStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateTimelineForm({
+      ...emptyTimelineEventForm,
+      game_id: createTimelineForm.game_id,
+    });
+    setCreateTimelineStatus({
+      error: null,
+      isLoading: false,
+      success: "Timeline event created.",
+    });
+  }
+
+  function startEditingTimelineEvent(event: AdminTimelineEvent) {
+    setEditingTimelineEventId(event.id);
+    setEditTimelineStatus({ error: null, isLoading: false, success: null });
+    setEditTimelineForm({
+      description: event.description ?? "",
+      event_date: toDateTimeLocalValue(event.event_date),
+      event_type: event.event_type,
+      game_id: event.game_id,
+      is_pinned: event.is_pinned,
+      season_id: event.season_id ?? "",
+      title: event.title,
+    });
+  }
+
+  function stopEditingTimelineEvent() {
+    setEditingTimelineEventId(null);
+    setEditTimelineForm(emptyTimelineEventForm);
+    setEditTimelineStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateTimelineEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingTimelineEventId) {
+      return;
+    }
+
+    const validationError = getTimelineFormError(editTimelineForm);
+
+    if (validationError) {
+      setEditTimelineStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditTimelineStatus({ error: null, isLoading: true, success: null });
+
+    const { error: updateError } = await supabase
+      .from("timeline_events")
+      .update(getTimelineEventPayload(editTimelineForm))
+      .eq("id", editingTimelineEventId);
+
+    if (updateError) {
+      setEditTimelineStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingTimelineEventId(null);
+    setEditTimelineStatus({
+      error: null,
+      isLoading: false,
+      success: "Timeline event updated.",
+    });
+  }
+
+  async function handleDeleteTimelineEvent(event: AdminTimelineEvent) {
+    if (
+      !supabase ||
+      !window.confirm(`Delete "${event.title}" from timeline events?`)
+    ) {
+      return;
+    }
+
+    setEditTimelineStatus({ error: null, isLoading: true, success: null });
+
+    const { error: deleteError } = await supabase
+      .from("timeline_events")
+      .delete()
+      .eq("id", event.id);
+
+    if (deleteError) {
+      setEditTimelineStatus({
+        error: deleteError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (editingTimelineEventId === event.id) {
+      setEditingTimelineEventId(null);
+      setEditTimelineForm(emptyTimelineEventForm);
+    }
+
+    await reloadAdminData();
+    setEditTimelineStatus({
+      error: null,
+      isLoading: false,
+      success: "Timeline event deleted.",
     });
   }
 
@@ -804,6 +1052,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               </Card>
             ) : null}
 
+            {timelineSetupMessage ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
+                {timelineSetupMessage}
+              </Card>
+            ) : null}
+
             <ViewTransition
               key={section}
               name="admin-section-content"
@@ -823,6 +1077,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     gamesCount={adminData.games.length}
                     resourcesCount={adminData.resources.length}
                     seasonsCount={adminData.seasons.length}
+                    timelineEventsCount={adminData.timelineEvents.length}
                   />
                 ) : null}
 
@@ -879,6 +1134,27 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onEditSubmit={handleUpdateSeason}
                     onStartEdit={startEditingSeason}
                     seasons={adminData.seasons}
+                  />
+                ) : null}
+
+                {section === "timeline" ? (
+                  <AdminTimelineSection
+                    createForm={createTimelineForm}
+                    createStatus={createTimelineStatus}
+                    editForm={editTimelineForm}
+                    editStatus={editTimelineStatus}
+                    editingEventId={editingTimelineEventId}
+                    gameNamesById={gameNamesById}
+                    games={adminData.games}
+                    onCancelEdit={stopEditingTimelineEvent}
+                    onCreateChange={setCreateTimelineForm}
+                    onCreateSubmit={handleCreateTimelineEvent}
+                    onDelete={handleDeleteTimelineEvent}
+                    onEditChange={setEditTimelineForm}
+                    onEditSubmit={handleUpdateTimelineEvent}
+                    onStartEdit={startEditingTimelineEvent}
+                    seasons={adminData.seasons}
+                    timelineEvents={adminData.timelineEvents}
                   />
                 ) : null}
               </div>

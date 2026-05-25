@@ -23,20 +23,23 @@ export function AdminOverview({
   gamesCount,
   resourcesCount,
   seasonsCount,
+  timelineEventsCount,
 }: {
   gamesCount: number;
   resourcesCount: number;
   seasonsCount: number;
+  timelineEventsCount: number;
 }) {
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <AdminStatCard label="Games" value={gamesCount} />
         <AdminStatCard label="Seasons" value={seasonsCount} />
         <AdminStatCard label="Resources" value={resourcesCount} />
+        <AdminStatCard label="Timeline" value={timelineEventsCount} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-4">
         <AdminSectionCard
           count={gamesCount}
           href="/admin/games"
@@ -54,6 +57,12 @@ export function AdminOverview({
           href="/admin/resources"
           label="Manage resources"
           summary="Create and edit game detail community resource cards."
+        />
+        <AdminSectionCard
+          count={timelineEventsCount}
+          href="/admin/timeline"
+          label="Manage timeline"
+          summary="Create and edit compact game timeline events."
         />
       </div>
     </>
