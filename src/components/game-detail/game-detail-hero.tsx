@@ -89,11 +89,13 @@ export function GameDetailHero({
                 className="h-10 rounded-md border-violet-300/20 bg-violet-500/45 px-4 text-white shadow-lg shadow-violet-950/30 hover:bg-violet-500/55"
                 gameId={followGameId}
               />
-              <HeroIconLink
+              <Link
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-300/20 bg-emerald-500/20 px-4 text-sm font-medium text-emerald-50 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-500/30"
                 href={planningHref}
-                icon={ClipboardCheck}
-                label="Planning board"
-              />
+              >
+                <ClipboardCheck className="size-4" aria-hidden="true" />
+                Planning board
+              </Link>
               <HeroIconButton icon={ExternalLink} label="Open official site" />
               <HeroIconButton icon={Gamepad2} label="Game hub" />
               <HeroIconButton icon={Trophy} label="Season rewards" />
@@ -103,27 +105,6 @@ export function GameDetailHero({
         </div>
       </div>
     </section>
-  );
-}
-
-function HeroIconLink({
-  href,
-  icon: Icon,
-  label,
-}: {
-  href: string;
-  icon: typeof Heart;
-  label: string;
-}) {
-  return (
-    <Link
-      aria-label={label}
-      className="flex size-10 shrink-0 items-center justify-center rounded-md border border-emerald-300/20 bg-emerald-500/15 text-emerald-100 transition hover:bg-emerald-500/25 hover:text-white"
-      href={href}
-      title={label}
-    >
-      <Icon className="size-4" aria-hidden="true" />
-    </Link>
   );
 }
 

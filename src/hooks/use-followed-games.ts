@@ -2,8 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { seasons } from "@/src/features";
+
 const followedGamesStorageKey = "seasontracker.followedGameIds";
 const followedGamesChangedEvent = "seasontracker:followed-games-changed";
+const legacySeasonIdToGameId = new Map<string, string>(
+  seasons.flatMap((season) => [
+    [season.id, season.gameId],
+    [season.slug, season.gameId],
+  ])
+);
+
+function normalizeFollowedGameIds(gameIds: string[]) {
+  return Array.from(
+    new Set(gameIds.map((gameId) => legacySeasonIdToGameId.get(gameId) ?? gameId))
+  );
+}
 
 function readFollowedGameIds() {
   if (typeof window === "undefined") {
@@ -23,14 +37,19 @@ function readFollowedGameIds() {
       return [];
     }
 
-    return parsedValue.filter((item): item is string => typeof item === "string");
+    return normalizeFollowedGameIds(
+      parsedValue.filter((item): item is string => typeof item === "string")
+    );
   } catch {
     return [];
   }
 }
 
 function writeFollowedGameIds(gameIds: string[]) {
-  window.localStorage.setItem(followedGamesStorageKey, JSON.stringify(gameIds));
+  window.localStorage.setItem(
+    followedGamesStorageKey,
+    JSON.stringify(normalizeFollowedGameIds(gameIds))
+  );
   window.dispatchEvent(new Event(followedGamesChangedEvent));
 }
 
@@ -39,7 +58,13 @@ export function useFollowedGames() {
 
   useEffect(() => {
     function syncFollowedGames() {
-      setFollowedGameIds(readFollowedGameIds());
+      const normalizedGameIds = readFollowedGameIds();
+
+      setFollowedGameIds(normalizedGameIds);
+      window.localStorage.setItem(
+        followedGamesStorageKey,
+        JSON.stringify(normalizedGameIds)
+      );
     }
 
     syncFollowedGames();

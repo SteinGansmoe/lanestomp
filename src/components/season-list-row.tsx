@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarClock, ChevronRight, Clock3 } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronRight,
+  ClipboardCheck,
+  Clock3,
+} from "lucide-react";
 
 import { FollowGameButton } from "@/src/components/follow-game-button";
 import { Badge } from "@/src/components/ui/badge";
@@ -89,6 +94,14 @@ export function SeasonListRow({
           iconClassName="size-4"
           showLabel={false}
         />
+        <Link
+          aria-label={`Open ${game.title} planning board`}
+          className="hidden h-9 items-center gap-2 rounded-md border border-emerald-300/20 bg-emerald-500/10 px-3 text-sm text-emerald-100 transition hover:bg-emerald-500/20 sm:inline-flex"
+          href={`/games/${game.seasonId}/planning`}
+        >
+          <ClipboardCheck className="size-4" aria-hidden="true" />
+          Plan
+        </Link>
         <Link
           aria-label={`Open ${game.title} details`}
           className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"

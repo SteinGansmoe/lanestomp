@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import {
+  ChevronDown,
   ExternalLink,
   Link as LinkIcon,
   Pencil,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
+import { CardContent } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { supabase } from "@/src/lib/supabase";
 
@@ -350,17 +351,30 @@ export function PlanningLinksSection({
   }
 
   return (
-    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/20 ring-1 ring-white/5">
-      <CardHeader>
-        <div className="flex size-12 items-center justify-center rounded-lg bg-sky-500/15 text-sky-100 ring-1 ring-sky-300/20">
-          <LinkIcon className="size-6" aria-hidden="true" />
+    <details
+      className="group rounded-xl border border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/20 ring-1 ring-white/5"
+      open
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 text-sky-100 ring-1 ring-sky-300/20">
+            <LinkIcon className="size-5" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-mono text-xl font-semibold text-white">
+              Resource links
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">
+              Save build guides, videos, and useful resources for this season.
+            </p>
+          </div>
         </div>
-        <CardTitle className="font-mono text-2xl">Resource links</CardTitle>
-        <p className="text-sm leading-6 text-zinc-400">
-          Save build guides, videos, and useful resources for this season.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-5">
+        <ChevronDown
+          className="size-5 shrink-0 text-zinc-500 transition group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <CardContent className="space-y-5 border-t border-white/10 pt-4">
         <form
           className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.5fr)_10rem_7rem_auto]"
           onSubmit={handleCreateLink}
@@ -502,7 +516,7 @@ export function PlanningLinksSection({
           )}
         </div>
       </CardContent>
-    </Card>
+    </details>
   );
 }
 

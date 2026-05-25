@@ -97,7 +97,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const now = new Date();
   const { gameId } = await params;
-  const seasonResult = await getSupabaseSeasonBySlug(gameId);
+  const seasonResult = await getSupabaseSeasonByIdOrSlug(gameId);
   const game =
     seasonResult.season ?
       getGameDetailByGameId(seasonResult.season.gameId)
@@ -216,9 +216,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
         <div className="flex max-w-6xl flex-col gap-6">
           <GameDetailHero
-            followGameId={selectedSeason.slug}
+            followGameId={selectedSeason.gameId}
             game={gameWithLiveSeasons}
-            planningHref={`/games/${selectedSeason.slug}/planning`}
+            planningHref={`/games/${selectedSeason.id}/planning`}
             season={selectedSeason}
           />
           <GameStatusSummary
@@ -395,7 +395,7 @@ async function getSupabaseTimelineEventsForGame(gameId: string) {
   }
 }
 
-async function getSupabaseSeasonBySlug(slug: string) {
+async function getSupabaseSeasonByIdOrSlug(identifier: string) {
   if (!supabase) {
     return {
       error:
@@ -405,10 +405,33 @@ async function getSupabaseSeasonBySlug(slug: string) {
   }
 
   try {
+    const seasonByIdResult = await supabase
+      .from("seasons")
+      .select("id, game_id, name, slug, starts_at, ends_at, description, created_at")
+      .eq("id", identifier)
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs))
+      .maybeSingle();
+
+    if (seasonByIdResult.error) {
+      return {
+        error: seasonByIdResult.error.message,
+        season: null,
+      };
+    }
+
+    if (seasonByIdResult.data) {
+      return {
+        error: null,
+        season: toSeason(seasonByIdResult.data as SupabaseSeason),
+      };
+    }
+
     const { data, error } = await supabase
       .from("seasons")
       .select("id, game_id, name, slug, starts_at, ends_at, description, created_at")
-      .eq("slug", slug)
+      .eq("slug", identifier)
+      .order("game_id", { ascending: true })
+      .limit(1)
       .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs))
       .maybeSingle();
 

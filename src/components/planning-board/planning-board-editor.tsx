@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
-import { LockKeyhole, Save, StickyNote } from "lucide-react";
+import { ChevronDown, LockKeyhole, Save, StickyNote } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
+import { PlanningChecklistSection } from "@/src/components/planning-board/planning-checklist-section";
 import { PlanningLinksSection } from "@/src/components/planning-board/planning-links-section";
 import { Button } from "@/src/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { supabase } from "@/src/lib/supabase";
 
@@ -68,10 +69,10 @@ async function createPlanningBoard(season: SeasonRecord, userId: string) {
 
 export function PlanningBoardEditor({
   fallbackTitle,
-  seasonSlug,
+  seasonIdentifier,
 }: {
   fallbackTitle: string;
-  seasonSlug: string;
+  seasonIdentifier: string;
 }) {
   const [board, setBoard] = useState<PlanningBoard | null>(null);
   const [notes, setNotes] = useState("");
@@ -114,28 +115,54 @@ export function PlanningBoardEditor({
 
       setUser(activeUser);
 
-      const { data: seasonData, error: seasonError } = await supabase
+      const seasonByIdResult = await supabase
         .from("seasons")
         .select("id, name, slug")
-        .eq("slug", seasonSlug)
+        .eq("id", seasonIdentifier)
         .maybeSingle();
 
       if (!isMounted) {
         return;
       }
 
-      if (seasonError || !seasonData) {
+      if (seasonByIdResult.error) {
         setStatus({
-          error:
-            seasonError?.message ??
-            "Could not find this season in Supabase.",
+          error: seasonByIdResult.error.message,
           isLoading: false,
           success: null,
         });
         return;
       }
 
-      const season = seasonData as SeasonRecord;
+      let season = seasonByIdResult.data as SeasonRecord | null;
+
+      if (!season) {
+        const { data: seasonData, error: seasonError } = await supabase
+          .from("seasons")
+          .select("id, name, slug")
+          .eq("slug", seasonIdentifier)
+          .order("game_id", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (seasonError || !seasonData) {
+          setStatus({
+            error:
+              seasonError?.message ??
+              "Could not find this season in Supabase. Open the planning board from a live season page or My Games row.",
+            isLoading: false,
+            success: null,
+          });
+          return;
+        }
+
+        season = seasonData as SeasonRecord;
+      }
+
       const { data: existingBoard, error: boardError } = await supabase
         .from("planning_boards")
         .select("id, season_id, user_id, title, notes")
@@ -195,7 +222,7 @@ export function PlanningBoardEditor({
       isMounted = false;
       listener?.subscription.unsubscribe();
     };
-  }, [seasonSlug]);
+  }, [seasonIdentifier]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -280,19 +307,30 @@ export function PlanningBoardEditor({
 
   return (
     <>
-      <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/20 ring-1 ring-white/5">
-        <CardHeader>
-          <div className="flex size-12 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-300/20">
-            <StickyNote className="size-6" aria-hidden="true" />
+      <details
+        className="group rounded-xl border border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/20 ring-1 ring-white/5"
+        open
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden sm:px-5 [&::-webkit-details-marker]:hidden">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-300/20">
+              <StickyNote className="size-5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-mono text-xl font-semibold text-white">
+                Board notes
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-zinc-400">
+                Keep private plans and reminders for {fallbackTitle}.
+              </p>
+            </div>
           </div>
-          <CardTitle className="font-mono text-2xl">
-            {fallbackTitle} planning
-          </CardTitle>
-          <p className="text-sm leading-6 text-zinc-400">
-            Keep a private title and notes for this season.
-          </p>
-        </CardHeader>
-        <CardContent>
+          <ChevronDown
+            className="size-5 shrink-0 text-zinc-500 transition group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+        <CardContent className="border-t border-white/10 pt-4">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <label className="block space-y-2">
               <span className="text-sm text-zinc-300">Board title</span>
@@ -339,10 +377,13 @@ export function PlanningBoardEditor({
             </Button>
           </form>
         </CardContent>
-      </Card>
+      </details>
 
       {board ? (
-        <PlanningLinksSection boardId={board.id} userId={user.id} />
+        <>
+          <PlanningChecklistSection boardId={board.id} userId={user.id} />
+          <PlanningLinksSection boardId={board.id} userId={user.id} />
+        </>
       ) : null}
     </>
   );
