@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { LockKeyhole, Save, StickyNote } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
+import { PlanningLinksSection } from "@/src/components/planning-board/planning-links-section";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
@@ -278,65 +279,71 @@ export function PlanningBoardEditor({
   }
 
   return (
-    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/20 ring-1 ring-white/5">
-      <CardHeader>
-        <div className="flex size-12 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-300/20">
-          <StickyNote className="size-6" aria-hidden="true" />
-        </div>
-        <CardTitle className="font-mono text-2xl">
-          {fallbackTitle} planning
-        </CardTitle>
-        <p className="text-sm leading-6 text-zinc-400">
-          Keep a private title and notes for this season.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block space-y-2">
-            <span className="text-sm text-zinc-300">Board title</span>
-            <Input
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+    <>
+      <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/20 ring-1 ring-white/5">
+        <CardHeader>
+          <div className="flex size-12 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-300/20">
+            <StickyNote className="size-6" aria-hidden="true" />
+          </div>
+          <CardTitle className="font-mono text-2xl">
+            {fallbackTitle} planning
+          </CardTitle>
+          <p className="text-sm leading-6 text-zinc-400">
+            Keep a private title and notes for this season.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Board title</span>
+              <Input
+                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                disabled={status.isLoading}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Season plan"
+                required
+                value={title}
+              />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Notes</span>
+              <textarea
+                className={`${fieldClassName} min-h-52 resize-y py-3 leading-6`}
+                disabled={status.isLoading}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Write goals, prep notes, build ideas, or anything else you want to remember for this season."
+                value={notes}
+              />
+            </label>
+
+            {status.error ? (
+              <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+                {status.error}
+              </p>
+            ) : null}
+
+            {status.success ? (
+              <p className="rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+                {status.success}
+              </p>
+            ) : null}
+
+            <Button
+              className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
               disabled={status.isLoading}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Season plan"
-              required
-              value={title}
-            />
-          </label>
+              type="submit"
+            >
+              <Save className="size-4" aria-hidden="true" />
+              {status.isLoading ? "Saving..." : "Save board"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-          <label className="block space-y-2">
-            <span className="text-sm text-zinc-300">Notes</span>
-            <textarea
-              className={`${fieldClassName} min-h-52 resize-y py-3 leading-6`}
-              disabled={status.isLoading}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Write goals, prep notes, build ideas, or anything else you want to remember for this season."
-              value={notes}
-            />
-          </label>
-
-          {status.error ? (
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
-              {status.error}
-            </p>
-          ) : null}
-
-          {status.success ? (
-            <p className="rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-              {status.success}
-            </p>
-          ) : null}
-
-          <Button
-            className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
-            disabled={status.isLoading}
-            type="submit"
-          >
-            <Save className="size-4" aria-hidden="true" />
-            {status.isLoading ? "Saving..." : "Save board"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      {board ? (
+        <PlanningLinksSection boardId={board.id} userId={user.id} />
+      ) : null}
+    </>
   );
 }
