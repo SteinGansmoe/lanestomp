@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, LogOut, ShieldCheck, UserCircle } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
@@ -30,12 +30,24 @@ export function AuthenticatedTopbar({
 }: AuthenticatedTopbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
-  const isAdmin = useMemo(() => isAdminUser(user), [user]);
 
   useEffect(() => {
     let isMounted = true;
+
+    async function applyUser(nextUser: User | null) {
+      const nextIsAdmin = await isAdminUser(nextUser);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setUser(nextUser);
+      setIsAdmin(nextIsAdmin);
+      setIsLoading(false);
+    }
 
     async function loadUser() {
       if (!supabase) {
@@ -44,22 +56,15 @@ export function AuthenticatedTopbar({
       }
 
       const { data } = await supabase.auth.getUser();
-
-      if (!isMounted) {
-        return;
-      }
-
-      setUser(data.user ?? null);
-      setIsLoading(false);
+      await applyUser(data.user ?? null);
     }
 
-    loadUser();
+    void loadUser();
 
     const { data: listener } =
       supabase?.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
         setIsMenuOpen(false);
+        void applyUser(session?.user ?? null);
       }) ?? { data: null };
 
     return () => {
@@ -74,6 +79,7 @@ export function AuthenticatedTopbar({
     }
 
     setUser(null);
+    setIsAdmin(false);
     setIsMenuOpen(false);
     router.refresh();
   }
@@ -88,13 +94,21 @@ export function AuthenticatedTopbar({
 
   if (!user) {
     return (
-      <div className={cn("flex justify-end", className)}>
+      <div className={cn("flex justify-end gap-2", className)}>
         <Link
           className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/5 px-3 text-sm text-zinc-100 transition hover:bg-white/10"
           href="/login"
         >
           Sign in
         </Link>
+        {!compact ? (
+          <Link
+            className="inline-flex h-10 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/20 px-3 text-sm font-medium text-violet-100 transition hover:bg-violet-500/30"
+            href="/register"
+          >
+            Create account
+          </Link>
+        ) : null}
       </div>
     );
   }

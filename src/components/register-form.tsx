@@ -1,55 +1,20 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { UserPlus } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
-import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 
-export function AdminLoginForm() {
+export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState("");
-  const router = useRouter();
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function checkSession() {
-      if (!supabase) {
-        setError("Supabase is not configured.");
-        setIsCheckingSession(false);
-        return;
-      }
-
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user ?? null;
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (user) {
-        router.replace((await isAdminUser(user)) ? "/admin" : "/");
-        return;
-      }
-
-      setIsCheckingSession(false);
-    }
-
-    checkSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,33 +25,38 @@ export function AdminLoginForm() {
     }
 
     setError(null);
+    setSuccess(null);
     setIsSubmitting(true);
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
 
     setIsSubmitting(false);
 
-    if (signInError) {
-      setError(signInError.message);
+    if (signUpError) {
+      setError(signUpError.message);
       return;
     }
 
-    router.replace(data.user && (await isAdminUser(data.user)) ? "/admin" : "/");
-    router.refresh();
+    setPassword("");
+    setSuccess(
+      data.session
+        ? "Account created. You are signed in with a standard user account."
+        : "Account created. Check your email to confirm your account before signing in."
+    );
   }
 
   return (
     <Card className="mx-auto w-full max-w-md border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
-          <LockKeyhole className="size-6" aria-hidden="true" />
+        <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-300/20">
+          <UserPlus className="size-6" aria-hidden="true" />
         </div>
-        <CardTitle className="font-mono text-2xl">Login</CardTitle>
+        <CardTitle className="font-mono text-2xl">Create account</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
-          Sign in with your SeasonTracker account.
+          Register a SeasonTracker account for planning boards and followed games.
         </p>
       </CardHeader>
       <CardContent>
@@ -96,9 +66,9 @@ export function AdminLoginForm() {
             <Input
               autoComplete="email"
               className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
-              disabled={isCheckingSession || isSubmitting}
+              disabled={isSubmitting}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@example.com"
+              placeholder="you@example.com"
               required
               type="email"
               value={email}
@@ -108,11 +78,12 @@ export function AdminLoginForm() {
           <label className="block space-y-2">
             <span className="text-sm text-zinc-300">Password</span>
             <Input
-              autoComplete="current-password"
+              autoComplete="new-password"
               className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
-              disabled={isCheckingSession || isSubmitting}
+              disabled={isSubmitting}
+              minLength={6}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
+              placeholder="At least 6 characters"
               required
               type="password"
               value={password}
@@ -125,26 +96,28 @@ export function AdminLoginForm() {
             </p>
           ) : null}
 
+          {success ? (
+            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+              {success}
+            </p>
+          ) : null}
+
           <Button
             className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500"
-            disabled={isCheckingSession || isSubmitting}
+            disabled={isSubmitting}
             type="submit"
           >
-            {isCheckingSession
-              ? "Checking session..."
-              : isSubmitting
-                ? "Signing in..."
-                : "Sign in"}
+            {isSubmitting ? "Creating account..." : "Create account"}
           </Button>
         </form>
 
         <p className="mt-5 text-center text-sm text-zinc-400">
-          New to SeasonTracker?{" "}
+          Already have an account?{" "}
           <Link
             className="font-medium text-violet-200 transition hover:text-white"
-            href="/register"
+            href="/login"
           >
-            Create account
+            Sign in
           </Link>
         </p>
       </CardContent>

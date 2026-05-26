@@ -50,6 +50,7 @@ import type {
 import { SiteHeader } from "@/src/components/site-header";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
+import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 
 type SessionResult = Awaited<ReturnType<NonNullable<typeof supabase>["auth"]["getSession"]>>;
@@ -170,6 +171,20 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       if (sessionError || !sessionUser) {
         window.location.replace("/login");
+        return;
+      }
+
+      const hasAdminAccess = await isAdminUser(sessionUser);
+
+      if (!isMounted) {
+        window.clearTimeout(redirectTimeoutId);
+        return;
+      }
+
+      if (!hasAdminAccess) {
+        cachedAdminData = null;
+        cachedAdminUser = null;
+        window.location.replace("/");
         return;
       }
 

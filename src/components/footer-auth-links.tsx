@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 
+import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 
 type FooterAuthLink = {
@@ -11,18 +13,23 @@ type FooterAuthLink = {
 };
 
 export function FooterAuthLinks() {
-  const [authLink, setAuthLink] = useState<FooterAuthLink | null>({
-    href: "/login",
-    label: "Login",
-  });
+  const [authLinks, setAuthLinks] = useState<FooterAuthLink[]>([
+    { href: "/login", label: "Login" },
+    { href: "/register", label: "Register" },
+  ]);
 
   useEffect(() => {
     let isMounted = true;
 
-    function getAuthLink(isSignedIn: boolean) {
-      return isSignedIn
-        ? { href: "/admin", label: "Admin" }
-        : { href: "/login", label: "Login" };
+    async function getAuthLinks(user: User | null) {
+      if (!user) {
+        return [
+          { href: "/login", label: "Login" },
+          { href: "/register", label: "Register" },
+        ];
+      }
+
+      return (await isAdminUser(user)) ? [{ href: "/admin", label: "Admin" }] : [];
     }
 
     async function loadAuthLink() {
@@ -33,7 +40,7 @@ export function FooterAuthLinks() {
       const { data } = await supabase.auth.getUser();
 
       if (isMounted) {
-        setAuthLink(getAuthLink(Boolean(data.user)));
+        setAuthLinks(await getAuthLinks(data.user));
       }
     }
 
@@ -41,7 +48,11 @@ export function FooterAuthLinks() {
 
     const { data: listener } =
       supabase?.auth.onAuthStateChange((_event, session) => {
-        setAuthLink(getAuthLink(Boolean(session?.user)));
+        void getAuthLinks(session?.user ?? null).then((nextAuthLinks) => {
+          if (isMounted) {
+            setAuthLinks(nextAuthLinks);
+          }
+        });
       }) ?? { data: null };
 
     return () => {
@@ -50,12 +61,13 @@ export function FooterAuthLinks() {
     };
   }, []);
 
-  return authLink ? (
+  return authLinks.map((authLink) => (
     <Link
       className="text-sm text-zinc-400 transition hover:text-violet-200"
       href={authLink.href}
+      key={authLink.href}
     >
       {authLink.label}
     </Link>
-  ) : null;
+  ));
 }
