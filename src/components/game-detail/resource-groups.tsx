@@ -20,21 +20,24 @@ export function ResourceGroups({
           <ArrowRight className="size-4" aria-hidden="true" />
         </DetailActionLink>
       }
+      className="h-full"
       title="Resources"
     >
       {groups.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2">
           {groups.map((group) => (
             <article
-              className="rounded-lg border border-white/10 bg-white/5 p-4"
+              className="rounded-lg border border-white/10 bg-white/[0.035] p-3 transition hover:border-white/15 hover:bg-white/[0.06]"
               key={group.id}
             >
-              <h3 className="font-medium text-white">{group.title}</h3>
+              <h3 className="font-medium leading-tight text-white">
+                {group.title}
+              </h3>
               {group.resources.length > 0 ? (
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2">
                   {group.resources.map((resource) => (
                     <a
-                      className="flex items-center justify-between gap-3 rounded-md px-1 py-1 text-sm transition hover:bg-white/5"
+                      className="group flex items-center justify-between gap-3 rounded-md py-1 text-sm transition hover:text-white"
                       href={resource.url}
                       key={resource.id}
                       rel="noreferrer"
@@ -49,7 +52,7 @@ export function ResourceGroups({
                         </span>
                       </span>
                       <ExternalLink
-                        className="size-4 shrink-0 text-zinc-400"
+                        className="size-4 shrink-0 text-zinc-500 transition group-hover:text-zinc-200"
                         aria-hidden="true"
                       />
                     </a>

@@ -1,23 +1,41 @@
 import type { ReactNode } from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/src/components/ui/card";
+import { cn } from "@/src/lib/utils";
 
 export function DetailSection({
   action,
   children,
+  className,
+  contentClassName,
   title,
 }: {
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
+  contentClassName?: string;
   title: string;
 }) {
   return (
-    <Card className="border-white/10 bg-white/[0.035] text-white shadow-none ring-1 ring-white/5 backdrop-blur-md">
-      <CardHeader className="flex-row items-center justify-between gap-4">
-        <CardTitle className="font-mono text-xl font-semibold">{title}</CardTitle>
-        {action}
+    <Card
+      className={cn(
+        "border-white/10 bg-white/[0.035] text-white shadow-none ring-1 ring-white/5 backdrop-blur-md",
+        className
+      )}
+    >
+      <CardHeader className="gap-3 pb-3">
+        <CardTitle className="font-mono text-lg font-semibold sm:text-xl">
+          {title}
+        </CardTitle>
+        {action ? <CardAction>{action}</CardAction> : null}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className={contentClassName}>{children}</CardContent>
     </Card>
   );
 }

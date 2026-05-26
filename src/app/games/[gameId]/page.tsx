@@ -221,18 +221,20 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             planningHref={`/games/${selectedSeason.id}/planning`}
             season={selectedSeason}
           />
-          <div className="relative z-10 -mt-44 lg:-mt-48">
+          <div className="relative z-10 -mt-8 sm:-mt-44 lg:-mt-48">
             <GameStatusSummary
               nextEvent={nextTimelineEvent}
               now={now}
               season={selectedSeason}
             />
           </div>
-          <div className="relative z-10 mt-6 flex flex-col gap-6">
+          <div className="relative z-10 mt-6 grid gap-4 xl:grid-cols-2">
             <GameTimeline events={gameWithLiveSeasons.timelineEvents} />
             <ResourceGroups groups={gameWithLiveSeasons.resourceGroups} />
             <PopularCreators creators={gameWithLiveSeasons.creators} />
             <CommunityLinks links={gameWithLiveSeasons.communityLinks} />
+          </div>
+          <div className="relative z-10 mt-4">
             <RelatedGames games={relatedGames} />
           </div>
         </div>

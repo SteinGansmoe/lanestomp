@@ -16,10 +16,10 @@ export function RelatedGames({ games }: { games: RelatedGameCard[] }) {
   return (
     <DetailSection title="You might also like">
       {games.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {games.map((game) => (
             <Link
-              className="group relative min-h-36 overflow-hidden rounded-lg border border-white/10 bg-[#081120] p-4 transition hover:border-violet-400/35"
+              className="group relative min-h-40 overflow-hidden rounded-lg border border-white/10 bg-[#081120] p-4 transition hover:-translate-y-0.5 hover:border-violet-400/35"
               href={game.href}
               key={game.id}
             >
@@ -29,7 +29,7 @@ export function RelatedGames({ games }: { games: RelatedGameCard[] }) {
                   alt={`${game.title} artwork`}
                   fill
                   sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
-                  className="object-cover opacity-45 transition group-hover:scale-105"
+                  className="object-cover opacity-50 transition duration-500 group-hover:scale-105"
                 />
               ) : null}
               <div className="absolute inset-0 bg-linear-to-t from-[#081120] via-[#081120]/60 to-transparent" />

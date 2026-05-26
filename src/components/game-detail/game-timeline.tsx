@@ -38,7 +38,7 @@ export function GameTimeline({ events }: { events: GameEvent[] }) {
       };
 
   return (
-    <DetailSection title="Upcoming timeline">
+    <DetailSection className="h-full" title="Upcoming timeline">
       {events.length > 0 ? (
         <div
           className={`relative ${
@@ -54,7 +54,7 @@ export function GameTimeline({ events }: { events: GameEvent[] }) {
           />
           {!hasManyEvents ? (
             <div
-              className="absolute left-[17px] right-0 top-11 hidden h-px bg-slate-600/70 md:block"
+              className="absolute left-[17px] right-0 top-11 hidden h-px bg-slate-600/60 md:block"
               aria-hidden="true"
             />
           ) : null}
@@ -83,7 +83,7 @@ export function GameTimeline({ events }: { events: GameEvent[] }) {
                 ) : null}
                 <div
                   className={`min-w-0 ${
-                    hasManyEvents ?
+                  hasManyEvents ?
                       "rounded-lg border border-white/10 bg-white/[0.03] p-3"
                     : "md:ml-8 md:mt-8 md:pl-3"
                   }`}

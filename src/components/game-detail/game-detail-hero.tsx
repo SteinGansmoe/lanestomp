@@ -38,24 +38,20 @@ export function GameDetailHero({
   return (
     <section className="group relative isolate -mx-4 min-h-[720px] overflow-hidden bg-[#050b18] sm:-mx-6 sm:min-h-[680px] lg:-mx-8 xl:min-h-[720px]">
       <div
-        className="absolute inset-0 bg-cover bg-[center_top] opacity-90 transition duration-1000 group-hover:scale-[1.025] md:bg-center"
+        className="absolute inset-0 bg-cover bg-[62%_top] opacity-95 transition duration-1000 group-hover:scale-[1.025] sm:bg-center"
         style={heroBackgroundImage}
         aria-hidden="true"
       />
       <div
-        className="absolute inset-0 bg-linear-to-r from-[#050b18] via-[#050b18]/72 to-[#050b18]/12"
+        className="absolute inset-0 bg-linear-to-r from-[#050b18] via-[#050b18]/70 to-[#050b18]/16"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-0 bg-linear-to-t from-[#050b18] via-[#050b18]/38 to-black/55"
+        className="absolute inset-0 bg-linear-to-t from-[#050b18] via-[#050b18]/42 to-black/52"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_18%_55%,rgba(124,58,237,0.28),transparent_42%),radial-gradient(ellipse_at_72%_28%,rgba(244,63,94,0.24),transparent_46%),radial-gradient(ellipse_at_55%_88%,rgba(16,185,129,0.13),transparent_38%)]"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_28%,rgba(0,0,0,0.42)_100%)]"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_32%,rgba(0,0,0,0.5)_100%)]"
         aria-hidden="true"
       />
       <div
@@ -123,7 +119,7 @@ export function GameDetailHero({
                 className="h-12 rounded-md border-violet-300/20 bg-violet-500/30 px-5 text-white shadow-lg shadow-violet-950/25 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:bg-violet-500/45"
                 gameId={followGameId}
               />
-              <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/20 p-1 opacity-80 backdrop-blur transition duration-200 hover:opacity-100">
+              <div className="hidden items-center gap-1 rounded-full border border-white/10 bg-black/20 p-1 opacity-80 backdrop-blur transition duration-200 hover:opacity-100 sm:flex">
                 <HeroIconButton icon={ExternalLink} label="Open official site" />
                 <HeroIconButton icon={Gamepad2} label="Game hub" />
                 <HeroIconButton icon={Trophy} label="Season rewards" />
