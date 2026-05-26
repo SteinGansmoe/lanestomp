@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "import:lol-champions": "node scripts/import-lol-champions.mjs",
     "start": "next start",
     "lint": "eslint"
   },

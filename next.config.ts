@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images2.alphacoders.com",
       },
+      {
+        protocol: "https",
+        hostname: "ddragon.leagueoflegends.com",
+      },
     ],
   },
 };

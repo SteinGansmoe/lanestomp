@@ -12,11 +12,17 @@ export function ResourceGroups({
 }: {
   groups: GameDetailResourceGroup[];
 }) {
+  const leagueChampionsHref = groups.some(
+    (group) => group.gameId === "league-of-legends"
+  )
+    ? "/games/league-of-legends/champions"
+    : null;
+
   return (
     <DetailSection
       action={
-        <DetailActionLink href="#">
-          View all resources
+        <DetailActionLink href={leagueChampionsHref ?? "#"}>
+          {leagueChampionsHref ? "Champion data" : "View all resources"}
           <ArrowRight className="size-4" aria-hidden="true" />
         </DetailActionLink>
       }
