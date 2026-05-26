@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
-  CalendarDays,
+  Swords,
   Home,
   Menu,
   Newspaper,
@@ -25,7 +25,7 @@ import type { Game } from "@/src/features/games/types";
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "#", icon: CalendarDays, label: "Calendar *coming soon*" },
+  { href: "/league/matchups", icon: Swords, label: "LoL Matchup Tool" },
   { href: "/my-games", icon: Star, label: "My Games" },
   { href: "#", icon: Newspaper, label: "News *coming soon*" },
 ];

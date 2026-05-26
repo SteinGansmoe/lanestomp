@@ -6,22 +6,7 @@ import { connection } from "next/server";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import { getPrimarySeasonRouteForGame } from "@/src/features";
-import { supabase } from "@/src/lib/supabase";
-
-type LeagueChampion = {
-  id: string;
-  image_url: string;
-  name: string;
-  riot_key: string;
-  tags: string[];
-  title: string;
-  version: string;
-};
-
-type ChampionsResult = {
-  champions: LeagueChampion[];
-  error: string | null;
-};
+import { getLeagueChampions } from "@/src/features/league/champions";
 
 export default async function LeagueChampionsPage() {
   await connection();
@@ -41,6 +26,13 @@ export default async function LeagueChampionsPage() {
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Back to League of Legends
+          </Link>
+          <Link
+            className="inline-flex items-center gap-2 rounded-md border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-sm font-medium text-emerald-100 transition hover:bg-emerald-400/15"
+            href="/league/matchups"
+          >
+            Open matchup selector
+            <Swords className="size-4" aria-hidden="true" />
           </Link>
         </div>
 
@@ -139,33 +131,6 @@ export default async function LeagueChampionsPage() {
       </section>
     </main>
   );
-}
-
-async function getLeagueChampions(): Promise<ChampionsResult> {
-  if (!supabase) {
-    return {
-      champions: [],
-      error:
-        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-    };
-  }
-
-  const { data, error } = await supabase
-    .from("league_champions")
-    .select("id, riot_key, name, title, image_url, tags, version")
-    .order("name", { ascending: true });
-
-  if (error) {
-    return {
-      champions: [],
-      error: error.message,
-    };
-  }
-
-  return {
-    champions: (data ?? []) as LeagueChampion[],
-    error: null,
-  };
 }
 
 function StatBadge({ label, value }: { label: string; value: string }) {

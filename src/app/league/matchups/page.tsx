@@ -1,0 +1,88 @@
+import Link from "next/link";
+import { ArrowLeft, ShieldAlert, Swords } from "lucide-react";
+import { connection } from "next/server";
+
+import { MatchupSelector } from "@/src/components/league/matchup-selector";
+import { SiteHeader } from "@/src/components/site-header";
+import { Card, CardTitle } from "@/src/components/ui/card";
+import { getPrimarySeasonRouteForGame } from "@/src/features";
+import { getLeagueChampions } from "@/src/features/league/champions";
+
+export default async function LeagueMatchupsPage() {
+  await connection();
+
+  const { champions, error } = await getLeagueChampions();
+
+  return (
+    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+      <section className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+        <SiteHeader />
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
+            href={getPrimarySeasonRouteForGame("league-of-legends")}
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Back to League of Legends
+          </Link>
+          <Link
+            className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
+            href="/games/league-of-legends/champions"
+          >
+            Champion data
+          </Link>
+        </div>
+
+        <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
+          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30rem),linear-gradient(135deg,rgba(88,28,135,0.22),transparent_38rem)] p-6 sm:p-8">
+            <div className="max-w-3xl">
+              <div className="mb-5 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+                <Swords className="size-6" aria-hidden="true" />
+              </div>
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+                League matchup guide
+              </p>
+              <h1 className="mt-3 font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                Pick your lane opponent
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">
+                Select two champions and a role to open the first matchup guide shell. Strategy text is temporary while the matchup intelligence is being prepared.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {error ? (
+          <Card className="border-amber-300/20 bg-amber-300/10 p-5 text-amber-100">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+              <div>
+                <CardTitle className="font-mono text-lg">
+                  Champion data is not ready yet
+                </CardTitle>
+                <p className="mt-2 text-sm leading-6 text-amber-100/80">
+                  Apply the latest champion migration and run the Data Dragon import before building matchups.
+                </p>
+                <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
+                  {error}
+                </p>
+              </div>
+            </div>
+          </Card>
+        ) : champions.length > 0 ? (
+          <MatchupSelector champions={champions} />
+        ) : (
+          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
+            <CardTitle className="font-mono text-xl">
+              No champions imported yet
+            </CardTitle>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">
+              Run the League champion import script to populate the selector.
+            </p>
+          </Card>
+        )}
+      </section>
+    </main>
+  );
+}
