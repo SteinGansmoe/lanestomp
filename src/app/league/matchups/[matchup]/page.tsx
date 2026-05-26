@@ -20,12 +20,17 @@ type LeagueMatchupPageProps = {
 
 const matchupSections = [
   {
+    title: "Overview",
+    body:
+      "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
+  },
+  {
     title: "Early game",
     body:
       "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
   },
   {
-    title: "Trading",
+    title: "Trading pattern",
     body:
       "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
   },
@@ -38,6 +43,11 @@ const matchupSections = [
     title: "Danger windows",
     body:
       "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
+  },
+  {
+    title: "Items/runes notes",
+    body:
+      "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive shards, sustain options, and first recall priorities.",
   },
 ] as const;
 
@@ -93,11 +103,26 @@ export default async function LeagueMatchupPage({
               </div>
             </div>
           </Card>
+        ) : championsResult.champions.length === 0 ? (
+          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
+            <CardTitle className="font-mono text-xl">
+              No champions imported yet
+            </CardTitle>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">
+              Run the League champion import script to populate matchup routes.
+            </p>
+            <Link
+              className="mt-5 inline-flex items-center gap-2 rounded-md border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/15"
+              href="/games/league-of-legends/champions"
+            >
+              View champion data
+            </Link>
+          </Card>
         ) : championA && championB ? (
           <>
             <MatchupHero championA={championA} championB={championB} role={role} />
 
-            <div className="grid gap-4 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {matchupSections.map((section) => (
                 <article
                   className="rounded-lg border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/10"
