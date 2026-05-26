@@ -10,6 +10,7 @@ import type { AdminGame, FormStatus, ResourceFormState } from "../types";
 export function ResourceFormCard({
   form,
   games,
+  mode = "resources",
   onChange,
   onSubmit,
   status,
@@ -18,6 +19,7 @@ export function ResourceFormCard({
 }: {
   form: ResourceFormState;
   games: AdminGame[];
+  mode?: "community" | "resources";
   onChange: (form: ResourceFormState) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   status: FormStatus;
@@ -33,6 +35,7 @@ export function ResourceFormCard({
         <ResourceForm
           form={form}
           games={games}
+          mode={mode}
           onChange={onChange}
           onSubmit={onSubmit}
           status={status}
@@ -46,6 +49,7 @@ export function ResourceFormCard({
 export function ResourceForm({
   form,
   games,
+  mode = "resources",
   onCancel,
   onChange,
   onSubmit,
@@ -54,6 +58,7 @@ export function ResourceForm({
 }: {
   form: ResourceFormState;
   games: AdminGame[];
+  mode?: "community" | "resources";
   onCancel?: () => void;
   onChange: (form: ResourceFormState) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -61,6 +66,20 @@ export function ResourceForm({
   submitLabel: string;
 }) {
   const SubmitIcon = submitLabel.startsWith("Save") ? Save : Plus;
+  const isCommunity = mode === "community";
+  const iconOptions =
+    isCommunity ?
+      ["discord", "forum", "reddit", "social", "video"]
+    : [
+        "builds",
+        "official",
+        "patch-notes",
+        "stats",
+        "tier-list",
+        "tools",
+        "trade",
+        "wiki",
+      ];
 
   function updateField(
     field: keyof ResourceFormState,
@@ -99,12 +118,16 @@ export function ResourceForm({
       </label>
 
       <label className="block space-y-2">
-        <span className="text-sm text-zinc-300">Resource ID</span>
+        <span className="text-sm text-zinc-300">
+          {isCommunity ? "Community link ID" : "Resource ID"}
+        </span>
         <Input
           className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
           disabled={status.isLoading || Boolean(onCancel)}
           onChange={(event) => updateField("id", event.target.value)}
-          placeholder="diablo-4-official-forums"
+          placeholder={
+            isCommunity ? "diablo-4-official-forums" : "d4-maxroll-builds"
+          }
           required
           value={form.id}
         />
@@ -116,34 +139,56 @@ export function ResourceForm({
           className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
           disabled={status.isLoading}
           onChange={(event) => updateField("title", event.target.value)}
-          placeholder="Official Forums"
+          placeholder={isCommunity ? "Official Forums" : "Maxroll Builds"}
           required
           value={form.title}
         />
       </label>
 
       <div className="grid gap-4 md:grid-cols-2">
+        {!isCommunity ? (
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Resource group</span>
+            <Input
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              disabled={status.isLoading}
+              onChange={(event) =>
+                updateField("group_title", event.target.value)
+              }
+              placeholder="Build prep"
+              required
+              value={form.group_title}
+            />
+          </label>
+        ) : null}
+
         <label className="block space-y-2">
-          <span className="text-sm text-zinc-300">Label</span>
+          <span className="text-sm text-zinc-300">
+            {isCommunity ? "Type label" : "Description"}
+          </span>
           <Input
             className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
             disabled={status.isLoading}
             onChange={(event) => updateField("label", event.target.value)}
-            placeholder="Forum"
+            placeholder={
+              isCommunity ? "Forum" : "Leveling and endgame build guides"
+            }
             required
             value={form.label}
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-sm text-zinc-300">Icon</span>
+          <span className="text-sm text-zinc-300">
+            {isCommunity ? "Icon" : "Category"}
+          </span>
           <select
             className={fieldClassName}
             disabled={status.isLoading}
             onChange={(event) => updateField("icon", event.target.value)}
             value={form.icon}
           >
-            {["discord", "forum", "reddit", "social", "video"].map((icon) => (
+            {iconOptions.map((icon) => (
               <option className={selectOptionClassName} key={icon} value={icon}>
                 {icon}
               </option>

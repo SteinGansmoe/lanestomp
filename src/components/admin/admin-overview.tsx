@@ -56,7 +56,7 @@ export function AdminOverview({
           count={resourcesCount}
           href="/admin/resources"
           label="Manage resources"
-          summary="Create and edit game detail community resource cards."
+          summary="Create and edit game detail resource cards."
         />
         <AdminSectionCard
           count={timelineEventsCount}

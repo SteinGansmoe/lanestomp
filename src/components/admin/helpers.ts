@@ -46,6 +46,11 @@ export function isMissingGameResourcesTableError(
   return (
     error?.code === "PGRST205" ||
     Boolean(
+      error?.message?.includes("game_resources.section") ||
+        (error?.message?.includes("column") &&
+          error.message.includes("section"))
+    ) ||
+    Boolean(
       error?.message?.includes("game_resources") &&
         error.message.includes("schema cache")
     )

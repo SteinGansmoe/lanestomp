@@ -27,10 +27,12 @@ export const emptySeasonForm: SeasonFormState = {
 
 export const emptyResourceForm: ResourceFormState = {
   game_id: "",
-  icon: "forum",
+  group_title: "",
+  icon: "builds",
   id: "",
   is_active: true,
   label: "",
+  section: "resources",
   sort_order: "0",
   title: "",
   url: "",
@@ -54,7 +56,7 @@ export const emptyAdminData: AdminData = {
 };
 
 export const missingResourcesTableMessage =
-  "Community resources are not set up in Supabase yet. Apply the game_resources migration to enable the Resources admin page.";
+  "Game detail resources are not fully set up in Supabase yet. Apply the latest game_resources migration to enable the Resources and Community admin pages.";
 export const missingTimelineEventsTableMessage =
   "Timeline events are not set up in Supabase yet. Apply the timeline_events migration to enable the Timeline admin page.";
 

@@ -135,10 +135,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const router = useRouter();
   const pageTitle =
     section === "games" ? "Game management"
+    : section === "community" ? "Community management"
     : section === "resources" ? "Resource management"
     : section === "seasons" ? "Season management"
     : section === "timeline" ? "Timeline management"
     : "Admin dashboard";
+  const editableLinkSection =
+    section === "community" ? "community" : "resources";
 
   useEffect(() => {
     let isMounted = true;
@@ -184,7 +187,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           supabase
             .from("game_resources")
             .select(
-              "id, game_id, title, label, url, icon, sort_order, is_active"
+              "id, game_id, title, label, url, icon, sort_order, is_active, section, group_title"
             )
             .order("game_id", { ascending: true })
             .order("sort_order", { ascending: true })
@@ -268,6 +271,28 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       new Map(adminData.games.map((game) => [game.id, game.name] as const)),
     [adminData.games]
   );
+  const resourcesRows = useMemo(
+    () =>
+      adminData.resources.filter(
+        (resource) => (resource.section ?? "community") === "resources"
+      ),
+    [adminData.resources]
+  );
+  const communityRows = useMemo(
+    () =>
+      adminData.resources.filter(
+        (resource) => (resource.section ?? "community") === "community"
+      ),
+    [adminData.resources]
+  );
+  const normalizedCreateResourceForm = normalizeResourceFormForSection(
+    createResourceForm,
+    editableLinkSection
+  );
+  const normalizedEditResourceForm = normalizeResourceFormForSection(
+    editResourceForm,
+    editableLinkSection
+  );
 
   async function reloadAdminData() {
     if (!supabase) {
@@ -283,7 +308,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           .order("name", { ascending: true }),
         supabase
           .from("game_resources")
-          .select("id, game_id, title, label, url, icon, sort_order, is_active")
+          .select(
+            "id, game_id, title, label, url, icon, sort_order, is_active, section, group_title"
+          )
           .order("game_id", { ascending: true })
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true }),
@@ -359,16 +386,23 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return "ID, game, title, label, and URL are required.";
     }
 
+    if (form.section === "resources" && !form.group_title.trim()) {
+      return "Resource group is required.";
+    }
+
     return null;
   }
 
   function getResourcePayload(form: ResourceFormState) {
     return {
       game_id: form.game_id,
+      group_title:
+        form.section === "resources" ? form.group_title.trim() : null,
       icon: form.icon,
       id: form.id.trim(),
       is_active: form.is_active,
       label: form.label.trim(),
+      section: form.section,
       sort_order: Number.parseInt(form.sort_order, 10) || 0,
       title: form.title.trim(),
       url: form.url.trim(),
@@ -387,7 +421,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return;
     }
 
-    const validationError = getResourceFormError(createResourceForm);
+    const nextCreateResourceForm = {
+      ...normalizeResourceFormForSection(
+        createResourceForm,
+        editableLinkSection
+      ),
+    };
+    const validationError = getResourceFormError(nextCreateResourceForm);
 
     if (validationError) {
       setCreateResourceStatus({
@@ -406,7 +446,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
     const { error: createError } = await supabase
       .from("game_resources")
-      .insert(getResourcePayload(createResourceForm));
+      .insert(getResourcePayload(nextCreateResourceForm));
 
     if (createError) {
       setCreateResourceStatus({
@@ -420,7 +460,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     await reloadAdminData();
     setCreateResourceForm({
       ...emptyResourceForm,
-      game_id: createResourceForm.game_id,
+      game_id: nextCreateResourceForm.game_id,
+      icon: editableLinkSection === "community" ? "forum" : "builds",
+      section: editableLinkSection,
     });
     setCreateResourceStatus({
       error: null,
@@ -434,10 +476,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setEditResourceStatus({ error: null, isLoading: false, success: null });
     setEditResourceForm({
       game_id: resource.game_id,
+      group_title: resource.group_title ?? "",
       icon: resource.icon,
       id: resource.id,
       is_active: resource.is_active,
       label: resource.label,
+      section: resource.section ?? "community",
       sort_order: String(resource.sort_order),
       title: resource.title,
       url: resource.url,
@@ -457,7 +501,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return;
     }
 
-    const validationError = getResourceFormError(editResourceForm);
+    const nextEditResourceForm = normalizeResourceFormForSection(
+      editResourceForm,
+      editableLinkSection
+    );
+    const validationError = getResourceFormError(nextEditResourceForm);
 
     if (validationError) {
       setEditResourceStatus({
@@ -470,14 +518,16 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
     setEditResourceStatus({ error: null, isLoading: true, success: null });
 
-    const payload = getResourcePayload(editResourceForm);
+    const payload = getResourcePayload(nextEditResourceForm);
     const { error: updateError } = await supabase
       .from("game_resources")
       .update({
         game_id: payload.game_id,
+        group_title: payload.group_title,
         icon: payload.icon,
         is_active: payload.is_active,
         label: payload.label,
+        section: payload.section,
         sort_order: payload.sort_order,
         title: payload.title,
         url: payload.url,
@@ -1115,21 +1165,22 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 {section === "overview" ? (
                   <AdminOverview
                     gamesCount={adminData.games.length}
-                    resourcesCount={adminData.resources.length}
+                    resourcesCount={resourcesRows.length}
                     seasonsCount={adminData.seasons.length}
                     timelineEventsCount={adminData.timelineEvents.length}
                   />
                 ) : null}
 
-                {section === "resources" ? (
+                {section === "resources" || section === "community" ? (
                   <AdminResourcesSection
-                    createForm={createResourceForm}
+                    createForm={normalizedCreateResourceForm}
                     createStatus={createResourceStatus}
-                    editForm={editResourceForm}
+                    editForm={normalizedEditResourceForm}
                     editStatus={editResourceStatus}
                     editingResourceId={editingResourceId}
                     gameNamesById={gameNamesById}
                     games={adminData.games}
+                    mode={editableLinkSection}
                     onCancelEdit={stopEditingResource}
                     onCreateChange={setCreateResourceForm}
                     onCreateSubmit={handleCreateResource}
@@ -1137,7 +1188,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onEditChange={setEditResourceForm}
                     onEditSubmit={handleUpdateResource}
                     onStartEdit={startEditingResource}
-                    resources={adminData.resources}
+                    resources={
+                      editableLinkSection === "community" ?
+                        communityRows
+                      : resourcesRows
+                    }
                   />
                 ) : null}
 
@@ -1226,4 +1281,30 @@ function getSessionWithTimeout(): Promise<SessionResult> {
       }, sessionCheckTimeoutMs);
     }),
   ]);
+}
+
+function normalizeResourceFormForSection(
+  form: ResourceFormState,
+  section: ResourceFormState["section"]
+): ResourceFormState {
+  const iconOptions =
+    section === "community" ?
+      ["discord", "forum", "reddit", "social", "video"]
+    : [
+        "builds",
+        "official",
+        "patch-notes",
+        "stats",
+        "tier-list",
+        "tools",
+        "trade",
+        "wiki",
+      ];
+
+  return {
+    ...form,
+    group_title: section === "community" ? "" : form.group_title,
+    icon: iconOptions.includes(form.icon) ? form.icon : iconOptions[0],
+    section,
+  };
 }

@@ -22,7 +22,10 @@ import {
   type CommunityLink,
   type CommunityLinkType,
   type EventType,
+  type GameDetailResourceGroup,
   type GameEvent,
+  type Resource,
+  type ResourceCategory,
   type Season,
 } from "@/src/features";
 import { supabase } from "@/src/lib/supabase";
@@ -54,9 +57,11 @@ type SupabaseGame = {
 type SupabaseResource = {
   created_at: string;
   game_id: string;
+  group_title: string | null;
   icon: string;
   id: string;
   label: string;
+  section: "community" | "resources";
   title: string;
   url: string;
 };
@@ -87,6 +92,18 @@ const eventTypes = [
   "season-end",
   "season-start",
 ] satisfies EventType[];
+const resourceCategories = [
+  "builds",
+  "community",
+  "esports",
+  "official",
+  "patch-notes",
+  "stats",
+  "tier-list",
+  "tools",
+  "trade",
+  "wiki",
+] satisfies ResourceCategory[];
 
 export function generateStaticParams() {
   return getSeasonCardStaticParams();
@@ -127,15 +144,26 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     );
   }
 
-  const [seasonsResult, liveGameResult, resourcesResult, timelineResult] =
-    await Promise.all([
-      getSupabaseSeasonsForGame(game.id),
-      getSupabaseGameById(game.id),
-      getSupabaseResourcesForGame(game.id),
-      getSupabaseTimelineEventsForGame(game.id),
-    ]);
+  const [
+    seasonsResult,
+    liveGameResult,
+    resourcesResult,
+    communityResult,
+    timelineResult,
+  ] = await Promise.all([
+    getSupabaseSeasonsForGame(game.id),
+    getSupabaseGameById(game.id),
+    getSupabaseResourcesForGame(game.id),
+    getSupabaseCommunityLinksForGame(game.id),
+    getSupabaseTimelineEventsForGame(game.id),
+  ]);
 
-  if (seasonsResult.error || resourcesResult.error || timelineResult.error) {
+  if (
+    seasonsResult.error ||
+    resourcesResult.error ||
+    communityResult.error ||
+    timelineResult.error
+  ) {
     return (
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
@@ -157,6 +185,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-rose-100">
               {seasonsResult.error ??
                 resourcesResult.error ??
+                communityResult.error ??
                 timelineResult.error}
             </p>
           </Card>
@@ -167,7 +196,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const gameWithLiveSeasons = {
     ...mergeLiveGameData(game, liveGameResult.game),
-    communityLinks: resourcesResult.resources,
+    communityLinks: communityResult.links,
+    resourceGroups: resourcesResult.resourceGroups ?? game.resourceGroups,
     seasons: seasonsResult.seasons,
     timelineEvents: timelineResult.events,
     selectedSeason: seasonResult.season ?? getFeaturedSeason(seasonsResult.seasons),
@@ -315,7 +345,101 @@ async function getSupabaseResourcesForGame(gameId: string) {
     return {
       error:
         "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
-      resources: [],
+      resourceGroups: [],
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("game_resources")
+      .select(
+        "id, game_id, title, label, url, icon, created_at, section, group_title"
+      )
+      .eq("game_id", gameId)
+      .eq("section", "resources")
+      .eq("is_active", true)
+      .order("group_title", { ascending: true })
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs));
+
+    if (error) {
+      if (isMissingGameResourcesSectionError(error)) {
+        return {
+          error: null,
+          resourceGroups: null,
+        };
+      }
+
+      return {
+        error: error.message,
+        resourceGroups: [],
+      };
+    }
+
+    return {
+      error: null,
+      resourceGroups: toResourceGroups((data ?? []) as SupabaseResource[]),
+    };
+  } catch (error) {
+    return {
+      error: getErrorMessage(error),
+      resourceGroups: [],
+    };
+  }
+}
+
+async function getSupabaseCommunityLinksForGame(gameId: string) {
+  if (!supabase) {
+    return {
+      error:
+        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
+      links: [],
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("game_resources")
+      .select(
+        "id, game_id, title, label, url, icon, created_at, section, group_title"
+      )
+      .eq("game_id", gameId)
+      .eq("section", "community")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .abortSignal(AbortSignal.timeout(supabaseFetchTimeoutMs));
+
+    if (error) {
+      if (isMissingGameResourcesSectionError(error)) {
+        return getLegacySupabaseCommunityLinksForGame(gameId);
+      }
+
+      return {
+        error: error.message,
+        links: [],
+      };
+    }
+
+    return {
+      error: null,
+      links: ((data ?? []) as SupabaseResource[]).map(toCommunityLink),
+    };
+  } catch (error) {
+    return {
+      error: getErrorMessage(error),
+      links: [],
+    };
+  }
+}
+
+async function getLegacySupabaseCommunityLinksForGame(gameId: string) {
+  if (!supabase) {
+    return {
+      error:
+        "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.",
+      links: [],
     };
   }
 
@@ -332,18 +456,18 @@ async function getSupabaseResourcesForGame(gameId: string) {
     if (error) {
       return {
         error: error.message,
-        resources: [],
+        links: [],
       };
     }
 
     return {
       error: null,
-      resources: ((data ?? []) as SupabaseResource[]).map(toCommunityLink),
+      links: ((data ?? []) as SupabaseResource[]).map(toCommunityLink),
     };
   } catch (error) {
     return {
       error: getErrorMessage(error),
-      resources: [],
+      links: [],
     };
   }
 }
@@ -468,6 +592,44 @@ function toCommunityLink(resource: SupabaseResource): CommunityLink {
   };
 }
 
+function toResourceGroups(resources: SupabaseResource[]): GameDetailResourceGroup[] {
+  const groups = new Map<string, Resource[]>();
+
+  for (const resource of resources) {
+    const groupTitle = resource.group_title?.trim() || "Resources";
+    const items = groups.get(groupTitle) ?? [];
+
+    items.push(toResource(resource));
+    groups.set(groupTitle, items);
+  }
+
+  return [...groups.entries()].map(([title, items]) => ({
+    createdAt: items[0]?.createdAt ?? new Date().toISOString(),
+    description: undefined,
+    gameId: items[0]?.gameId ?? "",
+    id: toSlug(title),
+    isFeatured: true,
+    isVerified: true,
+    resources: items,
+    title,
+    updatedAt: items[0]?.updatedAt ?? new Date().toISOString(),
+  }));
+}
+
+function toResource(resource: SupabaseResource): Resource {
+  return {
+    category: getResourceCategory(resource.icon),
+    createdAt: resource.created_at,
+    description: resource.label,
+    gameId: resource.game_id,
+    id: resource.id,
+    label: resource.title,
+    sourceUrl: resource.url,
+    updatedAt: resource.created_at,
+    url: resource.url,
+  };
+}
+
 function toSeason(season: SupabaseSeason): Season {
   return {
     createdAt: season.created_at,
@@ -502,6 +664,12 @@ function getCommunityLinkType(icon: string): CommunityLinkType {
   return communityLinkTypes.includes(icon as CommunityLinkType) ?
       (icon as CommunityLinkType)
     : "forum";
+}
+
+function getResourceCategory(icon: string): ResourceCategory {
+  return resourceCategories.includes(icon as ResourceCategory) ?
+      (icon as ResourceCategory)
+    : "tools";
 }
 
 function getEventType(type: string): EventType {
@@ -565,6 +733,14 @@ function toDateOnly(value: string) {
   return value.slice(0, 10);
 }
 
+function toSlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -582,6 +758,15 @@ function isMissingTimelineEventsTableError(
       error?.message?.includes("timeline_events") &&
         error.message.includes("schema cache")
     )
+  );
+}
+
+function isMissingGameResourcesSectionError(
+  error: { code?: string; message?: string } | null
+) {
+  return Boolean(
+    error?.message?.includes("game_resources.section") ||
+      (error?.message?.includes("column") && error.message.includes("section"))
   );
 }
 

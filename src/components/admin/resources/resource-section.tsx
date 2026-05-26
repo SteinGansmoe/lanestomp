@@ -16,6 +16,7 @@ export function AdminResourcesSection({
   editingResourceId,
   gameNamesById,
   games,
+  mode = "resources",
   onCancelEdit,
   onCreateChange,
   onCreateSubmit,
@@ -32,6 +33,7 @@ export function AdminResourcesSection({
   editingResourceId: string | null;
   gameNamesById: Map<string, string>;
   games: AdminGame[];
+  mode?: "community" | "resources";
   onCancelEdit: () => void;
   onCreateChange: (form: ResourceFormState) => void;
   onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
@@ -46,6 +48,24 @@ export function AdminResourcesSection({
     games,
     gameNamesById
   );
+  const copy =
+    mode === "community" ?
+      {
+        createTitle: "Create community link",
+        editTitle: "Edit community link",
+        emptyMessage: "No community links found.",
+        listTitle: "Community links",
+        selectMessage: "Select a community link below to edit it.",
+        submitLabel: "Create community link",
+      }
+    : {
+        createTitle: "Create resource",
+        editTitle: "Edit resource",
+        emptyMessage: "No resources found.",
+        listTitle: "Resources",
+        selectMessage: "Select a resource below to edit it.",
+        submitLabel: "Create resource",
+      };
 
   return (
     <>
@@ -56,19 +76,23 @@ export function AdminResourcesSection({
           onChange={onCreateChange}
           onSubmit={onCreateSubmit}
           status={createStatus}
-          submitLabel="Create resource"
-          title="Create resource"
+          submitLabel={copy.submitLabel}
+          title={copy.createTitle}
+          mode={mode}
         />
 
         <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
           <CardHeader>
-            <CardTitle className="font-mono text-xl">Edit resource</CardTitle>
+            <CardTitle className="font-mono text-xl">
+              {copy.editTitle}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {editingResourceId ? (
               <ResourceForm
                 form={editForm}
                 games={games}
+                mode={mode}
                 onCancel={onCancelEdit}
                 onChange={onEditChange}
                 onSubmit={onEditSubmit}
@@ -77,7 +101,7 @@ export function AdminResourcesSection({
               />
             ) : (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
-                Select a resource below to edit it.
+                {copy.selectMessage}
                 {editStatus.success ? (
                   <p className="mt-3 text-emerald-200">{editStatus.success}</p>
                 ) : null}
@@ -88,7 +112,7 @@ export function AdminResourcesSection({
       </div>
 
       <AdminGroupedListCard
-        emptyMessage="No resources found."
+        emptyMessage={copy.emptyMessage}
         groups={resourceGroups.map((group) => ({
           children: (
             <ul className="space-y-3 p-4">
@@ -103,7 +127,9 @@ export function AdminResourcesSection({
                         {resource.title}
                       </p>
                       <p className="mt-1 text-sm text-zinc-400">
-                        {resource.label} / {resource.icon}
+                        {mode === "resources" ?
+                          `${resource.group_title ?? "Ungrouped"} / ${resource.icon}`
+                        : `${resource.label} / ${resource.icon}`}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -154,8 +180,8 @@ export function AdminResourcesSection({
           id: group.gameId,
           title: group.gameName,
         }))}
-        storageKey="seasontracker.admin.resources.collapsedGroups"
-        title="Resources"
+        storageKey={`seasontracker.admin.${mode}.collapsedGroups`}
+        title={copy.listTitle}
       />
     </>
   );

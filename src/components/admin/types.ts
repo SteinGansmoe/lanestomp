@@ -19,10 +19,12 @@ export type AdminSeason = {
 
 export type AdminResource = {
   game_id: string;
+  group_title: string | null;
   icon: string;
   id: string;
   is_active: boolean;
   label: string;
+  section: "community" | "resources";
   sort_order: number;
   title: string;
   url: string;
@@ -46,14 +48,22 @@ export type AdminData = {
   timelineEvents: AdminTimelineEvent[];
 };
 
-export type AdminSection = "games" | "overview" | "resources" | "seasons" | "timeline";
+export type AdminSection =
+  | "community"
+  | "games"
+  | "overview"
+  | "resources"
+  | "seasons"
+  | "timeline";
 
 export type ResourceFormState = {
   game_id: string;
+  group_title: string;
   icon: string;
   id: string;
   is_active: boolean;
   label: string;
+  section: "community" | "resources";
   sort_order: string;
   title: string;
   url: string;
