@@ -3,28 +3,24 @@
 import { createClient } from "@supabase/supabase-js";
 
 import type { AdminLeagueMatchup } from "@/src/components/admin/types";
+import {
+  buildLeagueMatchupDraftPrompt,
+  matchupDraftSchema,
+  matchupDraftSectionKeys,
+  type MatchupDraftSectionKey,
+  type MatchupDraftSections,
+} from "@/src/features/league/matchup-draft-prompt";
 
 type GenerateDraftInput = {
   accessToken: string;
   matchupId: number;
 };
 
-type DraftSections = Pick<
-  AdminLeagueMatchup,
-  | "danger_windows"
-  | "early_game"
-  | "itemization_notes"
-  | "overview"
-  | "power_spikes"
-  | "trading_pattern"
-  | "win_conditions"
->;
-
 type GenerateDraftResult =
   | {
-      draft: DraftSections;
+      draft: MatchupDraftSections;
       ok: true;
-      provider: "placeholder";
+      provider: "openai" | "placeholder";
     }
   | {
       error: string;
@@ -45,6 +41,8 @@ type ChampionRow = {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const openaiApiKey = process.env.OPENAI_API_KEY;
+const openaiMatchupModel = process.env.OPENAI_MATCHUP_MODEL ?? "gpt-4.1-mini";
 
 export async function generateLeagueMatchupDraft({
   accessToken,
@@ -130,15 +128,22 @@ export async function generateLeagueMatchupDraft({
     championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
   const championBName =
     championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
-  const draft = await generateDraftWithPlaceholderProvider({
+  const providerResult = await generateDraft({
+    adminNotes: matchup.admin_notes,
     championAName,
     championBName,
     role: matchup.role,
   });
+
+  if (!providerResult.ok) {
+    return providerResult;
+  }
+
+  const { draft, provider } = providerResult;
   const generatedAt = new Date().toISOString();
   const adminNotes = appendGenerationNote(
     matchup.admin_notes,
-    `Placeholder draft generated ${generatedAt}. Review and edit before publishing.`
+    `${provider === "openai" ? "AI" : "Placeholder"} draft generated ${generatedAt}. Review and edit before publishing.`
   );
 
   const { error: updateError } = await supabase
@@ -163,11 +168,152 @@ export async function generateLeagueMatchupDraft({
   return {
     draft,
     ok: true,
-    provider: "placeholder",
+    provider,
   };
 }
 
-async function generateDraftWithPlaceholderProvider({
+async function generateDraft({
+  adminNotes,
+  championAName,
+  championBName,
+  role,
+}: {
+  adminNotes: string | null;
+  championAName: string;
+  championBName: string;
+  role: AdminLeagueMatchup["role"];
+}): Promise<GenerateDraftResult> {
+  if (!openaiApiKey) {
+    return {
+      draft: generateDraftWithPlaceholderProvider({
+        championAName,
+        championBName,
+        role,
+      }),
+      ok: true,
+      provider: "placeholder",
+    };
+  }
+
+  return generateDraftWithOpenAIProvider({
+    adminNotes,
+    championAName,
+    championBName,
+    role,
+  });
+}
+
+async function generateDraftWithOpenAIProvider({
+  adminNotes,
+  championAName,
+  championBName,
+  role,
+}: {
+  adminNotes: string | null;
+  championAName: string;
+  championBName: string;
+  role: AdminLeagueMatchup["role"];
+}): Promise<GenerateDraftResult> {
+  const prompt = buildLeagueMatchupDraftPrompt({
+    adminNotes,
+    championAName,
+    championBName,
+    role,
+  });
+  let response: Response;
+
+  try {
+    response = await fetch("https://api.openai.com/v1/responses", {
+      body: JSON.stringify({
+        input: [
+          {
+            content: prompt.systemPrompt,
+            role: "system",
+          },
+          {
+            content: prompt.userPrompt,
+            role: "user",
+          },
+        ],
+        max_output_tokens: 1200,
+        model: openaiMatchupModel,
+        store: false,
+        temperature: 0.4,
+        text: {
+          format: {
+            name: "league_matchup_draft",
+            schema: matchupDraftSchema,
+            strict: true,
+            type: "json_schema",
+          },
+        },
+      }),
+      headers: {
+        Authorization: `Bearer ${openaiApiKey}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+  } catch {
+    return {
+      error: "AI provider could not be reached.",
+      ok: false,
+    };
+  }
+
+  if (!response.ok) {
+    const errorBody = await readOpenAIError(response);
+
+    return {
+      error: `AI provider failed: ${errorBody}`,
+      ok: false,
+    };
+  }
+
+  let responseBody: OpenAIResponseBody;
+
+  try {
+    responseBody = (await response.json()) as OpenAIResponseBody;
+  } catch {
+    return {
+      error: "AI provider returned an unreadable response.",
+      ok: false,
+    };
+  }
+
+  if (responseBody.error?.message) {
+    return {
+      error: `AI provider failed: ${responseBody.error.message}`,
+      ok: false,
+    };
+  }
+
+  const outputText = getOpenAIOutputText(responseBody);
+
+  if (!outputText) {
+    return {
+      error: "AI provider returned no draft content.",
+      ok: false,
+    };
+  }
+
+  const draft = parseDraftSections(outputText);
+
+  if (!draft) {
+    return {
+      error: "AI provider returned draft content in an unexpected format.",
+      ok: false,
+    };
+  }
+
+  return {
+    draft,
+    ok: true,
+    provider: "openai",
+  };
+}
+
+function generateDraftWithPlaceholderProvider({
   championAName,
   championBName,
   role,
@@ -175,7 +321,7 @@ async function generateDraftWithPlaceholderProvider({
   championAName: string;
   championBName: string;
   role: AdminLeagueMatchup["role"];
-}): Promise<DraftSections> {
+}): MatchupDraftSections {
   const roleLabel = role === "adc" ? "ADC" : role;
 
   return {
@@ -189,8 +335,78 @@ async function generateDraftWithPlaceholderProvider({
   };
 }
 
+async function readOpenAIError(response: Response) {
+  const fallbackMessage = `${response.status} ${response.statusText}`.trim();
+
+  try {
+    const body = (await response.json()) as {
+      error?: {
+        message?: string;
+      };
+    };
+
+    return body.error?.message ?? fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
+function getOpenAIOutputText(responseBody: OpenAIResponseBody) {
+  if (responseBody.output_text) {
+    return responseBody.output_text;
+  }
+
+  for (const output of responseBody.output ?? []) {
+    for (const content of output.content ?? []) {
+      if (content.type === "output_text" && content.text) {
+        return content.text;
+      }
+    }
+  }
+
+  return null;
+}
+
+function parseDraftSections(outputText: string): MatchupDraftSections | null {
+  try {
+    const parsed = JSON.parse(outputText) as Partial<
+      Record<MatchupDraftSectionKey, unknown>
+    >;
+
+    if (
+      matchupDraftSectionKeys.every(
+        (key) => typeof parsed[key] === "string" && parsed[key].trim()
+      )
+    ) {
+      return Object.fromEntries(
+        matchupDraftSectionKeys.map((key) => [
+          key,
+          parsed[key]?.toString().trim(),
+        ])
+      ) as MatchupDraftSections;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function appendGenerationNote(currentNotes: string | null, nextNote: string) {
   const trimmedNotes = currentNotes?.trim();
 
   return trimmedNotes ? `${trimmedNotes}\n\n${nextNote}` : nextNote;
 }
+
+type OpenAIResponseBody = {
+  error?: {
+    message?: string;
+  };
+  output?: Array<{
+    content?: Array<{
+      text?: string;
+      type?: string;
+    }>;
+  }>;
+  output_text?: string;
+};
