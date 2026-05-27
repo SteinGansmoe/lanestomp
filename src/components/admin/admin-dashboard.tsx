@@ -54,6 +54,7 @@ import type {
   SeasonFormState,
   TimelineEventFormState,
 } from "./types";
+import { generateLeagueMatchupDraft } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
@@ -148,6 +149,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     isLoading: boolean;
     success: string | null;
   }>({ error: null, isLoading: false, success: null });
+  const [generatingLeagueMatchupId, setGeneratingLeagueMatchupId] = useState<
+    number | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
   const [resourcesSetupMessage, setResourcesSetupMessage] = useState<
@@ -1101,6 +1105,69 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  async function handleGenerateLeagueMatchupDraft(matchup: AdminLeagueMatchup) {
+    if (!supabase) {
+      setEditLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setGeneratingLeagueMatchupId(matchup.id);
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: true,
+      success: null,
+    });
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (sessionError || !accessToken) {
+      setGeneratingLeagueMatchupId(null);
+      setEditLeagueMatchupStatus({
+        error: sessionError?.message ?? "Admin session is not ready.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const result = await generateLeagueMatchupDraft({
+      accessToken,
+      matchupId: matchup.id,
+    });
+
+    if (!result.ok) {
+      setGeneratingLeagueMatchupId(null);
+      setEditLeagueMatchupStatus({
+        error: result.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+
+    if (editingLeagueMatchupId === matchup.id) {
+      setEditLeagueMatchupForm({
+        ...editLeagueMatchupForm,
+        ...normalizeDraftForForm(result.draft),
+      });
+    }
+
+    setGeneratingLeagueMatchupId(null);
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: "League matchup draft generated. Review before publishing.",
+    });
+  }
+
   function getGameFormError(form: GameFormState) {
     if (!form.id || !form.name || !form.slug) {
       return "Game ID, name, and slug are required.";
@@ -1607,8 +1674,10 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onCreateSubmit={handleCreateLeagueMatchup}
                     onEditChange={setEditLeagueMatchupForm}
                     onEditSubmit={handleUpdateLeagueMatchup}
+                    onGenerateDraft={handleGenerateLeagueMatchupDraft}
                     onMarkReviewed={handleMarkLeagueMatchupReviewed}
                     onStartEdit={startEditingLeagueMatchup}
+                    generatingMatchupId={generatingLeagueMatchupId}
                   />
                 ) : null}
               </div>
@@ -1664,5 +1733,37 @@ function normalizeResourceFormForSection(
     group_title: section === "community" ? "" : form.group_title,
     icon: iconOptions.includes(form.icon) ? form.icon : iconOptions[0],
     section,
+  };
+}
+
+function normalizeDraftForForm(
+  draft: Pick<
+    AdminLeagueMatchup,
+    | "danger_windows"
+    | "early_game"
+    | "itemization_notes"
+    | "overview"
+    | "power_spikes"
+    | "trading_pattern"
+    | "win_conditions"
+  >
+): Pick<
+  LeagueMatchupFormState,
+  | "danger_windows"
+  | "early_game"
+  | "itemization_notes"
+  | "overview"
+  | "power_spikes"
+  | "trading_pattern"
+  | "win_conditions"
+> {
+  return {
+    danger_windows: draft.danger_windows ?? "",
+    early_game: draft.early_game ?? "",
+    itemization_notes: draft.itemization_notes ?? "",
+    overview: draft.overview ?? "",
+    power_spikes: draft.power_spikes ?? "",
+    trading_pattern: draft.trading_pattern ?? "",
+    win_conditions: draft.win_conditions ?? "",
   };
 }

@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { CheckCircle2, Pencil } from "lucide-react";
+import { CheckCircle2, Pencil, Sparkles } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import {
@@ -28,12 +28,14 @@ export function AdminLeagueMatchupsSection({
   editForm,
   editStatus,
   editingMatchupId,
+  generatingMatchupId,
   matchups,
   onCancelEdit,
   onCreateChange,
   onCreateSubmit,
   onEditChange,
   onEditSubmit,
+  onGenerateDraft,
   onMarkReviewed,
   onStartEdit,
 }: {
@@ -43,12 +45,14 @@ export function AdminLeagueMatchupsSection({
   editForm: LeagueMatchupFormState;
   editStatus: FormStatus;
   editingMatchupId: number | null;
+  generatingMatchupId: number | null;
   matchups: AdminLeagueMatchup[];
   onCancelEdit: () => void;
   onCreateChange: (form: LeagueMatchupFormState) => void;
   onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEditChange: (form: LeagueMatchupFormState) => void;
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onGenerateDraft: (matchup: AdminLeagueMatchup) => void;
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
 }) {
@@ -120,6 +124,7 @@ export function AdminLeagueMatchupsSection({
                 const championA = championsById.get(matchup.champion_a_id);
                 const championB = championsById.get(matchup.champion_b_id);
                 const contentState = getMatchupContentState(matchup);
+                const isGenerating = generatingMatchupId === matchup.id;
 
                 return (
                   <li
@@ -164,7 +169,19 @@ export function AdminLeagueMatchupsSection({
                     ) : null}
                     <div className="mt-4 flex flex-wrap gap-3">
                       <Button
+                        className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
+                        disabled={generatingMatchupId !== null}
+                        onClick={() => onGenerateDraft(matchup)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Sparkles className="size-3.5" aria-hidden="true" />
+                        {isGenerating ? "Generating..." : "Generate draft"}
+                      </Button>
+                      <Button
                         className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                        disabled={isGenerating}
                         onClick={() => onStartEdit(matchup)}
                         size="sm"
                         type="button"
@@ -175,7 +192,10 @@ export function AdminLeagueMatchupsSection({
                       </Button>
                       <Button
                         className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
-                        disabled={matchup.generation_status === "reviewed"}
+                        disabled={
+                          isGenerating ||
+                          matchup.generation_status === "reviewed"
+                        }
                         onClick={() => onMarkReviewed(matchup)}
                         size="sm"
                         type="button"
