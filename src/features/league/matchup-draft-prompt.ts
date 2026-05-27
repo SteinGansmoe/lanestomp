@@ -1,4 +1,4 @@
-type LeagueRole = "mid" | "top" | "jungle" | "adc" | "support";
+export type LeagueRole = "mid" | "top" | "jungle" | "adc" | "support";
 
 export const matchupDraftSectionKeys = [
   "overview",
