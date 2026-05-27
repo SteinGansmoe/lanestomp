@@ -12,6 +12,11 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
         { href: "/admin/resources", label: "Resources", section: "resources" },
         { href: "/admin/community", label: "Community", section: "community" },
         { href: "/admin/timeline", label: "Timeline", section: "timeline" },
+        {
+          href: "/admin/league/matchups",
+          label: "League Matchups",
+          section: "league-matchups",
+        },
       ].map((item) => {
         const isActive = item.section === activeSection;
 

@@ -1,6 +1,7 @@
 import type {
   AdminData,
   GameFormState,
+  LeagueMatchupFormState,
   ResourceFormState,
   SeasonFormState,
   TimelineEventFormState,
@@ -48,8 +49,25 @@ export const emptyTimelineEventForm: TimelineEventFormState = {
   title: "",
 };
 
+export const emptyLeagueMatchupForm: LeagueMatchupFormState = {
+  champion_a_id: "",
+  champion_b_id: "",
+  confidence_level: "",
+  danger_windows: "",
+  difficulty_rating: "",
+  early_game: "",
+  itemization_notes: "",
+  overview: "",
+  power_spikes: "",
+  role: "mid",
+  trading_pattern: "",
+  win_conditions: "",
+};
+
 export const emptyAdminData: AdminData = {
   games: [],
+  leagueChampions: [],
+  leagueMatchups: [],
   resources: [],
   seasons: [],
   timelineEvents: [],
@@ -59,6 +77,8 @@ export const missingResourcesTableMessage =
   "Game detail resources are not fully set up in Supabase yet. Apply the latest game_resources migration to enable the Resources and Community admin pages.";
 export const missingTimelineEventsTableMessage =
   "Timeline events are not set up in Supabase yet. Apply the timeline_events migration to enable the Timeline admin page.";
+export const missingLeagueMatchupsTableMessage =
+  "League matchup management is not fully set up in Supabase yet. Apply the latest league_matchups migration to enable this admin page.";
 
 export const fieldClassName =
   "w-full rounded-lg border border-white/10 bg-[#111a2c] px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50";

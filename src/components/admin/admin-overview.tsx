@@ -21,25 +21,28 @@ function AdminStatCard({ label, value }: { label: string; value: number }) {
 
 export function AdminOverview({
   gamesCount,
+  leagueMatchupsCount,
   resourcesCount,
   seasonsCount,
   timelineEventsCount,
 }: {
   gamesCount: number;
+  leagueMatchupsCount: number;
   resourcesCount: number;
   seasonsCount: number;
   timelineEventsCount: number;
 }) {
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <AdminStatCard label="Games" value={gamesCount} />
         <AdminStatCard label="Seasons" value={seasonsCount} />
         <AdminStatCard label="Resources" value={resourcesCount} />
         <AdminStatCard label="Timeline" value={timelineEventsCount} />
+        <AdminStatCard label="LoL matchups" value={leagueMatchupsCount} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-5">
         <AdminSectionCard
           count={gamesCount}
           href="/admin/games"
@@ -63,6 +66,12 @@ export function AdminOverview({
           href="/admin/timeline"
           label="Manage timeline"
           summary="Create and edit compact game timeline events."
+        />
+        <AdminSectionCard
+          count={leagueMatchupsCount}
+          href="/admin/league/matchups"
+          label="Manage League"
+          summary="Create and edit structured League matchup guidance."
         />
       </div>
     </>

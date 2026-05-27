@@ -41,8 +41,34 @@ export type AdminTimelineEvent = {
   title: string;
 };
 
+export type AdminLeagueChampion = {
+  id: string;
+  image_url: string;
+  name: string;
+  title: string;
+};
+
+export type AdminLeagueMatchup = {
+  champion_a_id: string;
+  champion_b_id: string;
+  confidence_level: string | null;
+  danger_windows: string | null;
+  difficulty_rating: number | null;
+  early_game: string | null;
+  id: number;
+  itemization_notes: string | null;
+  overview: string | null;
+  power_spikes: string | null;
+  role: "mid" | "top" | "jungle" | "adc" | "support";
+  trading_pattern: string | null;
+  updated_at: string | null;
+  win_conditions: string | null;
+};
+
 export type AdminData = {
   games: AdminGame[];
+  leagueChampions: AdminLeagueChampion[];
+  leagueMatchups: AdminLeagueMatchup[];
   resources: AdminResource[];
   seasons: AdminSeason[];
   timelineEvents: AdminTimelineEvent[];
@@ -51,6 +77,7 @@ export type AdminData = {
 export type AdminSection =
   | "community"
   | "games"
+  | "league-matchups"
   | "overview"
   | "resources"
   | "seasons"
@@ -94,6 +121,21 @@ export type TimelineEventFormState = {
   is_pinned: boolean;
   season_id: string;
   title: string;
+};
+
+export type LeagueMatchupFormState = {
+  champion_a_id: string;
+  champion_b_id: string;
+  confidence_level: string;
+  danger_windows: string;
+  difficulty_rating: string;
+  early_game: string;
+  itemization_notes: string;
+  overview: string;
+  power_spikes: string;
+  role: "mid" | "top" | "jungle" | "adc" | "support";
+  trading_pattern: string;
+  win_conditions: string;
 };
 
 export type FormStatus = {

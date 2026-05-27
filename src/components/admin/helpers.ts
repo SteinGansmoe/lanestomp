@@ -69,6 +69,18 @@ export function isMissingTimelineEventsTableError(
   );
 }
 
+export function isMissingLeagueMatchupsTableError(
+  error: { code?: string; message?: string } | null
+) {
+  return (
+    error?.code === "PGRST205" ||
+    Boolean(
+      error?.message?.includes("league_matchups") &&
+        error.message.includes("schema cache")
+    )
+  );
+}
+
 export function toSlug(value: string) {
   return value
     .trim()

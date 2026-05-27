@@ -17,14 +17,17 @@ import { AdminOverview } from "./admin-overview";
 import {
   emptyAdminData,
   emptyGameForm,
+  emptyLeagueMatchupForm,
   emptyResourceForm,
   emptySeasonForm,
   emptyTimelineEventForm,
+  missingLeagueMatchupsTableMessage,
   missingResourcesTableMessage,
   missingTimelineEventsTableMessage,
   sessionCheckTimeoutMs,
 } from "./constants";
 import {
+  isMissingLeagueMatchupsTableError,
   isMissingGameResourcesTableError,
   isMissingTimelineEventsTableError,
   toDateTimeLocalValue,
@@ -32,17 +35,21 @@ import {
   toSlug,
 } from "./helpers";
 import { AdminGamesSection } from "./games/game-section";
+import { AdminLeagueMatchupsSection } from "./league/league-matchup-section";
 import { AdminResourcesSection } from "./resources/resource-section";
 import { AdminSeasonsSection } from "./seasons/season-section";
 import { AdminTimelineSection } from "./timeline/timeline-section";
 import type {
   AdminData,
   AdminGame,
+  AdminLeagueChampion,
+  AdminLeagueMatchup,
   AdminResource,
   AdminSeason,
   AdminSection,
   AdminTimelineEvent,
   GameFormState,
+  LeagueMatchupFormState,
   ResourceFormState,
   SeasonFormState,
   TimelineEventFormState,
@@ -114,12 +121,29 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     isLoading: boolean;
     success: string | null;
   }>({ error: null, isLoading: false, success: null });
+  const [createLeagueMatchupForm, setCreateLeagueMatchupForm] =
+    useState<LeagueMatchupFormState>(emptyLeagueMatchupForm);
+  const [createLeagueMatchupStatus, setCreateLeagueMatchupStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
   const [editTimelineForm, setEditTimelineForm] =
     useState<TimelineEventFormState>(emptyTimelineEventForm);
   const [editingTimelineEventId, setEditingTimelineEventId] = useState<
     string | null
   >(null);
   const [editTimelineStatus, setEditTimelineStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [editLeagueMatchupForm, setEditLeagueMatchupForm] =
+    useState<LeagueMatchupFormState>(emptyLeagueMatchupForm);
+  const [editingLeagueMatchupId, setEditingLeagueMatchupId] = useState<
+    number | null
+  >(null);
+  const [editLeagueMatchupStatus, setEditLeagueMatchupStatus] = useState<{
     error: string | null;
     isLoading: boolean;
     success: string | null;
@@ -132,11 +156,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [timelineSetupMessage, setTimelineSetupMessage] = useState<
     string | null
   >(null);
+  const [leagueMatchupsSetupMessage, setLeagueMatchupsSetupMessage] = useState<
+    string | null
+  >(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
   const router = useRouter();
   const pageTitle =
     section === "games" ? "Game management"
     : section === "community" ? "Community management"
+    : section === "league-matchups" ? "League matchup management"
     : section === "resources" ? "Resource management"
     : section === "seasons" ? "Season management"
     : section === "timeline" ? "Timeline management"
@@ -193,8 +221,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       cachedAdminUser = sessionUser;
       setUser(sessionUser);
 
-      const [gamesResult, resourcesResult, seasonsResult, timelineResult] =
-        await Promise.all([
+      const [
+        gamesResult,
+        resourcesResult,
+        seasonsResult,
+        timelineResult,
+        leagueChampionsResult,
+        leagueMatchupsResult,
+      ] = await Promise.all([
           supabase
             .from("games")
             .select("id, name, slug, description, icon_url, created_at")
@@ -220,6 +254,18 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             .order("is_pinned", { ascending: false })
             .order("event_date", { ascending: true })
             .order("created_at", { ascending: true }),
+          supabase
+            .from("league_champions")
+            .select("id, name, title, image_url")
+            .order("name", { ascending: true }),
+          supabase
+            .from("league_matchups")
+            .select(
+              "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, updated_at"
+            )
+            .order("champion_a_id", { ascending: true })
+            .order("champion_b_id", { ascending: true })
+            .order("role", { ascending: true }),
         ]);
 
       if (!isMounted) {
@@ -232,18 +278,27 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       const isMissingTimelineTable = isMissingTimelineEventsTableError(
         timelineResult.error
       );
+      const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
+        leagueMatchupsResult.error
+      );
 
       if (
         gamesResult.error ||
+        leagueChampionsResult.error ||
         seasonsResult.error ||
         (resourcesResult.error && !isMissingResourcesTable) ||
-        (timelineResult.error && !isMissingTimelineTable)
+        (timelineResult.error && !isMissingTimelineTable) ||
+        (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable)
       ) {
         setError(
           gamesResult.error?.message ??
+            leagueChampionsResult.error?.message ??
             seasonsResult.error?.message ??
             (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
             (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
+            (!isMissingLeagueMatchupsTable ?
+              leagueMatchupsResult.error?.message
+            : null) ??
             "Could not load admin data."
         );
         setIsLoading(false);
@@ -256,9 +311,16 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setTimelineSetupMessage(
         isMissingTimelineTable ? missingTimelineEventsTableMessage : null
       );
+      setLeagueMatchupsSetupMessage(
+        isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null
+      );
 
       const nextAdminData = {
         games: (gamesResult.data ?? []) as AdminGame[],
+        leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
+        leagueMatchups: isMissingLeagueMatchupsTable
+          ? []
+          : ((leagueMatchupsResult.data ?? []) as AdminLeagueMatchup[]),
         resources: isMissingResourcesTable
           ? []
           : ((resourcesResult.data ?? []) as AdminResource[]),
@@ -315,8 +377,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return false;
     }
 
-    const [gamesResult, resourcesResult, seasonsResult, timelineResult] =
-      await Promise.all([
+    const [
+      gamesResult,
+      resourcesResult,
+      seasonsResult,
+      timelineResult,
+      leagueChampionsResult,
+      leagueMatchupsResult,
+    ] = await Promise.all([
         supabase
           .from("games")
           .select("id, name, slug, description, icon_url, created_at")
@@ -342,6 +410,18 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           .order("is_pinned", { ascending: false })
           .order("event_date", { ascending: true })
           .order("created_at", { ascending: true }),
+        supabase
+          .from("league_champions")
+          .select("id, name, title, image_url")
+          .order("name", { ascending: true }),
+        supabase
+          .from("league_matchups")
+          .select(
+            "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, updated_at"
+          )
+          .order("champion_a_id", { ascending: true })
+          .order("champion_b_id", { ascending: true })
+          .order("role", { ascending: true }),
       ]);
 
     const isMissingResourcesTable = isMissingGameResourcesTableError(
@@ -350,18 +430,27 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     const isMissingTimelineTable = isMissingTimelineEventsTableError(
       timelineResult.error
     );
+    const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
+      leagueMatchupsResult.error
+    );
 
     if (
       gamesResult.error ||
+      leagueChampionsResult.error ||
       seasonsResult.error ||
       (resourcesResult.error && !isMissingResourcesTable) ||
-      (timelineResult.error && !isMissingTimelineTable)
+      (timelineResult.error && !isMissingTimelineTable) ||
+      (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable)
     ) {
       setError(
         gamesResult.error?.message ??
+          leagueChampionsResult.error?.message ??
           seasonsResult.error?.message ??
           (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
           (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
+          (!isMissingLeagueMatchupsTable ?
+            leagueMatchupsResult.error?.message
+          : null) ??
           "Could not load admin data."
       );
       return false;
@@ -373,9 +462,16 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setTimelineSetupMessage(
       isMissingTimelineTable ? missingTimelineEventsTableMessage : null
     );
+    setLeagueMatchupsSetupMessage(
+      isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null
+    );
 
     const nextAdminData = {
       games: (gamesResult.data ?? []) as AdminGame[],
+      leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
+      leagueMatchups: isMissingLeagueMatchupsTable
+        ? []
+        : ((leagueMatchupsResult.data ?? []) as AdminLeagueMatchup[]),
       resources: isMissingResourcesTable
         ? []
         : ((resourcesResult.data ?? []) as AdminResource[]),
@@ -784,6 +880,178 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  function getLeagueMatchupFormError(form: LeagueMatchupFormState) {
+    if (!form.champion_a_id || !form.champion_b_id || !form.role) {
+      return "Champion A, champion B, and role are required.";
+    }
+
+    if (form.champion_a_id === form.champion_b_id) {
+      return "Champion A and Champion B must be different.";
+    }
+
+    const difficultyRating = form.difficulty_rating.trim();
+
+    if (difficultyRating) {
+      const parsedRating = Number.parseInt(difficultyRating, 10);
+
+      if (
+        Number.isNaN(parsedRating) ||
+        parsedRating < 1 ||
+        parsedRating > 5
+      ) {
+        return "Difficulty rating must be between 1 and 5.";
+      }
+    }
+
+    return null;
+  }
+
+  function getLeagueMatchupPayload(form: LeagueMatchupFormState) {
+    const difficultyRating = form.difficulty_rating.trim();
+
+    return {
+      champion_a_id: form.champion_a_id,
+      champion_b_id: form.champion_b_id,
+      confidence_level: form.confidence_level.trim() || null,
+      danger_windows: form.danger_windows.trim() || null,
+      difficulty_rating: difficultyRating
+        ? Number.parseInt(difficultyRating, 10)
+        : null,
+      early_game: form.early_game.trim() || null,
+      itemization_notes: form.itemization_notes.trim() || null,
+      overview: form.overview.trim() || null,
+      power_spikes: form.power_spikes.trim() || null,
+      role: form.role,
+      trading_pattern: form.trading_pattern.trim() || null,
+      win_conditions: form.win_conditions.trim() || null,
+    };
+  }
+
+  async function handleCreateLeagueMatchup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase) {
+      setCreateLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const validationError = getLeagueMatchupFormError(createLeagueMatchupForm);
+
+    if (validationError) {
+      setCreateLeagueMatchupStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCreateLeagueMatchupStatus({
+      error: null,
+      isLoading: true,
+      success: null,
+    });
+
+    const { error: createError } = await supabase
+      .from("league_matchups")
+      .insert(getLeagueMatchupPayload(createLeagueMatchupForm));
+
+    if (createError) {
+      setCreateLeagueMatchupStatus({
+        error: createError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setCreateLeagueMatchupForm({
+      ...emptyLeagueMatchupForm,
+      champion_a_id: createLeagueMatchupForm.champion_a_id,
+      role: createLeagueMatchupForm.role,
+    });
+    setCreateLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: "League matchup created.",
+    });
+  }
+
+  function startEditingLeagueMatchup(matchup: AdminLeagueMatchup) {
+    setEditingLeagueMatchupId(matchup.id);
+    setEditLeagueMatchupStatus({ error: null, isLoading: false, success: null });
+    setEditLeagueMatchupForm({
+      champion_a_id: matchup.champion_a_id,
+      champion_b_id: matchup.champion_b_id,
+      confidence_level: matchup.confidence_level ?? "",
+      danger_windows: matchup.danger_windows ?? "",
+      difficulty_rating: matchup.difficulty_rating
+        ? String(matchup.difficulty_rating)
+        : "",
+      early_game: matchup.early_game ?? "",
+      itemization_notes: matchup.itemization_notes ?? "",
+      overview: matchup.overview ?? "",
+      power_spikes: matchup.power_spikes ?? "",
+      role: matchup.role,
+      trading_pattern: matchup.trading_pattern ?? "",
+      win_conditions: matchup.win_conditions ?? "",
+    });
+  }
+
+  function stopEditingLeagueMatchup() {
+    setEditingLeagueMatchupId(null);
+    setEditLeagueMatchupForm(emptyLeagueMatchupForm);
+    setEditLeagueMatchupStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function handleUpdateLeagueMatchup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !editingLeagueMatchupId) {
+      return;
+    }
+
+    const validationError = getLeagueMatchupFormError(editLeagueMatchupForm);
+
+    if (validationError) {
+      setEditLeagueMatchupStatus({
+        error: validationError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
+
+    const { error: updateError } = await supabase
+      .from("league_matchups")
+      .update(getLeagueMatchupPayload(editLeagueMatchupForm))
+      .eq("id", editingLeagueMatchupId);
+
+    if (updateError) {
+      setEditLeagueMatchupStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditingLeagueMatchupId(null);
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: "League matchup updated.",
+    });
+  }
+
   function getGameFormError(form: GameFormState) {
     if (!form.id || !form.name || !form.slug) {
       return "Game ID, name, and slug are required.";
@@ -1163,6 +1431,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               </Card>
             ) : null}
 
+            {leagueMatchupsSetupMessage ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
+                {leagueMatchupsSetupMessage}
+              </Card>
+            ) : null}
+
             <ViewTransition
               key={section}
               name="admin-section-content"
@@ -1180,6 +1454,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 {section === "overview" ? (
                   <AdminOverview
                     gamesCount={adminData.games.length}
+                    leagueMatchupsCount={adminData.leagueMatchups.length}
                     resourcesCount={resourcesRows.length}
                     seasonsCount={adminData.seasons.length}
                     timelineEventsCount={adminData.timelineEvents.length}
@@ -1266,6 +1541,24 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onStartEdit={startEditingTimelineEvent}
                     seasons={adminData.seasons}
                     timelineEvents={adminData.timelineEvents}
+                  />
+                ) : null}
+
+                {section === "league-matchups" ? (
+                  <AdminLeagueMatchupsSection
+                    champions={adminData.leagueChampions}
+                    createForm={createLeagueMatchupForm}
+                    createStatus={createLeagueMatchupStatus}
+                    editForm={editLeagueMatchupForm}
+                    editStatus={editLeagueMatchupStatus}
+                    editingMatchupId={editingLeagueMatchupId}
+                    matchups={adminData.leagueMatchups}
+                    onCancelEdit={stopEditingLeagueMatchup}
+                    onCreateChange={setCreateLeagueMatchupForm}
+                    onCreateSubmit={handleCreateLeagueMatchup}
+                    onEditChange={setEditLeagueMatchupForm}
+                    onEditSubmit={handleUpdateLeagueMatchup}
+                    onStartEdit={startEditingLeagueMatchup}
                   />
                 ) : null}
               </div>

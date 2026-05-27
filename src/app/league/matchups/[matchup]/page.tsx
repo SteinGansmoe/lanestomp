@@ -12,6 +12,10 @@ import {
   getChampionSplashUrl,
   type LeagueChampion,
 } from "@/src/features/league/champions";
+import {
+  getLeagueMatchup,
+  type LeagueMatchup,
+} from "@/src/features/league/matchups";
 import { isLeagueRole, type LeagueRole } from "@/src/features/league/roles";
 
 type LeagueMatchupPageProps = {
@@ -19,47 +23,54 @@ type LeagueMatchupPageProps = {
   searchParams: Promise<{ role?: string | string[] }>;
 };
 
-const matchupSections = [
+const matchupSectionDefinitions = [
   {
+    key: "overview",
     title: "Overview",
     accent: "cyan",
-    body:
+    placeholder:
       "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
   },
   {
+    key: "early_game",
     title: "Early game",
     accent: "emerald",
-    body:
+    placeholder:
       "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
   },
   {
+    key: "trading_pattern",
     title: "Trading pattern",
     accent: "violet",
-    body:
+    placeholder:
       "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
   },
   {
-    title: "Danger windows",
-    accent: "rose",
-    body:
-      "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
-  },
-  {
+    key: "power_spikes",
     title: "Power spikes",
     accent: "amber",
-    body:
+    placeholder:
       "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
   },
   {
+    key: "danger_windows",
+    title: "Danger windows",
+    accent: "rose",
+    placeholder:
+      "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
+  },
+  {
+    key: "itemization_notes",
     title: "Itemization notes",
     accent: "sky",
-    body:
+    placeholder:
       "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive starts, sustain options, and first recall priorities.",
   },
   {
+    key: "win_conditions",
     title: "Win conditions",
     accent: "teal",
-    body:
+    placeholder:
       "Summarize what each side needs from the lane: wave state, summoner spell pressure, roam timing, and when the matchup shifts from survival to control.",
   },
 ] as const;
@@ -77,6 +88,15 @@ export default async function LeagueMatchupPage({
   ]);
   const role = getValidRole(query.role);
   const { championA, championB } = parseMatchup(matchup, championsResult.champions);
+  const matchupResult =
+    championA && championB
+      ? await getLeagueMatchup({
+          championAId: championA.id,
+          championBId: championB.id,
+          role,
+        })
+      : null;
+  const sections = getMatchupSections(matchupResult?.matchup ?? null);
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
@@ -133,10 +153,34 @@ export default async function LeagueMatchupPage({
           </Card>
         ) : championA && championB ? (
           <>
-            <MatchupHero championA={championA} championB={championB} role={role} />
+            <MatchupHero
+              championA={championA}
+              championB={championB}
+              matchup={matchupResult?.matchup ?? null}
+              role={role}
+            />
+
+            {matchupResult?.error ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-5 text-amber-100">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                  <div>
+                    <CardTitle className="font-mono text-lg">
+                      Live matchup data is not ready yet
+                    </CardTitle>
+                    <p className="mt-2 text-sm leading-6 text-amber-100/80">
+                      Showing the placeholder matchup guide until the structured matchup table is available.
+                    </p>
+                    <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
+                      {matchupResult.error}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ) : null}
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {matchupSections.map((section) => (
+              {sections.map((section) => (
                 <article
                   className="group rounded-lg border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]"
                   key={section.title}
@@ -188,10 +232,12 @@ export default async function LeagueMatchupPage({
 function MatchupHero({
   championA,
   championB,
+  matchup,
   role,
 }: {
   championA: LeagueChampion;
   championB: LeagueChampion;
+  matchup: LeagueMatchup | null;
   role: LeagueRole;
 }) {
   const roleLabel = getRoleLabel(role);
@@ -221,11 +267,32 @@ function MatchupHero({
             <p className="mx-auto mt-5 max-w-56 text-sm leading-6 text-zinc-400">
               First-pass matchup notes. Real intelligence will plug into this structure later.
             </p>
+            {matchup ? (
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                {matchup.difficulty_rating ? (
+                  <MatchupMetaPill label={`Difficulty ${matchup.difficulty_rating}/5`} />
+                ) : null}
+                {matchup.confidence_level ? (
+                  <MatchupMetaPill label={`Confidence ${matchup.confidence_level}`} />
+                ) : null}
+                {matchup.updated_at ? (
+                  <MatchupMetaPill label={`Updated ${formatMatchupDate(matchup.updated_at)}`} />
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
         <ChampionPanel champion={championB} side="right" />
       </div>
     </section>
+  );
+}
+
+function MatchupMetaPill({ label }: { label: string }) {
+  return (
+    <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-zinc-300">
+      {label}
+    </span>
   );
 }
 
@@ -316,7 +383,34 @@ function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role;
 }
 
-function getSectionAccentClass(accent: (typeof matchupSections)[number]["accent"]) {
+function getMatchupSections(matchup: LeagueMatchup | null) {
+  return matchupSectionDefinitions.map((section) => ({
+    ...section,
+    body: getMatchupSectionBody(matchup, section.key, section.placeholder),
+  }));
+}
+
+function getMatchupSectionBody(
+  matchup: LeagueMatchup | null,
+  key: (typeof matchupSectionDefinitions)[number]["key"],
+  placeholder: string
+) {
+  const value = matchup?.[key];
+
+  return value?.trim() ? value : placeholder;
+}
+
+function formatMatchupDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function getSectionAccentClass(
+  accent: (typeof matchupSectionDefinitions)[number]["accent"]
+) {
   switch (accent) {
     case "amber":
       return "bg-amber-300/80";
