@@ -189,9 +189,7 @@ export default async function LeagueMatchupPage({
                   <h2 className="font-mono text-lg font-semibold text-white">
                     {section.title}
                   </h2>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    {section.body}
-                  </p>
+                  <MatchupSectionBody body={section.body} />
                 </article>
               ))}
             </div>
@@ -227,6 +225,25 @@ export default async function LeagueMatchupPage({
       </section>
     </main>
   );
+}
+
+function MatchupSectionBody({ body }: { body: string }) {
+  const bulletLines = getBulletLines(body);
+
+  if (bulletLines.length > 0) {
+    return (
+      <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-400">
+        {bulletLines.map((line, index) => (
+          <li className="flex gap-2" key={`${line}-${index}`}>
+            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-white/35" />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <p className="mt-3 text-sm leading-6 text-zinc-400">{body}</p>;
 }
 
 function MatchupHero({
@@ -398,6 +415,19 @@ function getMatchupSectionBody(
   const value = matchup?.[key];
 
   return value?.trim() ? value : placeholder;
+}
+
+function getBulletLines(value: string) {
+  const lines = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0 || !lines.every((line) => line.startsWith("- "))) {
+    return [];
+  }
+
+  return lines.map((line) => line.replace(/^-+\s*/, ""));
 }
 
 function formatMatchupDate(value: string) {

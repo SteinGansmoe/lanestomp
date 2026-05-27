@@ -141,7 +141,7 @@ export async function generateLeagueMatchupDraft({
   const generatedAt = new Date().toISOString();
   const adminNotes = appendGenerationNote(
     matchup.admin_notes,
-    `${provider === "openai" ? "AI" : "Placeholder"} draft generated ${generatedAt}. Review and edit before publishing.`
+    getGenerationNote(provider, generatedAt, providerResult.providerWarning)
   );
 
   const { error: updateError } = await supabase
@@ -174,4 +174,20 @@ function appendGenerationNote(currentNotes: string | null, nextNote: string) {
   const trimmedNotes = currentNotes?.trim();
 
   return trimmedNotes ? `${trimmedNotes}\n\n${nextNote}` : nextNote;
+}
+
+function getGenerationNote(
+  provider: LeagueMatchupDraftProvider,
+  generatedAt: string,
+  providerWarning?: string
+) {
+  if (provider === "openai") {
+    return `AI draft generated ${generatedAt}. Review and edit before publishing.`;
+  }
+
+  if (providerWarning) {
+    return `Placeholder draft generated ${generatedAt} after AI provider failure: ${providerWarning}. Review and edit before publishing.`;
+  }
+
+  return `Placeholder draft generated ${generatedAt} because OPENAI_API_KEY is not configured. Review and edit before publishing.`;
 }

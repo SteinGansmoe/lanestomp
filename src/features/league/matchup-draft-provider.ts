@@ -23,6 +23,7 @@ export type GenerateLeagueMatchupDraftContentResult =
       draft: MatchupDraftSections;
       ok: true;
       provider: LeagueMatchupDraftProvider;
+      providerWarning?: string;
     }
   | {
       error: string;
@@ -43,7 +44,18 @@ export async function generateLeagueMatchupDraftContent(
     };
   }
 
-  return generateDraftWithOpenAIProvider(input);
+  const openaiResult = await generateDraftWithOpenAIProvider(input);
+
+  if (openaiResult.ok) {
+    return openaiResult;
+  }
+
+  return {
+    draft: generateDraftWithPlaceholderProvider(input),
+    ok: true,
+    provider: "placeholder",
+    providerWarning: openaiResult.error,
+  };
 }
 
 async function generateDraftWithOpenAIProvider({
@@ -73,7 +85,7 @@ async function generateDraftWithOpenAIProvider({
             role: "user",
           },
         ],
-        max_output_tokens: 1200,
+        max_output_tokens: 900,
         model: openaiMatchupModel,
         store: false,
         temperature: 0.4,
@@ -159,13 +171,41 @@ function generateDraftWithPlaceholderProvider({
   const roleLabel = role === "adc" ? "ADC" : role;
 
   return {
-    danger_windows: `${championBName} becomes most dangerous when their key cooldowns are available and ${championAName} has already used mobility, crowd control, or wave control tools. Track those windows before stepping forward.`,
-    early_game: `Open the lane by identifying who controls the first waves. ${championAName} should avoid giving ${championBName} a clean early trade pattern until the matchup rhythm is confirmed.`,
-    itemization_notes: `Start with conservative, role-appropriate items and adapt around ${championBName}'s main damage profile. Prioritize survivability if the matchup tempo starts falling behind.`,
-    overview: `${championAName} versus ${championBName} in ${roleLabel} is a draft matchup guide generated from the structured SeasonTracker sections. Treat this as a review-ready starting point, not final published advice.`,
-    power_spikes: `Review level, item, and ultimate timing for both champions. ${championAName} should play more deliberately around ${championBName}'s first major spike and look to regain tempo after cooldowns are traded.`,
-    trading_pattern: `${championAName} wants short, intentional trades that avoid ${championBName}'s preferred response pattern. Use minion waves, spacing, and cooldown tracking before committing to extended fights.`,
-    win_conditions: `${championAName}'s win condition is to keep the lane state controlled, avoid unnecessary deaths during ${championBName}'s strongest windows, and convert stable pressure into map impact.`,
+    danger_windows: [
+      `- Respect ${championBName}'s key cooldowns before stepping forward.`,
+      `- Back off if ${championAName} has already spent mobility, crowd control, or wave control.`,
+      "- Re-enter when the main threat is down or the wave is safer.",
+    ].join("\n"),
+    early_game: [
+      "- Identify who controls the first waves.",
+      `- Avoid giving ${championBName} a clean early trade before the lane rhythm is clear.`,
+      "- Use spacing and minion advantage before forcing trades.",
+    ].join("\n"),
+    itemization_notes: [
+      `- Adapt around ${championBName}'s main damage profile.`,
+      "- Prioritize survivability if lane tempo falls behind.",
+      "- Choose sustain or defensive runes when trades become hard to reset.",
+    ].join("\n"),
+    overview: [
+      `- Treat ${championAName} vs ${championBName} in ${roleLabel} as a review-ready draft.`,
+      "- Track cooldowns and wave control before committing.",
+      "- Replace these placeholder notes before publishing.",
+    ].join("\n"),
+    power_spikes: [
+      "- Review level, item, and ultimate timing for both champions.",
+      `- Slow down around ${championBName}'s first major spike.`,
+      "- Regain tempo after important cooldowns are traded.",
+    ].join("\n"),
+    trading_pattern: [
+      `- Keep ${championAName}'s trades short and intentional.`,
+      `- Avoid ${championBName}'s preferred response pattern.`,
+      "- Commit longer only with wave help, spacing advantage, or cooldown edge.",
+    ].join("\n"),
+    win_conditions: [
+      "- Keep the lane state controlled.",
+      `- Avoid unnecessary deaths during ${championBName}'s strongest windows.`,
+      "- Convert stable pressure into map impact.",
+    ].join("\n"),
   };
 }
 
