@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ShieldAlert, Swords } from "lucide-react";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { connection } from "next/server";
 
 import { MatchupSelector } from "@/src/components/league/matchup-selector";
@@ -207,8 +207,8 @@ function MatchupHero({
             </p>
             <div className="mx-auto mt-5 grid max-w-44 grid-cols-[1fr_auto_1fr] items-center gap-2">
               <ChampionIcon champion={championA} />
-              <div className="flex size-11 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 text-violet-100">
-                <Swords className="size-5" aria-hidden="true" />
+              <div className="flex size-11 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 font-mono text-sm font-semibold text-violet-100 shadow-lg shadow-violet-950/30">
+                VS
               </div>
               <ChampionIcon champion={championB} />
             </div>
@@ -259,9 +259,9 @@ function ChampionPanel({
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
           {side === "left" ? "Champion A" : "Champion B"}
         </p>
-        <h1 className="mt-3 font-mono text-4xl font-semibold tracking-normal text-white">
+        <h2 className="mt-3 font-mono text-4xl font-semibold tracking-normal text-white">
           {champion.name}
-        </h1>
+        </h2>
         <p className="mt-2 max-w-sm text-sm capitalize text-zinc-300">
           {champion.title || "Champion"}
         </p>
