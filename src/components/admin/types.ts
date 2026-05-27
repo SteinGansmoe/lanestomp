@@ -49,16 +49,21 @@ export type AdminLeagueChampion = {
 };
 
 export type AdminLeagueMatchup = {
+  admin_notes: string | null;
   champion_a_id: string;
   champion_b_id: string;
   confidence_level: string | null;
   danger_windows: string | null;
   difficulty_rating: number | null;
   early_game: string | null;
+  generated_at: string | null;
+  generation_status: "draft" | "reviewed";
   id: number;
   itemization_notes: string | null;
   overview: string | null;
   power_spikes: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   role: "mid" | "top" | "jungle" | "adc" | "support";
   trading_pattern: string | null;
   updated_at: string | null;
@@ -124,6 +129,7 @@ export type TimelineEventFormState = {
 };
 
 export type LeagueMatchupFormState = {
+  admin_notes: string;
   champion_a_id: string;
   champion_b_id: string;
   confidence_level: string;

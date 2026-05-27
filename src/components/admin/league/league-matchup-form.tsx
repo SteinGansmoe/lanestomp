@@ -164,6 +164,17 @@ export function LeagueMatchupForm({
         </label>
       </div>
 
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Admin notes</span>
+        <textarea
+          className={`${fieldClassName} min-h-24 resize-y py-2`}
+          disabled={status.isLoading}
+          onChange={(event) => updateField("admin_notes", event.target.value)}
+          placeholder="Corrections, source notes, or future AI context"
+          value={form.admin_notes}
+        />
+      </label>
+
       <div className="grid gap-4 xl:grid-cols-2">
         {matchupTextFields.map((field) => (
           <label className="block space-y-2" key={field.key}>

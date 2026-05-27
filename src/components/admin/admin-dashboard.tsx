@@ -261,7 +261,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           supabase
             .from("league_matchups")
             .select(
-              "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, updated_at"
+              "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
             )
             .order("champion_a_id", { ascending: true })
             .order("champion_b_id", { ascending: true })
@@ -417,7 +417,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         supabase
           .from("league_matchups")
           .select(
-            "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, updated_at"
+            "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
           )
           .order("champion_a_id", { ascending: true })
           .order("champion_b_id", { ascending: true })
@@ -910,6 +910,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     const difficultyRating = form.difficulty_rating.trim();
 
     return {
+      admin_notes: form.admin_notes.trim() || null,
       champion_a_id: form.champion_a_id,
       champion_b_id: form.champion_b_id,
       confidence_level: form.confidence_level.trim() || null,
@@ -986,6 +987,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setEditingLeagueMatchupId(matchup.id);
     setEditLeagueMatchupStatus({ error: null, isLoading: false, success: null });
     setEditLeagueMatchupForm({
+      admin_notes: matchup.admin_notes ?? "",
       champion_a_id: matchup.champion_a_id,
       champion_b_id: matchup.champion_b_id,
       confidence_level: matchup.confidence_level ?? "",
@@ -1049,6 +1051,53 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       error: null,
       isLoading: false,
       success: "League matchup updated.",
+    });
+  }
+
+  async function handleMarkLeagueMatchupReviewed(matchup: AdminLeagueMatchup) {
+    if (!supabase) {
+      setEditLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (!user) {
+      setEditLeagueMatchupStatus({
+        error: "Admin session is not ready.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
+
+    const { error: reviewError } = await supabase
+      .from("league_matchups")
+      .update({
+        generation_status: "reviewed",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
+      })
+      .eq("id", matchup.id);
+
+    if (reviewError) {
+      setEditLeagueMatchupStatus({
+        error: reviewError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: "League matchup marked as reviewed.",
     });
   }
 
@@ -1558,6 +1607,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onCreateSubmit={handleCreateLeagueMatchup}
                     onEditChange={setEditLeagueMatchupForm}
                     onEditSubmit={handleUpdateLeagueMatchup}
+                    onMarkReviewed={handleMarkLeagueMatchupReviewed}
                     onStartEdit={startEditingLeagueMatchup}
                   />
                 ) : null}

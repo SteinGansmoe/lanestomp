@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { Pencil } from "lucide-react";
+import { CheckCircle2, Pencil } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import {
@@ -34,6 +34,7 @@ export function AdminLeagueMatchupsSection({
   onCreateSubmit,
   onEditChange,
   onEditSubmit,
+  onMarkReviewed,
   onStartEdit,
 }: {
   champions: AdminLeagueChampion[];
@@ -48,6 +49,7 @@ export function AdminLeagueMatchupsSection({
   onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEditChange: (form: LeagueMatchupFormState) => void;
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
 }) {
   const championsById = new Map(
@@ -95,6 +97,11 @@ export function AdminLeagueMatchupsSection({
             ) : (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
                 Select a matchup below to edit its structured guidance.
+                {editStatus.error ? (
+                  <p className="mt-3 rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-rose-100">
+                    {editStatus.error}
+                  </p>
+                ) : null}
                 {editStatus.success ? (
                   <p className="mt-3 text-emerald-200">{editStatus.success}</p>
                 ) : null}
@@ -112,6 +119,7 @@ export function AdminLeagueMatchupsSection({
               {group.items.map((matchup) => {
                 const championA = championsById.get(matchup.champion_a_id);
                 const championB = championsById.get(matchup.champion_b_id);
+                const contentState = getMatchupContentState(matchup);
 
                 return (
                   <li
@@ -129,6 +137,11 @@ export function AdminLeagueMatchupsSection({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`rounded-md border px-2 py-1 text-xs ${contentState.className}`}
+                        >
+                          {contentState.label}
+                        </span>
                         {matchup.difficulty_rating ? (
                           <span className="rounded-md border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-xs text-amber-100">
                             Difficulty {matchup.difficulty_rating}/5
@@ -144,16 +157,34 @@ export function AdminLeagueMatchupsSection({
                     <p className="mt-3 line-clamp-2 text-sm text-zinc-400">
                       {matchup.overview ?? "No overview yet."}
                     </p>
-                    <Button
-                      className="mt-4 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                      onClick={() => onStartEdit(matchup)}
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Pencil className="size-3.5" aria-hidden="true" />
-                      Edit
-                    </Button>
+                    {matchup.admin_notes ? (
+                      <p className="mt-3 rounded-md border border-white/10 bg-black/15 p-3 text-xs leading-5 text-zinc-400">
+                        {matchup.admin_notes}
+                      </p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Button
+                        className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                        onClick={() => onStartEdit(matchup)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Pencil className="size-3.5" aria-hidden="true" />
+                        Edit
+                      </Button>
+                      <Button
+                        className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                        disabled={matchup.generation_status === "reviewed"}
+                        onClick={() => onMarkReviewed(matchup)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                        Mark as reviewed
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
@@ -172,4 +203,35 @@ export function AdminLeagueMatchupsSection({
 
 function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getMatchupContentState(matchup: AdminLeagueMatchup) {
+  const hasContent = [
+    matchup.overview,
+    matchup.early_game,
+    matchup.trading_pattern,
+    matchup.power_spikes,
+    matchup.danger_windows,
+    matchup.itemization_notes,
+    matchup.win_conditions,
+  ].some((value) => Boolean(value?.trim()));
+
+  if (!hasContent) {
+    return {
+      className: "border-zinc-300/15 bg-white/5 text-zinc-300",
+      label: "Missing content",
+    };
+  }
+
+  if (matchup.generation_status === "reviewed") {
+    return {
+      className: "border-emerald-300/20 bg-emerald-500/10 text-emerald-100",
+      label: "Reviewed / published",
+    };
+  }
+
+  return {
+    className: "border-violet-300/20 bg-violet-500/10 text-violet-100",
+    label: "Draft / generated",
+  };
 }

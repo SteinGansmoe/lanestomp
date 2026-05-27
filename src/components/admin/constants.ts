@@ -50,6 +50,7 @@ export const emptyTimelineEventForm: TimelineEventFormState = {
 };
 
 export const emptyLeagueMatchupForm: LeagueMatchupFormState = {
+  admin_notes: "",
   champion_a_id: "",
   champion_b_id: "",
   confidence_level: "",

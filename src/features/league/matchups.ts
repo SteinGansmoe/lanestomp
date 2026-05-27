@@ -5,6 +5,7 @@ import type { LeagueRole } from "./roles";
 export type LeagueMatchup = {
   champion_a_id: string;
   champion_b_id: string;
+  generation_status: "draft" | "reviewed";
   role: LeagueRole;
   overview: string | null;
   early_game: string | null;
@@ -48,6 +49,7 @@ export async function getLeagueMatchup({
       [
         "champion_a_id",
         "champion_b_id",
+        "generation_status",
         "role",
         "overview",
         "early_game",
@@ -64,6 +66,7 @@ export async function getLeagueMatchup({
     .eq("champion_a_id", championAId)
     .eq("champion_b_id", championBId)
     .eq("role", role)
+    .eq("generation_status", "reviewed")
     .maybeSingle<LeagueMatchup>();
 
   if (error) {
