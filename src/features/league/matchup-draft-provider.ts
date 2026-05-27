@@ -172,39 +172,39 @@ function generateDraftWithPlaceholderProvider({
 
   return {
     danger_windows: [
-      `- Respect ${championBName}'s key cooldowns before stepping forward.`,
-      `- Back off if ${championAName} has already spent mobility, crowd control, or wave control.`,
-      "- Re-enter when the main threat is down or the wave is safer.",
+      `- ${championBName} can threaten lethal when engage or burst tools are ready.`,
+      `- Avoid all-in windows after ${championAName} spends mobility or defensive crowd control.`,
+      "- Treat jungle fog and missing summoners as forced caution.",
     ].join("\n"),
     early_game: [
-      "- Identify who controls the first waves.",
-      `- Avoid giving ${championBName} a clean early trade before the lane rhythm is clear.`,
-      "- Use spacing and minion advantage before forcing trades.",
+      "- Keep the wave in a lane state that allows short trades.",
+      `- Let ${championAName} establish safe spacing before forcing pressure.`,
+      "- Preserve health before the first meaningful level breakpoint.",
     ].join("\n"),
     itemization_notes: [
       `- Adapt around ${championBName}'s main damage profile.`,
-      "- Prioritize survivability if lane tempo falls behind.",
-      "- Choose sustain or defensive runes when trades become hard to reset.",
+      "- Choose sustain only if repeated poke controls lane access.",
+      "- Choose defensive tools when burst or crowd control decides fights.",
     ].join("\n"),
     overview: [
-      `- Treat ${championAName} vs ${championBName} in ${roleLabel} as a review-ready draft.`,
-      "- Track cooldowns and wave control before committing.",
+      `- ${championAName} vs ${championBName} in ${roleLabel} is a review-ready draft.`,
+      "- Identify which champion controls lane tempo first.",
       "- Replace these placeholder notes before publishing.",
     ].join("\n"),
     power_spikes: [
-      "- Review level, item, and ultimate timing for both champions.",
-      `- Slow down around ${championBName}'s first major spike.`,
-      "- Regain tempo after important cooldowns are traded.",
+      "- Review level, ultimate, and first-item timing for both champions.",
+      `- Slow down around ${championBName}'s first major item or ultimate spike.`,
+      `- Push harder when ${championAName}'s own breakpoint comes online.`,
     ].join("\n"),
     trading_pattern: [
-      `- Keep ${championAName}'s trades short and intentional.`,
-      `- Avoid ${championBName}'s preferred response pattern.`,
-      "- Commit longer only with wave help, spacing advantage, or cooldown edge.",
+      `- Keep ${championAName}'s trades short until the matchup pattern is confirmed.`,
+      `- Disengage before ${championBName}'s main follow-up lands.`,
+      "- Extend only after the opponent misses their main answer.",
     ].join("\n"),
     win_conditions: [
-      "- Keep the lane state controlled.",
-      `- Avoid unnecessary deaths during ${championBName}'s strongest windows.`,
-      "- Convert stable pressure into map impact.",
+      `- Turn ${championAName}'s stable lane into objective access.`,
+      "- Convert safe pressure into roam windows or teamfight setup.",
+      `- Deny ${championBName} the fights that start on their terms.`,
     ].join("\n"),
   };
 }

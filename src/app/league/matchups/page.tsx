@@ -35,20 +35,22 @@ export default async function LeagueMatchupsPage() {
         </div>
 
         <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30rem),linear-gradient(135deg,rgba(88,28,135,0.22),transparent_38rem)] p-6 sm:p-8">
-            <div className="max-w-3xl">
-              <div className="mb-5 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30rem),linear-gradient(135deg,rgba(88,28,135,0.18),transparent_38rem)] p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
                 <Swords className="size-6" aria-hidden="true" />
               </div>
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                League matchup guide
-              </p>
-              <h1 className="mt-3 font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
-                Pick your lane opponent
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">
-                Select two champions and a role to open the first matchup guide shell. Strategy text is temporary while the matchup intelligence is being prepared.
-              </p>
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+                  League matchup guide
+                </p>
+                <h1 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+                  Pick your lane opponent
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">
+                  Select two champions and a role for fast matchup prep.
+                </p>
+              </div>
             </div>
           </div>
         </section>
