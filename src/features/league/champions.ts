@@ -46,6 +46,12 @@ export function getChampionSlug(champion: Pick<LeagueChampion, "name">) {
   return slugifyChampionName(champion.name);
 }
 
+export function getChampionSplashUrl(
+  champion: Pick<LeagueChampion, "id">
+) {
+  return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`;
+}
+
 export function findChampionBySlug(
   champions: LeagueChampion[],
   slug: string

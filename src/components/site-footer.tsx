@@ -30,7 +30,7 @@ const resourceLinks = [
 const legalLinks = [
   { href: "#", label: "Privacy Policy" },
   { href: "#", label: "Terms of Use" },
-  { href: "#", label: "Disclaimer" },
+  { href: "/legal", label: "Legal & Disclaimers" },
 ];
 
 const socialLinks = [

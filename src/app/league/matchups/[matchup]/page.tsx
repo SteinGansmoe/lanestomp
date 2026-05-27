@@ -9,6 +9,7 @@ import { Card, CardTitle } from "@/src/components/ui/card";
 import {
   findChampionBySlug,
   getLeagueChampions,
+  getChampionSplashUrl,
   type LeagueChampion,
 } from "@/src/features/league/champions";
 import { isLeagueRole, type LeagueRole } from "@/src/features/league/roles";
@@ -21,33 +22,45 @@ type LeagueMatchupPageProps = {
 const matchupSections = [
   {
     title: "Overview",
+    accent: "cyan",
     body:
       "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
   },
   {
     title: "Early game",
+    accent: "emerald",
     body:
       "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
   },
   {
     title: "Trading pattern",
+    accent: "violet",
     body:
       "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
   },
   {
-    title: "Power spikes",
-    body:
-      "Respect first recall items, level six, and completed mythic-style item timings. Future versions will map exact champion breakpoints here.",
-  },
-  {
     title: "Danger windows",
+    accent: "rose",
     body:
       "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
   },
   {
-    title: "Items/runes notes",
+    title: "Power spikes",
+    accent: "amber",
     body:
-      "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive shards, sustain options, and first recall priorities.",
+      "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
+  },
+  {
+    title: "Itemization notes",
+    accent: "sky",
+    body:
+      "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive starts, sustain options, and first recall priorities.",
+  },
+  {
+    title: "Win conditions",
+    accent: "teal",
+    body:
+      "Summarize what each side needs from the lane: wave state, summoner spell pressure, roam timing, and when the matchup shifts from survival to control.",
   },
 ] as const;
 
@@ -125,9 +138,10 @@ export default async function LeagueMatchupPage({
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {matchupSections.map((section) => (
                 <article
-                  className="rounded-lg border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/10"
+                  className="group rounded-lg border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]"
                   key={section.title}
                 >
+                  <div className={`mb-4 h-1 w-12 rounded-full ${getSectionAccentClass(section.accent)}`} />
                   <h2 className="font-mono text-lg font-semibold text-white">
                     {section.title}
                   </h2>
@@ -180,19 +194,33 @@ function MatchupHero({
   championB: LeagueChampion;
   role: LeagueRole;
 }) {
+  const roleLabel = getRoleLabel(role);
+
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-      <div className="grid min-h-72 lg:grid-cols-[1fr_auto_1fr]">
+      <div className="grid lg:min-h-[34rem] lg:grid-cols-[minmax(0,1fr)_19rem_minmax(0,1fr)]">
         <ChampionPanel champion={championA} side="left" />
-        <div className="flex items-center justify-center border-y border-white/10 bg-black/20 p-5 lg:border-x lg:border-y-0">
-          <div className="text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 text-violet-100">
-              <Swords className="size-7" aria-hidden="true" />
-            </div>
-            <p className="mt-4 font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
-              {role === "adc" ? "ADC" : role} matchup
+        <div className="relative z-10 flex min-h-64 items-center justify-center border-y border-white/10 bg-[#081120]/95 p-5 shadow-2xl shadow-black/30 lg:border-x lg:border-y-0">
+          <div className="w-full text-center">
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
+              Matchup
             </p>
-            <p className="mt-2 text-sm text-zinc-400">Temporary guide shell</p>
+            <div className="mx-auto mt-5 grid max-w-44 grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <ChampionIcon champion={championA} />
+              <div className="flex size-11 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 text-violet-100">
+                <Swords className="size-5" aria-hidden="true" />
+              </div>
+              <ChampionIcon champion={championB} />
+            </div>
+            <h1 className="mt-6 font-mono text-2xl font-semibold leading-tight tracking-normal text-white">
+              {championA.name} vs {championB.name}
+            </h1>
+            <p className="mt-3 inline-flex items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.14em] text-cyan-100">
+              {roleLabel}
+            </p>
+            <p className="mx-auto mt-5 max-w-56 text-sm leading-6 text-zinc-400">
+              First-pass matchup notes. Real intelligence will plug into this structure later.
+            </p>
           </div>
         </div>
         <ChampionPanel champion={championB} side="right" />
@@ -209,23 +237,25 @@ function ChampionPanel({
   side: "left" | "right";
 }) {
   return (
-    <div className="relative min-h-72 overflow-hidden p-6 sm:p-8">
+    <div className="relative min-h-96 overflow-hidden p-6 transition duration-300 hover:brightness-110 sm:p-8 lg:min-h-[34rem]">
       <Image
         alt=""
         aria-hidden="true"
-        className="object-cover opacity-35"
+        className="object-cover"
         fill
         sizes="(min-width: 1024px) 40vw, 100vw"
-        src={champion.image_url}
+        src={getChampionSplashUrl(champion)}
       />
       <div
         className={`absolute inset-0 ${
           side === "left"
-            ? "bg-gradient-to-r from-[#10182b] via-[#10182b]/70 to-transparent"
-            : "bg-gradient-to-l from-[#10182b] via-[#10182b]/70 to-transparent"
+            ? "bg-gradient-to-r from-[#10182b] via-[#10182b]/72 to-[#10182b]/15"
+            : "bg-gradient-to-l from-[#10182b] via-[#10182b]/72 to-[#10182b]/15"
         }`}
       />
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#10182b] to-transparent" />
       <div className="relative flex h-full min-h-56 flex-col justify-end">
+        <ChampionIcon champion={champion} />
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
           {side === "left" ? "Champion A" : "Champion B"}
         </p>
@@ -250,6 +280,19 @@ function ChampionPanel({
   );
 }
 
+function ChampionIcon({ champion }: { champion: LeagueChampion }) {
+  return (
+    <Image
+      alt=""
+      aria-hidden="true"
+      className="size-14 rounded-lg border border-white/15 object-cover shadow-lg shadow-black/30"
+      height={56}
+      src={champion.image_url}
+      width={56}
+    />
+  );
+}
+
 function parseMatchup(matchup: string, champions: LeagueChampion[]) {
   const [championASlug, championBSlug] = matchup.split("-vs-");
 
@@ -267,4 +310,27 @@ function getValidRole(role: string | string[] | undefined): LeagueRole {
   const nextRole = Array.isArray(role) ? role[0] : role;
 
   return isLeagueRole(nextRole) ? nextRole : "mid";
+}
+
+function getRoleLabel(role: LeagueRole) {
+  return role === "adc" ? "ADC" : role;
+}
+
+function getSectionAccentClass(accent: (typeof matchupSections)[number]["accent"]) {
+  switch (accent) {
+    case "amber":
+      return "bg-amber-300/80";
+    case "cyan":
+      return "bg-cyan-300/80";
+    case "emerald":
+      return "bg-emerald-300/80";
+    case "rose":
+      return "bg-rose-300/80";
+    case "sky":
+      return "bg-sky-300/80";
+    case "teal":
+      return "bg-teal-300/80";
+    case "violet":
+      return "bg-violet-300/80";
+  }
 }
