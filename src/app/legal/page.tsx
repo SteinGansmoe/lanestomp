@@ -4,8 +4,8 @@ import { Scale } from "lucide-react";
 import { SiteHeader } from "@/src/components/site-header";
 
 export const metadata: Metadata = {
-  title: "Legal & Disclaimers | SeasonTracker",
-  description: "Game publisher and provider disclaimers for SeasonTracker.",
+  title: "Legal & Disclaimers | LaneTips.app",
+  description: "Riot Games disclaimer for LaneTips.app.",
 };
 
 const legalDisclaimers = [
@@ -13,7 +13,7 @@ const legalDisclaimers = [
     id: "riot-games",
     provider: "Riot Games",
     relatedGames: ["League of Legends"],
-    text: "SeasonTracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+    text: "LaneTips.app is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
   },
 ];
 
@@ -31,8 +31,8 @@ export default function LegalPage() {
             Legal & Disclaimers
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-            Required notices for game publishers and providers represented on
-            SeasonTracker.
+            Required notices for League of Legends and related provider
+            disclaimers.
           </p>
         </div>
 

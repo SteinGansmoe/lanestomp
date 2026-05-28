@@ -1,5 +1,11 @@
-import type { FormEvent } from "react";
-import { CheckCircle2, Pencil, Sparkles } from "lucide-react";
+import { type FormEvent, useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  CheckSquare,
+  ListChecks,
+  Pencil,
+  Sparkles,
+} from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import {
@@ -9,13 +15,16 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { leagueRoles } from "@/src/features/league/roles";
+import { isChampionInRole } from "@/src/features/league/champion-roles";
 import { AdminGroupedListCard } from "../shared/admin-grouped-list-card";
 import type {
   AdminLeagueChampion,
   AdminLeagueMatchup,
   FormStatus,
+  LeagueMatchupBatchPlanItem,
   LeagueMatchupFormState,
 } from "../types";
+import { fieldClassName, selectOptionClassName } from "../constants";
 import {
   LeagueMatchupForm,
   LeagueMatchupFormCard,
@@ -30,7 +39,10 @@ export function AdminLeagueMatchupsSection({
   editingMatchupId,
   generatingMatchupId,
   matchups,
+  batchProgress,
+  batchStatus,
   onCancelEdit,
+  onGenerateBatch,
   onCreateChange,
   onCreateSubmit,
   onEditChange,
@@ -47,11 +59,14 @@ export function AdminLeagueMatchupsSection({
   editingMatchupId: number | null;
   generatingMatchupId: number | null;
   matchups: AdminLeagueMatchup[];
+  batchProgress: { current: number; label: string; total: number } | null;
+  batchStatus: FormStatus;
   onCancelEdit: () => void;
   onCreateChange: (form: LeagueMatchupFormState) => void;
   onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onEditChange: (form: LeagueMatchupFormState) => void;
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onGenerateBatch: (items: LeagueMatchupBatchPlanItem[]) => void;
   onGenerateDraft: (matchup: AdminLeagueMatchup) => void;
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
@@ -115,6 +130,15 @@ export function AdminLeagueMatchupsSection({
         </Card>
       </div>
 
+      <LeagueMatchupBatchPlanner
+        champions={champions}
+        isDisabled={generatingMatchupId !== null}
+        matchups={matchups}
+        onGenerateBatch={onGenerateBatch}
+        progress={batchProgress}
+        status={batchStatus}
+      />
+
       <AdminGroupedListCard
         emptyMessage="No League matchup guidance found."
         groups={groups.map((group) => ({
@@ -170,7 +194,10 @@ export function AdminLeagueMatchupsSection({
                     <div className="mt-4 flex flex-wrap gap-3">
                       <Button
                         className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
-                        disabled={generatingMatchupId !== null}
+                        disabled={
+                          generatingMatchupId !== null ||
+                          batchStatus.isLoading
+                        }
                         onClick={() => onGenerateDraft(matchup)}
                         size="sm"
                         type="button"
@@ -181,7 +208,7 @@ export function AdminLeagueMatchupsSection({
                       </Button>
                       <Button
                         className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                        disabled={isGenerating}
+                        disabled={isGenerating || batchStatus.isLoading}
                         onClick={() => onStartEdit(matchup)}
                         size="sm"
                         type="button"
@@ -194,6 +221,7 @@ export function AdminLeagueMatchupsSection({
                         className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
                         disabled={
                           isGenerating ||
+                          batchStatus.isLoading ||
                           matchup.generation_status === "reviewed"
                         }
                         onClick={() => onMarkReviewed(matchup)}
@@ -219,6 +247,444 @@ export function AdminLeagueMatchupsSection({
       />
     </>
   );
+}
+
+function LeagueMatchupBatchPlanner({
+  champions,
+  isDisabled,
+  matchups,
+  onGenerateBatch,
+  progress,
+  status,
+}: {
+  champions: AdminLeagueChampion[];
+  isDisabled: boolean;
+  matchups: AdminLeagueMatchup[];
+  onGenerateBatch: (items: LeagueMatchupBatchPlanItem[]) => void;
+  progress: { current: number; label: string; total: number } | null;
+  status: FormStatus;
+}) {
+  const [role, setRole] = useState<AdminLeagueMatchup["role"]>("mid");
+  const [sourceChampionId, setSourceChampionId] = useState("");
+  const [direction, setDirection] =
+    useState<"source-first" | "source-second" | "both">("source-first");
+  const [poolFilter, setPoolFilter] = useState<"role" | "all">("role");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [onlyMissing, setOnlyMissing] = useState(true);
+  const [maxBatchSize, setMaxBatchSize] = useState(10);
+  const [selectedOpponentIds, setSelectedOpponentIds] = useState<string[]>([]);
+  const championsById = useMemo(
+    () => new Map(champions.map((champion) => [champion.id, champion] as const)),
+    [champions]
+  );
+  const existingMatchupIds = useMemo(
+    () =>
+      new Map(
+        matchups.map((matchup) => [
+          getMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
+          matchup.id,
+        ])
+      ),
+    [matchups]
+  );
+  const opponentPool = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return champions.filter((champion) => {
+      if (champion.id === sourceChampionId) {
+        return false;
+      }
+
+      if (poolFilter === "role" && !isChampionInRole(champion, role)) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return (
+        champion.name.toLowerCase().includes(normalizedQuery) ||
+        champion.id.toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }, [champions, poolFilter, role, searchQuery, sourceChampionId]);
+  const selectedOpponents = selectedOpponentIds.filter((id) =>
+    opponentPool.some((champion) => champion.id === id)
+  );
+  const plannedItems = useMemo(() => {
+    const candidateItems = selectedOpponents.flatMap((opponentId) => {
+      const directions =
+        direction === "both" ? ["source-first", "source-second"] : [direction];
+
+      return directions.map((plannedDirection) => {
+        const championAId =
+          plannedDirection === "source-first" ? sourceChampionId : opponentId;
+        const championBId =
+          plannedDirection === "source-first" ? opponentId : sourceChampionId;
+        const existingMatchupId =
+          existingMatchupIds.get(getMatchupKey(championAId, championBId, role)) ??
+          null;
+
+        return {
+          championAId,
+          championBId,
+          existingMatchupId,
+          role,
+        };
+      });
+    });
+
+    return onlyMissing
+      ? candidateItems.filter((item) => item.existingMatchupId === null)
+      : candidateItems;
+  }, [
+    direction,
+    existingMatchupIds,
+    onlyMissing,
+    role,
+    selectedOpponents,
+    sourceChampionId,
+  ]);
+  const safeBatchSize = Math.min(Math.max(maxBatchSize, 1), 25);
+  const executableItems = plannedItems.slice(0, safeBatchSize);
+  const skippedByLimit = Math.max(plannedItems.length - executableItems.length, 0);
+  const selectedOpponentSet = new Set(selectedOpponents);
+  const canGenerate =
+    sourceChampionId && executableItems.length > 0 && !status.isLoading;
+
+  function updateRole(nextRole: AdminLeagueMatchup["role"]) {
+    setRole(nextRole);
+    setSelectedOpponentIds([]);
+  }
+
+  function updateSourceChampion(nextChampionId: string) {
+    setSourceChampionId(nextChampionId);
+    setSelectedOpponentIds((current) =>
+      current.filter((opponentId) => opponentId !== nextChampionId)
+    );
+  }
+
+  function toggleOpponent(opponentId: string) {
+    setSelectedOpponentIds((current) =>
+      current.includes(opponentId)
+        ? current.filter((id) => id !== opponentId)
+        : [...current, opponentId]
+    );
+  }
+
+  function selectVisibleOpponents() {
+    setSelectedOpponentIds((current) =>
+      Array.from(
+        new Set([
+          ...current,
+          ...opponentPool.slice(0, 50).map((champion) => champion.id),
+        ])
+      )
+    );
+  }
+
+  function clearOpponents() {
+    setSelectedOpponentIds([]);
+  }
+
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="font-mono text-xl">
+              Batch generation planner
+            </CardTitle>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+              Plan a limited set of directional matchup drafts before generating.
+              Ekko vs Hwei and Hwei vs Ekko are treated as separate matchups.
+            </p>
+          </div>
+          <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
+            Admin only
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-4">
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Role / lane</span>
+            <select
+              className={fieldClassName}
+              disabled={status.isLoading}
+              onChange={(event) =>
+                updateRole(event.target.value as AdminLeagueMatchup["role"])
+              }
+              value={role}
+            >
+              {leagueRoles.map((leagueRole) => (
+                <option
+                  className={selectOptionClassName}
+                  key={leagueRole}
+                  value={leagueRole}
+                >
+                  {leagueRole === "adc" ? "ADC" : titleCase(leagueRole)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Source champion</span>
+            <select
+              className={fieldClassName}
+              disabled={status.isLoading}
+              onChange={(event) => updateSourceChampion(event.target.value)}
+              value={sourceChampionId}
+            >
+              <option className={selectOptionClassName} value="">
+                Select source
+              </option>
+              {champions.map((champion) => (
+                <option
+                  className={selectOptionClassName}
+                  key={champion.id}
+                  value={champion.id}
+                >
+                  {champion.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Direction</span>
+            <select
+              className={fieldClassName}
+              disabled={status.isLoading}
+              onChange={(event) =>
+                setDirection(
+                  event.target.value as "source-first" | "source-second" | "both"
+                )
+              }
+              value={direction}
+            >
+              <option className={selectOptionClassName} value="source-first">
+                Source vs selected opponents
+              </option>
+              <option className={selectOptionClassName} value="source-second">
+                Selected opponents vs source
+              </option>
+              <option className={selectOptionClassName} value="both">
+                Both directions
+              </option>
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Max batch size</span>
+            <input
+              className={`${fieldClassName} h-11`}
+              disabled={status.isLoading}
+              max={25}
+              min={1}
+              onChange={(event) =>
+                setMaxBatchSize(Number.parseInt(event.target.value, 10) || 1)
+              }
+              type="number"
+              value={maxBatchSize}
+            />
+          </label>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Champion pool</span>
+              <select
+                className={fieldClassName}
+                disabled={status.isLoading}
+                onChange={(event) =>
+                  setPoolFilter(event.target.value as "role" | "all")
+                }
+                value={poolFilter}
+              >
+                <option className={selectOptionClassName} value="role">
+                  Champions tagged for selected role
+                </option>
+                <option className={selectOptionClassName} value="all">
+                  All champions
+                </option>
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Filter champions</span>
+              <input
+                className={`${fieldClassName} h-11`}
+                disabled={status.isLoading}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by champion name"
+                value={searchQuery}
+              />
+            </label>
+
+            <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm text-zinc-300">
+              <input
+                checked={onlyMissing}
+                className="size-4 accent-violet-500"
+                disabled={status.isLoading}
+                onChange={(event) => setOnlyMissing(event.target.checked)}
+                type="checkbox"
+              />
+              Only missing directional matchups
+            </label>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={status.isLoading || opponentPool.length === 0}
+                onClick={selectVisibleOpponents}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <CheckSquare className="size-3.5" aria-hidden="true" />
+                Select visible
+              </Button>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={status.isLoading || selectedOpponents.length === 0}
+                onClick={clearOpponents}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-white">Opponent champions</p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {selectedOpponents.length} selected from {opponentPool.length}{" "}
+                  visible champions.
+                </p>
+              </div>
+              <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-xs text-zinc-300">
+                Specific checkboxes
+              </span>
+            </div>
+
+            <div className="mt-4 grid max-h-64 gap-2 overflow-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+              {opponentPool.map((champion) => (
+                <label
+                  className="flex items-center gap-3 rounded-md border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300"
+                  key={champion.id}
+                >
+                  <input
+                    checked={selectedOpponentSet.has(champion.id)}
+                    className="size-4 accent-violet-500"
+                    disabled={status.isLoading}
+                    onChange={() => toggleOpponent(champion.id)}
+                    type="checkbox"
+                  />
+                  <span className="truncate">{champion.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-violet-300/15 bg-violet-500/[0.06] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="flex items-center gap-2 font-semibold text-white">
+                <ListChecks className="size-4 text-violet-200" aria-hidden="true" />
+                Batch preview
+              </p>
+              <p className="mt-2 text-sm text-zinc-300">
+                {plannedItems.length} directional matchup
+                {plannedItems.length === 1 ? "" : "s"} planned.{" "}
+                {executableItems.length} will generate now with the current safe
+                limit of {safeBatchSize}.
+              </p>
+              {skippedByLimit > 0 ? (
+                <p className="mt-1 text-xs text-amber-100">
+                  {skippedByLimit} planned matchup
+                  {skippedByLimit === 1 ? "" : "s"} will wait for another batch.
+                </p>
+              ) : null}
+            </div>
+
+            <Button
+              className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+              disabled={!canGenerate || isDisabled}
+              onClick={() => onGenerateBatch(executableItems)}
+              type="button"
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              {status.isLoading ? "Generating..." : "Generate batch"}
+            </Button>
+          </div>
+
+          {executableItems.length > 0 ? (
+            <ol className="mt-4 grid gap-2 text-sm text-zinc-300 md:grid-cols-2">
+              {executableItems.map((item) => {
+                const championA = championsById.get(item.championAId);
+                const championB = championsById.get(item.championBId);
+
+                return (
+                  <li
+                    className="rounded-md border border-white/10 bg-black/15 px-3 py-2"
+                    key={getMatchupKey(item.championAId, item.championBId, item.role)}
+                  >
+                    <span className="font-medium text-zinc-100">
+                      {championA?.name ?? item.championAId} vs{" "}
+                      {championB?.name ?? item.championBId}
+                    </span>
+                    <span className="ml-2 text-xs text-zinc-500">
+                      {item.existingMatchupId ? "existing row" : "missing row"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-400">
+              Select a source champion and at least one opponent to preview a safe
+              batch.
+            </p>
+          )}
+
+          {progress ? (
+            <p className="mt-4 rounded-md border border-cyan-300/20 bg-cyan-400/10 p-3 text-sm text-cyan-100">
+              {progress.label} ({progress.current}/{progress.total})
+            </p>
+          ) : null}
+
+          {status.error ? (
+            <p className="mt-4 rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+              {status.error}
+            </p>
+          ) : null}
+
+          {status.success ? (
+            <p className="mt-4 rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+              {status.success}
+            </p>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getMatchupKey(
+  championAId: string,
+  championBId: string,
+  role: AdminLeagueMatchup["role"]
+) {
+  return `${role}:${championAId}:${championBId}`;
 }
 
 function titleCase(value: string) {

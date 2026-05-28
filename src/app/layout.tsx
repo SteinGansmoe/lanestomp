@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SeasonTracker",
-  description: "Check season details and track your progress in your favorite games.",
+  title: "LaneTips.app",
+  description:
+    "Fast League of Legends matchup prep for champion select and loading screen.",
 };
 
 export default function RootLayout({

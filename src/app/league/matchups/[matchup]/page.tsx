@@ -1,9 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Crosshair,
+  Gem,
+  Leaf,
+  Lightbulb,
+  ShieldAlert,
+  Swords,
+  Target,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { connection } from "next/server";
 
-import { MatchupSelector } from "@/src/components/league/matchup-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import {
@@ -28,6 +39,7 @@ const matchupSectionDefinitions = [
     key: "overview",
     title: "Overview",
     accent: "cyan",
+    icon: Target,
     placeholder:
       "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
   },
@@ -35,6 +47,7 @@ const matchupSectionDefinitions = [
     key: "early_game",
     title: "Early game",
     accent: "emerald",
+    icon: Leaf,
     placeholder:
       "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
   },
@@ -42,6 +55,7 @@ const matchupSectionDefinitions = [
     key: "trading_pattern",
     title: "Trading pattern",
     accent: "violet",
+    icon: Swords,
     placeholder:
       "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
   },
@@ -49,6 +63,7 @@ const matchupSectionDefinitions = [
     key: "power_spikes",
     title: "Power spikes",
     accent: "amber",
+    icon: Zap,
     placeholder:
       "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
   },
@@ -56,6 +71,7 @@ const matchupSectionDefinitions = [
     key: "danger_windows",
     title: "Danger windows",
     accent: "rose",
+    icon: AlertTriangle,
     placeholder:
       "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
   },
@@ -63,6 +79,7 @@ const matchupSectionDefinitions = [
     key: "itemization_notes",
     title: "Itemization notes",
     accent: "sky",
+    icon: Gem,
     placeholder:
       "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive starts, sustain options, and first recall priorities.",
   },
@@ -70,6 +87,7 @@ const matchupSectionDefinitions = [
     key: "win_conditions",
     title: "Win conditions",
     accent: "teal",
+    icon: Trophy,
     placeholder:
       "Summarize what each side needs from the lane: wave state, summoner spell pressure, roam timing, and when the matchup shifts from survival to control.",
   },
@@ -100,10 +118,10 @@ export default async function LeagueMatchupPage({
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
-      <section className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+      <section className="mx-auto flex max-w-7xl flex-col gap-5 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
             href="/league/matchups"
@@ -179,32 +197,18 @@ export default async function LeagueMatchupPage({
               </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {sections.map((section) => (
-                <article
-                  className="group rounded-lg border border-white/10 bg-[#10182b] p-5 shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]"
-                  key={section.title}
-                >
-                  <div className={`mb-4 h-1 w-12 rounded-full ${getSectionAccentClass(section.accent)}`} />
-                  <h2 className="font-mono text-lg font-semibold text-white">
-                    {section.title}
-                  </h2>
-                  <MatchupSectionBody body={section.body} />
-                </article>
+                <MatchupGuideCard key={section.title} section={section} />
               ))}
             </div>
 
-            <section className="rounded-lg border border-white/10 bg-[#10182b] p-5">
-              <h2 className="font-mono text-xl font-semibold text-white">
-                Try another matchup
-              </h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                The selector stays here so future matchup pages can branch from the same flow.
-              </p>
-              <div className="mt-5">
-                <MatchupSelector champions={championsResult.champions} initialRole={role} />
-              </div>
-            </section>
+            <TipStrip
+              championA={championA}
+              championB={championB}
+              role={role}
+              updatedAt={matchupResult?.matchup?.updated_at ?? null}
+            />
           </>
         ) : (
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
@@ -227,23 +231,43 @@ export default async function LeagueMatchupPage({
   );
 }
 
-function MatchupSectionBody({ body }: { body: string }) {
-  const bulletLines = getBulletLines(body);
+function MatchupGuideCard({
+  section,
+}: {
+  section: ReturnType<typeof getMatchupSections>[number];
+}) {
+  const Icon = section.icon;
+  const bullets = getGuideBullets(section.body);
 
-  if (bulletLines.length > 0) {
-    return (
-      <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-400">
-        {bulletLines.map((line, index) => (
+  return (
+    <article className="group rounded-lg border border-white/10 bg-[#10182b]/90 p-4 shadow-lg shadow-black/10 ring-1 ring-white/5 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]">
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex size-9 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
+            section.accent
+          )}`}
+        >
+          <Icon className="size-4" aria-hidden="true" />
+        </span>
+        <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-white">
+          {section.title}
+        </h2>
+      </div>
+
+      <ul className="mt-3 space-y-2 text-sm leading-5 text-zinc-400">
+        {bullets.map((line, index) => (
           <li className="flex gap-2" key={`${line}-${index}`}>
-            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-white/35" />
+            <span
+              className={`mt-2 size-1.5 shrink-0 rounded-full ${getSectionDotClass(
+                section.accent
+              )}`}
+            />
             <span>{line}</span>
           </li>
         ))}
       </ul>
-    );
-  }
-
-  return <p className="mt-3 text-sm leading-6 text-zinc-400">{body}</p>;
+    </article>
+  );
 }
 
 function MatchupHero({
@@ -261,31 +285,25 @@ function MatchupHero({
 
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-      <div className="grid lg:min-h-[34rem] lg:grid-cols-[minmax(0,1fr)_19rem_minmax(0,1fr)]">
-        <ChampionPanel champion={championA} side="left" />
-        <div className="relative z-10 flex min-h-64 items-center justify-center border-y border-white/10 bg-[#081120]/95 p-5 shadow-2xl shadow-black/30 lg:border-x lg:border-y-0">
+      <div className="grid lg:min-h-72 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)]">
+        <ChampionPanel champion={championA} label="You" side="left" />
+        <div className="relative z-10 flex min-h-56 items-center justify-center border-y border-white/10 bg-[#081120]/95 p-4 shadow-2xl shadow-black/30 lg:border-x lg:border-y-0">
           <div className="w-full text-center">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Matchup
+              {roleLabel} lane
             </p>
-            <div className="mx-auto mt-5 grid max-w-44 grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div className="mx-auto mt-4 grid max-w-44 grid-cols-[1fr_auto_1fr] items-center gap-2">
               <ChampionIcon champion={championA} />
-              <div className="flex size-11 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 font-mono text-sm font-semibold text-violet-100 shadow-lg shadow-violet-950/30">
+              <div className="flex size-10 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 font-mono text-xs font-semibold text-violet-100 shadow-lg shadow-violet-950/30">
                 VS
               </div>
               <ChampionIcon champion={championB} />
             </div>
-            <h1 className="mt-6 font-mono text-2xl font-semibold leading-tight tracking-normal text-white">
+            <h1 className="mt-4 font-mono text-2xl font-semibold leading-tight tracking-normal text-white">
               {championA.name} vs {championB.name}
             </h1>
-            <p className="mt-3 inline-flex items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.14em] text-cyan-100">
-              {roleLabel}
-            </p>
-            <p className="mx-auto mt-5 max-w-56 text-sm leading-6 text-zinc-400">
-              First-pass matchup notes. Real intelligence will plug into this structure later.
-            </p>
             {matchup ? (
-              <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {matchup.difficulty_rating ? (
                   <MatchupMetaPill label={`Difficulty ${matchup.difficulty_rating}/5`} />
                 ) : null}
@@ -299,7 +317,7 @@ function MatchupHero({
             ) : null}
           </div>
         </div>
-        <ChampionPanel champion={championB} side="right" />
+        <ChampionPanel champion={championB} label="Opponent" side="right" />
       </div>
     </section>
   );
@@ -315,13 +333,15 @@ function MatchupMetaPill({ label }: { label: string }) {
 
 function ChampionPanel({
   champion,
+  label,
   side,
 }: {
   champion: LeagueChampion;
+  label: "Opponent" | "You";
   side: "left" | "right";
 }) {
   return (
-    <div className="relative min-h-96 overflow-hidden p-6 transition duration-300 hover:brightness-110 sm:p-8 lg:min-h-[34rem]">
+    <div className="relative min-h-56 overflow-hidden p-5 transition duration-300 hover:brightness-110 sm:p-6 lg:min-h-72">
       <Image
         alt=""
         aria-hidden="true"
@@ -333,23 +353,23 @@ function ChampionPanel({
       <div
         className={`absolute inset-0 ${
           side === "left"
-            ? "bg-gradient-to-r from-[#10182b] via-[#10182b]/72 to-[#10182b]/15"
-            : "bg-gradient-to-l from-[#10182b] via-[#10182b]/72 to-[#10182b]/15"
+            ? "bg-gradient-to-r from-[#10182b] via-[#10182b]/68 to-[#10182b]/18"
+            : "bg-gradient-to-l from-[#10182b] via-[#10182b]/68 to-[#10182b]/18"
         }`}
       />
-      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#10182b] to-transparent" />
-      <div className="relative flex h-full min-h-56 flex-col justify-end">
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#10182b] to-transparent" />
+      <div className="relative flex h-full min-h-44 flex-col justify-end">
         <ChampionIcon champion={champion} />
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
-          {side === "left" ? "Champion A" : "Champion B"}
+        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-zinc-500">
+          {label}
         </p>
-        <h2 className="mt-3 font-mono text-4xl font-semibold tracking-normal text-white">
+        <h2 className="mt-1 font-mono text-3xl font-semibold tracking-normal text-white">
           {champion.name}
         </h2>
-        <p className="mt-2 max-w-sm text-sm capitalize text-zinc-300">
+        <p className="mt-1 max-w-sm text-sm capitalize text-zinc-300">
           {champion.title || "Champion"}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {champion.tags.map((tag) => (
             <span
               className="rounded-md border border-white/10 bg-white/10 px-2 py-1 text-xs text-zinc-200"
@@ -361,6 +381,45 @@ function ChampionPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+function TipStrip({
+  championA,
+  championB,
+  role,
+  updatedAt,
+}: {
+  championA: LeagueChampion;
+  championB: LeagueChampion;
+  role: LeagueRole;
+  updatedAt: string | null;
+}) {
+  return (
+    <section className="flex flex-col gap-3 rounded-lg border border-cyan-300/10 bg-[#10182b]/80 p-4 text-sm text-zinc-400 shadow-lg shadow-black/10 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+          <Lightbulb className="size-4" aria-hidden="true" />
+        </span>
+        <p className="leading-6">
+          <span className="font-medium text-cyan-100">Tip:</span> For{" "}
+          {championA.name} vs {championB.name}, read overview, trading pattern,
+          and danger windows first for a fast {getRoleLabel(role)} lane check.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 sm:justify-end">
+        {updatedAt ? (
+          <MatchupMetaPill label={`Updated ${formatMatchupDate(updatedAt)}`} />
+        ) : null}
+        <Link
+          className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white"
+          href={`/league/matchups?role=${role}`}
+        >
+          <Crosshair className="size-3.5" aria-hidden="true" />
+          New matchup
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -397,7 +456,7 @@ function getValidRole(role: string | string[] | undefined): LeagueRole {
 }
 
 function getRoleLabel(role: LeagueRole) {
-  return role === "adc" ? "ADC" : role;
+  return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function getMatchupSections(matchup: LeagueMatchup | null) {
@@ -417,17 +476,21 @@ function getMatchupSectionBody(
   return value?.trim() ? value : placeholder;
 }
 
-function getBulletLines(value: string) {
+function getGuideBullets(value: string) {
   const lines = value
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length === 0 || !lines.every((line) => line.startsWith("- "))) {
-    return [];
+  if (lines.length > 0 && lines.every((line) => line.startsWith("- "))) {
+    return lines.map((line) => line.replace(/^-+\s*/, "")).slice(0, 4);
   }
 
-  return lines.map((line) => line.replace(/^-+\s*/, ""));
+  return value
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 4);
 }
 
 function formatMatchupDate(value: string) {
@@ -438,7 +501,7 @@ function formatMatchupDate(value: string) {
   }).format(new Date(value));
 }
 
-function getSectionAccentClass(
+function getSectionDotClass(
   accent: (typeof matchupSectionDefinitions)[number]["accent"]
 ) {
   switch (accent) {
@@ -456,5 +519,26 @@ function getSectionAccentClass(
       return "bg-teal-300/80";
     case "violet":
       return "bg-violet-300/80";
+  }
+}
+
+function getSectionIconClass(
+  accent: (typeof matchupSectionDefinitions)[number]["accent"]
+) {
+  switch (accent) {
+    case "amber":
+      return "border-amber-300/20 bg-amber-400/10 text-amber-200";
+    case "cyan":
+      return "border-cyan-300/20 bg-cyan-400/10 text-cyan-200";
+    case "emerald":
+      return "border-emerald-300/20 bg-emerald-400/10 text-emerald-200";
+    case "rose":
+      return "border-rose-300/20 bg-rose-400/10 text-rose-200";
+    case "sky":
+      return "border-sky-300/20 bg-sky-400/10 text-sky-200";
+    case "teal":
+      return "border-teal-300/20 bg-teal-400/10 text-teal-200";
+    case "violet":
+      return "border-violet-300/20 bg-violet-400/10 text-violet-200";
   }
 }

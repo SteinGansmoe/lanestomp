@@ -49,6 +49,7 @@ import type {
   AdminSection,
   AdminTimelineEvent,
   GameFormState,
+  LeagueMatchupBatchPlanItem,
   LeagueMatchupFormState,
   ResourceFormState,
   SeasonFormState,
@@ -152,6 +153,16 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [generatingLeagueMatchupId, setGeneratingLeagueMatchupId] = useState<
     number | null
   >(null);
+  const [batchLeagueMatchupStatus, setBatchLeagueMatchupStatus] = useState<{
+    error: string | null;
+    isLoading: boolean;
+    success: string | null;
+  }>({ error: null, isLoading: false, success: null });
+  const [batchLeagueMatchupProgress, setBatchLeagueMatchupProgress] = useState<{
+    current: number;
+    label: string;
+    total: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
   const [resourcesSetupMessage, setResourcesSetupMessage] = useState<
@@ -1168,6 +1179,132 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  async function handleGenerateLeagueMatchupBatch(
+    items: LeagueMatchupBatchPlanItem[]
+  ) {
+    if (!supabase) {
+      setBatchLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (items.length === 0) {
+      setBatchLeagueMatchupStatus({
+        error: "Select at least one matchup to generate.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (sessionError || !accessToken) {
+      setBatchLeagueMatchupStatus({
+        error: sessionError?.message ?? "Admin session is not ready.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setBatchLeagueMatchupStatus({
+      error: null,
+      isLoading: true,
+      success: null,
+    });
+    setBatchLeagueMatchupProgress({
+      current: 0,
+      label: "Preparing batch",
+      total: items.length,
+    });
+
+    let generatedCount = 0;
+
+    for (const [index, item] of items.entries()) {
+      const championA =
+        adminData.leagueChampions.find(
+          (champion) => champion.id === item.championAId
+        )?.name ?? item.championAId;
+      const championB =
+        adminData.leagueChampions.find(
+          (champion) => champion.id === item.championBId
+        )?.name ?? item.championBId;
+      setBatchLeagueMatchupProgress({
+        current: index,
+        label: `Generating ${championA} vs ${championB}`,
+        total: items.length,
+      });
+
+      let matchupId = item.existingMatchupId;
+
+      if (!matchupId) {
+        const { data: createdMatchup, error: createError } = await supabase
+          .from("league_matchups")
+          .insert({
+            champion_a_id: item.championAId,
+            champion_b_id: item.championBId,
+            role: item.role,
+          })
+          .select("id")
+          .single<{ id: number }>();
+
+        if (createError || !createdMatchup) {
+          setBatchLeagueMatchupStatus({
+            error:
+              createError?.message ??
+              `Could not create ${championA} vs ${championB}.`,
+            isLoading: false,
+            success: null,
+          });
+          setBatchLeagueMatchupProgress(null);
+          await reloadAdminData();
+          return;
+        }
+
+        matchupId = createdMatchup.id;
+      }
+
+      const result = await generateLeagueMatchupDraft({
+        accessToken,
+        matchupId,
+      });
+
+      if (!result.ok) {
+        setBatchLeagueMatchupStatus({
+          error: result.error,
+          isLoading: false,
+          success: null,
+        });
+        setBatchLeagueMatchupProgress(null);
+        await reloadAdminData();
+        return;
+      }
+
+      generatedCount += 1;
+      setBatchLeagueMatchupProgress({
+        current: index + 1,
+        label: `Generated ${championA} vs ${championB}`,
+        total: items.length,
+      });
+    }
+
+    await reloadAdminData();
+    setBatchLeagueMatchupProgress(null);
+    setBatchLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: `${generatedCount} matchup draft${
+        generatedCount === 1 ? "" : "s"
+      } generated. Review before publishing.`,
+    });
+  }
+
   function getGameFormError(form: GameFormState) {
     if (!form.id || !form.name || !form.slug) {
       return "Game ID, name, and slug are required.";
@@ -1668,12 +1805,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     editForm={editLeagueMatchupForm}
                     editStatus={editLeagueMatchupStatus}
                     editingMatchupId={editingLeagueMatchupId}
+                    batchProgress={batchLeagueMatchupProgress}
+                    batchStatus={batchLeagueMatchupStatus}
                     matchups={adminData.leagueMatchups}
                     onCancelEdit={stopEditingLeagueMatchup}
                     onCreateChange={setCreateLeagueMatchupForm}
                     onCreateSubmit={handleCreateLeagueMatchup}
                     onEditChange={setEditLeagueMatchupForm}
                     onEditSubmit={handleUpdateLeagueMatchup}
+                    onGenerateBatch={handleGenerateLeagueMatchupBatch}
                     onGenerateDraft={handleGenerateLeagueMatchupDraft}
                     onMarkReviewed={handleMarkLeagueMatchupReviewed}
                     onStartEdit={startEditingLeagueMatchup}

@@ -85,7 +85,7 @@ async function generateDraftWithOpenAIProvider({
             role: "user",
           },
         ],
-        max_output_tokens: 900,
+        max_output_tokens: 800,
         model: openaiMatchupModel,
         store: false,
         temperature: 0.4,
@@ -183,18 +183,17 @@ function generateDraftWithPlaceholderProvider({
     ].join("\n"),
     itemization_notes: [
       `- Adapt around ${championBName}'s main damage profile.`,
-      "- Choose sustain only if repeated poke controls lane access.",
+      "- Name items only after confirming they fit the champion.",
       "- Choose defensive tools when burst or crowd control decides fights.",
     ].join("\n"),
     overview: [
-      `- ${championAName} vs ${championBName} in ${roleLabel} is a review-ready draft.`,
-      "- Identify which champion controls lane tempo first.",
-      "- Replace these placeholder notes before publishing.",
+      `- Review the non-obvious ${roleLabel} matchup identity before publishing.`,
+      "- Keep broad notes out of this section unless they add real matchup context.",
     ].join("\n"),
     power_spikes: [
-      "- Review level, ultimate, and first-item timing for both champions.",
-      `- Slow down around ${championBName}'s first major item or ultimate spike.`,
-      `- Push harder when ${championAName}'s own breakpoint comes online.`,
+      "- List only real level, ultimate, first-item, or major cooldown breakpoints.",
+      `- Slow down only when ${championBName} reaches a verified spike.`,
+      `- Push harder only when ${championAName}'s own breakpoint is verified.`,
     ].join("\n"),
     trading_pattern: [
       `- Keep ${championAName}'s trades short until the matchup pattern is confirmed.`,
@@ -255,7 +254,7 @@ function parseDraftSections(outputText: string): MatchupDraftSections | null {
       return Object.fromEntries(
         matchupDraftSectionKeys.map((key) => [
           key,
-          parsed[key]?.toString().trim(),
+          normalizeDraftSection(parsed[key]?.toString() ?? ""),
         ])
       ) as MatchupDraftSections;
     }
@@ -264,6 +263,15 @@ function parseDraftSections(outputText: string): MatchupDraftSections | null {
   }
 
   return null;
+}
+
+function normalizeDraftSection(section: string) {
+  return section
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join("\n");
 }
 
 type OpenAIResponseBody = {

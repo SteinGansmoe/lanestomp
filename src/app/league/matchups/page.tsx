@@ -5,7 +5,6 @@ import { connection } from "next/server";
 import { MatchupSelector } from "@/src/components/league/matchup-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
-import { getPrimarySeasonRouteForGame } from "@/src/features";
 import { getLeagueChampions } from "@/src/features/league/champions";
 
 export default async function LeagueMatchupsPage() {
@@ -21,10 +20,10 @@ export default async function LeagueMatchupsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link
             className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href={getPrimarySeasonRouteForGame("league-of-legends")}
+            href="/"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to League of Legends
+            Back to LaneTips
           </Link>
           <Link
             className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
@@ -41,9 +40,9 @@ export default async function LeagueMatchupsPage() {
                 <Swords className="size-6" aria-hidden="true" />
               </div>
               <div>
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                  League matchup guide
-                </p>
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+                LaneTips.app
+              </p>
                 <h1 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
                   Pick your lane opponent
                 </h1>

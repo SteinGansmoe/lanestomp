@@ -70,6 +70,13 @@ export type AdminLeagueMatchup = {
   win_conditions: string | null;
 };
 
+export type LeagueMatchupBatchPlanItem = {
+  championAId: string;
+  championBId: string;
+  existingMatchupId: number | null;
+  role: AdminLeagueMatchup["role"];
+};
+
 export type AdminData = {
   games: AdminGame[];
   leagueChampions: AdminLeagueChampion[];

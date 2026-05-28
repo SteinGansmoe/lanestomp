@@ -56,7 +56,8 @@ export function RegisterForm() {
         </div>
         <CardTitle className="font-mono text-2xl">Create account</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
-          Register a SeasonTracker account for planning boards and followed games.
+          Register a LaneTips.app account for future League tools and saved
+          preferences.
         </p>
       </CardHeader>
       <CardContent>

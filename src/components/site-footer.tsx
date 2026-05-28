@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   ChevronRight,
   ExternalLink,
-  Gamepad2,
   GitBranch,
   Heart,
   MessageCircle,
@@ -15,15 +14,15 @@ import { FooterAuthLinks } from "@/src/components/footer-auth-links";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
-  { href: "#", label: "Calendar" },
-  { href: "/my-games", label: "My Games" },
-  { href: "#", label: "News" },
+  { href: "/league/matchups", label: "Matchups" },
+  { href: "/games/league-of-legends/champions", label: "Champions" },
+  { href: "/login", label: "Login" },
 ];
 
 const resourceLinks = [
   { href: "#", label: "Discord" },
   { href: "#", label: "Reddit" },
-  { href: "#", label: "GitHub" },
+  { href: "#", label: "Matchup requests" },
   { href: "#", label: "Contact" },
 ];
 
@@ -59,11 +58,12 @@ export function SiteFooter() {
               width={44}
             />
             <span className="font-mono text-sm font-bold uppercase tracking-[0.12em] text-white">
-              SeasonTracker
+              LaneTips.app
             </span>
           </Link>
           <p className="mt-5 max-w-64 text-sm leading-6 text-zinc-400">
-            Track seasons, events and your favorite games. All in one place.
+            Fast League matchup prep for champ select, loading screen, and
+            second monitor checks.
           </p>
           <div className="mt-6 flex gap-3">
             {socialLinks.map((item) => {
@@ -92,24 +92,23 @@ export function SiteFooter() {
             About
           </h2>
           <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-400">
-            SeasonTracker is a fan-made companion platform and is not affiliated
-            with Blizzard, Riot Games, Grinding Gear Games or other publishers.
+            LaneTips.app is a fan-made League of Legends companion and is not
+            affiliated with Riot Games.
           </p>
           <p className="mt-6 inline-flex items-center gap-2 text-sm text-zinc-300">
-            Built by Stein with <Heart className="size-4 text-red-500" aria-hidden="true" /> for gamers.
+            Built by Stein with{" "}
+            <Heart className="size-4 text-red-500" aria-hidden="true" /> for
+            League players.
           </p>
         </section>
       </div>
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-4 text-sm text-zinc-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
-          <p>&copy; 2026 SeasonTracker. All rights reserved.</p>
+          <p>&copy; 2026 LaneTips.app. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <FooterAuthLinks />
-            <p className="inline-flex items-center gap-2">
-              Made for gamers, by a gamer.
-              <Gamepad2 className="size-5 text-zinc-400" aria-hidden="true" />
-            </p>
+            <p>Made for League players, by a League player.</p>
           </div>
         </div>
       </div>
