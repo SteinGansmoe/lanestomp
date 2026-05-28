@@ -1,20 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowLeft,
   Crosshair,
-  Gem,
-  Leaf,
   Lightbulb,
   ShieldAlert,
-  Swords,
-  Target,
-  Trophy,
-  Zap,
 } from "lucide-react";
 import { connection } from "next/server";
 
+import { LeagueMatchupReviewPanel } from "@/src/components/league/league-matchup-review-panel";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import {
@@ -33,65 +27,6 @@ type LeagueMatchupPageProps = {
   params: Promise<{ matchup: string }>;
   searchParams: Promise<{ role?: string | string[] }>;
 };
-
-const matchupSectionDefinitions = [
-  {
-    key: "overview",
-    title: "Overview",
-    accent: "cyan",
-    icon: Target,
-    placeholder:
-      "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
-  },
-  {
-    key: "early_game",
-    title: "Early game",
-    accent: "emerald",
-    icon: Leaf,
-    placeholder:
-      "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
-  },
-  {
-    key: "trading_pattern",
-    title: "Trading pattern",
-    accent: "violet",
-    icon: Swords,
-    placeholder:
-      "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
-  },
-  {
-    key: "power_spikes",
-    title: "Power spikes",
-    accent: "amber",
-    icon: Zap,
-    placeholder:
-      "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
-  },
-  {
-    key: "danger_windows",
-    title: "Danger windows",
-    accent: "rose",
-    icon: AlertTriangle,
-    placeholder:
-      "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
-  },
-  {
-    key: "itemization_notes",
-    title: "Itemization notes",
-    accent: "sky",
-    icon: Gem,
-    placeholder:
-      "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive starts, sustain options, and first recall priorities.",
-  },
-  {
-    key: "win_conditions",
-    title: "Win conditions",
-    accent: "teal",
-    icon: Trophy,
-    placeholder:
-      "Summarize what each side needs from the lane: wave state, summoner spell pressure, roam timing, and when the matchup shifts from survival to control.",
-  },
-] as const;
 
 export default async function LeagueMatchupPage({
   params,
@@ -114,7 +49,6 @@ export default async function LeagueMatchupPage({
           role,
         })
       : null;
-  const sections = getMatchupSections(matchupResult?.matchup ?? null);
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
@@ -197,11 +131,12 @@ export default async function LeagueMatchupPage({
               </Card>
             ) : null}
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {sections.map((section) => (
-                <MatchupGuideCard key={section.title} section={section} />
-              ))}
-            </div>
+            <LeagueMatchupReviewPanel
+              championAId={championA.id}
+              championBId={championB.id}
+              initialMatchup={matchupResult?.matchup ?? null}
+              role={role}
+            />
 
             <TipStrip
               championA={championA}
@@ -228,45 +163,6 @@ export default async function LeagueMatchupPage({
         )}
       </section>
     </main>
-  );
-}
-
-function MatchupGuideCard({
-  section,
-}: {
-  section: ReturnType<typeof getMatchupSections>[number];
-}) {
-  const Icon = section.icon;
-  const bullets = getGuideBullets(section.body);
-
-  return (
-    <article className="group rounded-lg border border-white/10 bg-[#10182b]/90 p-4 shadow-lg shadow-black/10 ring-1 ring-white/5 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]">
-      <div className="flex items-center gap-3">
-        <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
-            section.accent
-          )}`}
-        >
-          <Icon className="size-4" aria-hidden="true" />
-        </span>
-        <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-white">
-          {section.title}
-        </h2>
-      </div>
-
-      <ul className="mt-3 space-y-2 text-sm leading-5 text-zinc-400">
-        {bullets.map((line, index) => (
-          <li className="flex gap-2" key={`${line}-${index}`}>
-            <span
-              className={`mt-2 size-1.5 shrink-0 rounded-full ${getSectionDotClass(
-                section.accent
-              )}`}
-            />
-            <span>{line}</span>
-          </li>
-        ))}
-      </ul>
-    </article>
   );
 }
 
@@ -459,86 +355,10 @@ function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function getMatchupSections(matchup: LeagueMatchup | null) {
-  return matchupSectionDefinitions.map((section) => ({
-    ...section,
-    body: getMatchupSectionBody(matchup, section.key, section.placeholder),
-  }));
-}
-
-function getMatchupSectionBody(
-  matchup: LeagueMatchup | null,
-  key: (typeof matchupSectionDefinitions)[number]["key"],
-  placeholder: string
-) {
-  const value = matchup?.[key];
-
-  return value?.trim() ? value : placeholder;
-}
-
-function getGuideBullets(value: string) {
-  const lines = value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length > 0 && lines.every((line) => line.startsWith("- "))) {
-    return lines.map((line) => line.replace(/^-+\s*/, "")).slice(0, 4);
-  }
-
-  return value
-    .split(/(?<=[.!?])\s+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 4);
-}
-
 function formatMatchupDate(value: string) {
   return new Intl.DateTimeFormat("en", {
     day: "numeric",
     month: "short",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function getSectionDotClass(
-  accent: (typeof matchupSectionDefinitions)[number]["accent"]
-) {
-  switch (accent) {
-    case "amber":
-      return "bg-amber-300/80";
-    case "cyan":
-      return "bg-cyan-300/80";
-    case "emerald":
-      return "bg-emerald-300/80";
-    case "rose":
-      return "bg-rose-300/80";
-    case "sky":
-      return "bg-sky-300/80";
-    case "teal":
-      return "bg-teal-300/80";
-    case "violet":
-      return "bg-violet-300/80";
-  }
-}
-
-function getSectionIconClass(
-  accent: (typeof matchupSectionDefinitions)[number]["accent"]
-) {
-  switch (accent) {
-    case "amber":
-      return "border-amber-300/20 bg-amber-400/10 text-amber-200";
-    case "cyan":
-      return "border-cyan-300/20 bg-cyan-400/10 text-cyan-200";
-    case "emerald":
-      return "border-emerald-300/20 bg-emerald-400/10 text-emerald-200";
-    case "rose":
-      return "border-rose-300/20 bg-rose-400/10 text-rose-200";
-    case "sky":
-      return "border-sky-300/20 bg-sky-400/10 text-sky-200";
-    case "teal":
-      return "border-teal-300/20 bg-teal-400/10 text-teal-200";
-    case "violet":
-      return "border-violet-300/20 bg-violet-400/10 text-violet-200";
-  }
 }

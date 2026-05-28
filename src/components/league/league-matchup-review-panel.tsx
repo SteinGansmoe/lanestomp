@@ -1,0 +1,570 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Edit3,
+  Gem,
+  Leaf,
+  RotateCcw,
+  Save,
+  ShieldCheck,
+  Swords,
+  Target,
+  Trophy,
+  Zap,
+} from "lucide-react";
+import type { User } from "@supabase/supabase-js";
+
+import { Button } from "@/src/components/ui/button";
+import { isAdminUser } from "@/src/lib/admin";
+import { supabase } from "@/src/lib/supabase";
+import type { LeagueMatchup } from "@/src/features/league/matchups";
+import type { LeagueRole } from "@/src/features/league/roles";
+
+type MatchupSectionKey =
+  | "danger_windows"
+  | "early_game"
+  | "itemization_notes"
+  | "overview"
+  | "power_spikes"
+  | "trading_pattern"
+  | "win_conditions";
+
+type AdminMatchupRow = LeagueMatchup & {
+  generated_at: string | null;
+  id: number;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+};
+
+type ReviewFormState = Record<MatchupSectionKey, string>;
+
+type ReviewStatus = {
+  error: string | null;
+  isLoading: boolean;
+  success: string | null;
+};
+
+type LeagueMatchupReviewPanelProps = {
+  championAId: string;
+  championBId: string;
+  initialMatchup: LeagueMatchup | null;
+  role: LeagueRole;
+};
+
+const matchupSectionDefinitions = [
+  {
+    key: "overview",
+    title: "Overview",
+    accent: "cyan",
+    icon: Target,
+    placeholder:
+      "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
+  },
+  {
+    key: "early_game",
+    title: "Early game",
+    accent: "emerald",
+    icon: Leaf,
+    placeholder:
+      "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
+  },
+  {
+    key: "trading_pattern",
+    title: "Trading pattern",
+    accent: "violet",
+    icon: Swords,
+    placeholder:
+      "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
+  },
+  {
+    key: "power_spikes",
+    title: "Power spikes",
+    accent: "amber",
+    icon: Zap,
+    placeholder:
+      "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
+  },
+  {
+    key: "danger_windows",
+    title: "Danger windows",
+    accent: "rose",
+    icon: AlertTriangle,
+    placeholder:
+      "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
+  },
+  {
+    key: "itemization_notes",
+    title: "Itemization notes",
+    accent: "sky",
+    icon: Gem,
+    placeholder:
+      "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive starts, sustain options, and first recall priorities.",
+  },
+  {
+    key: "win_conditions",
+    title: "Win conditions",
+    accent: "teal",
+    icon: Trophy,
+    placeholder:
+      "Summarize what each side needs from the lane: wave state, summoner spell pressure, roam timing, and when the matchup shifts from survival to control.",
+  },
+] as const satisfies ReadonlyArray<{
+  accent: "amber" | "cyan" | "emerald" | "rose" | "sky" | "teal" | "violet";
+  icon: typeof Target;
+  key: MatchupSectionKey;
+  placeholder: string;
+  title: string;
+}>;
+
+export function LeagueMatchupReviewPanel({
+  championAId,
+  championBId,
+  initialMatchup,
+  role,
+}: LeagueMatchupReviewPanelProps) {
+  const [adminMatchup, setAdminMatchup] = useState<AdminMatchupRow | null>(null);
+  const [form, setForm] = useState<ReviewFormState>(() =>
+    getReviewFormState(initialMatchup)
+  );
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [status, setStatus] = useState<ReviewStatus>({
+    error: null,
+    isLoading: false,
+    success: null,
+  });
+  const displayMatchup = adminMatchup ?? initialMatchup;
+  const sections = useMemo(
+    () =>
+      matchupSectionDefinitions.map((section) => ({
+        ...section,
+        body: getMatchupSectionBody(displayMatchup, section.key, section.placeholder),
+      })),
+    [displayMatchup]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAdminMatchup() {
+      if (!supabase) {
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      const nextIsAdmin = await isAdminUser(user);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setIsAdmin(nextIsAdmin);
+
+      if (!nextIsAdmin) {
+        return;
+      }
+
+      setStatus({ error: null, isLoading: true, success: null });
+
+      const { data, error } = await supabase
+        .from("league_matchups")
+        .select(
+          [
+            "id",
+            "champion_a_id",
+            "champion_b_id",
+            "generation_status",
+            "role",
+            "overview",
+            "early_game",
+            "trading_pattern",
+            "power_spikes",
+            "danger_windows",
+            "itemization_notes",
+            "win_conditions",
+            "difficulty_rating",
+            "confidence_level",
+            "generated_at",
+            "reviewed_at",
+            "reviewed_by",
+            "updated_at",
+          ].join(", ")
+        )
+        .eq("champion_a_id", championAId)
+        .eq("champion_b_id", championBId)
+        .eq("role", role)
+        .maybeSingle<AdminMatchupRow>();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setStatus({
+          error: error.message,
+          isLoading: false,
+          success: null,
+        });
+        return;
+      }
+
+      setAdminMatchup(data);
+      setForm(getReviewFormState(data ?? initialMatchup));
+      setStatus({ error: null, isLoading: false, success: null });
+    }
+
+    void loadAdminMatchup();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [championAId, championBId, initialMatchup, role]);
+
+  function startEditing() {
+    setForm(getReviewFormState(displayMatchup));
+    setIsEditing(true);
+    setStatus({ error: null, isLoading: false, success: null });
+  }
+
+  function cancelEditing() {
+    setForm(getReviewFormState(displayMatchup));
+    setIsEditing(false);
+    setStatus({ error: null, isLoading: false, success: null });
+  }
+
+  async function saveEdits() {
+    if (!supabase || !adminMatchup) {
+      setStatus({
+        error: "Matchup row is not ready for editing.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const payload = Object.fromEntries(
+      matchupSectionDefinitions.map((section) => [
+        section.key,
+        form[section.key].trim() || null,
+      ])
+    ) as Record<MatchupSectionKey, string | null>;
+    const { data, error } = await supabase
+      .from("league_matchups")
+      .update(payload)
+      .eq("id", adminMatchup.id)
+      .select(
+        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+      )
+      .single<AdminMatchupRow>();
+
+    if (error) {
+      setStatus({ error: error.message, isLoading: false, success: null });
+      return;
+    }
+
+    setAdminMatchup(data);
+    setForm(getReviewFormState(data));
+    setIsEditing(false);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: "Matchup guidance saved.",
+    });
+  }
+
+  async function markReviewed() {
+    if (!supabase || !adminMatchup) {
+      setStatus({
+        error: "Matchup row is not ready for review.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const user: User | null = userData.user ?? null;
+
+    if (userError || !user || !(await isAdminUser(user))) {
+      setStatus({
+        error: userError?.message ?? "Only admins can publish matchup guidance.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("league_matchups")
+      .update({
+        generation_status: "reviewed",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
+      })
+      .eq("id", adminMatchup.id)
+      .select(
+        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+      )
+      .single<AdminMatchupRow>();
+
+    if (error) {
+      setStatus({ error: error.message, isLoading: false, success: null });
+      return;
+    }
+
+    setAdminMatchup(data);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: "Matchup marked as reviewed and published.",
+    });
+  }
+
+  return (
+    <>
+      {isAdmin ? (
+        <section className="rounded-lg border border-violet-300/20 bg-violet-500/[0.07] p-3 shadow-lg shadow-black/10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/20 text-violet-100">
+                <ShieldCheck className="size-4" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="font-mono text-sm font-semibold text-white">
+                  Admin review
+                </p>
+                <p className="text-xs text-zinc-400">
+                  {adminMatchup
+                    ? `${getStatusLabel(adminMatchup.generation_status)} guidance shown in the public layout.`
+                    : "No matchup row exists for this direction yet."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {isEditing ? (
+                <>
+                  <Button
+                    className="h-9 bg-violet-500/80 px-3 text-white hover:bg-violet-500"
+                    disabled={status.isLoading}
+                    onClick={saveEdits}
+                    type="button"
+                  >
+                    <Save className="size-3.5" aria-hidden="true" />
+                    {status.isLoading ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
+                    disabled={status.isLoading}
+                    onClick={cancelEditing}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RotateCcw className="size-3.5" aria-hidden="true" />
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
+                    disabled={!adminMatchup || status.isLoading}
+                    onClick={startEditing}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Edit3 className="size-3.5" aria-hidden="true" />
+                    Edit guidance
+                  </Button>
+                  <Button
+                    className="h-9 border-emerald-300/20 bg-emerald-500/10 px-3 text-emerald-100 hover:bg-emerald-500/20"
+                    disabled={
+                      !adminMatchup ||
+                      status.isLoading ||
+                      adminMatchup.generation_status === "reviewed"
+                    }
+                    onClick={markReviewed}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                    Mark reviewed
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {status.error ? (
+            <p className="mt-3 rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+              {status.error}
+            </p>
+          ) : null}
+
+          {status.success ? (
+            <p className="mt-3 rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+              {status.success}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        {sections.map((section) => (
+          <MatchupGuideCard
+            formValue={form[section.key]}
+            isEditing={isEditing}
+            key={section.title}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, [section.key]: value }))
+            }
+            section={section}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function MatchupGuideCard({
+  formValue,
+  isEditing,
+  onChange,
+  section,
+}: {
+  formValue: string;
+  isEditing: boolean;
+  onChange: (value: string) => void;
+  section: (typeof matchupSectionDefinitions)[number] & { body: string };
+}) {
+  const Icon = section.icon;
+  const bullets = getGuideBullets(section.body);
+
+  return (
+    <article className="group rounded-lg border border-white/10 bg-[#10182b]/90 p-4 shadow-lg shadow-black/10 ring-1 ring-white/5 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]">
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex size-9 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
+            section.accent
+          )}`}
+        >
+          <Icon className="size-4" aria-hidden="true" />
+        </span>
+        <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-white">
+          {section.title}
+        </h2>
+      </div>
+
+      {isEditing ? (
+        <textarea
+          className="mt-3 min-h-40 w-full resize-y rounded-md border border-white/10 bg-[#081120] px-3 py-2 text-sm leading-5 text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20"
+          onChange={(event) => onChange(event.target.value)}
+          value={formValue}
+        />
+      ) : (
+        <ul className="mt-3 space-y-2 text-sm leading-5 text-zinc-400">
+          {bullets.map((line, index) => (
+            <li className="flex gap-2" key={`${line}-${index}`}>
+              <span
+                className={`mt-2 size-1.5 shrink-0 rounded-full ${getSectionDotClass(
+                  section.accent
+                )}`}
+              />
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </article>
+  );
+}
+
+function getReviewFormState(matchup: LeagueMatchup | null): ReviewFormState {
+  return Object.fromEntries(
+    matchupSectionDefinitions.map((section) => [
+      section.key,
+      matchup?.[section.key] ?? "",
+    ])
+  ) as ReviewFormState;
+}
+
+function getMatchupSectionBody(
+  matchup: LeagueMatchup | null,
+  key: MatchupSectionKey,
+  placeholder: string
+) {
+  const value = matchup?.[key];
+
+  return value?.trim() ? value : placeholder;
+}
+
+function getGuideBullets(value: string) {
+  const lines = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length > 0 && lines.every((line) => line.startsWith("- "))) {
+    return lines.map((line) => line.replace(/^-+\s*/, "")).slice(0, 4);
+  }
+
+  return value
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function getStatusLabel(status: AdminMatchupRow["generation_status"]) {
+  return status === "reviewed" ? "Reviewed / published" : "Draft";
+}
+
+function getSectionDotClass(
+  accent: (typeof matchupSectionDefinitions)[number]["accent"]
+) {
+  switch (accent) {
+    case "amber":
+      return "bg-amber-300/80";
+    case "cyan":
+      return "bg-cyan-300/80";
+    case "emerald":
+      return "bg-emerald-300/80";
+    case "rose":
+      return "bg-rose-300/80";
+    case "sky":
+      return "bg-sky-300/80";
+    case "teal":
+      return "bg-teal-300/80";
+    case "violet":
+      return "bg-violet-300/80";
+  }
+}
+
+function getSectionIconClass(
+  accent: (typeof matchupSectionDefinitions)[number]["accent"]
+) {
+  switch (accent) {
+    case "amber":
+      return "border-amber-300/20 bg-amber-400/10 text-amber-200";
+    case "cyan":
+      return "border-cyan-300/20 bg-cyan-400/10 text-cyan-200";
+    case "emerald":
+      return "border-emerald-300/20 bg-emerald-400/10 text-emerald-200";
+    case "rose":
+      return "border-rose-300/20 bg-rose-400/10 text-rose-200";
+    case "sky":
+      return "border-sky-300/20 bg-sky-400/10 text-sky-200";
+    case "teal":
+      return "border-teal-300/20 bg-teal-400/10 text-teal-200";
+    case "violet":
+      return "border-violet-300/20 bg-violet-400/10 text-violet-200";
+  }
+}
