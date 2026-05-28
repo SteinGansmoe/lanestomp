@@ -1,7 +1,8 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   CheckSquare,
+  ChevronDown,
   ListChecks,
   Pencil,
   Sparkles,
@@ -16,7 +17,6 @@ import {
 } from "@/src/components/ui/card";
 import { leagueRoles } from "@/src/features/league/roles";
 import { isChampionInRole } from "@/src/features/league/champion-roles";
-import { AdminGroupedListCard } from "../shared/admin-grouped-list-card";
 import type {
   AdminLeagueChampion,
   AdminLeagueMatchup,
@@ -25,10 +25,33 @@ import type {
   LeagueMatchupFormState,
 } from "../types";
 import { fieldClassName, selectOptionClassName } from "../constants";
+import { cn } from "@/src/lib/utils";
 import {
   LeagueMatchupForm,
   LeagueMatchupFormCard,
 } from "./league-matchup-form";
+
+type LeagueMatchupRoleFilter = AdminLeagueMatchup["role"] | "all";
+type LeagueMatchupSortMode =
+  | "alphabetical"
+  | "least-reviewed"
+  | "most-drafts"
+  | "most-reviewed";
+
+type ChampionMatchupGroup = {
+  draftCount: number;
+  id: string;
+  items: AdminLeagueMatchup[];
+  missingCount: number | null;
+  reviewedCount: number;
+  statusClassName: string;
+  statusLabel: string;
+  title: string;
+  totalCount: number;
+};
+
+const championGroupStorageKey =
+  "seasontracker.admin.leagueMatchups.collapsedChampionGroups";
 
 export function AdminLeagueMatchupsSection({
   champions,
@@ -71,17 +94,72 @@ export function AdminLeagueMatchupsSection({
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
 }) {
-  const championsById = new Map(
-    champions.map((champion) => [champion.id, champion] as const)
+  const [collapsedChampionGroups, setCollapsedChampionGroups] = useState<
+    Record<string, boolean>
+  >({});
+  const [roleFilter, setRoleFilter] = useState<LeagueMatchupRoleFilter>("all");
+  const [sortMode, setSortMode] =
+    useState<LeagueMatchupSortMode>("alphabetical");
+  const championsById = useMemo(
+    () => new Map(champions.map((champion) => [champion.id, champion] as const)),
+    [champions]
   );
-  const groups = leagueRoles
-    .map((role) => ({
-      count: matchups.filter((matchup) => matchup.role === role).length,
-      id: role,
-      items: matchups.filter((matchup) => matchup.role === role),
-      title: role === "adc" ? "ADC" : titleCase(role),
-    }))
-    .filter((group) => group.items.length > 0);
+  const championGroups = useMemo(
+    () =>
+      getChampionMatchupGroups({
+        champions,
+        matchups,
+        roleFilter,
+        sortMode,
+      }),
+    [champions, matchups, roleFilter, sortMode]
+  );
+
+  useEffect(() => {
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const storedValue = window.localStorage.getItem(championGroupStorageKey);
+
+      if (!storedValue) {
+        return;
+      }
+
+      try {
+        const parsedValue: unknown = JSON.parse(storedValue);
+
+        if (!parsedValue || typeof parsedValue !== "object") {
+          return;
+        }
+
+        const nextCollapsedGroups: Record<string, boolean> = {};
+
+        for (const [groupId, isCollapsed] of Object.entries(parsedValue)) {
+          nextCollapsedGroups[groupId] = Boolean(isCollapsed);
+        }
+
+        setCollapsedChampionGroups(nextCollapsedGroups);
+      } catch {
+        window.localStorage.removeItem(championGroupStorageKey);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  function toggleChampionGroup(groupId: string) {
+    setCollapsedChampionGroups((currentGroups) => {
+      const nextGroups = {
+        ...currentGroups,
+        [groupId]: !currentGroups[groupId],
+      };
+
+      window.localStorage.setItem(
+        championGroupStorageKey,
+        JSON.stringify(nextGroups)
+      );
+
+      return nextGroups;
+    });
+  }
 
   return (
     <>
@@ -139,12 +217,157 @@ export function AdminLeagueMatchupsSection({
         status={batchStatus}
       />
 
-      <AdminGroupedListCard
-        emptyMessage="No League matchup guidance found."
-        groups={groups.map((group) => ({
-          children: (
-            <ul className="space-y-3 p-4">
-              {group.items.map((matchup) => {
+      <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <CardTitle className="font-mono text-xl">
+                League matchups
+              </CardTitle>
+              <p className="mt-2 text-sm text-zinc-400">
+                Manage coverage by source champion. Each group shows Champion A
+                matchups for the selected lane filter.
+              </p>
+            </div>
+            <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Lane filter
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-40`}
+                  onChange={(event) =>
+                    setRoleFilter(event.target.value as LeagueMatchupRoleFilter)
+                  }
+                  value={roleFilter}
+                >
+                  <option className={selectOptionClassName} value="all">
+                    All lanes
+                  </option>
+                  {leagueRoles.map((role) => (
+                    <option
+                      className={selectOptionClassName}
+                      key={role}
+                      value={role}
+                    >
+                      {role === "adc" ? "ADC" : titleCase(role)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Sort
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-44`}
+                  onChange={(event) =>
+                    setSortMode(event.target.value as LeagueMatchupSortMode)
+                  }
+                  value={sortMode}
+                >
+                  <option className={selectOptionClassName} value="alphabetical">
+                    Alphabetical
+                  </option>
+                  <option className={selectOptionClassName} value="most-reviewed">
+                    Most reviewed
+                  </option>
+                  <option className={selectOptionClassName} value="least-reviewed">
+                    Least reviewed
+                  </option>
+                  <option className={selectOptionClassName} value="most-drafts">
+                    Most drafts remaining
+                  </option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {championGroups.length > 0 ? (
+            <ul className="space-y-4">
+              {championGroups.map((group) => {
+                const isCollapsed = Boolean(collapsedChampionGroups[group.id]);
+                const contentId = `${championGroupStorageKey}-${group.id}`;
+
+                return (
+                  <li
+                    className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.025]"
+                    key={group.id}
+                  >
+                    <div
+                      className={cn(
+                        "flex flex-wrap items-center justify-between gap-4 px-4 py-3 transition-colors",
+                        isCollapsed ? "" : "border-b border-white/10"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-white">
+                            {group.title}
+                          </p>
+                          <span
+                            className={`rounded-md border px-2 py-1 text-xs ${group.statusClassName}`}
+                          >
+                            {group.statusLabel}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300">
+                            {group.totalCount} matchup
+                            {group.totalCount === 1 ? "" : "s"}
+                          </span>
+                          <span className="rounded-md border border-emerald-300/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">
+                            {group.reviewedCount} reviewed
+                          </span>
+                          <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-violet-100">
+                            {group.draftCount} draft
+                            {group.draftCount === 1 ? "" : "s"}
+                          </span>
+                          {group.missingCount !== null ? (
+                            <span className="rounded-md border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-amber-100">
+                              {group.missingCount} missing
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <button
+                        aria-controls={contentId}
+                        aria-expanded={!isCollapsed}
+                        aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${
+                          group.title
+                        } matchups`}
+                        className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+                        onClick={() => toggleChampionGroup(group.id)}
+                        type="button"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "size-4 transition-transform duration-200",
+                            isCollapsed ? "-rotate-90" : "rotate-0"
+                          )}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+
+                    <div
+                      aria-hidden={isCollapsed}
+                      className={cn(
+                        "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+                        isCollapsed
+                          ? "pointer-events-none grid-rows-[0fr] opacity-0"
+                          : "grid-rows-[1fr] opacity-100"
+                      )}
+                      id={contentId}
+                      inert={isCollapsed ? true : undefined}
+                    >
+                      <div className="overflow-hidden">
+                        {group.items.length > 0 ? (
+                          <ul className="space-y-3 p-4">
+                            {group.items.map((matchup) => {
                 const championA = championsById.get(matchup.champion_a_id);
                 const championB = championsById.get(matchup.champion_b_id);
                 const contentState = getMatchupContentState(matchup);
@@ -166,6 +389,9 @@ export function AdminLeagueMatchupsSection({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
+                        <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-xs text-zinc-300">
+                          {getRoleLabel(matchup.role)}
+                        </span>
                         <span
                           className={`rounded-md border px-2 py-1 text-xs ${contentState.className}`}
                         >
@@ -235,16 +461,29 @@ export function AdminLeagueMatchupsSection({
                     </div>
                   </li>
                 );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="p-4">
+                            <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
+                              No saved matchups for this champion in the current
+                              lane filter.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
               })}
             </ul>
-          ),
-          count: group.count,
-          id: group.id,
-          title: group.title,
-        }))}
-        storageKey="seasontracker.admin.leagueMatchups.collapsedGroups"
-        title="League matchups"
-      />
+          ) : (
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
+              No League matchup guidance found.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }
@@ -687,8 +926,203 @@ function getMatchupKey(
   return `${role}:${championAId}:${championBId}`;
 }
 
+function getChampionMatchupGroups({
+  champions,
+  matchups,
+  roleFilter,
+  sortMode,
+}: {
+  champions: AdminLeagueChampion[];
+  matchups: AdminLeagueMatchup[];
+  roleFilter: LeagueMatchupRoleFilter;
+  sortMode: LeagueMatchupSortMode;
+}): ChampionMatchupGroup[] {
+  const championsById = new Map(
+    champions.map((champion) => [champion.id, champion] as const)
+  );
+  const filteredMatchups =
+    roleFilter === "all"
+      ? matchups
+      : matchups.filter((matchup) => matchup.role === roleFilter);
+  const matchupsBySourceChampion = new Map<string, AdminLeagueMatchup[]>();
+
+  for (const matchup of filteredMatchups) {
+    matchupsBySourceChampion.set(matchup.champion_a_id, [
+      ...(matchupsBySourceChampion.get(matchup.champion_a_id) ?? []),
+      matchup,
+    ]);
+  }
+
+  const sourceChampionIds =
+    roleFilter === "all"
+      ? new Set(filteredMatchups.map((matchup) => matchup.champion_a_id))
+      : new Set([
+          ...champions
+            .filter((champion) => isChampionInRole(champion, roleFilter))
+            .map((champion) => champion.id),
+          ...filteredMatchups.map((matchup) => matchup.champion_a_id),
+        ]);
+
+  return Array.from(sourceChampionIds)
+    .map((championId) => {
+      const champion = championsById.get(championId);
+      const items = sortMatchupsForChampion(
+        matchupsBySourceChampion.get(championId) ?? [],
+        championsById
+      );
+      const totalCount = items.length;
+      const reviewedCount = items.filter(
+        (matchup) => matchup.generation_status === "reviewed"
+      ).length;
+      const draftCount = totalCount - reviewedCount;
+      const missingCount =
+        roleFilter === "all"
+          ? null
+          : Math.max(
+              champions.filter(
+                (championOption) =>
+                  championOption.id !== championId &&
+                  isChampionInRole(championOption, roleFilter)
+              ).length - totalCount,
+              0
+            );
+      const status = getChampionGroupStatus({
+        draftCount,
+        missingCount,
+        reviewedCount,
+        totalCount,
+      });
+
+      return {
+        draftCount,
+        id: championId,
+        items,
+        missingCount,
+        reviewedCount,
+        statusClassName: status.className,
+        statusLabel: status.label,
+        title: champion?.name ?? championId,
+        totalCount,
+      };
+    })
+    .sort((groupA, groupB) => sortChampionGroups(groupA, groupB, sortMode));
+}
+
+function sortMatchupsForChampion(
+  matchups: AdminLeagueMatchup[],
+  championsById: Map<string, AdminLeagueChampion>
+) {
+  return [...matchups].sort((matchupA, matchupB) => {
+    const roleDifference =
+      leagueRoles.indexOf(matchupA.role) - leagueRoles.indexOf(matchupB.role);
+
+    if (roleDifference !== 0) {
+      return roleDifference;
+    }
+
+    return getChampionSortName(matchupA.champion_b_id, championsById).localeCompare(
+      getChampionSortName(matchupB.champion_b_id, championsById)
+    );
+  });
+}
+
+function sortChampionGroups(
+  groupA: ChampionMatchupGroup,
+  groupB: ChampionMatchupGroup,
+  sortMode: LeagueMatchupSortMode
+) {
+  switch (sortMode) {
+    case "least-reviewed": {
+      const reviewedDifference = groupA.reviewedCount - groupB.reviewedCount;
+
+      return reviewedDifference || groupA.title.localeCompare(groupB.title);
+    }
+    case "most-drafts": {
+      const draftDifference = groupB.draftCount - groupA.draftCount;
+      const missingDifference =
+        (groupB.missingCount ?? 0) - (groupA.missingCount ?? 0);
+
+      return (
+        draftDifference ||
+        missingDifference ||
+        groupA.title.localeCompare(groupB.title)
+      );
+    }
+    case "most-reviewed": {
+      const reviewedDifference = groupB.reviewedCount - groupA.reviewedCount;
+
+      return reviewedDifference || groupA.title.localeCompare(groupB.title);
+    }
+    case "alphabetical":
+      return groupA.title.localeCompare(groupB.title);
+  }
+}
+
+function getChampionSortName(
+  championId: string,
+  championsById: Map<string, AdminLeagueChampion>
+) {
+  return championsById.get(championId)?.name ?? championId;
+}
+
+function getChampionGroupStatus({
+  draftCount,
+  missingCount,
+  reviewedCount,
+  totalCount,
+}: {
+  draftCount: number;
+  missingCount: number | null;
+  reviewedCount: number;
+  totalCount: number;
+}) {
+  if (totalCount === 0) {
+    return {
+      className: "border-zinc-300/15 bg-white/5 text-zinc-300",
+      label: "Needs coverage",
+    };
+  }
+
+  if (missingCount === 0 && draftCount === 0) {
+    return {
+      className: "border-emerald-300/20 bg-emerald-500/10 text-emerald-100",
+      label: "Complete",
+    };
+  }
+
+  if (draftCount > 0) {
+    return {
+      className: "border-violet-300/20 bg-violet-500/10 text-violet-100",
+      label: "Drafts waiting",
+    };
+  }
+
+  if ((missingCount ?? 0) > 0) {
+    return {
+      className: "border-amber-300/20 bg-amber-400/10 text-amber-100",
+      label: "Needs matchups",
+    };
+  }
+
+  if (reviewedCount > 0) {
+    return {
+      className: "border-cyan-300/20 bg-cyan-400/10 text-cyan-100",
+      label: "Reviewed",
+    };
+  }
+
+  return {
+    className: "border-zinc-300/15 bg-white/5 text-zinc-300",
+    label: "Needs review",
+  };
+}
+
 function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getRoleLabel(role: AdminLeagueMatchup["role"]) {
+  return role === "adc" ? "ADC" : titleCase(role);
 }
 
 function getMatchupContentState(matchup: AdminLeagueMatchup) {

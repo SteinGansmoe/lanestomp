@@ -1,3 +1,5 @@
+import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge";
+
 export type LeagueRole = "mid" | "top" | "jungle" | "adc" | "support";
 
 export const matchupDraftSectionKeys = [
@@ -30,7 +32,9 @@ export const matchupDraftSchema = {
 
 export type LeagueMatchupDraftPromptInput = {
   adminNotes: string | null;
+  championAProfile?: LeagueChampionKnowledgeProfile | null;
   championAName: string;
+  championBProfile?: LeagueChampionKnowledgeProfile | null;
   championBName: string;
   role: LeagueRole;
 };
@@ -44,12 +48,22 @@ export type LeagueMatchupDraftPrompt = {
 // Keep it independent from the OpenAI call so future provider swaps reuse the same quality bar.
 export function buildLeagueMatchupDraftPrompt({
   adminNotes,
+  championAProfile,
   championAName,
+  championBProfile,
   championBName,
   role,
 }: LeagueMatchupDraftPromptInput): LeagueMatchupDraftPrompt {
   const roleLabel = role === "adc" ? "ADC" : role;
   const sourceNotes = adminNotes?.trim() || "No admin notes supplied.";
+  const championAContext = formatChampionKnowledgeForPrompt(
+    championAName,
+    championAProfile
+  );
+  const championBContext = formatChampionKnowledgeForPrompt(
+    championBName,
+    championBProfile
+  );
 
   return {
     systemPrompt: [
@@ -62,6 +76,8 @@ export function buildLeagueMatchupDraftPrompt({
       "Prefer correct, limited advice over filling every section with weak guesses.",
       "Never claim winrates, exact patch facts, item/stat changes, or matchup certainty unless supplied by admin notes.",
       "Do not invent ability timing, cooldown interactions, item recommendations, or lane dynamics.",
+      "Treat supplied champion profiles as factual constraints. If model memory conflicts with the profiles, follow the profiles.",
+      "Do not invent crowd control, stealth, sustain, shields, damage type, or power spikes that are absent from the supplied profiles.",
       "Mention uncertainty briefly only when matchup advice may vary by patch, skill bracket, build, or lane state.",
       "Avoid vague phrases like play safe, look for trades, or scale unless you name the exact timing, resource state, cooldown, or enemy mistake that creates the decision.",
       "Avoid awkward AI wording such as extended melee range, sustained poke after recall, or generic lane dominance.",
@@ -71,6 +87,10 @@ export function buildLeagueMatchupDraftPrompt({
       `Role: ${roleLabel}`,
       `Admin notes or source context: ${sourceNotes}`,
       "",
+      "Structured champion profiles:",
+      `Champion A profile:\n${championAContext}`,
+      `Champion B profile:\n${championBContext}`,
+      "",
       "Write JSON for these exact keys: overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions.",
       "Each value must be a newline-separated bullet list.",
       "Use 1-3 bullets per key, never more.",
@@ -79,6 +99,10 @@ export function buildLeagueMatchupDraftPrompt({
       "Do not use paragraphs.",
       "Do not repeat wave control, spacing, or cooldown tracking across sections unless that concept is uniquely relevant to the section.",
       "If a concept belongs in one section, do not restate it elsewhere.",
+      "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, trading patterns, lane identity, and real spikes.",
+      "Only reference abilities, crowd control, shields, sustain, stealth, or power spikes that appear in the profiles or admin notes.",
+      "If a champion profile says a champion has no hard crowd control, do not describe that champion as having hard crowd control.",
+      "If a champion profile is missing, avoid specific ability claims for that champion unless supplied by admin notes.",
       "Use natural League terms such as wave on your side, punish cooldowns, avoid all-in windows, short trades, spacing, roam timers, freeze, crash, slow push, and reset only when they fit the role and lane.",
       "Avoid top-lane-only concepts unless the selected role and champions clearly make them relevant.",
       "For mid lane, avoid long-freeze advice; use keep the wave on your side, crash, reset, roam timer, or punish roam only when the lane state supports it.",
@@ -108,6 +132,7 @@ export function buildLeagueMatchupDraftPrompt({
       "- Do not recommend Morellonomicon just because the enemy has minor healing.",
       "- Do not recommend AD items to AP champions, including Hexdrinker for a mage.",
       "- Do not invent ability timing or claim an ability spike that is not real.",
+      "- Do not invent crowd control, sustain, shields, stealth, or a combat use for utility-only abilities.",
       "- Do not say Twilight Shroud is Akali's level 6 spike.",
       "- Do not treat Lost Chapter sustain or recall timing as a power spike.",
       "- Do not claim Ahri E cooldown reduction as a core spike.",
@@ -119,4 +144,39 @@ export function buildLeagueMatchupDraftPrompt({
       "- Can a player use this in champion select within 15-20 seconds?",
     ].join("\n"),
   };
+}
+
+function formatChampionKnowledgeForPrompt(
+  championName: string,
+  profile?: LeagueChampionKnowledgeProfile | null
+) {
+  if (!profile) {
+    return [
+      `name: ${championName}`,
+      "profile_status: missing",
+      "constraint: Avoid specific ability, crowd control, sustain, shield, stealth, item, or spike claims unless admin notes provide them.",
+    ].join("\n");
+  }
+
+  return [
+    `name: ${profile.name}`,
+    `primary_roles: ${formatList(profile.primaryRoles)}`,
+    `damage_type: ${profile.damageType}`,
+    `archetype: ${formatList(profile.archetype)}`,
+    `mobility_level: ${profile.mobilityLevel}`,
+    `hard_crowd_control: ${formatList(profile.hardCrowdControl)}`,
+    `soft_crowd_control: ${formatList(profile.softCrowdControl)}`,
+    `stealth_or_invisibility: ${profile.stealthOrInvisibility ?? "none"}`,
+    `sustain: ${formatList(profile.sustain)}`,
+    `shields: ${formatList(profile.shields)}`,
+    `primary_trading_pattern: ${profile.primaryTradingPattern}`,
+    `lane_identity: ${profile.laneIdentity}`,
+    `major_power_spikes: ${formatList(profile.majorPowerSpikes)}`,
+    `important_ability_notes: ${formatList(profile.importantAbilityNotes)}`,
+    `common_weaknesses: ${formatList(profile.commonWeaknesses)}`,
+  ].join("\n");
+}
+
+function formatList(values: readonly string[]) {
+  return values.length > 0 ? values.join("; ") : "none";
 }

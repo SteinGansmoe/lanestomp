@@ -1175,7 +1175,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setEditLeagueMatchupStatus({
       error: null,
       isLoading: false,
-      success: "League matchup draft generated. Review before publishing.",
+      success: "League matchup draft generated and saved. Review before publishing.",
     });
   }
 
@@ -1301,7 +1301,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       isLoading: false,
       success: `${generatedCount} matchup draft${
         generatedCount === 1 ? "" : "s"
-      } generated. Review before publishing.`,
+      } generated and saved. Review before publishing.`,
     });
   }
 

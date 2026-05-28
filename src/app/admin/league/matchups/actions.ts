@@ -10,6 +10,7 @@ import {
 import {
   type MatchupDraftSections,
 } from "@/src/features/league/matchup-draft-prompt";
+import { getLeagueChampionKnowledgeProfile } from "@/src/features/league/champion-knowledge";
 
 type GenerateDraftInput = {
   accessToken: string;
@@ -19,6 +20,7 @@ type GenerateDraftInput = {
 type GenerateDraftResult =
   | {
       draft: MatchupDraftSections;
+      matchup: SavedMatchupDraftRow;
       ok: true;
       provider: LeagueMatchupDraftProvider;
     }
@@ -32,6 +34,13 @@ type MatchupRow = {
   champion_a_id: string;
   champion_b_id: string;
   role: AdminLeagueMatchup["role"];
+};
+
+type SavedMatchupDraftRow = MatchupDraftSections & {
+  generated_at: string | null;
+  generation_status: AdminLeagueMatchup["generation_status"];
+  reviewed_at: string | null;
+  reviewed_by: string | null;
 };
 
 type ChampionRow = {
@@ -128,7 +137,9 @@ export async function generateLeagueMatchupDraft({
     championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
   const providerResult = await generateLeagueMatchupDraftContent({
     adminNotes: matchup.admin_notes,
+    championAProfile: getLeagueChampionKnowledgeProfile(matchup.champion_a_id),
     championAName,
+    championBProfile: getLeagueChampionKnowledgeProfile(matchup.champion_b_id),
     championBName,
     role: matchup.role,
   });
@@ -144,29 +155,66 @@ export async function generateLeagueMatchupDraft({
     getGenerationNote(provider, generatedAt, providerResult.providerWarning)
   );
 
-  const { error: updateError } = await supabase
+  const { data: savedMatchup, error: updateError } = await supabase
     .from("league_matchups")
     .update({
-      ...draft,
+      danger_windows: draft.danger_windows,
+      early_game: draft.early_game,
+      itemization_notes: draft.itemization_notes,
+      overview: draft.overview,
+      power_spikes: draft.power_spikes,
+      trading_pattern: draft.trading_pattern,
+      win_conditions: draft.win_conditions,
       admin_notes: adminNotes,
       generated_at: generatedAt,
       generation_status: "draft",
       reviewed_at: null,
       reviewed_by: null,
     })
-    .eq("id", matchupId);
+    .eq("id", matchupId)
+    .select(
+      [
+        "danger_windows",
+        "early_game",
+        "generated_at",
+        "generation_status",
+        "itemization_notes",
+        "overview",
+        "power_spikes",
+        "reviewed_at",
+        "reviewed_by",
+        "trading_pattern",
+        "win_conditions",
+      ].join(", ")
+    )
+    .maybeSingle<SavedMatchupDraftRow>();
 
-  if (updateError) {
+  if (updateError || !savedMatchup) {
     return {
-      error: updateError.message,
+      error: updateError?.message ?? "Generated draft could not be saved.",
       ok: false,
     };
   }
 
   return {
-    draft,
+    draft: getDraftFromSavedMatchup(savedMatchup),
+    matchup: savedMatchup,
     ok: true,
     provider,
+  };
+}
+
+function getDraftFromSavedMatchup(
+  matchup: SavedMatchupDraftRow
+): MatchupDraftSections {
+  return {
+    danger_windows: matchup.danger_windows,
+    early_game: matchup.early_game,
+    itemization_notes: matchup.itemization_notes,
+    overview: matchup.overview,
+    power_spikes: matchup.power_spikes,
+    trading_pattern: matchup.trading_pattern,
+    win_conditions: matchup.win_conditions,
   };
 }
 

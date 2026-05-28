@@ -8,12 +8,15 @@ import {
   type MatchupDraftSectionKey,
   type MatchupDraftSections,
 } from "./matchup-draft-prompt";
+import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge";
 
 export type LeagueMatchupDraftProvider = "openai" | "placeholder";
 
 export type GenerateLeagueMatchupDraftContentInput = {
   adminNotes: string | null;
+  championAProfile?: LeagueChampionKnowledgeProfile | null;
   championAName: string;
+  championBProfile?: LeagueChampionKnowledgeProfile | null;
   championBName: string;
   role: LeagueRole;
 };
@@ -60,13 +63,17 @@ export async function generateLeagueMatchupDraftContent(
 
 async function generateDraftWithOpenAIProvider({
   adminNotes,
+  championAProfile,
   championAName,
+  championBProfile,
   championBName,
   role,
 }: GenerateLeagueMatchupDraftContentInput): Promise<GenerateLeagueMatchupDraftContentResult> {
   const prompt = buildLeagueMatchupDraftPrompt({
     adminNotes,
+    championAProfile,
     championAName,
+    championBProfile,
     championBName,
     role,
   });
