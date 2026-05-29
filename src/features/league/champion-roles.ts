@@ -1,5 +1,16 @@
 import type { LeagueChampion } from "./champions";
+import { getLeagueChampionKnowledgeProfile } from "./champion-knowledge";
 import type { LeagueRole } from "./roles";
+
+export type LeagueChampionRoleTier =
+  | "off-meta"
+  | "primary"
+  | "secondary"
+  | "unlisted";
+
+type ChampionRoleFilterOptions = {
+  includeOffMeta?: boolean;
+};
 
 const championRolesByRole = {
   adc: [
@@ -92,6 +103,7 @@ const championRolesByRole = {
     "Lissandra",
     "Lux",
     "Malzahar",
+    "Mel",
     "Naafiri",
     "Neeko",
     "Orianna",
@@ -213,13 +225,83 @@ for (const [role, championIds] of Object.entries(championRolesByRole) as Array<
   }
 }
 
+export function getChampionRoleTier(
+  champion: Pick<LeagueChampion, "id">,
+  role: LeagueRole
+): LeagueChampionRoleTier {
+  const profile = getLeagueChampionKnowledgeProfile(champion.id);
+
+  if (profile) {
+    if (profile.primaryRoles.includes(role)) {
+      return "primary";
+    }
+
+    if (profile.secondaryRoles.includes(role)) {
+      return "secondary";
+    }
+
+    if (profile.offMetaRoles.includes(role)) {
+      return "off-meta";
+    }
+
+    return "unlisted";
+  }
+
+  return championRolesById.get(champion.id)?.includes(role)
+    ? "primary"
+    : "unlisted";
+}
+
 export function getChampionRoles(champion: Pick<LeagueChampion, "id">) {
+  const profile = getLeagueChampionKnowledgeProfile(champion.id);
+
+  if (profile) {
+    return [
+      ...profile.primaryRoles,
+      ...profile.secondaryRoles,
+      ...profile.offMetaRoles,
+    ];
+  }
+
   return championRolesById.get(champion.id) ?? [];
 }
 
 export function isChampionInRole(
   champion: Pick<LeagueChampion, "id">,
+  role: LeagueRole,
+  { includeOffMeta = false }: ChampionRoleFilterOptions = {}
+) {
+  const tier = getChampionRoleTier(champion, role);
+
+  return (
+    tier === "primary" ||
+    tier === "secondary" ||
+    (includeOffMeta && tier === "off-meta")
+  );
+}
+
+export function sortChampionsForRole<TChampion extends Pick<LeagueChampion, "id" | "name">>(
+  champions: readonly TChampion[],
   role: LeagueRole
 ) {
-  return getChampionRoles(champion).includes(role);
+  return [...champions].sort((championA, championB) => {
+    const roleDifference =
+      getRoleTierSortValue(getChampionRoleTier(championA, role)) -
+      getRoleTierSortValue(getChampionRoleTier(championB, role));
+
+    return roleDifference || championA.name.localeCompare(championB.name);
+  });
+}
+
+function getRoleTierSortValue(tier: LeagueChampionRoleTier) {
+  switch (tier) {
+    case "primary":
+      return 0;
+    case "secondary":
+      return 1;
+    case "off-meta":
+      return 2;
+    case "unlisted":
+      return 3;
+  }
 }

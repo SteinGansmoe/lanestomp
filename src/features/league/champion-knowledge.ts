@@ -19,8 +19,10 @@ export type LeagueChampionKnowledgeProfile = {
   majorPowerSpikes: string[];
   mobilityLevel: LeagueChampionMobilityLevel;
   name: string;
+  offMetaRoles: LeagueRole[];
   primaryRoles: LeagueRole[];
   primaryTradingPattern: string;
+  secondaryRoles: LeagueRole[];
   shields: string[];
   softCrowdControl: string[];
   stealthOrInvisibility: string | null;
@@ -58,7 +60,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Ahri",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Poke with Q and look for E opportunities when available. W to easily proc electrocute is especially strong in early trades.",
     shields: [],
@@ -96,7 +100,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "very_high",
     name: "Akali",
-    primaryRoles: ["mid", "top"],
+    offMetaRoles: [],
+    primaryRoles: ["mid"],
+    secondaryRoles: ["top"],
     primaryTradingPattern:
       "Look for Q poke into passive autos, then commit harder with Shroud or E when the opponent is exposed.",
     shields: [],
@@ -133,7 +139,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Akshan",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Use autos and Avengerang for short ranged pressure, then reposition with Heroic Swing.",
     shields: [],
@@ -170,7 +178,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Diana",
-    primaryRoles: ["mid", "jungle"],
+    offMetaRoles: [],
+    primaryRoles: ["jungle"],
+    secondaryRoles: ["mid"],
     primaryTradingPattern:
       "While Q is travelling to the target you can use E to get reset.",
     shields: ["W Pale Cascade"],
@@ -207,7 +217,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Ekko",
-    primaryRoles: ["mid", "jungle"],
+    offMetaRoles: [],
+    primaryRoles: ["jungle"],
+    secondaryRoles: ["mid"],
     primaryTradingPattern:
       "Use Timewinder and Phase Dive for quick burst, then disengage after proccing passive for movement speed to back off.",
     shields: ["W Parallel Convergence shield if Ekko enters the zone"],
@@ -246,7 +258,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Fizz",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: ["jungle"],
     primaryTradingPattern:
       "Dash in for burst, use Playful / Trickster to dodge the key answer, then exit or finish.",
     shields: [],
@@ -284,7 +298,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Hwei",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: ["adc", "support"],
     primaryTradingPattern:
       "Control space with long-range spells and hold defensive E choices for enemy engage timing.",
     shields: ["W spellbook can provide shielding depending on spell choice"],
@@ -322,7 +338,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "very_high",
     name: "LeBlanc",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Use W Distortion for burst and repositioning, then threaten E Chains if the opponent cannot answer.",
     shields: [],
@@ -360,7 +378,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Lux",
-    primaryRoles: ["mid", "support"],
+    offMetaRoles: [],
+    primaryRoles: ["support"],
+    secondaryRoles: ["mid"],
     primaryTradingPattern:
       "Poke with Lucent Singularity and punish oversteps with Light Binding into burst.",
     shields: ["W Prismatic Barrier"],
@@ -398,7 +418,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Malzahar",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: ["top"],
     primaryTradingPattern:
       "Push with Malefic Visions and Voidlings, then threaten silence or ultimate when the enemy steps forward.",
     shields: ["Passive Void Shift spell shield"],
@@ -436,7 +458,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Orianna",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Use ball placement to zone and poke, then shield or speed herself through return trades.",
     shields: ["E Command: Protect"],
@@ -474,7 +498,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Sylas",
+    offMetaRoles: ["top", "jungle"],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Use E to enter or threaten, trade with passive autos and Kingslayer, then disengage if cooldowns are down.",
     shields: [],
@@ -513,7 +539,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Syndra",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Poke with Dark Sphere, hold Scatter the Weak to punish commits, and burst when stun lands.",
     shields: [],
@@ -552,7 +580,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Talon",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: ["jungle"],
     primaryTradingPattern:
       "Land Rake, threaten Q follow-up and passive bleed, then use roam pressure when the wave allows.",
     shields: [],
@@ -592,7 +622,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Veigar",
+    offMetaRoles: ["adc", "support"],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Farm stacks safely, punish movement with Event Horizon, then burst trapped targets.",
     shields: [],
@@ -630,7 +662,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "medium",
     name: "Vex",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Use passive fear to win trades and easily proc electrocute.",
     shields: ["W Personal Space shield"],
@@ -671,7 +705,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Viktor",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: ["top"],
     primaryTradingPattern:
       "Trade with Death Ray and Siphon Power shield while keeping Gravity Field for disengage.",
     shields: ["Q Siphon Power"],
@@ -710,7 +746,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "none",
     name: "Xerath",
-    primaryRoles: ["mid", "support"],
+    offMetaRoles: [],
+    primaryRoles: ["support"],
+    secondaryRoles: ["mid"],
     primaryTradingPattern:
       "Q for long range poke, use W for slow to hit Q easier, and hold E defensively or use if you're guaranteed to hit.",
     shields: [],
@@ -748,7 +786,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "very_high",
     name: "Yasuo",
-    primaryRoles: ["mid", "top"],
+    offMetaRoles: ["adc"],
+    primaryRoles: ["mid"],
+    secondaryRoles: ["top"],
     primaryTradingPattern:
       "Stack Q, dash through wave targets, use W against key projectiles, and commit on knockup threat.",
     shields: ["Passive Way of the Wanderer flow shield"],
@@ -786,7 +826,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "high",
     name: "Yone",
-    primaryRoles: ["mid", "top"],
+    offMetaRoles: [],
+    primaryRoles: ["mid"],
+    secondaryRoles: ["top"],
     primaryTradingPattern:
       "Stack Q, use E and second Q to gap close, snap back with E to avoid punishment.",
     shields: ["W Spirit Cleave shield"],
@@ -823,7 +865,9 @@ export const leagueChampionKnowledgeProfiles = {
     ],
     mobilityLevel: "medium",
     name: "Zoe",
+    offMetaRoles: [],
     primaryRoles: ["mid"],
+    secondaryRoles: [],
     primaryTradingPattern:
       "Fish for E, then use Q and R for burst.",
     shields: [],
@@ -836,6 +880,46 @@ export const leagueChampionKnowledgeProfiles = {
   "If R is used at bad timings."
 ]
   },
+  Zed: {
+    archetype: ["skirmisher", "assassin", "melee carry"],
+    primaryWinCondition: ["Take down enemy carries with his high burst and mobility."],
+    dangerAbilities: ["W + E + Q combo, R Death Mark"],
+    commonWeaknesses: [
+      "Very weak from level 1-3, can be bullied by strong early laners.",
+      "Falls off if he can't get on carries in fights.",
+      "Hard to damage more then one target in fights due to his single-target focus.",
+    ],
+    damageType: "physical",
+    hardCrowdControl: [],
+    id: "Zed",
+    importantAbilityNotes: [
+      "Dodging Q is key to trading with Zed.",
+      "R is his main all-in tool, it can be used to dodge key abilities or finish off targets.",
+      "W + E is almost impossible to dodge, stay focused on dodging Q",
+    ],
+    laneIdentity:
+      "Pick-focused AD assassin who looks to burst carries and dodge key abilities.",
+    majorPowerSpikes: [
+      "After level 3 he has access to his full combo.",
+      "Level 6 Death Mark.",
+      "First completed lethality item.",
+    ],
+    mobilityLevel: "high",
+    name: "Zed",
+    offMetaRoles: [],
+    primaryRoles: ["mid"],
+    secondaryRoles: ["jungle"],
+    primaryTradingPattern:
+      "W + E for guaranteed damage, use Q to poke and finish, then R for all-in.",
+    shields: [],
+    softCrowdControl: ["E Living Shadow slow"],
+    stealthOrInvisibility: null,
+    sustain: [""],
+    punishWindows: [
+      "Before level 3, Zed is very vulnerable to pressure and can be bullied out of lane.",
+      "If Zed uses W to engage and misses combo, he can be punished hard.",
+]
+  },
 } satisfies Record<string, LeagueChampionKnowledgeProfile>;
 
 export function getLeagueChampionKnowledgeProfile(championId: string) {
@@ -844,3 +928,39 @@ export function getLeagueChampionKnowledgeProfile(championId: string) {
 
   return profiles[championId] ?? null;
 }
+
+
+/* COMBAT STATS MAL:
+  Champion: {
+    archetype: ["mobile mage", "pick", "roam"],
+    primaryWinCondition: [""],
+    dangerAbilities: [""],
+    commonWeaknesses: [
+
+    ],
+    damageType: "",
+    hardCrowdControl: [""],
+    id: "",
+    importantAbilityNotes: [
+  
+    ],
+    laneIdentity:
+      "",
+    majorPowerSpikes: [
+
+    ],
+    mobilityLevel: "",
+    name: "",
+    offMetaRoles: [],
+    primaryRoles: ["mid"],
+    secondaryRoles: [],
+    primaryTradingPattern:
+      "",
+    shields: [],
+    softCrowdControl: [],
+    stealthOrInvisibility: null,
+    sustain: [""],
+    punishWindows: [
+
+]
+  }, */

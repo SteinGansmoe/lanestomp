@@ -16,7 +16,10 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { leagueRoles } from "@/src/features/league/roles";
-import { isChampionInRole } from "@/src/features/league/champion-roles";
+import {
+  isChampionInRole,
+  sortChampionsForRole,
+} from "@/src/features/league/champion-roles";
 import type {
   AdminLeagueChampion,
   AdminLeagueMatchup,
@@ -508,6 +511,7 @@ function LeagueMatchupBatchPlanner({
   const [direction, setDirection] =
     useState<"source-first" | "source-second" | "both">("source-first");
   const [poolFilter, setPoolFilter] = useState<"role" | "all">("role");
+  const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [onlyMissing, setOnlyMissing] = useState(true);
   const [maxBatchSize, setMaxBatchSize] = useState(10);
@@ -529,12 +533,17 @@ function LeagueMatchupBatchPlanner({
   const opponentPool = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return champions.filter((champion) => {
+    const filteredChampions = champions.filter((champion) => {
       if (champion.id === sourceChampionId) {
         return false;
       }
 
-      if (poolFilter === "role" && !isChampionInRole(champion, role)) {
+      if (
+        poolFilter === "role" &&
+        !isChampionInRole(champion, role, {
+          includeOffMeta: includeOffMeta || Boolean(normalizedQuery),
+        })
+      ) {
         return false;
       }
 
@@ -547,7 +556,11 @@ function LeagueMatchupBatchPlanner({
         champion.id.toLowerCase().includes(normalizedQuery)
       );
     });
-  }, [champions, poolFilter, role, searchQuery, sourceChampionId]);
+
+    return poolFilter === "role"
+      ? sortChampionsForRole(filteredChampions, role)
+      : filteredChampions;
+  }, [champions, includeOffMeta, poolFilter, role, searchQuery, sourceChampionId]);
   const selectedOpponents = selectedOpponentIds.filter((id) =>
     opponentPool.some((champion) => champion.id === id)
   );
@@ -762,6 +775,17 @@ function LeagueMatchupBatchPlanner({
                 placeholder="Search by champion name"
                 value={searchQuery}
               />
+            </label>
+
+            <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm text-zinc-300">
+              <input
+                checked={includeOffMeta}
+                className="size-4 accent-violet-500"
+                disabled={status.isLoading || poolFilter !== "role"}
+                onChange={(event) => setIncludeOffMeta(event.target.checked)}
+                type="checkbox"
+              />
+              Include off-meta role picks
             </label>
 
             <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm text-zinc-300">

@@ -11,7 +11,11 @@ import {
   getChampionSlug,
   type LeagueChampion,
 } from "@/src/features/league/champions";
-import { getChampionRoles, isChampionInRole } from "@/src/features/league/champion-roles";
+import {
+  getChampionRoles,
+  isChampionInRole,
+  sortChampionsForRole,
+} from "@/src/features/league/champion-roles";
 import { leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 
@@ -33,6 +37,7 @@ export function MatchupSelector({
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<LeagueRole>(initialRole);
   const [activeFilter, setActiveFilter] = useState<ChampionFilter>(initialRole);
+  const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const championA =
     champions.find((champion) => champion.id === championAId) ?? null;
   const championB =
@@ -53,10 +58,13 @@ export function MatchupSelector({
       return champions;
     }
 
-    return champions.filter((champion) =>
-      isChampionInRole(champion, activeFilter)
+    return sortChampionsForRole(
+      champions.filter((champion) =>
+        isChampionInRole(champion, activeFilter, { includeOffMeta })
+      ),
+      activeFilter
     );
-  }, [activeFilter, champions, query]);
+  }, [activeFilter, champions, includeOffMeta, query]);
   const matchupHref =
     championA && championB
       ? `/league/matchups/${getChampionSlug(championA)}-vs-${getChampionSlug(championB)}?role=${role}`
@@ -221,6 +229,23 @@ export function MatchupSelector({
 
         <aside className="grid gap-3 lg:content-start">
           <InfoPanel />
+          <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-4 text-sm text-zinc-300">
+            <input
+              checked={includeOffMeta}
+              className="mt-0.5 size-4 accent-cyan-400"
+              onChange={(event) => setIncludeOffMeta(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <span className="block font-medium text-zinc-100">
+                Include off-meta
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                Adds flexible picks to role filters. Search always includes
+                every champion.
+              </span>
+            </span>
+          </label>
           <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
               Current pool
