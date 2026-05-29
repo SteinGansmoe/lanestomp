@@ -1132,7 +1132,6 @@ function getMatchupContentState(matchup: AdminLeagueMatchup) {
     matchup.trading_pattern,
     matchup.power_spikes,
     matchup.danger_windows,
-    matchup.itemization_notes,
     matchup.win_conditions,
   ].some((value) => Boolean(value?.trim()));
 

@@ -23,7 +23,6 @@ const matchupTextFields = [
   { key: "trading_pattern", label: "Trading pattern" },
   { key: "power_spikes", label: "Power spikes" },
   { key: "danger_windows", label: "Danger windows" },
-  { key: "itemization_notes", label: "Itemization notes" },
   { key: "win_conditions", label: "Win conditions" },
 ] as const;
 

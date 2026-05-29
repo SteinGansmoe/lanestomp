@@ -25,26 +25,32 @@ export type LeagueChampionKnowledgeProfile = {
   softCrowdControl: string[];
   stealthOrInvisibility: string | null;
   sustain: string[];
+  dangerAbilities: string[];
+  primaryWinCondition: string[];
+  punishWindows: string[];
 };
 
 export const leagueChampionKnowledgeProfiles = {
   Ahri: {
     archetype: ["mobile mage", "pick", "roam"],
+    primaryWinCondition: ["Land E Charm to pick off targets and snowball leads."],
+    dangerAbilities: ["E Charm"],
     commonWeaknesses: [
-      "Needs Charm threat for reliable kill pressure.",
-      "Can be punished when Spirit Rush or Charm is unavailable.",
-      "Waveclear is weaker before enough AP and mana access.",
+      "Pre 6 or while ult is on cooldown, she is vulnerable.",
+      "Skillshot reliant.",
+      "Waveclear is weaker before Lost Chapter.",
     ],
     damageType: "magic",
     hardCrowdControl: ["E Charm"],
     id: "Ahri",
     importantAbilityNotes: [
-      "Charm is her key punish and peel tool.",
-      "Spirit Rush gives repeated dashes at level 6.",
-      "Orb of Deception return damage rewards clean spacing.",
+      "E is her key punish and peel tool.",
+      "R gives repeated dashes at level 6.",
+      "W is very strong at lower levels to proc electrcute",
+      "Q return damage rewards clean spacing.",
     ],
     laneIdentity:
-      "Safe mid mage who looks for Charm picks, short trades, and roam windows after wave control.",
+      "One of the safest blind picks in the game, very hard to gank after level 6.",
     majorPowerSpikes: [
       "Level 3 full basic ability access.",
       "Level 6 Spirit Rush.",
@@ -54,14 +60,20 @@ export const leagueChampionKnowledgeProfiles = {
     name: "Ahri",
     primaryRoles: ["mid"],
     primaryTradingPattern:
-      "Poke with Orb of Deception and threaten Charm when the enemy commits or loses cover.",
+      "Poke with Q and look for E opportunities when available. W to easily proc electrocute is especially strong in early trades.",
     shields: [],
     softCrowdControl: [],
     stealthOrInvisibility: null,
     sustain: ["Passive healing from minion or champion takedown stacks."],
+    punishWindows: [
+  "If Ahri misses charm, she can be punished hard.",
+  "If Ahri is forced to ult away, she has to play very carefully until its back up again"
+]
   },
   Akali: {
     archetype: ["assassin", "skirmisher"],
+    primaryWinCondition: ["Use W Twilight Shroud to create safe windows for extended trades and all-ins."],
+    dangerAbilities: ["W Twilight Shroud, E Shuriken Flip"],
     commonWeaknesses: [
       "Can be punished when Twilight Shroud is down.",
       "Early waveclear can be exploitable by ranged mids.",
@@ -76,7 +88,7 @@ export const leagueChampionKnowledgeProfiles = {
       "Shuriken Flip recast is a major commit point.",
     ],
     laneIdentity:
-      "Melee AP assassin who gives ground early, then uses Shroud and mobility to force extended trades.",
+      "Melee AP assassin who gives ground early, becomes stronger after level 3.",
     majorPowerSpikes: [
       "Level 3 full basic ability access.",
       "Level 6 Perfect Execution.",
@@ -88,12 +100,17 @@ export const leagueChampionKnowledgeProfiles = {
     primaryTradingPattern:
       "Look for Q poke into passive autos, then commit harder with Shroud or E when the opponent is exposed.",
     shields: [],
-    softCrowdControl: [],
+    softCrowdControl: ["Short slow on Q hit"],
     stealthOrInvisibility: "W Twilight Shroud obscures Akali and enables trades.",
     sustain: [],
+    punishWindows: [
+  "When Akali uses W, if the opponent can step out of the shroud or wait it out, she can be punished hard.",
+]
   },
   Akshan: {
     archetype: ["marksman", "roam", "lane bully"],
+    primaryWinCondition: ["Use E Heroic Swing to punish overextensions and create roam opportunities."],
+    dangerAbilities: ["E Paddle Star", "R Comeuppance"],
     commonWeaknesses: [
       "Short range for a marksman makes positioning risky.",
       "Heroic Swing can be interrupted or punished if used forward.",
@@ -123,24 +140,29 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: [],
     stealthOrInvisibility: "W Going Rogue grants camouflage outside direct combat.",
     sustain: [],
+    punishWindows: [
+  "After Akshan uses E to engage, if he misses or is interrupted he can be punished hard.",
+]
   },
   Diana: {
     archetype: ["assassin", "diver", "skirmisher"],
+    primaryWinCondition: ["Q + E + W combo does very high burst damage, look to land it when electrocute is up."],
+    dangerAbilities: ["Q Crescent Strike, E Lunar Rush"],
     commonWeaknesses: [
       "Can be punished before she lands Crescent Strike.",
       "Commits forward to trade or all-in.",
-      "Vulnerable when Pale Cascade and dash access are down.",
+      "If E is on cooldown, Diana loses alot of pressure.",
     ],
     damageType: "magic",
     hardCrowdControl: ["R Moonfall"],
     id: "Diana",
     importantAbilityNotes: [
-      "Lunar Rush resets when used on a Moonlight-marked target.",
+      "E resets when used on a Moonlight-marked target.",
       "Moonfall is her level 6 teamfight and all-in threat.",
-      "Pale Cascade gives a shield, not sustain.",
+      "W Pale Cascade gives a shield, not sustain.",
     ],
     laneIdentity:
-      "AP diver who farms into level 6 threat and punishes enemies marked by Crescent Strike.",
+      "AP diver who wants short trades until target is in kill range.",
     majorPowerSpikes: [
       "Level 3 full basic ability access.",
       "Level 6 Moonfall.",
@@ -150,18 +172,23 @@ export const leagueChampionKnowledgeProfiles = {
     name: "Diana",
     primaryRoles: ["mid", "jungle"],
     primaryTradingPattern:
-      "Land Crescent Strike, dash with Lunar Rush, absorb return damage with Pale Cascade, then decide whether to extend.",
+      "While Q is travelling to the target you can use E to get reset.",
     shields: ["W Pale Cascade"],
     softCrowdControl: [],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: ["If Diana misses Q, she can be punished hard.",
+      "If Diana uses E without resetting cooldown, she will struggle.",
+    "Diana's way of all inning is predictable"]
   },
   Ekko: {
     archetype: ["assassin", "skirmisher", "scaling"],
+    primaryWinCondition: ["Short trades with Q and E, a well-times W stun can turn a fight in his favor, and R can be used to dodge key damage or reset fights."],
+    dangerAbilities: ["W Parallel Convergence stun", "E Phase Dive", "R Chronobreak"],
     commonWeaknesses: [
-      "Needs setup time for Parallel Convergence.",
+      "Alot of CC champions will interrupt his setup.",
       "Can be pressured before level 6.",
-      "Vulnerable when Phase Dive or Chronobreak is unavailable.",
+      "Needs items to shine.",
     ],
     damageType: "magic",
     hardCrowdControl: ["W Parallel Convergence stun"],
@@ -182,25 +209,32 @@ export const leagueChampionKnowledgeProfiles = {
     name: "Ekko",
     primaryRoles: ["mid", "jungle"],
     primaryTradingPattern:
-      "Use Timewinder and Phase Dive for quick burst, then disengage before the enemy can extend.",
+      "Use Timewinder and Phase Dive for quick burst, then disengage after proccing passive for movement speed to back off.",
     shields: ["W Parallel Convergence shield if Ekko enters the zone"],
     softCrowdControl: ["Q Timewinder slow"],
     stealthOrInvisibility: null,
     sustain: ["R Chronobreak heal on cast."],
+    punishWindows: [
+  "W takes a while to activate, and if it misses he will take return damage in trades.",
+  "If Ekko engages with E but misses with Q, he will often lose out in trades.",
+  "Before level 6 Ekko is much easier to kill"
+]
   },
   Fizz: {
     archetype: ["assassin", "melee burst"],
+    primaryWinCondition: ["Short trades until target is in kill range."],
+    dangerAbilities: [],
     commonWeaknesses: [
-      "Can be punished when Playful / Trickster is down.",
-      "Struggles into controlled wave states before level 6.",
-      "Must commit into range to deal damage.",
+      "If enemy team is very tanky, Fizz might not be able to secure kills.",
+      "Have to be very careful before level 3, give up minions to not lose hp.",
+      "Is a melee champion.",
     ],
     damageType: "magic",
     hardCrowdControl: ["R Chum the Waters knockup"],
     id: "Fizz",
     importantAbilityNotes: [
-      "Playful / Trickster is his main dodge, engage, and escape tool.",
-      "Chum the Waters creates his level 6 kill threat.",
+      "E Playful / Trickster is his main dodge, engage, and escape tool.",
+      "R Chum the Waters creates his level 6 kill threat.",
       "He has no reliable hard CC before ultimate.",
     ],
     laneIdentity:
@@ -219,11 +253,17 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["E Playful / Trickster slow"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Fizz uses E recklessly, he will struggle.",
+  "Before Fizz turns level 3 he is very weak, if he steps up attack him"
+]
   },
   Hwei: {
     archetype: ["artillery mage", "control mage"],
+    primaryWinCondition: ["Use long-range poke and E spellbook CC to control the lane and set up for level 6 all-in with Spiraling Despair."],
+    dangerAbilities: ["E spellbook fear or root depending on spell choice"],
     commonWeaknesses: [
-      "Immobile and vulnerable when crowd control is down.",
+      "Has more ability options then any other champion, requires a lot of practice to master.",
       "Can be punished by fast all-ins.",
       "Requires correct spell choice under pressure.",
     ],
@@ -251,11 +291,17 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["Several E and R effects can slow or disrupt"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Hwei chooses the wrong E spell for the situation, he can be punished hard.",
+  "Skillshot reliant champions can be punished by dodging their key abilities and forcing them into unfavorable trades."
+]
   },
   Leblanc: {
     archetype: ["assassin", "poke", "mobility"],
+    primaryWinCondition: ["Can be very hard to deal with in lane for other champions."],
+    dangerAbilities: [],
     commonWeaknesses: [
-      "Waveclear and threat suffer when Distortion is down.",
+      "Has low waveclear, if enemy pushes her she ends up farming under tower.",
       "Can be punished if her return pad is controlled.",
       "Needs clean ability chains to convert pressure.",
     ],
@@ -278,16 +324,22 @@ export const leagueChampionKnowledgeProfiles = {
     name: "LeBlanc",
     primaryRoles: ["mid"],
     primaryTradingPattern:
-      "Use Distortion for burst and repositioning, then threaten Chains if the opponent cannot answer.",
+      "Use W Distortion for burst and repositioning, then threaten E Chains if the opponent cannot answer.",
     shields: [],
     softCrowdControl: [],
     stealthOrInvisibility: "Passive Mirror Image briefly makes her harder to identify at low health.",
     sustain: [],
+    punishWindows: [
+  "If LeBlanc uses W to engage and misses, she can be punished hard.",
+  "Leblanc has very low waveclear, she can be pushed under tower and can easily be poked down, forcing her out of lane or into unfavorable trades if she tries to contest the push."
+]
   },
   Lux: {
     archetype: ["artillery mage", "pick", "poke"],
+    primaryWinCondition: [],
+    dangerAbilities: [],
     commonWeaknesses: [
-      "Immobile and punishable when Light Binding is down.",
+      "If Q is used recklessly, she can be punished.",
       "Skillshot reliant.",
       "Can be all-inned if she loses range control.",
     ],
@@ -297,7 +349,7 @@ export const leagueChampionKnowledgeProfiles = {
     importantAbilityNotes: [
       "Light Binding is her key defensive and pick tool.",
       "Prismatic Barrier shields allies and herself.",
-      "Final Spark creates level 6 burst and waveclear threat.",
+      "Q + E + R does significant damage.",
     ],
     laneIdentity:
       "Long-range mage who controls lane with poke, binding threat, and waveclear.",
@@ -315,11 +367,17 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["E Lucent Singularity slow"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Lux misses Q she can be punished.",
+  "Skillshot reliant champions like Lux can be punished by dodging their key abilities and forcing them into unfavorable trades."
+]
   },
   Malzahar: {
     archetype: ["control mage", "anti-carry", "push"],
+    primaryWinCondition: ["Keep midlane pushed permanently, eventually allowing Malzahar to have presence around the map."],
+    dangerAbilities: ["R Nether Grasp suppression"],
     commonWeaknesses: [
-      "Weak if his passive shield is broken before trades.",
+      "He can be punished in the early levels by someone who can counter his push.",
       "Predictable lane pattern.",
       "Ultimate channel can be interrupted by external crowd control.",
     ],
@@ -347,9 +405,15 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: [],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "Early levels Malzahar can be pushed under tower if enemy focus on killing Voidlings as they spawn",
+  "If Malzahar cannot maintain lane pressure, he does not have the tools to counter the push early."
+]
   },
   Orianna: {
     archetype: ["control mage", "teamfight", "scaling"],
+    primaryWinCondition: ["Control the lane with ball placement and create opportunities for teamfighting."],
+    dangerAbilities: ["R Command: Shockwave displacement"],
     commonWeaknesses: [
       "Immobile and vulnerable to direct all-ins.",
       "Needs ball position to threaten or defend.",
@@ -379,9 +443,15 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["W Command: Dissonance slow/speed zone"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "Punish early while Q has a longer cooldown.",
+  "She can be punished if she uses her abilities recklessly."
+]
   },
   Sylas: {
     archetype: ["skirmisher", "bruiser mage", "assassin"],
+    primaryWinCondition: ["Use E Abscond / Abduct to engage or threaten, then look for extended trades with W Kingslayer and stolen ultimates."],
+    dangerAbilities: ["E Abduct knockup/stun on hit"],
     commonWeaknesses: [
       "Can be punished when Kingslayer or Abscond / Abduct is down.",
       "Melee range makes early lane risky into poke.",
@@ -411,9 +481,16 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["Q Chain Lash slow"],
     stealthOrInvisibility: null,
     sustain: ["W Kingslayer heal"],
+    punishWindows: [
+  "If Sylas uses E to engage and misses, he can be punished hard.",
+  "An early healing cut item can significantly reduce his sustain in trades.",
+  "Being shoved under turret is not ideal for Sylas as his waveclear is not the best and he can be punished by enemy laner."
+]
   },
   Syndra: {
     archetype: ["burst mage", "control mage"],
+    primaryWinCondition: ["Use Q and W to control space and poke, then look for E stun into R burst all-in windows."],
+    dangerAbilities: ["E Scatter the Weak stun when knocking spheres"],
     commonWeaknesses: [
       "Immobile and punishable when Scatter the Weak is down.",
       "Needs sphere setup for strongest control.",
@@ -443,9 +520,15 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["W Force of Will slow"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If E stun is missed, Syndra has no escape at all.",
+  "If Syndra misses spells, she can be all-inned as she has no mobility or sustain."
+]
   },
   Talon: {
     archetype: ["assassin", "roam", "burst"],
+    primaryWinCondition: ["Push the wave to create roam opportunities, then use E to move around the map quickly."],
+    dangerAbilities: ["E Assassin's Path terrain mobility, R Shadow Assault burst and stealth"],
     commonWeaknesses: [
       "Can be punished by ranged control before all-in access.",
       "Needs lane movement and flank angles to maximize pressure.",
@@ -457,6 +540,7 @@ export const leagueChampionKnowledgeProfiles = {
     importantAbilityNotes: [
       "Assassin's Path gives terrain mobility, not combat crowd control.",
       "Shadow Assault gives level 6 burst and stealth.",
+      "E is not a direct engage tool, can only be used on terrain and is best for roaming or repositioning.",
       "Rake return damage and passive bleed matter for trades.",
     ],
     laneIdentity:
@@ -475,9 +559,16 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["W Rake slow on return"],
     stealthOrInvisibility: "R Shadow Assault grants stealth during the burst window.",
     sustain: ["Q Noxian Diplomacy heals on unit kill."],
+    punishWindows: [
+  "When he uses Q he dashes towards the target.",
+  "Talon has to wait a while to use E over the same terrain.",
+  "Talon's waveclear is not the best, he can be shoved under turret and forced to farm"
+]
   },
   Veigar: {
     archetype: ["scaling mage", "control", "burst"],
+    primaryWinCondition: ["Farm stacks with Q to become an unstoppable late-game burst threat."],
+    dangerAbilities: ["E Event Horizon stun"],
     commonWeaknesses: [
       "Immobile and vulnerable when Event Horizon is down.",
       "Weak early if denied farm and stacks.",
@@ -487,9 +578,10 @@ export const leagueChampionKnowledgeProfiles = {
     hardCrowdControl: ["E Event Horizon stun"],
     id: "Veigar",
     importantAbilityNotes: [
-      "Event Horizon is his key defensive and pick tool.",
-      "Phenomenal Evil stacks are his scaling engine.",
-      "Primordial Burst is level 6 execute-style burst.",
+      "E is his key defensive and pick tool.",
+      "Phenomenal Evil scales endlessly.",
+      "R is level 6 execute-style burst.",
+      "The longer the game goes on, the stronger Veigar becomes.",
     ],
     laneIdentity:
       "Scaling control mage who farms stacks, controls space with cage, and becomes a burst threat.",
@@ -507,9 +599,15 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: [],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Veigar is caught without Event Horizon.",
+  "If Veigar pushes wave to far he can be punished as hes only peel is E."
+]
   },
   Vex: {
     archetype: ["anti-dash mage", "burst", "control"],
+    primaryWinCondition: ["Utilize her passive to win trades in lane."],
+    dangerAbilities: ["Passive Doom fear"],
     commonWeaknesses: [
       "Immobile outside ultimate reset windows.",
       "Fear timing can be baited or forced out.",
@@ -519,8 +617,8 @@ export const leagueChampionKnowledgeProfiles = {
     hardCrowdControl: ["Passive Doom fear"],
     id: "Vex",
     importantAbilityNotes: [
-      "Her fear comes from passive Doom, not every spell by default.",
-      "Shadow Surge is her level 6 engage/reset tool.",
+      "Using her passive correctly is key to winning lane.",
+      "R is her level 6 engage/reset tool.",
       "She is strongest into champions that dash often.",
     ],
     laneIdentity:
@@ -534,26 +632,34 @@ export const leagueChampionKnowledgeProfiles = {
     name: "Vex",
     primaryRoles: ["mid"],
     primaryTradingPattern:
-      "Hold fear threat for enemy dash or commit, then burst with passive-enhanced spell windows.",
+      "Use passive fear to win trades and easily proc electrocute.",
     shields: ["W Personal Space shield"],
     softCrowdControl: ["E Looming Darkness slow"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Vex fails to land her fear, she can be all-inned.",
+  "While her R is down she has no way to reset."
+]
   },
   Viktor: {
     archetype: ["control mage", "scaling", "zone control"],
+    primaryWinCondition: ["Scale with item upgrades to control space and teamfights."],
+    dangerAbilities: [],
     commonWeaknesses: [
       "Immobile and vulnerable to hard engage.",
       "Needs upgrades and items to fully control fights.",
-      "Can be punished when Gravity Field is down.",
+      "Can be punished when W is down.",
     ],
     damageType: "magic",
     hardCrowdControl: ["W Gravity Field stun after delay"],
     id: "Viktor",
     importantAbilityNotes: [
-      "Gravity Field is delayed zone control, not instant CC.",
-      "Siphon Power gives a shield.",
-      "Chaos Storm is level 6 sustained zone damage.",
+      "W is delayed zone control, not instant CC.",
+      "Q gives a shield, and bonus movement speed when evolved.",
+      "E is his main poke tool, it can hit twice when evolved and should not be missed in trades.",
+      "R is his ultimate ability, providing a powerful area-of-effect damage.",
+      "Viktor wants to scale and evolve all his abilities",
     ],
     laneIdentity:
       "Scaling control mage who farms, pokes with laser, and controls choke points.",
@@ -561,6 +667,7 @@ export const leagueChampionKnowledgeProfiles = {
       "Level 3 full basic ability access.",
       "Level 6 Chaos Storm.",
       "First completed mage item and evolution progress.",
+      "Can adapt to a more tankier build (Rod of Ages and Liandry's Torment) if enemy team has strong all-in or dive threats."
     ],
     mobilityLevel: "none",
     name: "Viktor",
@@ -571,21 +678,28 @@ export const leagueChampionKnowledgeProfiles = {
     softCrowdControl: ["W Gravity Field slow before stun"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Viktor place W in a bad spot, he is vulnerable.",
+  "If Viktor uses abilities on wave clear only he can be punished by enemy laner."
+]
   },
   Xerath: {
     archetype: ["artillery mage", "poke", "siege"],
+    primaryWinCondition: ["Use Q and W to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
+    dangerAbilities: ["E Shocking Orb stun"],
     commonWeaknesses: [
       "Immobile and vulnerable to flank or all-in pressure.",
       "Skillshot reliant.",
       "Struggles when enemies dodge poke and force close fights.",
+      "Becomes incredibly strong after 2 items are completed."
     ],
     damageType: "magic",
     hardCrowdControl: ["E Shocking Orb stun"],
     id: "Xerath",
     importantAbilityNotes: [
-      "Shocking Orb is his key self-peel tool.",
-      "Rite of the Arcane gives long-range level 6 follow-up.",
-      "He has no dash or stealth.",
+      "E is his key self-peel tool.",
+      "R gives long-range level 6 follow-up.",
+      "Positioning is crucial for maximizing his damage potential and survival.",
     ],
     laneIdentity:
       "Long-range artillery mage who wins through poke, waveclear, and spacing.",
@@ -598,14 +712,20 @@ export const leagueChampionKnowledgeProfiles = {
     name: "Xerath",
     primaryRoles: ["mid", "support"],
     primaryTradingPattern:
-      "Charge long-range poke, use Eye of Destruction for slow setup, and hold Shocking Orb for engage.",
+      "Q for long range poke, use W for slow to hit Q easier, and hold E defensively or use if you're guaranteed to hit.",
     shields: [],
     softCrowdControl: ["W Eye of Destruction slow"],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If Xerath uses E and misses he has to play back.",
+  "When charging his Q."
+]
   },
   Yasuo: {
     archetype: ["skirmisher", "melee carry", "mobility"],
+    primaryWinCondition: ["Use Q and E to create mobility and control space, wants to fight close to minions."],
+    dangerAbilities: ["Second Q tornado knockup, R Last Breath follow-up on airborne targets"],
     commonWeaknesses: [
       "Needs minion waves or targets for mobility.",
       "Vulnerable when Wind Wall and passive shield are down.",
@@ -615,31 +735,37 @@ export const leagueChampionKnowledgeProfiles = {
     hardCrowdControl: ["Q tornado knockup", "R Last Breath follow-up on airborne targets"],
     id: "Yasuo",
     importantAbilityNotes: [
-      "Sweeping Blade requires targets and cannot freely dash without them.",
-      "Wind Wall blocks many projectiles but not all abilities.",
-      "Last Breath requires an airborne target.",
+      "E requires targets and cannot freely dash without them.",
+      "W blocks many projectiles but not all abilities.",
+      "R requires an airborne target.",
     ],
     laneIdentity:
       "Melee AD skirmisher who uses waves for mobility, short trades, and all-ins off knockups.",
     majorPowerSpikes: [
       "Level 2 access to Q plus E mobility.",
-      "Level 6 Last Breath if knockup access exists.",
-      "First completed crit item.",
+      "Level 6 R if knockup access exists.",
+      "First completed item.",
     ],
     mobilityLevel: "very_high",
     name: "Yasuo",
     primaryRoles: ["mid", "top"],
     primaryTradingPattern:
-      "Stack Q, dash through wave targets, use Wind Wall against key projectiles, and commit on knockup threat.",
+      "Stack Q, dash through wave targets, use W against key projectiles, and commit on knockup threat.",
     shields: ["Passive Way of the Wanderer flow shield"],
     softCrowdControl: [],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "When W is down, Yasuo has no real way of dodging.",
+  "When there isnt a minion wave to E back and forth from."
+]
   },
   Yone: {
     archetype: ["skirmisher", "assassin", "melee carry"],
+    primaryWinCondition: ["Use E + Q combo to force trades with a planned exit."],
+    dangerAbilities: ["E Soul Unbound knockup/stun"],
     commonWeaknesses: [
-      "Can be punished when Soul Unbound is down or badly timed.",
+      "When E is used the enemy knows where Yone will be when E is over.",
       "Needs Q setup for knockup threat.",
       "Vulnerable before he can reliably enter and exit trades.",
     ],
@@ -647,41 +773,46 @@ export const leagueChampionKnowledgeProfiles = {
     hardCrowdControl: ["Q3 knockup", "R Fate Sealed knockup/displacement"],
     id: "Yone",
     importantAbilityNotes: [
-      "Soul Unbound is his main trade extension and snapback tool.",
-      "Mortal Steel third cast creates knockup threat.",
-      "Fate Sealed is level 6 engage and follow-up threat.",
+      "E is his main trade extension and snapback tool.",
+      "Q third cast creates knockup threat.",
+      "A well timed R can instantly turn a fight in his favour.",
     ],
     laneIdentity:
-      "Scaling melee carry who uses Q setup and Soul Unbound to force trades with a planned exit.",
+      "Scaling melee carry who uses E + Q combo to force trades with a planned exit.",
     majorPowerSpikes: [
-      "Level 2 access to Q plus E or W trading.",
-      "Level 6 Fate Sealed.",
-      "First completed crit item.",
+      "Level 3 access to all basic abilities.",
+      "First back for more attack speed.",
+      "Bork is a great item for him.",
     ],
     mobilityLevel: "high",
     name: "Yone",
     primaryRoles: ["mid", "top"],
     primaryTradingPattern:
-      "Stack Q, use Soul Unbound to extend a trade, then snap back before the return punish lands.",
+      "Stack Q, use E and second Q to gap close, snap back with E to avoid punishment.",
     shields: ["W Spirit Cleave shield"],
     softCrowdControl: ["Q after gaining 2 stacks of Gathering Storm, makes enemies airborne, R blinking behind the last enemy hit and knocking everyone airborne towards him."],
     stealthOrInvisibility: null,
     sustain: [],
+    punishWindows: [
+  "If E is used from a bad position.",
+  "If Yone misses key abilities like Q knockup or R displacement."
+]
   },
   Zoe: {
     archetype: ["poke mage", "pick", "burst"],
+    primaryWinCondition: ["Can find very good angles for E and have incredible range with R + Q."],
     commonWeaknesses: [
-      "Vulnerable when Sleepy Trouble Bubble is down.",
+      "Vulnerable if E miss or is on cooldown.",
       "Skillshot reliant and punishable after missed bubble.",
-      "Portal Jump returns her to a predictable position.",
+      "Easily punished by targeted CC.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["E Sleepy Trouble Bubble sleep"],
+    hardCrowdControl: ["E"],
     id: "Zoe",
     importantAbilityNotes: [
-      "Sleepy Trouble Bubble is her key pick and damage amp setup.",
-      "Portal Jump is temporary repositioning, not a full escape.",
-      "Spell Thief can create volatile summoner or item windows.",
+      "E is her key pick and damage amp setup.",
+      "R is her key dodge ability skill, she also use it to extend the range of her Q.",
+      "W can provide Zoe with great summoner abilities and items effects.",
     ],
     laneIdentity:
       "Pick-focused poke mage who threatens long-range burst after bubble connects.",
@@ -694,11 +825,16 @@ export const leagueChampionKnowledgeProfiles = {
     name: "Zoe",
     primaryRoles: ["mid"],
     primaryTradingPattern:
-      "Fish for Sleepy Trouble Bubble, then use Paddle Star angles and Portal Jump for burst.",
+      "Fish for E, then use Q and R for burst.",
     shields: [],
-    softCrowdControl: ["E drowsy before sleep"],
+    softCrowdControl: ["E applies sleep after a short delay, and the next damaging hit wakes the target up."],
     stealthOrInvisibility: null,
     sustain: [],
+    dangerAbilities: ["E Paddle Star"],
+    punishWindows: [
+  "After E is missed.",
+  "If R is used at bad timings."
+]
   },
 } satisfies Record<string, LeagueChampionKnowledgeProfile>;
 

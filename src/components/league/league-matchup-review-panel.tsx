@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Edit3,
-  Gem,
   Leaf,
   RotateCcw,
   Save,
@@ -26,7 +25,6 @@ import type { LeagueRole } from "@/src/features/league/roles";
 type MatchupSectionKey =
   | "danger_windows"
   | "early_game"
-  | "itemization_notes"
   | "overview"
   | "power_spikes"
   | "trading_pattern"
@@ -96,14 +94,6 @@ const matchupSectionDefinitions = [
       "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
   },
   {
-    key: "itemization_notes",
-    title: "Itemization notes",
-    accent: "sky",
-    icon: Gem,
-    placeholder:
-      "Hold item and rune notes here until matchup intelligence is connected. Future versions can suggest defensive starts, sustain options, and first recall priorities.",
-  },
-  {
     key: "win_conditions",
     title: "Win conditions",
     accent: "teal",
@@ -112,7 +102,7 @@ const matchupSectionDefinitions = [
       "Summarize what each side needs from the lane: wave state, summoner spell pressure, roam timing, and when the matchup shifts from survival to control.",
   },
 ] as const satisfies ReadonlyArray<{
-  accent: "amber" | "cyan" | "emerald" | "rose" | "sky" | "teal" | "violet";
+  accent: "amber" | "cyan" | "emerald" | "rose" | "teal" | "violet";
   icon: typeof Target;
   key: MatchupSectionKey;
   placeholder: string;
@@ -184,7 +174,6 @@ export function LeagueMatchupReviewPanel({
             "trading_pattern",
             "power_spikes",
             "danger_windows",
-            "itemization_notes",
             "win_conditions",
             "difficulty_rating",
             "confidence_level",
@@ -259,7 +248,7 @@ export function LeagueMatchupReviewPanel({
       .update(payload)
       .eq("id", adminMatchup.id)
       .select(
-        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
       )
       .single<AdminMatchupRow>();
 
@@ -311,7 +300,7 @@ export function LeagueMatchupReviewPanel({
       })
       .eq("id", adminMatchup.id)
       .select(
-        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
       )
       .single<AdminMatchupRow>();
 
@@ -539,8 +528,6 @@ function getSectionDotClass(
       return "bg-emerald-300/80";
     case "rose":
       return "bg-rose-300/80";
-    case "sky":
-      return "bg-sky-300/80";
     case "teal":
       return "bg-teal-300/80";
     case "violet":
@@ -560,8 +547,6 @@ function getSectionIconClass(
       return "border-emerald-300/20 bg-emerald-400/10 text-emerald-200";
     case "rose":
       return "border-rose-300/20 bg-rose-400/10 text-rose-200";
-    case "sky":
-      return "border-sky-300/20 bg-sky-400/10 text-sky-200";
     case "teal":
       return "border-teal-300/20 bg-teal-400/10 text-teal-200";
     case "violet":

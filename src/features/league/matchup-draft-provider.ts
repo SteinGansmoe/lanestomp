@@ -26,6 +26,7 @@ export type GenerateLeagueMatchupDraftContentResult =
       draft: MatchupDraftSections;
       ok: true;
       provider: LeagueMatchupDraftProvider;
+      profileWarning?: string;
       providerWarning?: string;
     }
   | {
@@ -39,10 +40,13 @@ const openaiMatchupModel = "gpt-4.1-mini";
 export async function generateLeagueMatchupDraftContent(
   input: GenerateLeagueMatchupDraftContentInput
 ): Promise<GenerateLeagueMatchupDraftContentResult> {
+  const profileWarning = getMissingChampionProfileWarning(input);
+
   if (!openaiApiKey) {
     return {
       draft: generateDraftWithPlaceholderProvider(input),
       ok: true,
+      profileWarning,
       provider: "placeholder",
     };
   }
@@ -50,15 +54,39 @@ export async function generateLeagueMatchupDraftContent(
   const openaiResult = await generateDraftWithOpenAIProvider(input);
 
   if (openaiResult.ok) {
-    return openaiResult;
+    return {
+      ...openaiResult,
+      profileWarning,
+    };
   }
 
   return {
     draft: generateDraftWithPlaceholderProvider(input),
     ok: true,
+    profileWarning,
     provider: "placeholder",
     providerWarning: openaiResult.error,
   };
+}
+
+function getMissingChampionProfileWarning({
+  championAProfile,
+  championAName,
+  championBProfile,
+  championBName,
+}: GenerateLeagueMatchupDraftContentInput) {
+  const missingProfiles = [
+    !championAProfile ? championAName : null,
+    !championBProfile ? championBName : null,
+  ].filter(Boolean);
+
+  if (missingProfiles.length === 0) {
+    return undefined;
+  }
+
+  return `Missing combat profile for ${missingProfiles.join(
+    " and "
+  )}; generated draft should be reviewed as lower confidence.`;
 }
 
 async function generateDraftWithOpenAIProvider({
@@ -188,13 +216,9 @@ function generateDraftWithPlaceholderProvider({
       `- Let ${championAName} establish safe spacing before forcing pressure.`,
       "- Preserve health before the first meaningful level breakpoint.",
     ].join("\n"),
-    itemization_notes: [
-      `- Adapt around ${championBName}'s main damage profile.`,
-      "- Name items only after confirming they fit the champion.",
-      "- Choose defensive tools when burst or crowd control decides fights.",
-    ].join("\n"),
     overview: [
       `- Review the non-obvious ${roleLabel} matchup identity before publishing.`,
+      `- Include defensive adaptation against ${championBName} here only if it changes the lane plan.`,
       "- Keep broad notes out of this section unless they add real matchup context.",
     ].join("\n"),
     power_spikes: [

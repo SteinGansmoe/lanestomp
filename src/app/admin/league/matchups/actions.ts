@@ -7,9 +7,7 @@ import {
   generateLeagueMatchupDraftContent,
   type LeagueMatchupDraftProvider,
 } from "@/src/features/league/matchup-draft-provider";
-import {
-  type MatchupDraftSections,
-} from "@/src/features/league/matchup-draft-prompt";
+import { type MatchupDraftSections } from "@/src/features/league/matchup-draft-prompt";
 import { getLeagueChampionKnowledgeProfile } from "@/src/features/league/champion-knowledge";
 
 type GenerateDraftInput = {
@@ -22,7 +20,9 @@ type GenerateDraftResult =
       draft: MatchupDraftSections;
       matchup: SavedMatchupDraftRow;
       ok: true;
+      profileWarning?: string;
       provider: LeagueMatchupDraftProvider;
+      providerWarning?: string;
     }
   | {
       error: string;
@@ -33,6 +33,7 @@ type MatchupRow = {
   admin_notes: string | null;
   champion_a_id: string;
   champion_b_id: string;
+  confidence_level: string | null;
   role: AdminLeagueMatchup["role"];
 };
 
@@ -102,7 +103,7 @@ export async function generateLeagueMatchupDraft({
 
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
-    .select("admin_notes, champion_a_id, champion_b_id, role")
+    .select("admin_notes, champion_a_id, champion_b_id, confidence_level, role")
     .eq("id", matchupId)
     .maybeSingle<MatchupRow>();
 
@@ -135,11 +136,17 @@ export async function generateLeagueMatchupDraft({
     championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
   const championBName =
     championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
+  const championAProfile = getLeagueChampionKnowledgeProfile(
+    matchup.champion_a_id
+  );
+  const championBProfile = getLeagueChampionKnowledgeProfile(
+    matchup.champion_b_id
+  );
   const providerResult = await generateLeagueMatchupDraftContent({
     adminNotes: matchup.admin_notes,
-    championAProfile: getLeagueChampionKnowledgeProfile(matchup.champion_a_id),
+    championAProfile,
     championAName,
-    championBProfile: getLeagueChampionKnowledgeProfile(matchup.champion_b_id),
+    championBProfile,
     championBName,
     role: matchup.role,
   });
@@ -152,15 +159,22 @@ export async function generateLeagueMatchupDraft({
   const generatedAt = new Date().toISOString();
   const adminNotes = appendGenerationNote(
     matchup.admin_notes,
-    getGenerationNote(provider, generatedAt, providerResult.providerWarning)
+    getGenerationNote(
+      provider,
+      generatedAt,
+      providerResult.providerWarning,
+      providerResult.profileWarning
+    )
   );
+  const confidenceLevel =
+    providerResult.profileWarning ? "low" : matchup.confidence_level;
 
   const { data: savedMatchup, error: updateError } = await supabase
     .from("league_matchups")
     .update({
+      confidence_level: confidenceLevel,
       danger_windows: draft.danger_windows,
       early_game: draft.early_game,
-      itemization_notes: draft.itemization_notes,
       overview: draft.overview,
       power_spikes: draft.power_spikes,
       trading_pattern: draft.trading_pattern,
@@ -178,7 +192,6 @@ export async function generateLeagueMatchupDraft({
         "early_game",
         "generated_at",
         "generation_status",
-        "itemization_notes",
         "overview",
         "power_spikes",
         "reviewed_at",
@@ -200,7 +213,9 @@ export async function generateLeagueMatchupDraft({
     draft: getDraftFromSavedMatchup(savedMatchup),
     matchup: savedMatchup,
     ok: true,
+    profileWarning: providerResult.profileWarning,
     provider,
+    providerWarning: providerResult.providerWarning,
   };
 }
 
@@ -210,7 +225,6 @@ function getDraftFromSavedMatchup(
   return {
     danger_windows: matchup.danger_windows,
     early_game: matchup.early_game,
-    itemization_notes: matchup.itemization_notes,
     overview: matchup.overview,
     power_spikes: matchup.power_spikes,
     trading_pattern: matchup.trading_pattern,
@@ -227,15 +241,18 @@ function appendGenerationNote(currentNotes: string | null, nextNote: string) {
 function getGenerationNote(
   provider: LeagueMatchupDraftProvider,
   generatedAt: string,
-  providerWarning?: string
+  providerWarning?: string,
+  profileWarning?: string
 ) {
+  const profileNote = profileWarning ? ` ${profileWarning}` : "";
+
   if (provider === "openai") {
-    return `AI draft generated ${generatedAt}. Review and edit before publishing.`;
+    return `AI draft generated ${generatedAt}.${profileNote} Review and edit before publishing.`;
   }
 
   if (providerWarning) {
-    return `Placeholder draft generated ${generatedAt} after AI provider failure: ${providerWarning}. Review and edit before publishing.`;
+    return `Placeholder draft generated ${generatedAt} after AI provider failure: ${providerWarning}.${profileNote} Review and edit before publishing.`;
   }
 
-  return `Placeholder draft generated ${generatedAt} because OPENAI_API_KEY is not configured. Review and edit before publishing.`;
+  return `Placeholder draft generated ${generatedAt} because OPENAI_API_KEY is not configured.${profileNote} Review and edit before publishing.`;
 }

@@ -57,7 +57,6 @@ export const emptyLeagueMatchupForm: LeagueMatchupFormState = {
   danger_windows: "",
   difficulty_rating: "",
   early_game: "",
-  itemization_notes: "",
   overview: "",
   power_spikes: "",
   role: "mid",

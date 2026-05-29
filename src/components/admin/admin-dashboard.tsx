@@ -276,7 +276,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           supabase
             .from("league_matchups")
             .select(
-              "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
+              "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
             )
             .order("champion_a_id", { ascending: true })
             .order("champion_b_id", { ascending: true })
@@ -432,7 +432,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         supabase
           .from("league_matchups")
           .select(
-            "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, itemization_notes, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
+            "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
           )
           .order("champion_a_id", { ascending: true })
           .order("champion_b_id", { ascending: true })
@@ -934,7 +934,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         ? Number.parseInt(difficultyRating, 10)
         : null,
       early_game: form.early_game.trim() || null,
-      itemization_notes: form.itemization_notes.trim() || null,
       overview: form.overview.trim() || null,
       power_spikes: form.power_spikes.trim() || null,
       role: form.role,
@@ -1011,7 +1010,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         ? String(matchup.difficulty_rating)
         : "",
       early_game: matchup.early_game ?? "",
-      itemization_notes: matchup.itemization_notes ?? "",
       overview: matchup.overview ?? "",
       power_spikes: matchup.power_spikes ?? "",
       role: matchup.role,
@@ -1175,7 +1173,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setEditLeagueMatchupStatus({
       error: null,
       isLoading: false,
-      success: "League matchup draft generated and saved. Review before publishing.",
+      success: result.profileWarning
+        ? `League matchup draft generated and saved with lower confidence. ${result.profileWarning}`
+        : "League matchup draft generated and saved. Review before publishing.",
     });
   }
 
@@ -1225,6 +1225,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
 
     let generatedCount = 0;
+    let profileWarningCount = 0;
 
     for (const [index, item] of items.entries()) {
       const championA =
@@ -1287,6 +1288,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       }
 
       generatedCount += 1;
+      if (result.profileWarning) {
+        profileWarningCount += 1;
+      }
       setBatchLeagueMatchupProgress({
         current: index + 1,
         label: `Generated ${championA} vs ${championB}`,
@@ -1301,7 +1305,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       isLoading: false,
       success: `${generatedCount} matchup draft${
         generatedCount === 1 ? "" : "s"
-      } generated and saved. Review before publishing.`,
+      } generated and saved.${
+        profileWarningCount > 0
+          ? ` ${profileWarningCount} used lower confidence because a combat profile was missing.`
+          : " Review before publishing."
+      }`,
     });
   }
 
@@ -1881,7 +1889,6 @@ function normalizeDraftForForm(
     AdminLeagueMatchup,
     | "danger_windows"
     | "early_game"
-    | "itemization_notes"
     | "overview"
     | "power_spikes"
     | "trading_pattern"
@@ -1891,7 +1898,6 @@ function normalizeDraftForForm(
   LeagueMatchupFormState,
   | "danger_windows"
   | "early_game"
-  | "itemization_notes"
   | "overview"
   | "power_spikes"
   | "trading_pattern"
@@ -1900,7 +1906,6 @@ function normalizeDraftForForm(
   return {
     danger_windows: draft.danger_windows ?? "",
     early_game: draft.early_game ?? "",
-    itemization_notes: draft.itemization_notes ?? "",
     overview: draft.overview ?? "",
     power_spikes: draft.power_spikes ?? "",
     trading_pattern: draft.trading_pattern ?? "",

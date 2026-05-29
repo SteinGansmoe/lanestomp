@@ -59,7 +59,6 @@ export type AdminLeagueMatchup = {
   generated_at: string | null;
   generation_status: "draft" | "reviewed";
   id: number;
-  itemization_notes: string | null;
   overview: string | null;
   power_spikes: string | null;
   reviewed_at: string | null;
@@ -143,7 +142,6 @@ export type LeagueMatchupFormState = {
   danger_windows: string;
   difficulty_rating: string;
   early_game: string;
-  itemization_notes: string;
   overview: string;
   power_spikes: string;
   role: "mid" | "top" | "jungle" | "adc" | "support";

@@ -12,7 +12,6 @@ export type LeagueMatchup = {
   trading_pattern: string | null;
   power_spikes: string | null;
   danger_windows: string | null;
-  itemization_notes: string | null;
   win_conditions: string | null;
   difficulty_rating: number | null;
   confidence_level: string | null;
@@ -56,7 +55,6 @@ export async function getLeagueMatchup({
         "trading_pattern",
         "power_spikes",
         "danger_windows",
-        "itemization_notes",
         "win_conditions",
         "difficulty_rating",
         "confidence_level",
