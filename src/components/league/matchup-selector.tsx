@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeftRight, Plus, Search, Swords } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Plus,
+  Search,
+  Swords,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/src/components/ui/button";
@@ -16,7 +21,7 @@ import {
   isChampionInRole,
   sortChampionsForRole,
 } from "@/src/features/league/champion-roles";
-import { leagueRoles, type LeagueRole } from "@/src/features/league/roles";
+import { type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 
 type MatchupSelectorProps = {
@@ -26,17 +31,61 @@ type MatchupSelectorProps = {
 
 type ChampionFilter = LeagueRole | "all";
 
-const roleFilterOptions: ChampionFilter[] = ["all", ...leagueRoles];
+const roleFilterOptions = [
+  {
+    iconSrc: "/images/All_icon.png",
+    label: "All",
+    shortLabel: "All",
+    value: "all",
+  },
+  {
+    iconSrc: "/images/Top_icon.png",
+    label: "Top",
+    shortLabel: "Top",
+    value: "top",
+  },
+  {
+    iconSrc: "/images/Jungle_icon.png",
+    label: "Jungle",
+    shortLabel: "Jgl",
+    value: "jungle",
+  },
+  {
+    iconSrc: "/images/Middle_icon.png",
+    label: "Mid",
+    shortLabel: "Mid",
+    value: "mid",
+  },
+  {
+    iconSrc: "/images/Bottom_icon.png",
+    label: "Bot / ADC",
+    shortLabel: "Bot",
+    value: "adc",
+  },
+  {
+    iconSrc: "/images/Support_icon.png",
+    label: "Support",
+    shortLabel: "Sup",
+    value: "support",
+  },
+] as const satisfies ReadonlyArray<{
+  iconSrc: string;
+  label: string;
+  shortLabel: string;
+  value: ChampionFilter;
+}>;
 
 export function MatchupSelector({
   champions,
-  initialRole = "mid",
+  initialRole,
 }: MatchupSelectorProps) {
   const [championAId, setChampionAId] = useState<string | null>(null);
   const [championBId, setChampionBId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [role, setRole] = useState<LeagueRole>(initialRole);
-  const [activeFilter, setActiveFilter] = useState<ChampionFilter>(initialRole);
+  const [role, setRole] = useState<LeagueRole>(initialRole ?? "mid");
+  const [activeFilter, setActiveFilter] = useState<ChampionFilter>(
+    initialRole ?? "all"
+  );
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const championA =
     champions.find((champion) => champion.id === championAId) ?? null;
@@ -82,9 +131,17 @@ export function MatchupSelector({
     }
   }
 
-  function handleRoleChange(nextRole: LeagueRole) {
-    setRole(nextRole);
-    setActiveFilter(nextRole);
+  function handleFilterChange(nextFilter: ChampionFilter) {
+    setActiveFilter(nextFilter);
+
+    if (nextFilter !== "all") {
+      setRole(nextFilter);
+    }
+  }
+
+  function handleSwapChampions() {
+    setChampionAId(championBId);
+    setChampionBId(championAId);
   }
 
   return (
@@ -95,43 +152,32 @@ export function MatchupSelector({
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
               Matchup setup
             </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_11rem] md:items-center">
+            <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
               <SelectionSlot
                 champion={championA}
                 label="Your champion"
                 tone="cyan"
               />
-              <div className="hidden justify-center text-cyan-100/70 md:flex">
+              <button
+                aria-label="Swap selected champions"
+                className="hidden size-11 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:flex"
+                disabled={!championAId && !championBId}
+                onClick={handleSwapChampions}
+                type="button"
+              >
                 <ArrowLeftRight className="size-5" aria-hidden="true" />
-              </div>
+              </button>
               <SelectionSlot
                 champion={championB}
                 label="Opponent"
                 tone="violet"
               />
-              <label className="block">
-                <span className="mb-1 block font-mono text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500">
-                  Role
-                </span>
-                <select
-                  className="h-11 w-full rounded-md border border-white/10 bg-black/25 px-3 text-sm capitalize text-zinc-100 outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/20"
-                  onChange={(event) =>
-                    handleRoleChange(event.target.value as LeagueRole)
-                  }
-                  value={role}
-                >
-                  {leagueRoles.map((nextRole) => (
-                    <option
-                      className="bg-[#10182b] text-zinc-100"
-                      key={nextRole}
-                      value={nextRole}
-                    >
-                      {getRoleLabel(nextRole)}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
+
+            <RoleIconSelector
+              activeFilter={activeFilter}
+              onChange={handleFilterChange}
+            />
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
@@ -176,32 +222,16 @@ export function MatchupSelector({
               />
             </label>
 
-            <div className="flex gap-2 overflow-x-auto pb-1 xl:pb-0">
-              {roleFilterOptions.map((nextFilter) => {
-                const isActive = activeFilter === nextFilter && !query.trim();
-
-                return (
-                  <button
-                    className={cn(
-                      "h-10 shrink-0 rounded-md border border-white/10 bg-white/[0.035] px-4 text-sm capitalize text-zinc-300 transition hover:border-cyan-300/25 hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/35",
-                      isActive &&
-                        "border-cyan-300/40 bg-cyan-400/10 text-cyan-100"
-                    )}
-                    key={nextFilter}
-                    onClick={() => {
-                      setActiveFilter(nextFilter);
-
-                      if (nextFilter !== "all") {
-                        setRole(nextFilter);
-                      }
-                    }}
-                    type="button"
-                  >
-                    {getRoleLabel(nextFilter)}
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              aria-label="Swap selected champions"
+              className="flex h-11 items-center justify-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:hidden"
+              disabled={!championAId && !championBId}
+              onClick={handleSwapChampions}
+              type="button"
+            >
+              <ArrowLeftRight className="size-4" aria-hidden="true" />
+              Swap
+            </button>
           </div>
 
           <div className="grid max-h-[36rem] grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2 overflow-y-auto border-b border-white/10 py-4 sm:grid-cols-[repeat(auto-fill,minmax(4rem,1fr))]">
@@ -264,6 +294,61 @@ export function MatchupSelector({
         </aside>
       </div>
     </section>
+  );
+}
+
+function RoleIconSelector({
+  activeFilter,
+  onChange,
+}: {
+  activeFilter: ChampionFilter;
+  onChange: (nextFilter: ChampionFilter) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <p className="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500">
+        Role
+      </p>
+      <div
+        aria-label="Role filter"
+        className="grid max-w-3xl grid-cols-6 gap-2"
+        role="radiogroup"
+      >
+        {roleFilterOptions.map((option) => {
+          const isActive = activeFilter === option.value;
+
+          return (
+            <button
+              aria-checked={isActive}
+              aria-label={`${option.label} role filter`}
+              className={cn(
+                "group flex h-12 min-w-0 items-center justify-center rounded-md border border-white/10 bg-black/20 px-2 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                isActive &&
+                  "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_22px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/25"
+              )}
+              key={option.value}
+              onClick={() => onChange(option.value)}
+              role="radio"
+              type="button"
+            >
+              <Image
+                alt=""
+                className={cn(
+                  "size-7 object-contain transition",
+                  isActive
+                    ? "opacity-100 drop-shadow-[0_0_8px_rgba(125,211,252,0.55)]"
+                    : "opacity-45 group-hover:opacity-80"
+                )}
+                height={28}
+                aria-hidden="true"
+                src={option.iconSrc}
+                width={28}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
