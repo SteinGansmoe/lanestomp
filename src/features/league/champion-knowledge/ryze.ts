@@ -1,0 +1,140 @@
+import type { LeagueChampionKnowledgeProfile } from "./types";
+
+export const ryzeCombatProfile = {
+  profileQuality: "draft",
+  abilities: {
+    Q: "Overload",
+    W: "Rune Prison",
+    E: "Spell Flux",
+    R: "Realm Warp",
+  },
+  archetype: ["scaling mage", "battle mage", "waveclear", "roam"],
+  primaryWinCondition: [
+    "Scale through safe farming, use spell rotations for sustained damage, and convert wave control into map movement.",
+  ],
+  dangerAbilities: ["W Rune Prison root", "E Spell Flux spread", "Q Overload empowered damage"],
+  dangerProfile: {
+    dangerousWhen: [
+      "He has enough mana and cooldowns to cycle spells repeatedly.",
+      "E spreads through the wave and sets up Q damage.",
+      "W root can hold a target for follow-up.",
+    ],
+    mustRespect: [
+      "His damage is rotation-based rather than one single spell.",
+      "W root is more threatening when empowered through E setup.",
+      "R is primarily a map movement tool, not lane burst.",
+    ],
+  },
+  commonWeaknesses: [
+    "Short range for a mage.",
+    "Needs mana, levels, and items before he becomes reliable.",
+    "Can be punished when he steps forward to apply E and W.",
+  ],
+  damageType: "magic",
+  hardCrowdControl: ["W Rune Prison root"],
+  id: "Ryze",
+  importantAbilityNotes: [
+    "Q is his main repeated damage spell.",
+    "W roots and helps set up trades.",
+    "E marks and spreads through targets for empowered interactions.",
+    "R moves Ryze and allies across the map.",
+  ],
+  lanePlan: {
+    avoids: [
+      "Taking long-range poke while trying to reach E and W range.",
+      "Trading without mana for follow-up rotations.",
+      "Using wave push without tracking enemy roam or jungle pressure.",
+    ],
+    idealLaneState:
+      "A controlled lane where Ryze can farm, manage mana, and use waveclear to create safe movement windows.",
+    wants: [
+      "Safe scaling farm.",
+      "Short windows to apply E and Q without being outranged.",
+      "Map plays after pushing with R or lane tempo.",
+    ],
+  },
+  laneIdentity: {
+    earlyGameAgency: "low",
+    lanePressure: "medium",
+    preferredGameState: [
+      "Stable waves with farm access.",
+      "Mid-game side pressure where his waveclear matters.",
+      "Coordinated rotations where Realm Warp creates numbers advantage.",
+    ],
+    scalingPriority: "high",
+    winLaneBy: [
+      "Avoiding early health loss while farming.",
+      "Using waveclear to stop roams or create his own.",
+      "Scaling into sustained spell rotations.",
+    ],
+  },
+  majorPowerSpikes: [
+    "Level 3 full basic ability access.",
+    "First mana/AP item.",
+    "Level 6 Realm Warp for map plays.",
+  ],
+  matchupPreferences: {
+    strongInto: [
+      "Short-range champions he can root and kite.",
+      "Lanes that allow safe farming.",
+      "Games where waveclear and rotations are valuable.",
+    ],
+    weakInto: [
+      "Long-range poke that punishes his short range.",
+      "Early all-in pressure before items.",
+      "Champions who can interrupt his wave control and roams.",
+    ],
+  },
+  mobilityLevel: "medium",
+  name: "Ryze",
+  offMetaRoles: [],
+  powerSpikes: {
+    major: [
+      "Level 3 full basic ability access.",
+      "First mana/AP item.",
+      "Level 6 Realm Warp for map plays.",
+    ],
+    notes: [
+      "Item and mana scaling are more important to combat threat than level 6 damage.",
+      "Realm Warp changes map options rather than direct duel power.",
+    ],
+  },
+  primaryRoles: ["mid"],
+  secondaryRoles: ["top"],
+  primaryTradingPattern:
+    "Use E and Q for controlled poke, hold W to stop enemy commits, and extend only when mana and spacing allow repeated rotations.",
+  punishProfile: {
+    canPunish: [
+      "Enemies who enter W range without mobility.",
+      "Wave states where E spread gives easy Q follow-up.",
+      "Slow rotations after he gains push control.",
+    ],
+    strugglesToPunish: [
+      "Long-range mages outside his spell range.",
+      "Burst champions that kill before his rotations matter.",
+    ],
+  },
+  shields: [],
+  softCrowdControl: [],
+  stealthOrInvisibility: null,
+  sustain: [],
+  trading: {
+    badTradeConditions: [
+      "Low mana prevents follow-up rotations.",
+      "The enemy outranges him and can punish his step forward.",
+      "W is needed defensively and cannot be used for trade setup.",
+    ],
+    goodTradeConditions: [
+      "E can spread through wave or target.",
+      "W can hold the enemy for Q follow-up.",
+      "Ryze has mana and space for multiple spell rotations.",
+    ],
+    primaryPattern:
+      "Farm and control wave, trade through E and Q, and save W to punish commits or secure short rotation windows.",
+  },
+  punishWindows: [
+    "If Ryze is low on mana, his threat drops sharply.",
+    "If W is down, enemies can commit more freely.",
+    "Long-range poke can punish him when he steps up to cast E.",
+  ],
+} satisfies LeagueChampionKnowledgeProfile;
