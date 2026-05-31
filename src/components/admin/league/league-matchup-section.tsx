@@ -120,6 +120,7 @@ export function AdminLeagueMatchupsSection({
   onCancelEdit,
   onGenerateBatch,
   onGenerateQueueItem,
+  onRefresh,
   onCreateChange,
   onCreateSubmit,
   onDeleteDraft,
@@ -152,6 +153,7 @@ export function AdminLeagueMatchupsSection({
   onGenerateQueueItem: (
     item: LeagueMatchupBatchPlanItem
   ) => Promise<LeagueMatchupQueueItemResult>;
+  onRefresh: () => Promise<boolean>;
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
   onMarkReviewedForChampion: (
     championName: string,
@@ -295,6 +297,7 @@ export function AdminLeagueMatchupsSection({
         matchups={matchups}
         onActiveChange={setIsBulkQueueActive}
         onGenerateQueueItem={onGenerateQueueItem}
+        onRefresh={onRefresh}
       />
 
       <LeagueMatchupBatchPlanner
@@ -742,6 +745,7 @@ function LeagueMatchupBulkGenerationQueue({
   matchups,
   onActiveChange,
   onGenerateQueueItem,
+  onRefresh,
 }: {
   champions: AdminLeagueChampion[];
   isDisabled: boolean;
@@ -750,6 +754,7 @@ function LeagueMatchupBulkGenerationQueue({
   onGenerateQueueItem: (
     item: LeagueMatchupBatchPlanItem
   ) => Promise<LeagueMatchupQueueItemResult>;
+  onRefresh: () => Promise<boolean>;
 }) {
   const [queueMode, setQueueMode] =
     useState<LeagueMatchupQueueMode>("missing-only");
@@ -757,11 +762,15 @@ function LeagueMatchupBulkGenerationQueue({
     text: string;
     type: "error" | "success";
   } | null>(null);
+  const [queueDebugMessages, setQueueDebugMessages] = useState<
+    { id: string; text: string; type: "error" | "info" | "success" }[]
+  >([]);
   const [queueState, setQueueState] = useState<LeagueMatchupQueueState>(() =>
     createEmptyQueueState("missing-only")
   );
   const isProcessingRef = useRef(false);
   const matchupsRef = useRef(matchups);
+  const queueDebugMessageIdRef = useRef(0);
   const queueStateRef = useRef(queueState);
 
   const midChampions = useMemo(
@@ -784,7 +793,10 @@ function LeagueMatchupBulkGenerationQueue({
   const failedItems = queueState.items.filter((item) => item.status === "failed");
   const activeItem = queueState.items.find((item) => item.status === "running");
   const canStart =
-    !isDisabled && queueState.status !== "running" && previewItems.length > 0;
+    !isDisabled &&
+    queueState.status === "idle" &&
+    queueState.items.length === 0 &&
+    previewItems.length > 0;
   const canResume =
     !isDisabled &&
     queueState.status !== "running" &&
@@ -821,7 +833,12 @@ function LeagueMatchupBulkGenerationQueue({
           : restoredState;
 
       setQueueMode(normalizedState.mode);
-      commitQueueState(normalizedState);
+      queueStateRef.current = normalizedState;
+      window.localStorage.setItem(
+        matchupQueueStorageKey,
+        JSON.stringify(normalizedState)
+      );
+      setQueueState(normalizedState);
     });
 
     return () => window.cancelAnimationFrame(animationFrameId);
@@ -834,21 +851,22 @@ function LeagueMatchupBulkGenerationQueue({
     return () => onActiveChange(false);
   }, [onActiveChange, queueState.status]);
 
-  useEffect(() => {
-    if (queueState.status === "idle" && queueState.items.length === 0) {
+  function commitQueueState(nextState: LeagueMatchupQueueState) {
+    queueStateRef.current = nextState;
+    persistQueueState(nextState);
+    setQueueState(nextState);
+  }
+
+  function persistQueueState(nextState: LeagueMatchupQueueState) {
+    if (nextState.status === "idle" && nextState.items.length === 0) {
       window.localStorage.removeItem(matchupQueueStorageKey);
       return;
     }
 
     window.localStorage.setItem(
       matchupQueueStorageKey,
-      JSON.stringify(queueState)
+      JSON.stringify(nextState)
     );
-  }, [queueState]);
-
-  function commitQueueState(nextState: LeagueMatchupQueueState) {
-    queueStateRef.current = nextState;
-    setQueueState(nextState);
   }
 
   function updateQueueState(
@@ -857,8 +875,36 @@ function LeagueMatchupBulkGenerationQueue({
     commitQueueState(updater(queueStateRef.current));
   }
 
+  function addQueueDebugMessage(
+    type: "error" | "info" | "success",
+    text: string
+  ) {
+    queueDebugMessageIdRef.current += 1;
+    const messageId = `queue-debug-${queueDebugMessageIdRef.current}`;
+
+    setQueueDebugMessages((currentMessages) => [
+      {
+        id: messageId,
+        text,
+        type,
+      },
+      ...currentMessages,
+    ].slice(0, 8));
+  }
+
   function startQueue() {
     const items = buildMidLaneQueueItems(midChampions, matchupsRef.current, queueMode);
+    const skippedExistingDraftCount =
+      queueMode === "missing-only"
+        ? Math.max(
+            buildMidLaneQueueItems(
+              midChampions,
+              matchupsRef.current,
+              "regenerate-all"
+            ).length - items.length,
+            0
+          )
+        : 0;
 
     if (items.length === 0) {
       setQueueMessage({
@@ -871,15 +917,25 @@ function LeagueMatchupBulkGenerationQueue({
       return;
     }
 
+    const now = getQueueTimestamp();
     const nextState = {
-      createdAt: Date.now(),
+      createdAt: now,
       items,
       mode: queueMode,
       status: "running" as const,
-      updatedAt: Date.now(),
+      updatedAt: now,
     };
 
     setQueueMessage(null);
+    setQueueDebugMessages([]);
+    if (skippedExistingDraftCount > 0) {
+      addQueueDebugMessage(
+        "info",
+        `${skippedExistingDraftCount} existing saved draft${
+          skippedExistingDraftCount === 1 ? "" : "s"
+        } skipped by missing-only mode.`
+      );
+    }
     commitQueueState(nextState);
     void processQueue();
   }
@@ -905,9 +961,17 @@ function LeagueMatchupBulkGenerationQueue({
   function stopQueue() {
     updateQueueState((currentState) => ({
       ...currentState,
+      items: currentState.items.map((item) =>
+        item.status === "running" ? { ...item, status: "pending" } : item
+      ),
       status: "stopped",
       updatedAt: Date.now(),
     }));
+    addQueueDebugMessage(
+      "info",
+      "Queue stopped. Progress was saved and remaining pending items were preserved."
+    );
+    void onRefresh();
   }
 
   function retryFailedItems() {
@@ -935,6 +999,7 @@ function LeagueMatchupBulkGenerationQueue({
     const nextState = createEmptyQueueState(queueMode);
 
     setQueueMessage(null);
+    setQueueDebugMessages([]);
     commitQueueState(nextState);
   }
 
@@ -954,12 +1019,19 @@ function LeagueMatchupBulkGenerationQueue({
 
         if (nextItemIndex === -1) {
           const finalStats = getQueueStats(currentState);
+          const didRefresh = await onRefresh();
 
           updateQueueState((state) => ({
             ...state,
             status: "complete",
             updatedAt: Date.now(),
           }));
+          addQueueDebugMessage(
+            didRefresh ? "success" : "error",
+            didRefresh
+              ? "Admin matchup list refreshed after queue completion."
+              : "Queue completed, but the admin matchup list could not refresh."
+          );
           setQueueMessage({
             text:
               finalStats.failed > 0
@@ -978,6 +1050,7 @@ function LeagueMatchupBulkGenerationQueue({
         const startedAt = Date.now();
         const nextItemLabel = getQueueItemLabel(nextItem, championsById);
 
+        addQueueDebugMessage("info", `Generating ${nextItemLabel}.`);
         updateQueueItem(nextItem.id, {
           error: null,
           status: "running",
@@ -989,6 +1062,12 @@ function LeagueMatchupBulkGenerationQueue({
         const completedAt = Date.now();
 
         if (result.ok) {
+          addQueueDebugMessage(
+            "success",
+            result.skipped
+              ? `Skipped ${nextItemLabel}; an existing saved draft was confirmed as matchup #${result.matchupId}.`
+              : `Saved ${nextItemLabel} as matchup #${result.matchupId}.`
+          );
           updateQueueItem(nextItem.id, {
             completedAt,
             durationMs: completedAt - startedAt,
@@ -997,6 +1076,10 @@ function LeagueMatchupBulkGenerationQueue({
             status: "generated",
           });
         } else {
+          addQueueDebugMessage(
+            "error",
+            `Save failed for ${nextItemLabel}: ${result.error}`
+          );
           updateQueueItem(nextItem.id, {
             completedAt,
             durationMs: completedAt - startedAt,
@@ -1207,6 +1290,30 @@ function LeagueMatchupBulkGenerationQueue({
               >
                 {queueMessage.text}
               </p>
+            ) : null}
+
+            {queueDebugMessages.length > 0 ? (
+              <div className="mt-4 rounded-md border border-white/10 bg-black/15 p-3">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Queue debug
+                </p>
+                <ol className="mt-2 space-y-1 text-xs">
+                  {queueDebugMessages.map((message) => (
+                    <li
+                      className={cn(
+                        message.type === "error"
+                          ? "text-rose-100"
+                          : message.type === "success"
+                            ? "text-emerald-100"
+                            : "text-zinc-300"
+                      )}
+                      key={message.id}
+                    >
+                      {message.text}
+                    </li>
+                  ))}
+                </ol>
+              </div>
             ) : null}
           </div>
         </div>
@@ -1999,7 +2106,7 @@ function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
 function createEmptyQueueState(
   mode: LeagueMatchupQueueMode
 ): LeagueMatchupQueueState {
-  const now = Date.now();
+  const now = getQueueTimestamp();
 
   return {
     createdAt: now,
@@ -2008,6 +2115,10 @@ function createEmptyQueueState(
     status: "idle",
     updatedAt: now,
   };
+}
+
+function getQueueTimestamp() {
+  return Date.now();
 }
 
 function buildMidLaneQueueItems(

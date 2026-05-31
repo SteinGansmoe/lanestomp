@@ -81,6 +81,7 @@ export type LeagueMatchupQueueItemResult =
       matchupId: number;
       ok: true;
       profileWarning?: string;
+      skipped?: boolean;
     }
   | {
       error: string;

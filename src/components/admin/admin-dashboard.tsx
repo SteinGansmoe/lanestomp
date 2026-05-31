@@ -71,6 +71,28 @@ import { supabase } from "@/src/lib/supabase";
 
 type SessionResult = Awaited<ReturnType<NonNullable<typeof supabase>["auth"]["getSession"]>>;
 
+const adminDataPageSize = 1000;
+const leagueMatchupSelect = [
+  "id",
+  "champion_a_id",
+  "champion_b_id",
+  "role",
+  "overview",
+  "early_game",
+  "trading_pattern",
+  "power_spikes",
+  "danger_windows",
+  "win_conditions",
+  "difficulty_rating",
+  "confidence_level",
+  "generation_status",
+  "generated_at",
+  "reviewed_at",
+  "reviewed_by",
+  "admin_notes",
+  "updated_at",
+].join(", ");
+
 let cachedAdminData: AdminData | null = null;
 let cachedAdminProfile: UserProfile | null = null;
 let cachedAdminUser: User | null = null;
@@ -295,14 +317,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             .from("league_champions")
             .select("id, name, title, image_url")
             .order("name", { ascending: true }),
-          supabase
-            .from("league_matchups")
-            .select(
-              "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
-            )
-            .order("champion_a_id", { ascending: true })
-            .order("champion_b_id", { ascending: true })
-            .order("role", { ascending: true }),
+          fetchAllLeagueMatchups(),
         ]);
 
       if (!isMounted) {
@@ -451,14 +466,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           .from("league_champions")
           .select("id, name, title, image_url")
           .order("name", { ascending: true }),
-        supabase
-          .from("league_matchups")
-          .select(
-            "id, champion_a_id, champion_b_id, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generation_status, generated_at, reviewed_at, reviewed_by, admin_notes, updated_at"
-          )
-          .order("champion_a_id", { ascending: true })
-          .order("champion_b_id", { ascending: true })
-          .order("role", { ascending: true }),
+        fetchAllLeagueMatchups(),
       ]);
 
     const isMissingResourcesTable = isMissingGameResourcesTableError(
@@ -1508,26 +1516,43 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       };
     }
 
+    const matchupLabel = getLeagueMatchupPlanLabel(
+      item,
+      adminData.leagueChampions
+    );
     let matchupId = item.existingMatchupId;
 
     if (!matchupId) {
       const { data: existingMatchup, error: existingMatchupError } =
         await supabase
           .from("league_matchups")
-          .select("id")
+          .select(leagueMatchupSelect)
           .eq("champion_a_id", item.championAId)
           .eq("champion_b_id", item.championBId)
           .eq("role", item.role)
-          .maybeSingle<{ id: number }>();
+          .maybeSingle<AdminLeagueMatchup>();
 
       if (existingMatchupError) {
         return {
-          error: existingMatchupError.message,
+          error: `Could not verify existing row for ${matchupLabel}: ${existingMatchupError.message}`,
           ok: false,
         };
       }
 
       matchupId = existingMatchup?.id ?? null;
+
+      if (existingMatchup && hasSavedLeagueMatchupDraftContent(existingMatchup)) {
+        const refreshOk = await reloadAdminData();
+
+        return {
+          matchupId: existingMatchup.id,
+          ok: true,
+          profileWarning: refreshOk
+            ? undefined
+            : "Existing saved draft was confirmed, but the admin list could not refresh.",
+          skipped: true,
+        };
+      }
     }
 
     if (!matchupId) {
@@ -1538,12 +1563,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           champion_b_id: item.championBId,
           role: item.role,
         })
-        .select("id")
-        .single<{ id: number }>();
+        .select(leagueMatchupSelect)
+        .single<AdminLeagueMatchup>();
 
       if (createError || !createdMatchup) {
         return {
-          error: createError?.message ?? "Could not create matchup row.",
+          error:
+            createError?.message ??
+            `Could not create matchup row for ${matchupLabel}.`,
           ok: false,
         };
       }
@@ -1556,19 +1583,47 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       matchupId,
     });
 
-    await reloadAdminData();
-
     if (!result.ok) {
       return {
-        error: result.error,
+        error: `Could not save generated draft for ${matchupLabel}: ${result.error}`,
         ok: false,
       };
     }
 
+    const { data: savedMatchup, error: savedMatchupError } = await supabase
+      .from("league_matchups")
+      .select(leagueMatchupSelect)
+      .eq("id", matchupId)
+      .maybeSingle<AdminLeagueMatchup>();
+
+    if (savedMatchupError || !savedMatchup) {
+      return {
+        error:
+          savedMatchupError?.message ??
+          `Generated draft for ${matchupLabel} could not be verified after save.`,
+        ok: false,
+      };
+    }
+
+    if (!hasSavedLeagueMatchupDraftContent(savedMatchup)) {
+      return {
+        error: `Generated draft for ${matchupLabel} saved without matchup guidance content.`,
+        ok: false,
+      };
+    }
+
+    const refreshOk = await reloadAdminData();
+    const refreshWarning = refreshOk
+      ? undefined
+      : "Draft saved, but the admin matchup list could not refresh.";
+    const profileWarning = [result.profileWarning, refreshWarning]
+      .filter(Boolean)
+      .join(" ");
+
     return {
       matchupId,
       ok: true,
-      profileWarning: result.profileWarning,
+      profileWarning: profileWarning || undefined,
     };
   }
 
@@ -2066,6 +2121,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onGenerateBatch={handleGenerateLeagueMatchupBatch}
                     onGenerateDraft={handleGenerateLeagueMatchupDraft}
                     onGenerateQueueItem={handleGenerateLeagueMatchupQueueItem}
+                    onRefresh={reloadAdminData}
                     onMarkReviewed={handleMarkLeagueMatchupReviewed}
                     onMarkReviewedForChampion={
                       handleMarkLeagueMatchupsReviewedForChampion
@@ -2081,6 +2137,41 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       </section>
     </main>
   );
+}
+
+async function fetchAllLeagueMatchups() {
+  if (!supabase) {
+    return {
+      data: null,
+      error: { message: "Supabase is not configured." },
+    };
+  }
+
+  const rows: AdminLeagueMatchup[] = [];
+
+  for (let page = 0; ; page += 1) {
+    const from = page * adminDataPageSize;
+    const to = from + adminDataPageSize - 1;
+    const { data, error } = await supabase
+      .from("league_matchups")
+      .select(leagueMatchupSelect)
+      .order("champion_a_id", { ascending: true })
+      .order("champion_b_id", { ascending: true })
+      .order("role", { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const pageRows = ((data ?? []) as unknown) as AdminLeagueMatchup[];
+
+    rows.push(...pageRows);
+
+    if (pageRows.length < adminDataPageSize) {
+      return { data: rows, error: null };
+    }
+  }
 }
 
 function getSessionWithTimeout(): Promise<SessionResult> {
@@ -2157,6 +2248,40 @@ function normalizeDraftForForm(
     trading_pattern: draft.trading_pattern ?? "",
     win_conditions: draft.win_conditions ?? "",
   };
+}
+
+function hasSavedLeagueMatchupDraftContent(
+  matchup: Pick<
+    AdminLeagueMatchup,
+    | "danger_windows"
+    | "early_game"
+    | "overview"
+    | "power_spikes"
+    | "trading_pattern"
+    | "win_conditions"
+  >
+) {
+  return [
+    matchup.overview,
+    matchup.early_game,
+    matchup.trading_pattern,
+    matchup.power_spikes,
+    matchup.danger_windows,
+    matchup.win_conditions,
+  ].some((value) => Boolean(value?.trim()));
+}
+
+function getLeagueMatchupPlanLabel(
+  item: LeagueMatchupBatchPlanItem,
+  champions: AdminLeagueChampion[]
+) {
+  const championNamesById = new Map(
+    champions.map((champion) => [champion.id, champion.name] as const)
+  );
+
+  return `${
+    championNamesById.get(item.championAId) ?? item.championAId
+  } vs ${championNamesById.get(item.championBId) ?? item.championBId}`;
 }
 
 function getLeagueMatchupLabel(
