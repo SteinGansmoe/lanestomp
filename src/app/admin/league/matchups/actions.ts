@@ -8,7 +8,7 @@ import {
   type LeagueMatchupDraftProvider,
 } from "@/src/features/league/matchup-draft-provider";
 import { type MatchupDraftSections } from "@/src/features/league/matchup-draft-prompt";
-import { getLeagueChampionKnowledgeProfile } from "@/src/features/league/champion-knowledge";
+import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 
 type GenerateDraftInput = {
   accessToken: string;
@@ -136,10 +136,10 @@ export async function generateLeagueMatchupDraft({
     championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
   const championBName =
     championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
-  const championAProfile = getLeagueChampionKnowledgeProfile(
+  const championAProfile = getChampionCombatProfile(
     matchup.champion_a_id
   );
-  const championBProfile = getLeagueChampionKnowledgeProfile(
+  const championBProfile = getChampionCombatProfile(
     matchup.champion_b_id
   );
   const providerResult = await generateLeagueMatchupDraftContent({

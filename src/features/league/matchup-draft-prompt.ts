@@ -1,4 +1,4 @@
-import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge";
+import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge/types";
 
 export type LeagueRole = "mid" | "top" | "jungle" | "adc" | "support";
 
@@ -31,10 +31,10 @@ export const matchupDraftSchema = {
 
 export type LeagueMatchupDraftPromptInput = {
   adminNotes: string | null;
-  championAProfile?: LeagueChampionKnowledgeProfile | null;
-  championAName: string;
-  championBProfile?: LeagueChampionKnowledgeProfile | null;
-  championBName: string;
+  enemyChampionProfile?: LeagueChampionKnowledgeProfile | null;
+  enemyChampionName: string;
+  playerChampionProfile?: LeagueChampionKnowledgeProfile | null;
+  playerChampionName: string;
   role: LeagueRole;
 };
 
@@ -47,26 +47,30 @@ export type LeagueMatchupDraftPrompt = {
 // Keep it independent from the OpenAI call so future provider swaps reuse the same quality bar.
 export function buildLeagueMatchupDraftPrompt({
   adminNotes,
-  championAProfile,
-  championAName,
-  championBProfile,
-  championBName,
+  enemyChampionProfile,
+  enemyChampionName,
+  playerChampionProfile,
+  playerChampionName,
   role,
 }: LeagueMatchupDraftPromptInput): LeagueMatchupDraftPrompt {
   const roleLabel = role === "adc" ? "ADC" : role;
   const sourceNotes = adminNotes?.trim() || "No admin notes supplied.";
-  const championAContext = formatChampionKnowledgeForPrompt(
-    championAName,
-    championAProfile
+  const playerChampionContext = formatChampionKnowledgeForPrompt(
+    playerChampionName,
+    playerChampionProfile
   );
-  const championBContext = formatChampionKnowledgeForPrompt(
-    championBName,
-    championBProfile
+  const enemyChampionContext = formatChampionKnowledgeForPrompt(
+    enemyChampionName,
+    enemyChampionProfile
   );
 
   return {
     systemPrompt: [
       "You write League of Legends matchup draft notes for LaneTips admins.",
+      "The output is a coach for the player champion only, not neutral matchup analysis.",
+      "Never switch perspective or write advice that helps the enemy pilot their champion.",
+      "Use enemy champion facts only to explain threats, respect windows, or punish windows for the player champion.",
+      "If a fact describes an enemy weakness, frame it as what the player champion can do with that window.",
       "Return compact, matchup-specific coaching bullets, not long-form articles.",
       "Use at most 3 bullets per section.",
       "Every section must serve a distinct gameplay purpose and avoid repeating advice from another section.",
@@ -84,13 +88,15 @@ export function buildLeagueMatchupDraftPrompt({
       "Avoid awkward AI wording such as extended melee range, sustained poke after recall, or generic lane dominance.",
     ].join("\n"),
     userPrompt: [
-      `Matchup: ${championAName} vs ${championBName}`,
+      `Player champion: ${playerChampionName}`,
+      `Enemy champion: ${enemyChampionName}`,
+      `Matchup direction: ${playerChampionName} into ${enemyChampionName}`,
       `Role: ${roleLabel}`,
       `Admin notes or source context: ${sourceNotes}`,
       "",
       "Structured champion profiles:",
-      `Champion A profile:\n${championAContext}`,
-      `Champion B profile:\n${championBContext}`,
+      `Player champion combat profile:\n${playerChampionContext}`,
+      `Enemy champion combat profile:\n${enemyChampionContext}`,
       "",
       "Write JSON for these exact keys: overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions.",
       "Each value must be a newline-separated bullet list.",
@@ -98,9 +104,17 @@ export function buildLeagueMatchupDraftPrompt({
       "Each bullet must be one short actionable sentence.",
       "Start every bullet with '- '.",
       "Do not use paragraphs.",
+      `Every bullet must directly help a player piloting ${playerChampionName} against ${enemyChampionName}.`,
+      `Never write from ${enemyChampionName}'s point of view or tell ${enemyChampionName} what to do.`,
+      `When using ${enemyChampionName}'s weaknesses or punish windows, translate them into concrete ${playerChampionName} actions.`,
+      `When mentioning ${enemyChampionName}'s strengths, phrase them as respect windows, spacing rules, or lane-state choices for ${playerChampionName}.`,
       "Do not repeat wave control, spacing, or cooldown tracking across sections unless that concept is uniquely relevant to the section.",
       "If a concept belongs in one section, do not restate it elsewhere.",
       "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, trading patterns, lane identity, and real spikes.",
+      "When structured lanePlan, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields are supplied, treat them as higher priority than the older summary fields.",
+      `Compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
+      `Compare ${playerChampionName}'s punishProfile.canPunish against ${enemyChampionName}'s dangerProfile.mustRespect and trading.badTradeConditions.`,
+      `Compare ${enemyChampionName}'s punishProfile.canPunish and dangerProfile.dangerousWhen against ${playerChampionName}'s trading.badTradeConditions.`,
       "Use primary win conditions, danger abilities, and punish windows as matchup facts for all-ins, spacing, cooldown punish, and danger window advice.",
       "Prefer supplied profile facts over model assumptions, especially for champion abilities, item direction, and class-specific build advice.",
       "Only reference abilities, crowd control, shields, sustain, stealth, or power spikes that appear in the profiles or admin notes.",
@@ -112,28 +126,30 @@ export function buildLeagueMatchupDraftPrompt({
       "For mid lane, avoid long-freeze advice; use keep the wave on your side, crash, reset, roam timer, or punish roam only when the lane state supports it.",
       "If defensive adaptation matters, include it briefly in overview as a matchup need rather than naming full items or builds.",
       "",
-      "Quality bar examples:",
-      "- Hold Charm for Akali E recast or when she commits forward.",
-      "- Back away when Akali uses Shroud; that is her trading window.",
-      "- If Akali roams and Ahri cannot follow, hard push, ping danger, and punish with plates.",
-      "- Play aggressive until Fizz is level 3.",
-      "- Play aggressive until Akali is level 3.",
-      "- Play aggressive until Yone is level 3",
+      "Perspective examples:",
+      `- Bad: ${enemyChampionName} is exposed when a key defensive cooldown is down.`,
+      `- Better: When ${enemyChampionName}'s key defensive cooldown is down, ${playerChampionName} can step forward for a short trade or wave pressure.`,
+      `- Bad: ${enemyChampionName} wants to farm safely and scale.`,
+      `- Better: Expect ${enemyChampionName} to avoid early trades; ${playerChampionName} should pressure the wave without giving a free all-in window.`,
+      `- Bad: ${playerChampionName} wins by landing crowd control and snowballing through roams.`,
+      `- Better: ${playerChampionName}'s win condition is to deny ${enemyChampionName} a calm scaling lane by using verified cooldown or wave windows.`,
       "",
       "Section requirements:",
-      "overview: Use 1-2 bullets only if you can add a non-obvious matchup identity truth; mention defensive adaptation here only when it materially changes how the matchup should be played.",
-      "early_game: Cover first waves, levels 1-6, wave position, and real punish windows. Avoid contradicting champion threat windows.",
-      "trading_pattern: Explain exact interaction rules, ability timing examples, engage/disengage logic, and cooldown punish windows.",
-      "power_spikes: List only real spikes such as level 2/3 ability access, level 6 ultimate, first completed items, and major cooldown or item breakpoints.",
+      `overview: Use 1-2 bullets from ${playerChampionName}'s point of view only; state the matchup identity and the main thing ${playerChampionName} must manage.`,
+      `overview: Mention defensive adaptation here only when it materially changes how ${playerChampionName} should play the matchup.`,
+      `early_game: Cover what ${playerChampionName} should do in the first waves and levels 1-6, including wave position and real punish windows.`,
+      `trading_pattern: Explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and when to disengage.`,
+      `power_spikes: List ${playerChampionName}'s real spikes and ${enemyChampionName}'s real spikes that ${playerChampionName} must respect.`,
       "power_spikes: Never mention recalls, mana refreshes, Lost Chapter sustain, generic tempo, or non-spike ability unlocks here.",
-      "danger_windows: List moments where the player is actually in danger from lethal trades, all-ins, ganks, dives, or forced summoners.",
+      `danger_windows: List only moments where ${playerChampionName} is actually in danger from lethal trades, all-ins, ganks, dives, or forced summoners.`,
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
-      "win_conditions: Explain how this champion wins lane or game in practical terms, without repeating early lane instructions.",
+      `win_conditions: Explain concrete ways ${playerChampionName} can win this matchup, without repeating early lane instructions or coaching ${enemyChampionName}.`,
       "",
       "Negative examples to avoid:",
       "- Do not say play safe unless you explain what cooldown, wave state, or enemy spike requires caution.",
       "- Do not say look for trades unless you explain what enemy cooldown, resource state, or positioning mistake creates the trade.",
       "- Do not say scale into late game unless you explain how the player survives lane and what later condition improves.",
+      `- Do not write any bullet that is mainly useful for a ${enemyChampionName} player.`,
       "- Do not recommend Morellonomicon just because the enemy has minor healing.",
       "- Do not recommend AD items to AP champions, including Hexdrinker for a mage.",
       "- Do not invent ability timing or claim an ability spike that is not real.",
@@ -143,6 +159,9 @@ export function buildLeagueMatchupDraftPrompt({
       "- Do not claim Ahri E cooldown reduction as a core spike.",
       "",
       "Final validation before returning JSON:",
+      `- Does every bullet directly help ${playerChampionName} into ${enemyChampionName}?`,
+      `- Is any bullet written for ${enemyChampionName}? If yes, rewrite or remove it.`,
+      `- Are ${enemyChampionName}'s weaknesses framed as ${playerChampionName} actions?`,
       "- Is this advice actually true for this role?",
       "- Is each power_spikes bullet a real power spike?",
       "- Is each named item realistic for this champion?",
@@ -180,6 +199,40 @@ function formatChampionKnowledgeForPrompt(
     `stealth_or_invisibility: ${profile.stealthOrInvisibility ?? "none"}`,
     `sustain: ${formatList(profile.sustain)}`,
     `shields: ${formatList(profile.shields)}`,
+    `lane_plan.wants: ${formatOptionalList(profile.lanePlan?.wants)}`,
+    `lane_plan.avoids: ${formatOptionalList(profile.lanePlan?.avoids)}`,
+    `lane_plan.ideal_lane_state: ${
+      profile.lanePlan?.idealLaneState ?? "not supplied"
+    }`,
+    `trading.primary_pattern: ${
+      profile.trading?.primaryPattern ?? "not supplied"
+    }`,
+    `trading.good_trade_conditions: ${formatOptionalList(
+      profile.trading?.goodTradeConditions
+    )}`,
+    `trading.bad_trade_conditions: ${formatOptionalList(
+      profile.trading?.badTradeConditions
+    )}`,
+    `matchup_preferences.strong_into: ${formatOptionalList(
+      profile.matchupPreferences?.strongInto
+    )}`,
+    `matchup_preferences.weak_into: ${formatOptionalList(
+      profile.matchupPreferences?.weakInto
+    )}`,
+    `danger_profile.dangerous_when: ${formatOptionalList(
+      profile.dangerProfile?.dangerousWhen
+    )}`,
+    `danger_profile.must_respect: ${formatOptionalList(
+      profile.dangerProfile?.mustRespect
+    )}`,
+    `punish_profile.can_punish: ${formatOptionalList(
+      profile.punishProfile?.canPunish
+    )}`,
+    `punish_profile.struggles_to_punish: ${formatOptionalList(
+      profile.punishProfile?.strugglesToPunish
+    )}`,
+    `power_spikes.major: ${formatOptionalList(profile.powerSpikes?.major)}`,
+    `power_spikes.notes: ${formatOptionalList(profile.powerSpikes?.notes)}`,
     `primary_trading_pattern: ${profile.primaryTradingPattern}`,
     `primary_win_conditions: ${formatList(profile.primaryWinCondition)}`,
     `punish_windows: ${formatList(profile.punishWindows)}`,
@@ -192,4 +245,8 @@ function formatChampionKnowledgeForPrompt(
 
 function formatList(values: readonly string[]) {
   return values.length > 0 ? values.join("; ") : "none";
+}
+
+function formatOptionalList(values?: readonly string[]) {
+  return values && values.length > 0 ? formatList(values) : "not supplied";
 }

@@ -8,7 +8,7 @@ import {
   type MatchupDraftSectionKey,
   type MatchupDraftSections,
 } from "./matchup-draft-prompt";
-import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge";
+import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge/types";
 
 export type LeagueMatchupDraftProvider = "openai" | "placeholder";
 
@@ -99,10 +99,10 @@ async function generateDraftWithOpenAIProvider({
 }: GenerateLeagueMatchupDraftContentInput): Promise<GenerateLeagueMatchupDraftContentResult> {
   const prompt = buildLeagueMatchupDraftPrompt({
     adminNotes,
-    championAProfile,
-    championAName,
-    championBProfile,
-    championBName,
+    enemyChampionProfile: championBProfile,
+    enemyChampionName: championBName,
+    playerChampionProfile: championAProfile,
+    playerChampionName: championAName,
     role,
   });
   let response: Response;
@@ -199,42 +199,42 @@ async function generateDraftWithOpenAIProvider({
 }
 
 function generateDraftWithPlaceholderProvider({
-  championAName,
-  championBName,
+  championAName: playerChampionName,
+  championBName: enemyChampionName,
   role,
 }: GenerateLeagueMatchupDraftContentInput): MatchupDraftSections {
   const roleLabel = role === "adc" ? "ADC" : role;
 
   return {
     danger_windows: [
-      `- ${championBName} can threaten lethal when engage or burst tools are ready.`,
-      `- Avoid all-in windows after ${championAName} spends mobility or defensive crowd control.`,
+      `- ${enemyChampionName} can threaten lethal when engage or burst tools are ready.`,
+      `- Avoid all-in windows after ${playerChampionName} spends mobility or defensive crowd control.`,
       "- Treat jungle fog and missing summoners as forced caution.",
     ].join("\n"),
     early_game: [
       "- Keep the wave in a lane state that allows short trades.",
-      `- Let ${championAName} establish safe spacing before forcing pressure.`,
+      `- Let ${playerChampionName} establish safe spacing before forcing pressure.`,
       "- Preserve health before the first meaningful level breakpoint.",
     ].join("\n"),
     overview: [
       `- Review the non-obvious ${roleLabel} matchup identity before publishing.`,
-      `- Include defensive adaptation against ${championBName} here only if it changes the lane plan.`,
+      `- Include defensive adaptation against ${enemyChampionName} here only if it changes the lane plan.`,
       "- Keep broad notes out of this section unless they add real matchup context.",
     ].join("\n"),
     power_spikes: [
       "- List only real level, ultimate, first-item, or major cooldown breakpoints.",
-      `- Slow down only when ${championBName} reaches a verified spike.`,
-      `- Push harder only when ${championAName}'s own breakpoint is verified.`,
+      `- Slow down only when ${enemyChampionName} reaches a verified spike.`,
+      `- Push harder only when ${playerChampionName}'s own breakpoint is verified.`,
     ].join("\n"),
     trading_pattern: [
-      `- Keep ${championAName}'s trades short until the matchup pattern is confirmed.`,
-      `- Disengage before ${championBName}'s main follow-up lands.`,
+      `- Keep ${playerChampionName}'s trades short until the matchup pattern is confirmed.`,
+      `- Disengage before ${enemyChampionName}'s main follow-up lands.`,
       "- Extend only after the opponent misses their main answer.",
     ].join("\n"),
     win_conditions: [
-      `- Turn ${championAName}'s stable lane into objective access.`,
+      `- Turn ${playerChampionName}'s stable lane into objective access.`,
       "- Convert safe pressure into roam windows or teamfight setup.",
-      `- Deny ${championBName} the fights that start on their terms.`,
+      `- Deny ${enemyChampionName} the fights that start on their terms.`,
     ].join("\n"),
   };
 }

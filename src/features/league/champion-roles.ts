@@ -1,5 +1,5 @@
 import type { LeagueChampion } from "./champions";
-import { getLeagueChampionKnowledgeProfile } from "./champion-knowledge";
+import { getChampionCombatProfile } from "./champion-knowledge";
 import type { LeagueRole } from "./roles";
 
 export type LeagueChampionRoleTier =
@@ -229,7 +229,7 @@ export function getChampionRoleTier(
   champion: Pick<LeagueChampion, "id">,
   role: LeagueRole
 ): LeagueChampionRoleTier {
-  const profile = getLeagueChampionKnowledgeProfile(champion.id);
+  const profile = getChampionCombatProfile(champion.id);
 
   if (profile) {
     if (profile.primaryRoles.includes(role)) {
@@ -253,7 +253,7 @@ export function getChampionRoleTier(
 }
 
 export function getChampionRoles(champion: Pick<LeagueChampion, "id">) {
-  const profile = getLeagueChampionKnowledgeProfile(champion.id);
+  const profile = getChampionCombatProfile(champion.id);
 
   if (profile) {
     return [
