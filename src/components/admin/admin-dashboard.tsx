@@ -1117,6 +1117,75 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  async function handleMarkLeagueMatchupsReviewedForChampion(
+    championName: string,
+    matchupIds: number[]
+  ) {
+    const uniqueMatchupIds = Array.from(new Set(matchupIds));
+
+    if (uniqueMatchupIds.length === 0) {
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Approve all ${uniqueMatchupIds.length} draft matchup${
+          uniqueMatchupIds.length === 1 ? "" : "s"
+        } for ${championName}? These drafts will be marked as reviewed and published.`
+      )
+    ) {
+      return;
+    }
+
+    if (!supabase) {
+      setEditLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (!user) {
+      setEditLeagueMatchupStatus({
+        error: "Admin session is not ready.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
+
+    const { error: reviewError } = await supabase
+      .from("league_matchups")
+      .update({
+        generation_status: "reviewed",
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
+      })
+      .in("id", uniqueMatchupIds)
+      .eq("generation_status", "draft");
+
+    if (reviewError) {
+      setEditLeagueMatchupStatus({
+        error: reviewError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: `${uniqueMatchupIds.length} ${championName} draft matchup${
+        uniqueMatchupIds.length === 1 ? "" : "s"
+      } marked as reviewed.`,
+    });
+  }
+
   async function handleGenerateLeagueMatchupDraft(matchup: AdminLeagueMatchup) {
     if (!supabase) {
       setEditLeagueMatchupStatus({
@@ -1977,6 +2046,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onGenerateDraft={handleGenerateLeagueMatchupDraft}
                     onGenerateQueueItem={handleGenerateLeagueMatchupQueueItem}
                     onMarkReviewed={handleMarkLeagueMatchupReviewed}
+                    onMarkReviewedForChampion={
+                      handleMarkLeagueMatchupsReviewedForChampion
+                    }
                     onStartEdit={startEditingLeagueMatchup}
                     generatingMatchupId={generatingLeagueMatchupId}
                   />

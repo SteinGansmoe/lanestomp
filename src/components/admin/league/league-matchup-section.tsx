@@ -78,6 +78,7 @@ type LeagueMatchupQueueState = {
 };
 
 type ChampionMatchupGroup = {
+  approvableDraftIds: number[];
   draftCount: number;
   id: string;
   items: AdminLeagueMatchup[];
@@ -116,6 +117,7 @@ export function AdminLeagueMatchupsSection({
   onEditSubmit,
   onGenerateDraft,
   onMarkReviewed,
+  onMarkReviewedForChampion,
   onStartEdit,
 }: {
   champions: AdminLeagueChampion[];
@@ -141,6 +143,10 @@ export function AdminLeagueMatchupsSection({
     item: LeagueMatchupBatchPlanItem
   ) => Promise<LeagueMatchupQueueItemResult>;
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
+  onMarkReviewedForChampion: (
+    championName: string,
+    matchupIds: number[]
+  ) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
 }) {
   const [collapsedChampionGroups, setCollapsedChampionGroups] = useState<
@@ -348,6 +354,13 @@ export function AdminLeagueMatchupsSection({
               {championGroups.map((group) => {
                 const isCollapsed = Boolean(collapsedChampionGroups[group.id]);
                 const contentId = `${championGroupStorageKey}-${group.id}`;
+                const isApproveAllDisabled =
+                  editStatus.isLoading ||
+                  generatingMatchupId !== null ||
+                  deletingDraftMatchupId !== null ||
+                  batchStatus.isLoading ||
+                  isBulkQueueActive ||
+                  group.approvableDraftIds.length === 0;
 
                 return (
                   <li
@@ -391,24 +404,48 @@ export function AdminLeagueMatchupsSection({
                         </div>
                       </div>
 
-                      <button
-                        aria-controls={contentId}
-                        aria-expanded={!isCollapsed}
-                        aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${
-                          group.title
-                        } matchups`}
-                        className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
-                        onClick={() => toggleChampionGroup(group.id)}
-                        type="button"
-                      >
-                        <ChevronDown
-                          className={cn(
-                            "size-4 transition-transform duration-200",
-                            isCollapsed ? "-rotate-90" : "rotate-0"
-                          )}
-                          aria-hidden="true"
-                        />
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {group.approvableDraftIds.length > 0 ? (
+                          <Button
+                            className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                            disabled={isApproveAllDisabled}
+                            onClick={() =>
+                              onMarkReviewedForChampion(
+                                group.title,
+                                group.approvableDraftIds
+                              )
+                            }
+                            size="sm"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <CheckCircle2
+                              className="size-3.5"
+                              aria-hidden="true"
+                            />
+                            Approve all drafts
+                          </Button>
+                        ) : null}
+
+                        <button
+                          aria-controls={contentId}
+                          aria-expanded={!isCollapsed}
+                          aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${
+                            group.title
+                          } matchups`}
+                          className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+                          onClick={() => toggleChampionGroup(group.id)}
+                          type="button"
+                        >
+                          <ChevronDown
+                            className={cn(
+                              "size-4 transition-transform duration-200",
+                              isCollapsed ? "-rotate-90" : "rotate-0"
+                            )}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </div>
                     </div>
 
                     <div
@@ -1577,6 +1614,7 @@ function getChampionMatchupGroups({
     roleFilter === "all"
       ? matchups
       : matchups.filter((matchup) => matchup.role === roleFilter);
+  const filteredApprovableDraftIdsByChampion = new Map<string, Set<number>>();
   const matchupsBySourceChampion = new Map<string, AdminLeagueMatchup[]>();
 
   for (const matchup of filteredMatchups) {
@@ -1584,6 +1622,19 @@ function getChampionMatchupGroups({
       ...(matchupsBySourceChampion.get(matchup.champion_a_id) ?? []),
       matchup,
     ]);
+
+    if (
+      matchup.generation_status === "draft" &&
+      hasMatchupDraftContent(matchup)
+    ) {
+      for (const championId of [matchup.champion_a_id, matchup.champion_b_id]) {
+        const draftIds =
+          filteredApprovableDraftIdsByChampion.get(championId) ?? new Set<number>();
+
+        draftIds.add(matchup.id);
+        filteredApprovableDraftIdsByChampion.set(championId, draftIds);
+      }
+    }
   }
 
   const sourceChampionIds =
@@ -1627,6 +1678,9 @@ function getChampionMatchupGroups({
       });
 
       return {
+        approvableDraftIds: Array.from(
+          filteredApprovableDraftIdsByChampion.get(championId) ?? []
+        ),
         draftCount,
         id: championId,
         items,
