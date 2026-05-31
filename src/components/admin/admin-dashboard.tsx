@@ -62,11 +62,17 @@ import {
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
 import { isAdminUser } from "@/src/lib/admin";
+import {
+  fetchUserProfile,
+  getProfileDisplayName,
+  type UserProfile,
+} from "@/src/lib/profile";
 import { supabase } from "@/src/lib/supabase";
 
 type SessionResult = Awaited<ReturnType<NonNullable<typeof supabase>["auth"]["getSession"]>>;
 
 let cachedAdminData: AdminData | null = null;
+let cachedAdminProfile: UserProfile | null = null;
 let cachedAdminUser: User | null = null;
 
 export function AdminDashboard({ section }: { section: AdminSection }) {
@@ -169,6 +175,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
+  const [profile, setProfile] = useState<UserProfile | null>(
+    () => cachedAdminProfile
+  );
   const [resourcesSetupMessage, setResourcesSetupMessage] = useState<
     string | null
   >(null);
@@ -229,6 +238,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       if (!hasAdminAccess) {
         cachedAdminData = null;
+        cachedAdminProfile = null;
         cachedAdminUser = null;
         window.location.replace("/");
         return;
@@ -238,6 +248,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       cachedAdminUser = sessionUser;
       setUser(sessionUser);
+      const profileResult = await fetchUserProfile(sessionUser.id);
+
+      if (!isMounted) {
+        window.clearTimeout(redirectTimeoutId);
+        return;
+      }
+
+      cachedAdminProfile = profileResult.data;
+      setProfile(profileResult.data);
 
       const [
         gamesResult,
@@ -1877,7 +1896,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                 {pageTitle}
               </h1>
               <p className="mt-1 text-sm text-zinc-400">
-                {user?.email ?? "Checking admin session..."}
+                {user
+                  ? getProfileDisplayName(user, profile)
+                  : "Checking admin session..."}
               </p>
             </div>
           </div>

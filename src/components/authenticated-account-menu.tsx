@@ -3,11 +3,22 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronDown, LogOut, ShieldCheck, UserCircle } from "lucide-react";
+import {
+  ChevronDown,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  UserCircle,
+} from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/src/components/ui/button";
 import { isAdminUser } from "@/src/lib/admin";
+import {
+  fetchUserProfile,
+  getProfileDisplayName,
+  type UserProfile,
+} from "@/src/lib/profile";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
 
@@ -16,12 +27,8 @@ type AuthenticatedAccountMenuProps = {
   menuPlacement?: "dropdown-up" | "inline";
 };
 
-function getUserLabel(user: User) {
-  return user.email ?? "Signed in";
-}
-
-function getUserInitial(user: User) {
-  return getUserLabel(user).trim().charAt(0).toUpperCase() || "U";
+function getUserInitial(label: string) {
+  return label.trim().charAt(0).toUpperCase() || "U";
 }
 
 export function AuthenticatedAccountMenu({
@@ -31,6 +38,7 @@ export function AuthenticatedAccountMenu({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -39,7 +47,10 @@ export function AuthenticatedAccountMenu({
     let isMounted = true;
 
     async function applyUser(nextUser: User | null) {
-      const nextIsAdmin = await isAdminUser(nextUser);
+      const [nextIsAdmin, profileResult] = await Promise.all([
+        isAdminUser(nextUser),
+        nextUser ? fetchUserProfile(nextUser.id) : Promise.resolve({ data: null }),
+      ]);
 
       if (!isMounted) {
         return;
@@ -47,6 +58,7 @@ export function AuthenticatedAccountMenu({
 
       setUser(nextUser);
       setIsAdmin(nextIsAdmin);
+      setProfile(profileResult.data ?? null);
       setIsLoading(false);
     }
 
@@ -61,6 +73,7 @@ export function AuthenticatedAccountMenu({
     }
 
     void loadUser();
+    window.addEventListener("lanetips-profile-updated", loadUser);
 
     const { data: listener } =
       supabase?.auth.onAuthStateChange((_event, session) => {
@@ -70,6 +83,7 @@ export function AuthenticatedAccountMenu({
 
     return () => {
       isMounted = false;
+      window.removeEventListener("lanetips-profile-updated", loadUser);
       listener?.subscription.unsubscribe();
     };
   }, []);
@@ -80,6 +94,7 @@ export function AuthenticatedAccountMenu({
     }
 
     setUser(null);
+    setProfile(null);
     setIsAdmin(false);
     setIsMenuOpen(false);
 
@@ -118,6 +133,8 @@ export function AuthenticatedAccountMenu({
     );
   }
 
+  const userLabel = getProfileDisplayName(user, profile);
+
   return (
     <div className={cn("relative w-full", className)}>
       <button
@@ -128,10 +145,10 @@ export function AuthenticatedAccountMenu({
         type="button"
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-500/20 font-mono text-xs font-semibold text-violet-100 ring-1 ring-violet-300/20">
-          {getUserInitial(user)}
+          {getUserInitial(userLabel)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium">{getUserLabel(user)}</span>
+          <span className="block truncate font-medium">{userLabel}</span>
           <span className="block truncate text-xs text-zinc-500">
             {isAdmin ? "Admin" : "Signed in"}
           </span>
@@ -158,9 +175,19 @@ export function AuthenticatedAccountMenu({
           <div className="border-b border-white/10 px-3 py-3">
             <div className="flex items-center gap-2 text-zinc-100">
               <UserCircle className="size-4 shrink-0" aria-hidden="true" />
-              <span className="min-w-0 truncate">{getUserLabel(user)}</span>
+              <span className="min-w-0 truncate">{userLabel}</span>
             </div>
           </div>
+
+          <Link
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-zinc-300 transition hover:bg-white/5 hover:text-white"
+            href="/account/settings"
+            onClick={() => setIsMenuOpen(false)}
+            role="menuitem"
+          >
+            <Settings className="size-4" aria-hidden="true" />
+            Account Settings
+          </Link>
 
           {isAdmin ? (
             <Link

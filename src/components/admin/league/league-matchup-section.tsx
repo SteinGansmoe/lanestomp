@@ -90,6 +90,16 @@ type ChampionMatchupGroup = {
   totalCount: number;
 };
 
+type LaneMatchupGroup = {
+  championCount: number;
+  championGroups: ChampionMatchupGroup[];
+  draftCount: number;
+  reviewedCount: number;
+  role: AdminLeagueMatchup["role"];
+  title: string;
+  totalCount: number;
+};
+
 const championGroupStorageKey =
   "seasontracker.admin.leagueMatchups.collapsedChampionGroups";
 const matchupQueueStorageKey =
@@ -152,6 +162,9 @@ export function AdminLeagueMatchupsSection({
   const [collapsedChampionGroups, setCollapsedChampionGroups] = useState<
     Record<string, boolean>
   >({});
+  const [collapsedLaneGroups, setCollapsedLaneGroups] = useState<
+    Record<string, boolean>
+  >(() => getDefaultCollapsedLaneGroups("all"));
   const [roleFilter, setRoleFilter] = useState<LeagueMatchupRoleFilter>("all");
   const [sortMode, setSortMode] =
     useState<LeagueMatchupSortMode>("alphabetical");
@@ -160,9 +173,9 @@ export function AdminLeagueMatchupsSection({
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
   );
-  const championGroups = useMemo(
+  const laneGroups = useMemo(
     () =>
-      getChampionMatchupGroups({
+      getLaneMatchupGroups({
         champions,
         matchups,
         roleFilter,
@@ -215,6 +228,18 @@ export function AdminLeagueMatchupsSection({
 
       return nextGroups;
     });
+  }
+
+  function toggleLaneGroup(role: AdminLeagueMatchup["role"]) {
+    setCollapsedLaneGroups((currentGroups) => ({
+      ...currentGroups,
+      [role]: !currentGroups[role],
+    }));
+  }
+
+  function updateRoleFilter(nextRoleFilter: LeagueMatchupRoleFilter) {
+    setRoleFilter(nextRoleFilter);
+    setCollapsedLaneGroups(getDefaultCollapsedLaneGroups(nextRoleFilter));
   }
 
   return (
@@ -301,7 +326,9 @@ export function AdminLeagueMatchupsSection({
                 <select
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
-                    setRoleFilter(event.target.value as LeagueMatchupRoleFilter)
+                    updateRoleFilter(
+                      event.target.value as LeagueMatchupRoleFilter
+                    )
                   }
                   value={roleFilter}
                 >
@@ -349,9 +376,85 @@ export function AdminLeagueMatchupsSection({
           </div>
         </CardHeader>
         <CardContent>
-          {championGroups.length > 0 ? (
+          {laneGroups.length > 0 ? (
             <ul className="space-y-4">
-              {championGroups.map((group) => {
+              {laneGroups.map((laneGroup) => {
+                const isLaneCollapsed = Boolean(
+                  collapsedLaneGroups[laneGroup.role]
+                );
+                const laneContentId = `${championGroupStorageKey}-lane-${laneGroup.role}`;
+
+                return (
+                  <li
+                    className="overflow-hidden rounded-xl border border-white/10 bg-black/10"
+                    key={laneGroup.role}
+                  >
+                    <div
+                      className={cn(
+                        "flex flex-wrap items-center justify-between gap-4 px-4 py-4 transition-colors",
+                        isLaneCollapsed ? "" : "border-b border-white/10"
+                      )}
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-mono text-lg font-semibold text-white">
+                            {laneGroup.title}
+                          </p>
+                          <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
+                            {laneGroup.championCount} champion
+                            {laneGroup.championCount === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300">
+                            {laneGroup.totalCount} matchup
+                            {laneGroup.totalCount === 1 ? "" : "s"}
+                          </span>
+                          <span className="rounded-md border border-emerald-300/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">
+                            {laneGroup.reviewedCount} reviewed
+                          </span>
+                          <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-violet-100">
+                            {laneGroup.draftCount} draft
+                            {laneGroup.draftCount === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        aria-controls={laneContentId}
+                        aria-expanded={!isLaneCollapsed}
+                        aria-label={`${isLaneCollapsed ? "Expand" : "Collapse"} ${
+                          laneGroup.title
+                        } lane matchups`}
+                        className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+                        onClick={() => toggleLaneGroup(laneGroup.role)}
+                        type="button"
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "size-4 transition-transform duration-200",
+                            isLaneCollapsed ? "-rotate-90" : "rotate-0"
+                          )}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+
+                    <div
+                      aria-hidden={isLaneCollapsed}
+                      className={cn(
+                        "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+                        isLaneCollapsed
+                          ? "pointer-events-none grid-rows-[0fr] opacity-0"
+                          : "grid-rows-[1fr] opacity-100"
+                      )}
+                      id={laneContentId}
+                      inert={isLaneCollapsed ? true : undefined}
+                    >
+                      <div className="overflow-hidden">
+                        {laneGroup.championGroups.length > 0 ? (
+                          <ul className="space-y-4 p-4">
+                            {laneGroup.championGroups.map((group) => {
                 const isCollapsed = Boolean(collapsedChampionGroups[group.id]);
                 const contentId = `${championGroupStorageKey}-${group.id}`;
                 const isApproveAllDisabled =
@@ -600,6 +703,19 @@ export function AdminLeagueMatchupsSection({
                             <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
                               No saved matchups for this champion in the current
                               lane filter.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="p-4">
+                            <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
+                              No champion matchup groups for this lane yet.
                             </p>
                           </div>
                         )}
@@ -1596,7 +1712,7 @@ function getMatchupKey(
   return `${role}:${championAId}:${championBId}`;
 }
 
-function getChampionMatchupGroups({
+function getLaneMatchupGroups({
   champions,
   matchups,
   roleFilter,
@@ -1606,18 +1722,51 @@ function getChampionMatchupGroups({
   matchups: AdminLeagueMatchup[];
   roleFilter: LeagueMatchupRoleFilter;
   sortMode: LeagueMatchupSortMode;
+}): LaneMatchupGroup[] {
+  const roles = roleFilter === "all" ? leagueRoles : [roleFilter];
+
+  return roles.map((role) => {
+    const roleMatchups = matchups.filter((matchup) => matchup.role === role);
+    const championGroups = getChampionMatchupGroupsForRole({
+      champions,
+      matchups: roleMatchups,
+      role,
+      sortMode,
+    });
+    const reviewedCount = roleMatchups.filter(
+      (matchup) => matchup.generation_status === "reviewed"
+    ).length;
+
+    return {
+      championCount: championGroups.length,
+      championGroups,
+      draftCount: roleMatchups.length - reviewedCount,
+      reviewedCount,
+      role,
+      title: getLaneGroupLabel(role),
+      totalCount: roleMatchups.length,
+    };
+  });
+}
+
+function getChampionMatchupGroupsForRole({
+  champions,
+  matchups,
+  role,
+  sortMode,
+}: {
+  champions: AdminLeagueChampion[];
+  matchups: AdminLeagueMatchup[];
+  role: AdminLeagueMatchup["role"];
+  sortMode: LeagueMatchupSortMode;
 }): ChampionMatchupGroup[] {
   const championsById = new Map(
     champions.map((champion) => [champion.id, champion] as const)
   );
-  const filteredMatchups =
-    roleFilter === "all"
-      ? matchups
-      : matchups.filter((matchup) => matchup.role === roleFilter);
   const filteredApprovableDraftIdsByChampion = new Map<string, Set<number>>();
   const matchupsBySourceChampion = new Map<string, AdminLeagueMatchup[]>();
 
-  for (const matchup of filteredMatchups) {
+  for (const matchup of matchups) {
     matchupsBySourceChampion.set(matchup.champion_a_id, [
       ...(matchupsBySourceChampion.get(matchup.champion_a_id) ?? []),
       matchup,
@@ -1637,15 +1786,7 @@ function getChampionMatchupGroups({
     }
   }
 
-  const sourceChampionIds =
-    roleFilter === "all"
-      ? new Set(filteredMatchups.map((matchup) => matchup.champion_a_id))
-      : new Set([
-          ...champions
-            .filter((champion) => isChampionInRole(champion, roleFilter))
-            .map((champion) => champion.id),
-          ...filteredMatchups.map((matchup) => matchup.champion_a_id),
-        ]);
+  const sourceChampionIds = new Set(matchups.map((matchup) => matchup.champion_a_id));
 
   return Array.from(sourceChampionIds)
     .map((championId) => {
@@ -1659,17 +1800,13 @@ function getChampionMatchupGroups({
         (matchup) => matchup.generation_status === "reviewed"
       ).length;
       const draftCount = totalCount - reviewedCount;
-      const missingCount =
-        roleFilter === "all"
-          ? null
-          : Math.max(
-              champions.filter(
-                (championOption) =>
-                  championOption.id !== championId &&
-                  isChampionInRole(championOption, roleFilter)
-              ).length - totalCount,
-              0
-            );
+      const missingCount = Math.max(
+        champions.filter(
+          (championOption) =>
+            championOption.id !== championId && isChampionInRole(championOption, role)
+        ).length - totalCount,
+        0
+      );
       const status = getChampionGroupStatus({
         draftCount,
         missingCount,
@@ -1682,7 +1819,7 @@ function getChampionMatchupGroups({
           filteredApprovableDraftIdsByChampion.get(championId) ?? []
         ),
         draftCount,
-        id: championId,
+        id: `${role}:${championId}`,
         items,
         missingCount,
         reviewedCount,
@@ -1810,6 +1947,19 @@ function titleCase(value: string) {
 
 function getRoleLabel(role: AdminLeagueMatchup["role"]) {
   return role === "adc" ? "ADC" : titleCase(role);
+}
+
+function getLaneGroupLabel(role: AdminLeagueMatchup["role"]) {
+  return role === "adc" ? "Bot / ADC" : getRoleLabel(role);
+}
+
+function getDefaultCollapsedLaneGroups(roleFilter: LeagueMatchupRoleFilter) {
+  return Object.fromEntries(
+    leagueRoles.map((role) => [
+      role,
+      roleFilter === "all" ? role !== "mid" : role !== roleFilter,
+    ])
+  ) as Record<AdminLeagueMatchup["role"], boolean>;
 }
 
 function getMatchupContentState(matchup: AdminLeagueMatchup) {

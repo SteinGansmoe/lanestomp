@@ -7,6 +7,11 @@ import { UserPlus } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
+import {
+  checkUsernameAvailability,
+  normalizeUsername,
+  validateUsername,
+} from "@/src/lib/profile";
 import { supabase } from "@/src/lib/supabase";
 
 export function RegisterForm() {
@@ -15,6 +20,7 @@ export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,19 +34,52 @@ export function RegisterForm() {
     setSuccess(null);
     setIsSubmitting(true);
 
+    const nextUsername = normalizeUsername(username);
+    const usernameError = validateUsername(nextUsername);
+
+    if (usernameError) {
+      setError(usernameError);
+      setIsSubmitting(false);
+      return;
+    }
+
+    const availability = await checkUsernameAvailability(nextUsername);
+
+    if (availability.error) {
+      setError(availability.error);
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!availability.isAvailable) {
+      setError("That username is already taken.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          username: nextUsername,
+        },
+      },
     });
 
     setIsSubmitting(false);
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(
+        signUpError.message.includes("profiles_username_lower_unique")
+          ? "That username is already taken."
+          : signUpError.message
+      );
       return;
     }
 
     setPassword("");
+    setUsername("");
     setSuccess(
       data.session
         ? "Account created. You are signed in with a standard user account."
@@ -62,6 +101,25 @@ export function RegisterForm() {
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Username</span>
+            <Input
+              autoComplete="username"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              disabled={isSubmitting}
+              maxLength={24}
+              minLength={3}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="SummonerPrep"
+              required
+              type="text"
+              value={username}
+            />
+            <span className="block text-xs text-zinc-500">
+              Letters, numbers, and underscores only.
+            </span>
+          </label>
+
           <label className="block space-y-2">
             <span className="text-sm text-zinc-300">Email</span>
             <Input

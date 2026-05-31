@@ -29,7 +29,12 @@ export function FooterAuthLinks() {
         ];
       }
 
-      return (await isAdminUser(user)) ? [{ href: "/admin", label: "Admin" }] : [];
+      return (await isAdminUser(user))
+        ? [
+            { href: "/admin", label: "Admin" },
+            { href: "/account/settings", label: "Account" },
+          ]
+        : [{ href: "/account/settings", label: "Account" }];
     }
 
     async function loadAuthLink() {
