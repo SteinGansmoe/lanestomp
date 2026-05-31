@@ -122,7 +122,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   if (seasonResult.error || !game) {
     return (
-      <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+      <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
           <Link
@@ -165,7 +165,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     timelineResult.error
   ) {
     return (
-      <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+      <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
           <Link
@@ -206,7 +206,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   if (!selectedSeason) {
     return (
-      <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+      <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
           <Link
@@ -240,7 +240,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   );
 
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 

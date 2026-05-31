@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ChevronDown, LogOut, ShieldCheck, UserCircle } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
@@ -11,9 +11,9 @@ import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
 
-type AuthenticatedTopbarProps = {
+type AuthenticatedAccountMenuProps = {
   className?: string;
-  compact?: boolean;
+  menuPlacement?: "dropdown-up" | "inline";
 };
 
 function getUserLabel(user: User) {
@@ -24,14 +24,15 @@ function getUserInitial(user: User) {
   return getUserLabel(user).trim().charAt(0).toUpperCase() || "U";
 }
 
-export function AuthenticatedTopbar({
+export function AuthenticatedAccountMenu({
   className,
-  compact = false,
-}: AuthenticatedTopbarProps) {
+  menuPlacement = "dropdown-up",
+}: AuthenticatedAccountMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
@@ -81,60 +82,60 @@ export function AuthenticatedTopbar({
     setUser(null);
     setIsAdmin(false);
     setIsMenuOpen(false);
+
+    if (pathname.startsWith("/admin")) {
+      router.replace("/login");
+      return;
+    }
+
     router.refresh();
   }
 
   if (isLoading) {
     return (
-      <div className={cn("flex justify-end", className)}>
-        <div className="h-10 w-36 rounded-lg border border-white/10 bg-white/[0.04]" />
+      <div className={cn("w-full", className)}>
+        <div className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04]" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className={cn("flex justify-end gap-2", className)}>
+      <div className={cn("grid w-full gap-2", className)}>
         <Link
           className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/5 px-3 text-sm text-zinc-100 transition hover:bg-white/10"
           href="/login"
         >
           Sign in
         </Link>
-        {!compact ? (
-          <Link
-            className="inline-flex h-10 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/20 px-3 text-sm font-medium text-violet-100 transition hover:bg-violet-500/30"
-            href="/register"
-          >
-            Create account
-          </Link>
-        ) : null}
+        <Link
+          className="inline-flex h-10 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/20 px-3 text-sm font-medium text-violet-100 transition hover:bg-violet-500/30"
+          href="/register"
+        >
+          Create account
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className={cn("relative flex justify-end", className)}>
+    <div className={cn("relative w-full", className)}>
       <button
         aria-expanded={isMenuOpen}
         aria-haspopup="menu"
-        className="flex h-10 max-w-full items-center gap-2 rounded-lg border border-white/10 bg-[#10182b]/90 px-2.5 text-left text-sm text-zinc-100 shadow-lg shadow-black/10 transition hover:bg-white/[0.07]"
+        className="flex h-12 w-full items-center gap-2 rounded-lg border border-white/10 bg-[#10182b]/90 px-2.5 text-left text-sm text-zinc-100 shadow-lg shadow-black/10 transition hover:bg-white/[0.07]"
         onClick={() => setIsMenuOpen((current) => !current)}
         type="button"
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-violet-500/20 font-mono text-xs font-semibold text-violet-100 ring-1 ring-violet-300/20">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-500/20 font-mono text-xs font-semibold text-violet-100 ring-1 ring-violet-300/20">
           {getUserInitial(user)}
         </span>
-        {!compact ? (
-          <span className="min-w-0">
-            <span className="block truncate font-medium">
-              {getUserLabel(user)}
-            </span>
-            <span className="block truncate text-xs text-zinc-500">
-              {isAdmin ? "Admin" : "Signed in"}
-            </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium">{getUserLabel(user)}</span>
+          <span className="block truncate text-xs text-zinc-500">
+            {isAdmin ? "Admin" : "Signed in"}
           </span>
-        ) : null}
+        </span>
         <ChevronDown
           className={cn(
             "size-4 shrink-0 text-zinc-400 transition-transform",
@@ -146,12 +147,17 @@ export function AuthenticatedTopbar({
 
       {isMenuOpen ? (
         <div
-          className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-lg border border-white/10 bg-[#10182b] p-1 text-sm text-zinc-100 shadow-2xl shadow-black/30"
+          className={cn(
+            "z-50 w-full overflow-hidden rounded-lg border border-white/10 bg-[#10182b] p-1 text-sm text-zinc-100 shadow-2xl shadow-black/30",
+            menuPlacement === "inline"
+              ? "mt-2"
+              : "absolute bottom-14 left-0 right-0"
+          )}
           role="menu"
         >
           <div className="border-b border-white/10 px-3 py-3">
             <div className="flex items-center gap-2 text-zinc-100">
-              <UserCircle className="size-4" aria-hidden="true" />
+              <UserCircle className="size-4 shrink-0" aria-hidden="true" />
               <span className="min-w-0 truncate">{getUserLabel(user)}</span>
             </div>
           </div>

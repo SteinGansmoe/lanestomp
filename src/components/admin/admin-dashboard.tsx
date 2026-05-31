@@ -8,8 +8,7 @@ import {
   ViewTransition,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, LockKeyhole, LogOut } from "lucide-react";
+import { ArrowLeft, LockKeyhole } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 import { AdminNavigation } from "./admin-nav";
@@ -60,7 +59,6 @@ import {
   generateLeagueMatchupDraft,
 } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
-import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
@@ -180,7 +178,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     string | null
   >(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
-  const router = useRouter();
   const pageTitle =
     section === "games" ? "Game management"
     : section === "community" ? "Community management"
@@ -361,7 +358,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       isMounted = false;
       window.clearTimeout(redirectTimeoutId);
     };
-  }, [router]);
+  }, []);
 
   const gameNamesById = useMemo(
     () =>
@@ -1700,19 +1697,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
-  async function handleSignOut() {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
-
-    cachedAdminData = null;
-    cachedAdminUser = null;
-    router.replace("/login");
-    router.refresh();
-  }
-
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-10">
+    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
@@ -1724,16 +1710,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             <ArrowLeft className="size-4" aria-hidden="true" />
             Back to dashboard
           </Link>
-
-          <Button
-            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-            onClick={handleSignOut}
-            type="button"
-            variant="ghost"
-          >
-            <LogOut className="size-4" aria-hidden="true" />
-            Sign out
-          </Button>
         </div>
 
         <div>

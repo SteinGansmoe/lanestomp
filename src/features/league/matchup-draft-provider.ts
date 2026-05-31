@@ -192,7 +192,13 @@ async function generateDraftWithOpenAIProvider({
   }
 
   return {
-    draft,
+    draft: normalizeDraftAbilityReferences({
+      draft,
+      enemyChampionName: championBName,
+      enemyChampionProfile: championBProfile,
+      playerChampionName: championAName,
+      playerChampionProfile: championAProfile,
+    }),
     ok: true,
     provider: "openai",
   };
@@ -303,6 +309,111 @@ function normalizeDraftSection(section: string) {
     .filter(Boolean)
     .slice(0, 3)
     .join("\n");
+}
+
+function normalizeDraftAbilityReferences({
+  draft,
+  enemyChampionName,
+  enemyChampionProfile,
+  playerChampionName,
+  playerChampionProfile,
+}: {
+  draft: MatchupDraftSections;
+  enemyChampionName: string;
+  enemyChampionProfile?: LeagueChampionKnowledgeProfile | null;
+  playerChampionName: string;
+  playerChampionProfile?: LeagueChampionKnowledgeProfile | null;
+}) {
+  return Object.fromEntries(
+    matchupDraftSectionKeys.map((key) => [
+      key,
+      normalizeSectionAbilityReferences(
+        draft[key],
+        {
+          championName: playerChampionName,
+          profile: playerChampionProfile,
+          replacementPrefix: "",
+        },
+        {
+          championName: enemyChampionName,
+          profile: enemyChampionProfile,
+          replacementPrefix: `${enemyChampionName} `,
+        }
+      ),
+    ])
+  ) as MatchupDraftSections;
+}
+
+function normalizeSectionAbilityReferences(
+  section: string,
+  ...champions: Array<{
+    championName: string;
+    profile?: LeagueChampionKnowledgeProfile | null;
+    replacementPrefix: string;
+  }>
+) {
+  return champions.reduce((currentSection, champion) => {
+    const abilities = champion.profile?.abilities;
+
+    if (!abilities) {
+      return currentSection;
+    }
+
+    return (Object.entries(abilities) as Array<[
+      keyof typeof abilities,
+      string,
+    ]>).reduce((currentText, [abilityKey, abilityName]) => {
+      const replacement = `${champion.replacementPrefix}${abilityKey}`;
+      const aliases = [
+        `(${abilityKey}) ${abilityName}`,
+        `${abilityKey} ${abilityName}`,
+        abilityName,
+      ];
+
+      return aliases.reduce(
+        (nextText, alias) =>
+          replaceAbilityAlias(
+            replaceChampionOwnedAbilityAlias(
+              nextText,
+              champion.championName,
+              alias,
+              replacement
+            ),
+            alias,
+            replacement
+          ),
+        currentText
+      );
+    }, currentSection);
+  }, section);
+}
+
+function replaceChampionOwnedAbilityAlias(
+  text: string,
+  championName: string,
+  alias: string,
+  replacement: string
+) {
+  return replaceAbilityAlias(
+    text,
+    `${championName}'s ${alias}`,
+    replacement
+  ).replace(
+    getAbilityAliasPattern(`${championName} ${alias}`),
+    `$1${replacement}`
+  );
+}
+
+function replaceAbilityAlias(text: string, alias: string, replacement: string) {
+  return text.replace(getAbilityAliasPattern(alias), `$1${replacement}`);
+}
+
+function getAbilityAliasPattern(alias: string) {
+  return new RegExp(`(^|[^A-Za-z0-9])${escapeRegex(alias)}(?![A-Za-z0-9])`, "gi");
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 type OpenAIResponseBody = {

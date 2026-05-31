@@ -4,15 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Swords,
   Home,
   Menu,
   Search,
   Shield,
+  Swords,
   X,
 } from "lucide-react";
 
-import { AuthenticatedTopbar } from "@/src/components/authenticated-topbar";
+import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 
@@ -52,22 +52,19 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
       <header className="border-b border-white/10 pb-5 lg:hidden">
         <div className="flex items-center justify-between gap-4">
           <BrandLink />
-          <div className="flex items-center gap-2">
-            <AuthenticatedTopbar compact />
-            <Button
-              aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
-              aria-expanded={isMenuOpen}
-              className="size-10 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-              onClick={() => setIsMenuOpen((current) => !current)}
-              variant="ghost"
-            >
-              {isMenuOpen ? (
-                <X className="size-5" aria-hidden="true" />
-              ) : (
-                <Menu className="size-5" aria-hidden="true" />
-              )}
-            </Button>
-          </div>
+          <Button
+            aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isMenuOpen}
+            className="size-10 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+            onClick={() => setIsMenuOpen((current) => !current)}
+            variant="ghost"
+          >
+            {isMenuOpen ? (
+              <X className="size-5" aria-hidden="true" />
+            ) : (
+              <Menu className="size-5" aria-hidden="true" />
+            )}
+          </Button>
         </div>
 
         {shouldShowSearch ? (
@@ -84,6 +81,10 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
               onNavigate={() => setIsMenuOpen(false)}
               pathname={pathname}
             />
+            <AuthenticatedAccountMenu
+              className="mt-4 border-t border-white/10 pt-4"
+              menuPlacement="inline"
+            />
           </div>
         ) : null}
       </header>
@@ -98,19 +99,8 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
           />
         ) : null}
         <NavigationLinks className="mt-8" pathname={pathname} />
+        <AuthenticatedAccountMenu className="mt-auto pt-6" />
       </aside>
-
-      <header className="hidden items-center justify-between gap-4 border-b border-white/10 pb-5 lg:flex">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
-            LaneTips.app
-          </p>
-          <p className="mt-1 text-sm text-zinc-400">
-            League matchup prep for champ select speed.
-          </p>
-        </div>
-        <AuthenticatedTopbar />
-      </header>
     </>
   );
 }
