@@ -50,6 +50,7 @@ import type {
   GameFormState,
   LeagueMatchupBatchPlanItem,
   LeagueMatchupFormState,
+  LeagueMatchupQueueItemResult,
   ResourceFormState,
   SeasonFormState,
   TimelineEventFormState,
@@ -1398,6 +1399,91 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  async function handleGenerateLeagueMatchupQueueItem(
+    item: LeagueMatchupBatchPlanItem
+  ): Promise<LeagueMatchupQueueItemResult> {
+    if (!supabase) {
+      return {
+        error: "Supabase is not configured.",
+        ok: false,
+      };
+    }
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (sessionError || !accessToken) {
+      return {
+        error: sessionError?.message ?? "Admin session is not ready.",
+        ok: false,
+      };
+    }
+
+    let matchupId = item.existingMatchupId;
+
+    if (!matchupId) {
+      const { data: existingMatchup, error: existingMatchupError } =
+        await supabase
+          .from("league_matchups")
+          .select("id")
+          .eq("champion_a_id", item.championAId)
+          .eq("champion_b_id", item.championBId)
+          .eq("role", item.role)
+          .maybeSingle<{ id: number }>();
+
+      if (existingMatchupError) {
+        return {
+          error: existingMatchupError.message,
+          ok: false,
+        };
+      }
+
+      matchupId = existingMatchup?.id ?? null;
+    }
+
+    if (!matchupId) {
+      const { data: createdMatchup, error: createError } = await supabase
+        .from("league_matchups")
+        .insert({
+          champion_a_id: item.championAId,
+          champion_b_id: item.championBId,
+          role: item.role,
+        })
+        .select("id")
+        .single<{ id: number }>();
+
+      if (createError || !createdMatchup) {
+        return {
+          error: createError?.message ?? "Could not create matchup row.",
+          ok: false,
+        };
+      }
+
+      matchupId = createdMatchup.id;
+    }
+
+    const result = await generateLeagueMatchupDraft({
+      accessToken,
+      matchupId,
+    });
+
+    await reloadAdminData();
+
+    if (!result.ok) {
+      return {
+        error: result.error,
+        ok: false,
+      };
+    }
+
+    return {
+      matchupId,
+      ok: true,
+      profileWarning: result.profileWarning,
+    };
+  }
+
   function getGameFormError(form: GameFormState) {
     if (!form.id || !form.name || !form.slug) {
       return "Game ID, name, and slug are required.";
@@ -1889,6 +1975,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onDeleteDraft={handleDeleteLeagueMatchupDraft}
                     onGenerateBatch={handleGenerateLeagueMatchupBatch}
                     onGenerateDraft={handleGenerateLeagueMatchupDraft}
+                    onGenerateQueueItem={handleGenerateLeagueMatchupQueueItem}
                     onMarkReviewed={handleMarkLeagueMatchupReviewed}
                     onStartEdit={startEditingLeagueMatchup}
                     generatingMatchupId={generatingLeagueMatchupId}

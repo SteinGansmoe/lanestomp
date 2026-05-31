@@ -76,6 +76,17 @@ export type LeagueMatchupBatchPlanItem = {
   role: AdminLeagueMatchup["role"];
 };
 
+export type LeagueMatchupQueueItemResult =
+  | {
+      matchupId: number;
+      ok: true;
+      profileWarning?: string;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
 export type AdminData = {
   games: AdminGame[];
   leagueChampions: AdminLeagueChampion[];

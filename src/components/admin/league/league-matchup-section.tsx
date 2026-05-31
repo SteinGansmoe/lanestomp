@@ -1,12 +1,16 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   CheckSquare,
   ChevronDown,
+  Clock3,
   ListChecks,
+  Pause,
   Pencil,
+  Play,
   RefreshCw,
   Sparkles,
+  Square,
   Trash2,
 } from "lucide-react";
 
@@ -28,6 +32,7 @@ import type {
   FormStatus,
   LeagueMatchupBatchPlanItem,
   LeagueMatchupFormState,
+  LeagueMatchupQueueItemResult,
 } from "../types";
 import { fieldClassName, selectOptionClassName } from "../constants";
 import { cn } from "@/src/lib/utils";
@@ -42,6 +47,35 @@ type LeagueMatchupSortMode =
   | "least-reviewed"
   | "most-drafts"
   | "most-reviewed";
+type LeagueMatchupQueueMode = "missing-only" | "regenerate-all";
+type LeagueMatchupQueueStatus =
+  | "complete"
+  | "idle"
+  | "paused"
+  | "running"
+  | "stopped";
+type LeagueMatchupQueueItemStatus =
+  | "failed"
+  | "generated"
+  | "pending"
+  | "running";
+
+type LeagueMatchupQueueItem = LeagueMatchupBatchPlanItem & {
+  completedAt: number | null;
+  durationMs: number | null;
+  error: string | null;
+  id: string;
+  matchupId: number | null;
+  status: LeagueMatchupQueueItemStatus;
+};
+
+type LeagueMatchupQueueState = {
+  createdAt: number;
+  mode: LeagueMatchupQueueMode;
+  status: LeagueMatchupQueueStatus;
+  updatedAt: number;
+  items: LeagueMatchupQueueItem[];
+};
 
 type ChampionMatchupGroup = {
   draftCount: number;
@@ -57,6 +91,8 @@ type ChampionMatchupGroup = {
 
 const championGroupStorageKey =
   "seasontracker.admin.leagueMatchups.collapsedChampionGroups";
+const matchupQueueStorageKey =
+  "seasontracker.admin.leagueMatchups.midBulkGenerationQueue";
 
 export function AdminLeagueMatchupsSection({
   champions,
@@ -72,6 +108,7 @@ export function AdminLeagueMatchupsSection({
   batchStatus,
   onCancelEdit,
   onGenerateBatch,
+  onGenerateQueueItem,
   onCreateChange,
   onCreateSubmit,
   onDeleteDraft,
@@ -100,6 +137,9 @@ export function AdminLeagueMatchupsSection({
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onGenerateBatch: (items: LeagueMatchupBatchPlanItem[]) => void;
   onGenerateDraft: (matchup: AdminLeagueMatchup) => void;
+  onGenerateQueueItem: (
+    item: LeagueMatchupBatchPlanItem
+  ) => Promise<LeagueMatchupQueueItemResult>;
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
 }) {
@@ -109,6 +149,7 @@ export function AdminLeagueMatchupsSection({
   const [roleFilter, setRoleFilter] = useState<LeagueMatchupRoleFilter>("all");
   const [sortMode, setSortMode] =
     useState<LeagueMatchupSortMode>("alphabetical");
+  const [isBulkQueueActive, setIsBulkQueueActive] = useState(false);
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
@@ -217,9 +258,17 @@ export function AdminLeagueMatchupsSection({
         </Card>
       </div>
 
+      <LeagueMatchupBulkGenerationQueue
+        champions={champions}
+        isDisabled={generatingMatchupId !== null || batchStatus.isLoading}
+        matchups={matchups}
+        onActiveChange={setIsBulkQueueActive}
+        onGenerateQueueItem={onGenerateQueueItem}
+      />
+
       <LeagueMatchupBatchPlanner
         champions={champions}
-        isDisabled={generatingMatchupId !== null}
+        isDisabled={generatingMatchupId !== null || isBulkQueueActive}
         matchups={matchups}
         onGenerateBatch={onGenerateBatch}
         progress={batchProgress}
@@ -435,6 +484,7 @@ export function AdminLeagueMatchupsSection({
                           generatingMatchupId !== null ||
                           deletingDraftMatchupId !== null ||
                           batchStatus.isLoading
+                          || isBulkQueueActive
                         }
                         onClick={() => onGenerateDraft(matchup)}
                         size="sm"
@@ -458,6 +508,7 @@ export function AdminLeagueMatchupsSection({
                           isGenerating ||
                           isDeletingDraft ||
                           batchStatus.isLoading
+                          || isBulkQueueActive
                         }
                         onClick={() => onStartEdit(matchup)}
                         size="sm"
@@ -473,6 +524,7 @@ export function AdminLeagueMatchupsSection({
                           isGenerating ||
                           isDeletingDraft ||
                           batchStatus.isLoading ||
+                          isBulkQueueActive ||
                           !hasDraftContent ||
                           matchup.generation_status === "reviewed"
                         }
@@ -490,6 +542,7 @@ export function AdminLeagueMatchupsSection({
                           isGenerating ||
                           deletingDraftMatchupId !== null ||
                           batchStatus.isLoading ||
+                          isBulkQueueActive ||
                           !hasDraftContent
                         }
                         onClick={() => onDeleteDraft(matchup)}
@@ -527,6 +580,523 @@ export function AdminLeagueMatchupsSection({
         </CardContent>
       </Card>
     </>
+  );
+}
+
+function LeagueMatchupBulkGenerationQueue({
+  champions,
+  isDisabled,
+  matchups,
+  onActiveChange,
+  onGenerateQueueItem,
+}: {
+  champions: AdminLeagueChampion[];
+  isDisabled: boolean;
+  matchups: AdminLeagueMatchup[];
+  onActiveChange: (isActive: boolean) => void;
+  onGenerateQueueItem: (
+    item: LeagueMatchupBatchPlanItem
+  ) => Promise<LeagueMatchupQueueItemResult>;
+}) {
+  const [queueMode, setQueueMode] =
+    useState<LeagueMatchupQueueMode>("missing-only");
+  const [queueMessage, setQueueMessage] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
+  const [queueState, setQueueState] = useState<LeagueMatchupQueueState>(() =>
+    createEmptyQueueState("missing-only")
+  );
+  const isProcessingRef = useRef(false);
+  const matchupsRef = useRef(matchups);
+  const queueStateRef = useRef(queueState);
+
+  const midChampions = useMemo(
+    () =>
+      sortChampionsForRole(
+        champions.filter((champion) => isChampionInRole(champion, "mid")),
+        "mid"
+      ),
+    [champions]
+  );
+  const championsById = useMemo(
+    () => new Map(champions.map((champion) => [champion.id, champion] as const)),
+    [champions]
+  );
+  const previewItems = useMemo(
+    () => buildMidLaneQueueItems(midChampions, matchups, queueMode),
+    [matchups, midChampions, queueMode]
+  );
+  const stats = getQueueStats(queueState);
+  const failedItems = queueState.items.filter((item) => item.status === "failed");
+  const activeItem = queueState.items.find((item) => item.status === "running");
+  const canStart =
+    !isDisabled && queueState.status !== "running" && previewItems.length > 0;
+  const canResume =
+    !isDisabled &&
+    queueState.status !== "running" &&
+    queueState.items.some((item) => item.status === "pending");
+  const canRetryFailed =
+    !isDisabled && queueState.status !== "running" && failedItems.length > 0;
+
+  useEffect(() => {
+    matchupsRef.current = matchups;
+  }, [matchups]);
+
+  useEffect(() => {
+    queueStateRef.current = queueState;
+  }, [queueState]);
+
+  useEffect(() => {
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const storedValue = window.localStorage.getItem(matchupQueueStorageKey);
+
+      if (!storedValue) {
+        return;
+      }
+
+      const restoredState = parseStoredQueueState(storedValue);
+
+      if (!restoredState) {
+        window.localStorage.removeItem(matchupQueueStorageKey);
+        return;
+      }
+
+      const normalizedState =
+        restoredState.status === "running"
+          ? { ...restoredState, status: "paused" as const }
+          : restoredState;
+
+      setQueueMode(normalizedState.mode);
+      commitQueueState(normalizedState);
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  useEffect(() => {
+    const isActive = queueState.status === "running";
+    onActiveChange(isActive);
+
+    return () => onActiveChange(false);
+  }, [onActiveChange, queueState.status]);
+
+  useEffect(() => {
+    if (queueState.status === "idle" && queueState.items.length === 0) {
+      window.localStorage.removeItem(matchupQueueStorageKey);
+      return;
+    }
+
+    window.localStorage.setItem(
+      matchupQueueStorageKey,
+      JSON.stringify(queueState)
+    );
+  }, [queueState]);
+
+  function commitQueueState(nextState: LeagueMatchupQueueState) {
+    queueStateRef.current = nextState;
+    setQueueState(nextState);
+  }
+
+  function updateQueueState(
+    updater: (currentState: LeagueMatchupQueueState) => LeagueMatchupQueueState
+  ) {
+    commitQueueState(updater(queueStateRef.current));
+  }
+
+  function startQueue() {
+    const items = buildMidLaneQueueItems(midChampions, matchupsRef.current, queueMode);
+
+    if (items.length === 0) {
+      setQueueMessage({
+        text:
+          queueMode === "missing-only"
+            ? "No missing mid lane matchup drafts found."
+            : "No mid lane champion pairs are available to generate.",
+        type: "error",
+      });
+      return;
+    }
+
+    const nextState = {
+      createdAt: Date.now(),
+      items,
+      mode: queueMode,
+      status: "running" as const,
+      updatedAt: Date.now(),
+    };
+
+    setQueueMessage(null);
+    commitQueueState(nextState);
+    void processQueue();
+  }
+
+  function pauseQueue() {
+    updateQueueState((currentState) => ({
+      ...currentState,
+      status: "paused",
+      updatedAt: Date.now(),
+    }));
+  }
+
+  function resumeQueue() {
+    setQueueMessage(null);
+    updateQueueState((currentState) => ({
+      ...currentState,
+      status: "running",
+      updatedAt: Date.now(),
+    }));
+    void processQueue();
+  }
+
+  function stopQueue() {
+    updateQueueState((currentState) => ({
+      ...currentState,
+      status: "stopped",
+      updatedAt: Date.now(),
+    }));
+  }
+
+  function retryFailedItems() {
+    setQueueMessage(null);
+    updateQueueState((currentState) => ({
+      ...currentState,
+      items: currentState.items.map((item) =>
+        item.status === "failed"
+          ? {
+              ...item,
+              completedAt: null,
+              durationMs: null,
+              error: null,
+              status: "pending",
+            }
+          : item
+      ),
+      status: "running",
+      updatedAt: Date.now(),
+    }));
+    void processQueue();
+  }
+
+  function clearQueue() {
+    const nextState = createEmptyQueueState(queueMode);
+
+    setQueueMessage(null);
+    commitQueueState(nextState);
+  }
+
+  async function processQueue() {
+    if (isProcessingRef.current) {
+      return;
+    }
+
+    isProcessingRef.current = true;
+
+    try {
+      while (queueStateRef.current.status === "running") {
+        const currentState = queueStateRef.current;
+        const nextItemIndex = currentState.items.findIndex(
+          (item) => item.status === "pending"
+        );
+
+        if (nextItemIndex === -1) {
+          const finalStats = getQueueStats(currentState);
+
+          updateQueueState((state) => ({
+            ...state,
+            status: "complete",
+            updatedAt: Date.now(),
+          }));
+          setQueueMessage({
+            text:
+              finalStats.failed > 0
+                ? `Queue completed with ${finalStats.failed} failed matchup${
+                    finalStats.failed === 1 ? "" : "s"
+                  }.`
+                : `Queue completed. ${finalStats.generated} draft${
+                    finalStats.generated === 1 ? "" : "s"
+                  } generated.`,
+            type: finalStats.failed > 0 ? "error" : "success",
+          });
+          return;
+        }
+
+        const nextItem = currentState.items[nextItemIndex];
+        const startedAt = Date.now();
+        const nextItemLabel = getQueueItemLabel(nextItem, championsById);
+
+        updateQueueItem(nextItem.id, {
+          error: null,
+          status: "running",
+        });
+
+        const result = await onGenerateQueueItem(
+          getFreshQueuePlanItem(nextItem, matchupsRef.current)
+        );
+        const completedAt = Date.now();
+
+        if (result.ok) {
+          updateQueueItem(nextItem.id, {
+            completedAt,
+            durationMs: completedAt - startedAt,
+            error: result.profileWarning ?? null,
+            matchupId: result.matchupId,
+            status: "generated",
+          });
+        } else {
+          updateQueueItem(nextItem.id, {
+            completedAt,
+            durationMs: completedAt - startedAt,
+            error: result.error || `Could not generate ${nextItemLabel}.`,
+            status: "failed",
+          });
+        }
+      }
+    } finally {
+      isProcessingRef.current = false;
+    }
+  }
+
+  function updateQueueItem(
+    itemId: string,
+    patch: Partial<LeagueMatchupQueueItem>
+  ) {
+    updateQueueState((currentState) => ({
+      ...currentState,
+      items: currentState.items.map((item) =>
+        item.id === itemId ? { ...item, ...patch } : item
+      ),
+      updatedAt: Date.now(),
+    }));
+  }
+
+  return (
+    <Card className="border-cyan-300/15 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="font-mono text-xl">
+              Mid lane bulk generation queue
+            </CardTitle>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+              Generate missing mid lane matchup drafts one at a time with pause,
+              resume, stop, retry, and refresh-safe progress.
+            </p>
+          </div>
+          <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
+            Admin only
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <QueueStat label="Generated" value={stats.generated} />
+          <QueueStat label="Total" value={stats.total} />
+          <QueueStat label="Remaining" value={stats.remaining} />
+          <QueueStat label="Failed" value={stats.failed} />
+          <QueueStat
+            label="ETA"
+            value={stats.etaMs ? formatDuration(stats.etaMs) : "Pending"}
+          />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <div>
+              <p className="font-semibold text-white">Queue mode</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {midChampions.length} mid champions available for directional
+                matchup generation.
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm text-zinc-300">
+                <input
+                  checked={queueMode === "missing-only"}
+                  className="size-4 accent-violet-500"
+                  disabled={queueState.status === "running"}
+                  onChange={() => setQueueMode("missing-only")}
+                  type="radio"
+                />
+                Generate missing only
+              </label>
+              <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm text-zinc-300">
+                <input
+                  checked={queueMode === "regenerate-all"}
+                  className="size-4 accent-violet-500"
+                  disabled={queueState.status === "running"}
+                  onChange={() => setQueueMode("regenerate-all")}
+                  type="radio"
+                />
+                Regenerate all
+              </label>
+            </div>
+
+            <div className="rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">
+              <p>
+                {previewItems.length} matchup
+                {previewItems.length === 1 ? "" : "s"} will be queued with the
+                current mode.
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Existing saved drafts are skipped unless regenerate all is
+                selected.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-violet-300/15 bg-violet-500/[0.06] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 font-semibold text-white">
+                  <Clock3 className="size-4 text-violet-200" aria-hidden="true" />
+                  Queue controls
+                </p>
+                <p className="mt-1 text-sm text-zinc-300">
+                  Status: {titleCase(queueState.status)}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+                  disabled={!canStart}
+                  onClick={startQueue}
+                  type="button"
+                >
+                  <Play className="size-4" aria-hidden="true" />
+                  Start
+                </Button>
+                <Button
+                  className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                  disabled={queueState.status !== "running"}
+                  onClick={pauseQueue}
+                  type="button"
+                  variant="ghost"
+                >
+                  <Pause className="size-4" aria-hidden="true" />
+                  Pause
+                </Button>
+                <Button
+                  className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                  disabled={!canResume}
+                  onClick={resumeQueue}
+                  type="button"
+                  variant="ghost"
+                >
+                  <Play className="size-4" aria-hidden="true" />
+                  Resume
+                </Button>
+                <Button
+                  className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                  disabled={queueState.status !== "running"}
+                  onClick={stopQueue}
+                  type="button"
+                  variant="ghost"
+                >
+                  <Square className="size-4" aria-hidden="true" />
+                  Stop
+                </Button>
+              </div>
+            </div>
+
+            {activeItem ? (
+              <p className="mt-4 rounded-md border border-cyan-300/20 bg-cyan-400/10 p-3 text-sm text-cyan-100">
+                Generating {getQueueItemLabel(activeItem, championsById)}
+              </p>
+            ) : null}
+
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/30">
+              <div
+                className="h-full rounded-full bg-cyan-300 transition-[width] duration-300"
+                style={{
+                  width:
+                    stats.total === 0
+                      ? "0%"
+                      : `${Math.round((stats.processed / stats.total) * 100)}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={!canRetryFailed}
+                onClick={retryFailedItems}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                Retry failed
+              </Button>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={queueState.status === "running" || stats.total === 0}
+                onClick={clearQueue}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Clear saved queue
+              </Button>
+            </div>
+
+            {queueMessage ? (
+              <p
+                className={cn(
+                  "mt-4 rounded-md border p-3 text-sm",
+                  queueMessage.type === "error"
+                    ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                )}
+              >
+                {queueMessage.text}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {failedItems.length > 0 ? (
+          <div className="rounded-lg border border-rose-300/20 bg-rose-500/[0.06] p-4">
+            <p className="font-semibold text-rose-100">Failed matchups</p>
+            <ol className="mt-3 max-h-64 space-y-2 overflow-auto pr-1 text-sm">
+              {failedItems.map((item) => (
+                <li
+                  className="rounded-md border border-rose-300/15 bg-black/15 p-3"
+                  key={item.id}
+                >
+                  <p className="font-medium text-white">
+                    {getQueueItemLabel(item, championsById)}
+                  </p>
+                  <p className="mt-1 text-rose-100">
+                    {item.error ?? "Generation failed."}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function QueueStat({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+      <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
+    </div>
   );
 }
 
@@ -1220,4 +1790,230 @@ function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
     matchup.danger_windows,
     matchup.win_conditions,
   ].some((value) => Boolean(value?.trim()));
+}
+
+function createEmptyQueueState(
+  mode: LeagueMatchupQueueMode
+): LeagueMatchupQueueState {
+  const now = Date.now();
+
+  return {
+    createdAt: now,
+    items: [],
+    mode,
+    status: "idle",
+    updatedAt: now,
+  };
+}
+
+function buildMidLaneQueueItems(
+  midChampions: AdminLeagueChampion[],
+  matchups: AdminLeagueMatchup[],
+  mode: LeagueMatchupQueueMode
+): LeagueMatchupQueueItem[] {
+  const existingMatchupsByKey = new Map(
+    matchups.map((matchup) => [
+      getMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
+      matchup,
+    ])
+  );
+  const items: LeagueMatchupQueueItem[] = [];
+
+  for (const championA of midChampions) {
+    for (const championB of midChampions) {
+      if (championA.id === championB.id) {
+        continue;
+      }
+
+      const key = getMatchupKey(championA.id, championB.id, "mid");
+      const existingMatchup = existingMatchupsByKey.get(key);
+
+      if (
+        mode === "missing-only" &&
+        existingMatchup &&
+        hasMatchupDraftContent(existingMatchup)
+      ) {
+        continue;
+      }
+
+      items.push({
+        championAId: championA.id,
+        championBId: championB.id,
+        completedAt: null,
+        durationMs: null,
+        error: null,
+        existingMatchupId: existingMatchup?.id ?? null,
+        id: key,
+        matchupId: existingMatchup?.id ?? null,
+        role: "mid",
+        status: "pending",
+      });
+    }
+  }
+
+  return items;
+}
+
+function getFreshQueuePlanItem(
+  item: LeagueMatchupQueueItem,
+  matchups: AdminLeagueMatchup[]
+): LeagueMatchupBatchPlanItem {
+  const freshMatchup = matchups.find(
+    (matchup) =>
+      matchup.champion_a_id === item.championAId &&
+      matchup.champion_b_id === item.championBId &&
+      matchup.role === item.role
+  );
+
+  return {
+    championAId: item.championAId,
+    championBId: item.championBId,
+    existingMatchupId:
+      freshMatchup?.id ?? item.matchupId ?? item.existingMatchupId ?? null,
+    role: item.role,
+  };
+}
+
+function getQueueItemLabel(
+  item: LeagueMatchupBatchPlanItem,
+  championsById: Map<string, AdminLeagueChampion>
+) {
+  const championA = championsById.get(item.championAId)?.name ?? item.championAId;
+  const championB = championsById.get(item.championBId)?.name ?? item.championBId;
+
+  return `${championA} vs ${championB}`;
+}
+
+function getQueueStats(queueState: LeagueMatchupQueueState) {
+  const generated = queueState.items.filter(
+    (item) => item.status === "generated"
+  ).length;
+  const failed = queueState.items.filter((item) => item.status === "failed").length;
+  const processed = generated + failed;
+  const remaining = Math.max(queueState.items.length - processed, 0);
+  const completedDurations = queueState.items
+    .map((item) => item.durationMs)
+    .filter((duration): duration is number => typeof duration === "number");
+  const averageDurationMs =
+    completedDurations.length > 0
+      ? completedDurations.reduce((sum, duration) => sum + duration, 0) /
+        completedDurations.length
+      : 0;
+
+  return {
+    etaMs: averageDurationMs > 0 ? averageDurationMs * remaining : null,
+    failed,
+    generated,
+    processed,
+    remaining,
+    total: queueState.items.length,
+  };
+}
+
+function formatDuration(durationMs: number) {
+  const totalSeconds = Math.max(Math.round(durationMs / 1_000), 1);
+  const hours = Math.floor(totalSeconds / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+
+  return `${seconds}s`;
+}
+
+function parseStoredQueueState(value: string): LeagueMatchupQueueState | null {
+  try {
+    const parsedValue: unknown = JSON.parse(value);
+
+    if (!parsedValue || typeof parsedValue !== "object") {
+      return null;
+    }
+
+    const candidate = parsedValue as Partial<LeagueMatchupQueueState>;
+
+    if (
+      !Array.isArray(candidate.items) ||
+      !candidate.mode ||
+      !candidate.status ||
+      typeof candidate.createdAt !== "number" ||
+      typeof candidate.updatedAt !== "number"
+    ) {
+      return null;
+    }
+
+    if (
+      candidate.mode !== "missing-only" &&
+      candidate.mode !== "regenerate-all"
+    ) {
+      return null;
+    }
+
+    if (!isQueueStatus(candidate.status)) {
+      return null;
+    }
+
+    const items = candidate.items
+      .map((item) => parseStoredQueueItem(item))
+      .filter((item): item is LeagueMatchupQueueItem => Boolean(item));
+
+    return {
+      createdAt: candidate.createdAt,
+      items,
+      mode: candidate.mode,
+      status: candidate.status,
+      updatedAt: candidate.updatedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseStoredQueueItem(value: unknown): LeagueMatchupQueueItem | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<LeagueMatchupQueueItem>;
+
+  if (
+    typeof candidate.championAId !== "string" ||
+    typeof candidate.championBId !== "string" ||
+    typeof candidate.id !== "string" ||
+    candidate.role !== "mid" ||
+    !candidate.status ||
+    !isQueueItemStatus(candidate.status)
+  ) {
+    return null;
+  }
+
+  return {
+    championAId: candidate.championAId,
+    championBId: candidate.championBId,
+    completedAt:
+      typeof candidate.completedAt === "number" ? candidate.completedAt : null,
+    durationMs: typeof candidate.durationMs === "number" ? candidate.durationMs : null,
+    error: typeof candidate.error === "string" ? candidate.error : null,
+    existingMatchupId:
+      typeof candidate.existingMatchupId === "number"
+        ? candidate.existingMatchupId
+        : null,
+    id: candidate.id,
+    matchupId: typeof candidate.matchupId === "number" ? candidate.matchupId : null,
+    role: "mid",
+    status: candidate.status === "running" ? "pending" : candidate.status,
+  };
+}
+
+function isQueueStatus(value: string): value is LeagueMatchupQueueStatus {
+  return ["complete", "idle", "paused", "running", "stopped"].includes(value);
+}
+
+function isQueueItemStatus(value: string): value is LeagueMatchupQueueItemStatus {
+  return ["failed", "generated", "pending", "running"].includes(value);
 }
