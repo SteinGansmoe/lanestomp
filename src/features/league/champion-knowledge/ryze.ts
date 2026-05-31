@@ -69,7 +69,6 @@ export const ryzeCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "First mana/AP item.",
     "Level 6 Realm Warp for map plays.",
   ],
@@ -90,7 +89,6 @@ export const ryzeCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "First mana/AP item.",
       "Level 6 Realm Warp for map plays.",
     ],

@@ -50,7 +50,7 @@ export const sylasCombatProfile = {
       winLaneBy: ["Use E Abscond / Abduct to engage or threaten, then look for extended trades with W Kingslayer and stolen ultimates."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Sylas's Q-W-E skirmish pattern with dash, chain, and sustain access.",
       "Level 6 Hijack if valuable ultimates are available.",
       "First completed AP skirmish item.",
     ],
@@ -63,7 +63,7 @@ export const sylasCombatProfile = {
     offMetaRoles: ["top", "jungle"],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
+            "Level 3 unlocks Sylas's Q-W-E skirmish pattern with dash, chain, and sustain access.",
             "Level 6 Hijack if valuable ultimates are available.",
             "First completed AP skirmish item.",
           ],

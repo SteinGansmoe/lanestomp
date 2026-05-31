@@ -50,7 +50,7 @@ export const fizzCombatProfile = {
       winLaneBy: ["Short trades until target is in kill range."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Fizz's first real trade pattern with Q engage, W damage, and E dodge or escape.",
       "Level 6 Chum the Waters.",
       "First completed AP assassin item.",
     ],
@@ -63,7 +63,7 @@ export const fizzCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
+            "Level 3 unlocks Fizz's first real trade pattern with Q engage, W damage, and E dodge or escape.",
             "Level 6 Chum the Waters.",
             "First completed AP assassin item.",
           ],

@@ -50,7 +50,6 @@ export const vexCombatProfile = {
       winLaneBy: ["Utilize her passive to win trades in lane."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Shadow Surge.",
       "First completed AP burst item.",
     ],
@@ -63,7 +62,6 @@ export const vexCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Shadow Surge.",
             "First completed AP burst item.",
           ],

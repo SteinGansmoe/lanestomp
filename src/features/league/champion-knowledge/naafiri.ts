@@ -69,7 +69,6 @@ export const naafiriCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 The Call of the Pack.",
     "First completed lethality item.",
   ],
@@ -90,7 +89,6 @@ export const naafiriCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 The Call of the Pack.",
       "First completed lethality item.",
     ],

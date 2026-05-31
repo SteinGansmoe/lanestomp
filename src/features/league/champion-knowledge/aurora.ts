@@ -44,7 +44,6 @@ export const auroraCombatProfile = {
       winLaneBy: [""],
     },
     majorPowerSpikes: [
-        "Level 3 full basic ability access.",
         "Level 6 ultimate for high mobility and burst.",
         "First completed AP burst item.",
     ],
@@ -57,7 +56,6 @@ export const auroraCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-              "Level 3 full basic ability access.",
               "Level 6 ultimate for high mobility and burst.",
               "First completed AP burst item.",
           ],

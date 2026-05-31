@@ -50,7 +50,7 @@ export const zedCombatProfile = {
       winLaneBy: ["Take down enemy carries with his high burst and mobility."],
     },
     majorPowerSpikes: [
-      "After level 3 he has access to his full combo.",
+      "Level 3 unlocks W-E-Q shadow combo for real poke and all-in setup.",
       "Level 6 Death Mark.",
       "First completed lethality item.",
     ],
@@ -63,7 +63,7 @@ export const zedCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "After level 3 he has access to his full combo.",
+            "Level 3 unlocks W-E-Q shadow combo for real poke and all-in setup.",
             "Level 6 Death Mark.",
             "First completed lethality item.",
           ],

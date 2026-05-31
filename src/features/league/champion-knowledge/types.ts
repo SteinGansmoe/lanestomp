@@ -56,6 +56,7 @@ export type LeagueChampionPunishProfile = {
 
 export type LeagueChampionPowerSpikeProfile = {
   major: string[];
+  minor?: string[];
   notes: string[];
 };
 

@@ -69,7 +69,7 @@ export const qiyanaCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
+    "Level 3 unlocks Q-W-E element setup, dash access, and her first real burst trade pattern.",
     "Level 6 Supreme Display of Talent.",
     "First completed lethality item.",
   ],
@@ -90,7 +90,7 @@ export const qiyanaCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Q-W-E element setup, dash access, and her first real burst trade pattern.",
       "Level 6 Supreme Display of Talent.",
       "First completed lethality item.",
     ],

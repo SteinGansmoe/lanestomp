@@ -50,7 +50,7 @@ export const hweiCombatProfile = {
       winLaneBy: ["Use long-range poke and E spellbook CC to control the lane and set up for level 6 all-in with Spiraling Despair."],
     },
     majorPowerSpikes: [
-      "Level 3 access to all basic spellbooks.",
+      "Level 3 unlocks all three spellbooks for full poke, control, and shield options.",
       "Level 6 Spiraling Despair.",
       "First completed mage item.",
     ],
@@ -63,7 +63,7 @@ export const hweiCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 access to all basic spellbooks.",
+            "Level 3 unlocks all three spellbooks for full poke, control, and shield options.",
             "Level 6 Spiraling Despair.",
             "First completed mage item.",
           ],

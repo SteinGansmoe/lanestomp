@@ -50,7 +50,6 @@ export const luxCombatProfile = {
       winLaneBy: [],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Final Spark.",
       "First completed mage item.",
     ],
@@ -63,7 +62,6 @@ export const luxCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Final Spark.",
             "First completed mage item.",
           ],

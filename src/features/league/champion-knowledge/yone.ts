@@ -50,7 +50,7 @@ export const yoneCombatProfile = {
       winLaneBy: ["Use E + Q combo to force trades with a planned exit."],
     },
     majorPowerSpikes: [
-      "Level 3 access to all basic abilities.",
+      "Level 3 unlocks Yone's Q-W-E trade pattern with E extension and W shield.",
       "First back for more attack speed.",
       "Bork is a great item for him.",
     ],
@@ -63,7 +63,7 @@ export const yoneCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 access to all basic abilities.",
+            "Level 3 unlocks Yone's Q-W-E trade pattern with E extension and W shield.",
             "First back for more attack speed.",
             "Bork is a great item for him.",
           ],

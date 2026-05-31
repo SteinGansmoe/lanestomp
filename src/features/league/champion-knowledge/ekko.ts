@@ -50,7 +50,7 @@ export const ekkoCombatProfile = {
       winLaneBy: ["Short trades with Q and E, a well-times W stun can turn a fight in his favor, and R can be used to dodge key damage or reset fights."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Ekko's Q-W-E trade pattern with dash access and stun threat.",
       "Level 6 Chronobreak.",
       "First completed AP burst item.",
     ],
@@ -63,7 +63,7 @@ export const ekkoCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
+            "Level 3 unlocks Ekko's Q-W-E trade pattern with dash access and stun threat.",
             "Level 6 Chronobreak.",
             "First completed AP burst item.",
           ],

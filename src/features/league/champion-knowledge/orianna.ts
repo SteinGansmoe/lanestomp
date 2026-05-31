@@ -50,7 +50,6 @@ export const oriannaCombatProfile = {
       winLaneBy: ["Control the lane with ball placement and create opportunities for teamfighting."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Command: Shockwave.",
       "First completed mage item.",
     ],
@@ -63,7 +62,6 @@ export const oriannaCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Command: Shockwave.",
             "First completed mage item.",
           ],

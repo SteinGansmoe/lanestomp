@@ -69,7 +69,6 @@ export const twistedFateCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Destiny.",
     "First completed AP or utility item.",
   ],
@@ -90,7 +89,6 @@ export const twistedFateCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Destiny.",
       "First completed AP or utility item.",
     ],

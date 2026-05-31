@@ -54,7 +54,6 @@ export const viktorCombatProfile = {
       winLaneBy: ["Scale with item upgrades to control space and teamfights."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Chaos Storm.",
       "First completed mage item and evolution progress.",
       "Can adapt to a more tankier build (Rod of Ages and Liandry's Torment) if enemy team has strong all-in or dive threats."
@@ -68,11 +67,13 @@ export const viktorCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
-            "Level 6 Chaos Storm.",
-            "First completed mage item and evolution progress.",
-            "Can adapt to a more tankier build (Rod of Ages and Liandry's Torment) if enemy team has strong all-in or dive threats."
-          ],
+              "Level 6 Chaos Storm.",
+              "First completed mage item and evolution progress.",
+              "Can adapt to a more tankier build (Rod of Ages and Liandry's Torment) if enemy team has strong all-in or dive threats."
+            ],
+      minor: [
+              "Level 3 improves access to poke and field control, but his real spikes are R and evolution or item progress.",
+            ],
       notes: [],
     },
     primaryRoles: ["mid"],

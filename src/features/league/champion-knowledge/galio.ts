@@ -69,7 +69,6 @@ export const galioCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Hero's Entrance.",
     "First durability or AP utility item.",
   ],
@@ -90,7 +89,6 @@ export const galioCombatProfile = {
   offMetaRoles: ["support"],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Hero's Entrance.",
       "First durability or AP utility item.",
     ],

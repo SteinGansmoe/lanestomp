@@ -69,7 +69,6 @@ export const melCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Golden Eclipse.",
     "First completed mage item.",
   ],
@@ -90,7 +89,6 @@ export const melCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Golden Eclipse.",
       "First completed mage item.",
     ],

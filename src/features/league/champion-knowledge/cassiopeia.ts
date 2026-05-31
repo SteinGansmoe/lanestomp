@@ -69,7 +69,6 @@ export const cassiopeiaCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Petrifying Gaze.",
     "First mana/AP item.",
   ],
@@ -90,7 +89,6 @@ export const cassiopeiaCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Petrifying Gaze.",
       "First mana/AP item.",
     ],

@@ -68,7 +68,6 @@ export const ahriCombatProfile = {
       ],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Spirit Rush.",
       "First completed mage item.",
     ],
@@ -89,9 +88,11 @@ export const ahriCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-        "Level 3 full basic ability access.",
         "Level 6 Spirit Rush.",
         "First completed mage item.",
+      ],
+      minor: [
+        "Level 3 improves short-trade flexibility, but her matchup-defining threat starts at R and item waveclear.",
       ],
       notes: [
         "Level 6 changes Ahri from punishable mage into a much safer pick and chase champion.",

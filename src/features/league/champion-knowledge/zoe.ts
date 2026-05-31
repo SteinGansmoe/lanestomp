@@ -41,7 +41,6 @@ export const zoeCombatProfile = {
       winLaneBy: ["Can find very good angles for E and have incredible range with R + Q."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Portal Jump for extended poke angles.",
       "First completed AP burst item.",
     ],
@@ -54,7 +53,6 @@ export const zoeCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Portal Jump for extended poke angles.",
             "First completed AP burst item.",
           ],

@@ -50,7 +50,6 @@ export const malzaharCombatProfile = {
       winLaneBy: ["Keep midlane pushed permanently, eventually allowing Malzahar to have presence around the map."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Nether Grasp.",
       "First completed mana/AP item.",
     ],
@@ -63,7 +62,6 @@ export const malzaharCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Nether Grasp.",
             "First completed mana/AP item.",
           ],

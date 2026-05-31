@@ -62,14 +62,6 @@ const matchupSectionDefinitions = [
       "Use this matchup shell to frame the lane plan before AI-generated guidance arrives. Compare range, wave control, crowd control, and who gets to start fights on their terms.",
   },
   {
-    key: "early_game",
-    title: "Early game",
-    accent: "emerald",
-    icon: Leaf,
-    placeholder:
-      "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
-  },
-  {
     key: "trading_pattern",
     title: "Trading pattern",
     accent: "violet",
@@ -78,20 +70,28 @@ const matchupSectionDefinitions = [
       "Use short trades until cooldowns and range patterns are understood. Watch for the opponent's main punish window before committing to longer exchanges.",
   },
   {
-    key: "power_spikes",
-    title: "Power spikes",
-    accent: "amber",
-    icon: Zap,
-    placeholder:
-      "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
-  },
-  {
     key: "danger_windows",
     title: "Danger windows",
     accent: "rose",
     icon: AlertTriangle,
     placeholder:
       "Ping missing information before wave crashes, jungle hover timings, and all-in cooldowns. Treat fog of war as the biggest variable for now.",
+  },
+  {
+    key: "early_game",
+    title: "Early game",
+    accent: "emerald",
+    icon: Leaf,
+    placeholder:
+      "Track level one spacing, first wave control, and how quickly each champion can contest the first three melee minions. This section will later become matchup-specific.",
+  },
+  {
+    key: "power_spikes",
+    title: "Power spikes",
+    accent: "amber",
+    icon: Zap,
+    placeholder:
+      "Respect first recall items, level six, and completed item timings. Future versions will map exact champion breakpoints here.",
   },
   {
     key: "win_conditions",
@@ -406,7 +406,7 @@ export function LeagueMatchupReviewPanel({
         </section>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {sections.map((section) => (
           <MatchupGuideCard
             formValue={form[section.key]}

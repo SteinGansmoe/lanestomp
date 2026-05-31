@@ -50,7 +50,6 @@ export const syndraCombatProfile = {
       winLaneBy: ["Use Q and W to control space and poke, then look for E stun into R burst all-in windows."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Unleashed Power.",
       "First completed mage item.",
     ],
@@ -63,7 +62,6 @@ export const syndraCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Unleashed Power.",
             "First completed mage item.",
             "Level 11 and 16 when maxing Q for lower cooldown and stronger poke.",

@@ -50,7 +50,7 @@ export const dianaCombatProfile = {
       winLaneBy: ["Q + E + W combo does very high burst damage, look to land it when electrocute is up."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Diana's Q-W-E burst trade with dash reset and shield.",
       "Level 6 Moonfall.",
       "First completed AP skirmish item.",
     ],
@@ -63,7 +63,7 @@ export const dianaCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
+            "Level 3 unlocks Diana's Q-W-E burst trade with dash reset and shield.",
             "Level 6 Moonfall.",
             "First completed AP skirmish item.",
           ],

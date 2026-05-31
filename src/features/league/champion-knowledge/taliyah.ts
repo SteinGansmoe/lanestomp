@@ -69,7 +69,6 @@ export const taliyahCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Weaver's Wall for map plays.",
     "First completed mage item.",
   ],
@@ -90,12 +89,13 @@ export const taliyahCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Weaver's Wall for map plays.",
       "First completed mage item.",
     ],
+    minor: [
+      "Level 3 gives her the Q-W-E pattern needed to punish commits, but her major spikes are map and item timings.",
+    ],
     notes: [
-      "Level 3 gives her the Q, W, and E pattern needed to punish commits.",
       "Level 6 increases map pressure more than direct lane burst.",
       "First mage item improves wave control and poke reliability.",
     ],

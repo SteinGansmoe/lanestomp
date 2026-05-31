@@ -68,7 +68,6 @@ export const veigarCombatProfile = {
       ],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Primordial Burst.",
       "First completed mage item plus stack growth.",
     ],
@@ -91,9 +90,11 @@ export const veigarCombatProfile = {
     offMetaRoles: ["adc", "support"],
     powerSpikes: {
       major: [
-        "Level 3 full basic ability access.",
         "Level 6 Primordial Burst.",
         "First completed mage item plus stack growth.",
+      ],
+      minor: [
+        "Level 3 improves defensive options, but his meaningful spike is R plus stack and item growth.",
       ],
       notes: [
         "Level 6 makes trapped targets far more punishable if they are already low.",

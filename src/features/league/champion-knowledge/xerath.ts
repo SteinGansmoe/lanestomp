@@ -52,7 +52,6 @@ export const xerathCombatProfile = {
       winLaneBy: ["Use Q and W to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
       "Level 6 Rite of the Arcane.",
       "First completed mana/AP item.",
     ],
@@ -65,7 +64,6 @@ export const xerathCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
             "Level 6 Rite of the Arcane.",
             "First completed mana/AP item.",
           ],

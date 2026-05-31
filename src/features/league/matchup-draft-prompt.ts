@@ -163,6 +163,8 @@ export function buildLeagueMatchupDraftPrompt({
       `early_game: Cover what ${playerChampionName} should do in the first waves and levels 1-6 based on who has earlyGameAgency and lanePressure.`,
       `trading_pattern: Explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
       `power_spikes: List ${playerChampionName}'s real spikes and ${enemyChampionName}'s real spikes that ${playerChampionName} must respect.`,
+      "power_spikes: Use power_spikes.major as the source for the card; use power_spikes.minor only as context for early_game or trading_pattern when it changes lane behavior.",
+      "power_spikes: Treat power_spikes.notes as explanation for supplied spikes; do not list notes as standalone spikes unless they name a concrete major threshold.",
       "power_spikes: Never mention recalls, mana refreshes, Lost Chapter sustain, generic tempo, or non-spike ability unlocks here.",
       `danger_windows: List only moments where ${playerChampionName} is actually in danger from lethal trades, all-ins, ganks, dives, or forced summoners.`,
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
@@ -176,6 +178,7 @@ export function buildLeagueMatchupDraftPrompt({
       "- Do not recommend Morellonomicon just because the enemy has minor healing.",
       "- Do not recommend AD items to AP champions, including Hexdrinker for a mage.",
       "- Do not invent ability timing or claim an ability spike that is not real.",
+      "- Do not mention level 3 merely because a champion has all basic abilities; only mention level 3 if the supplied profile says it significantly changes threat, trading, or all-in access.",
       "- Do not invent crowd control, sustain, shields, stealth, or a combat use for utility-only abilities.",
       "- Do not write repeated long formats like (Q) Orb of Deception or (E) Scatter the Weak in generated card text.",
       "- Do not write long ability names when Q, W, E, R, or enemy-owned hotkeys are available.",
@@ -287,6 +290,7 @@ function formatChampionKnowledgeForPrompt(
       profile.punishProfile?.strugglesToPunish
     )}`,
     `power_spikes.major: ${formatOptionalList(profile.powerSpikes?.major)}`,
+    `power_spikes.minor: ${formatOptionalList(profile.powerSpikes?.minor)}`,
     `power_spikes.notes: ${formatOptionalList(profile.powerSpikes?.notes)}`,
     `primary_trading_pattern: ${
       profile.primaryTradingPattern ?? "not supplied"

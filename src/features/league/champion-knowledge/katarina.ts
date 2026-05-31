@@ -69,7 +69,7 @@ export const katarinaCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
+    "Level 3 unlocks Katarina's Q-W-E dagger setup with mobility for her first real burst trade.",
     "Level 6 Death Lotus.",
     "First completed burst item.",
   ],
@@ -90,7 +90,7 @@ export const katarinaCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Katarina's Q-W-E dagger setup with mobility for her first real burst trade.",
       "Level 6 Death Lotus.",
       "First completed burst item.",
     ],

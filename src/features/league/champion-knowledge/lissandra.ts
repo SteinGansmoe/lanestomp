@@ -69,7 +69,6 @@ export const lissandraCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Frozen Tomb.",
     "First completed AP or utility item.",
   ],
@@ -90,7 +89,6 @@ export const lissandraCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Frozen Tomb.",
       "First completed AP or utility item.",
     ],

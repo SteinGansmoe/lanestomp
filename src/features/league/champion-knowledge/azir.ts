@@ -69,7 +69,6 @@ export const azirCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Emperor's Divide.",
     "First completed mage DPS item.",
   ],
@@ -90,7 +89,6 @@ export const azirCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Emperor's Divide.",
       "First completed mage DPS item.",
     ],

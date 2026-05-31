@@ -50,7 +50,7 @@ export const akaliCombatProfile = {
       winLaneBy: ["Use W Twilight Shroud to create safe windows for extended trades and all-ins."],
     },
     majorPowerSpikes: [
-      "Level 3 full basic ability access.",
+      "Level 3 unlocks Q-W-E trading with Shroud safety and E follow-up.",
       "Level 6 Perfect Execution.",
       "First completed AP assassin item.",
     ],
@@ -63,7 +63,7 @@ export const akaliCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 full basic ability access.",
+            "Level 3 unlocks Q-W-E trading with Shroud safety and E follow-up.",
             "Level 6 Perfect Execution.",
             "First completed AP assassin item.",
           ],

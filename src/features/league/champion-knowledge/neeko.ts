@@ -69,7 +69,6 @@ export const neekoCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Pop Blossom.",
     "First completed AP burst item.",
   ],
@@ -90,7 +89,6 @@ export const neekoCombatProfile = {
   offMetaRoles: ["support"],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Pop Blossom.",
       "First completed AP burst item.",
     ],

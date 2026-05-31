@@ -69,7 +69,6 @@ export const ziggsCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 full basic ability access.",
     "Level 6 Mega Inferno Bomb.",
     "First completed mage poke item.",
   ],
@@ -90,7 +89,6 @@ export const ziggsCombatProfile = {
   offMetaRoles: [],
   powerSpikes: {
     major: [
-      "Level 3 full basic ability access.",
       "Level 6 Mega Inferno Bomb.",
       "First completed mage poke item.",
     ],
