@@ -15,6 +15,8 @@ type GenerateDraftInput = {
   matchupId: number;
 };
 
+type DeleteDraftInput = GenerateDraftInput;
+
 type GenerateDraftResult =
   | {
       draft: MatchupDraftSections;
@@ -23,6 +25,16 @@ type GenerateDraftResult =
       profileWarning?: string;
       provider: LeagueMatchupDraftProvider;
       providerWarning?: string;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+type DeleteDraftResult =
+  | {
+      matchup: SavedMatchupDraftRow;
+      ok: true;
     }
   | {
       error: string;
@@ -51,56 +63,33 @@ type ChampionRow = {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const savedMatchupDraftSelect = [
+  "danger_windows",
+  "early_game",
+  "generated_at",
+  "generation_status",
+  "overview",
+  "power_spikes",
+  "reviewed_at",
+  "reviewed_by",
+  "trading_pattern",
+  "win_conditions",
+].join(", ");
 
 export async function generateLeagueMatchupDraft({
   accessToken,
   matchupId,
 }: GenerateDraftInput): Promise<GenerateDraftResult> {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return {
-      error: "Supabase is not configured.",
-      ok: false,
-    };
-  }
-
-  if (!accessToken) {
-    return {
-      error: "Admin session is not ready.",
-      ok: false,
-    };
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  });
-
-  const { data: userData, error: userError } = await supabase.auth.getUser(
-    accessToken
+  const authResult = await getAuthorizedSupabaseClient(
+    accessToken,
+    "generate matchup drafts"
   );
-  const user = userData.user;
 
-  if (userError || !user) {
-    return {
-      error: "Admin session could not be verified.",
-      ok: false,
-    };
+  if (!authResult.ok) {
+    return authResult;
   }
 
-  const { data: isAdmin, error: adminError } = await supabase.rpc("is_admin", {
-    user_id: user.id,
-  });
-
-  if (adminError || !isAdmin) {
-    return {
-      error: "Only admins can generate matchup drafts.",
-      ok: false,
-    };
-  }
-
+  const { supabase } = authResult;
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
     .select("admin_notes, champion_a_id, champion_b_id, confidence_level, role")
@@ -186,20 +175,7 @@ export async function generateLeagueMatchupDraft({
       reviewed_by: null,
     })
     .eq("id", matchupId)
-    .select(
-      [
-        "danger_windows",
-        "early_game",
-        "generated_at",
-        "generation_status",
-        "overview",
-        "power_spikes",
-        "reviewed_at",
-        "reviewed_by",
-        "trading_pattern",
-        "win_conditions",
-      ].join(", ")
-    )
+    .select(savedMatchupDraftSelect)
     .maybeSingle<SavedMatchupDraftRow>();
 
   if (updateError || !savedMatchup) {
@@ -216,6 +192,106 @@ export async function generateLeagueMatchupDraft({
     profileWarning: providerResult.profileWarning,
     provider,
     providerWarning: providerResult.providerWarning,
+  };
+}
+
+export async function deleteLeagueMatchupDraft({
+  accessToken,
+  matchupId,
+}: DeleteDraftInput): Promise<DeleteDraftResult> {
+  const authResult = await getAuthorizedSupabaseClient(
+    accessToken,
+    "delete matchup drafts"
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const { supabase } = authResult;
+  const { data: savedMatchup, error: updateError } = await supabase
+    .from("league_matchups")
+    .update({
+      danger_windows: null,
+      early_game: null,
+      generated_at: null,
+      generation_status: "draft",
+      overview: null,
+      power_spikes: null,
+      reviewed_at: null,
+      reviewed_by: null,
+      trading_pattern: null,
+      win_conditions: null,
+    })
+    .eq("id", matchupId)
+    .select(savedMatchupDraftSelect)
+    .maybeSingle<SavedMatchupDraftRow>();
+
+  if (updateError || !savedMatchup) {
+    return {
+      error: updateError?.message ?? "Generated draft could not be deleted.",
+      ok: false,
+    };
+  }
+
+  return {
+    matchup: savedMatchup,
+    ok: true,
+  };
+}
+
+async function getAuthorizedSupabaseClient(
+  accessToken: string,
+  actionLabel: string
+) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return {
+      error: "Supabase is not configured.",
+      ok: false as const,
+    };
+  }
+
+  if (!accessToken) {
+    return {
+      error: "Admin session is not ready.",
+      ok: false as const,
+    };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(
+    accessToken
+  );
+  const user = userData.user;
+
+  if (userError || !user) {
+    return {
+      error: "Admin session could not be verified.",
+      ok: false as const,
+    };
+  }
+
+  const { data: isAdmin, error: adminError } = await supabase.rpc("is_admin", {
+    user_id: user.id,
+  });
+
+  if (adminError || !isAdmin) {
+    return {
+      error: `Only admins can ${actionLabel}.`,
+      ok: false as const,
+    };
+  }
+
+  return {
+    ok: true as const,
+    supabase,
   };
 }
 

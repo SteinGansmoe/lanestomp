@@ -1,6 +1,13 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const veigarCombatProfile = {
+    profileQuality: "reviewed",
+    abilities: {
+      Q: "Baleful Strike",
+      W: "Dark Matter",
+      E: "Event Horizon",
+      R: "Primordial Burst",
+    },
     archetype: ["scaling mage", "control", "burst"],
     primaryWinCondition: ["Farm stacks with Q to become an unstoppable late-game burst threat."],
     dangerAbilities: ["E Event Horizon stun"],
@@ -13,6 +20,7 @@ export const veigarCombatProfile = {
       mustRespect: [
         "Event Horizon changes the lane from poke pressure into forced summoner or lethal threat.",
         "His scaling makes a calm lane increasingly favorable for Veigar.",
+        "Veigar must respect most champion matchups at least before level 6 as he is quite weak early game.",
       ],
     },
     commonWeaknesses: [
@@ -44,7 +52,21 @@ export const veigarCombatProfile = {
       ],
     },
     laneIdentity:
-      "Scaling control mage who farms stacks, controls space with cage, and becomes a burst threat.",
+      {
+      earlyGameAgency: "low",
+      scalingPriority: "very_high",
+      lanePressure: "low",
+      preferredGameState: [
+        "Quiet early waves where he can farm Q stacks safely.",
+        "A controlled lane near safety while Event Horizon is available.",
+        "Time to reach level 6 and item spikes without losing too much tempo.",
+      ],
+      winLaneBy: [
+        "Surviving early pressure and preserving health for scaling windows.",
+        "Using Event Horizon to stop commits or punish predictable movement.",
+        "Reaching stack and item thresholds where his burst becomes decisive.",
+      ],
+    },
     majorPowerSpikes: [
       "Level 3 full basic ability access.",
       "Level 6 Primordial Burst.",
@@ -54,10 +76,14 @@ export const veigarCombatProfile = {
       strongInto: [
         "Champions who must walk into Event Horizon range to trade.",
         "Low-mobility champions that cannot quickly punish him after cage is used.",
+        "Champions that are not strong early game",
+        "Champions that cannot get close to him easily to all-in or punish him after cage.",
       ],
       weakInto: [
         "Champions who can pressure early waves and deny calm stacking.",
         "Mobile champions that can bait Event Horizon and punish while it is down.",
+        "Champions with high waveclear as Veigar is not the best at farming waves under turret early game.",
+        "Champions that can make themselves untargetable or dodge his skillshots easily.",
       ],
     },
     mobilityLevel: "none",
@@ -72,10 +98,11 @@ export const veigarCombatProfile = {
       notes: [
         "Level 6 makes trapped targets far more punishable if they are already low.",
         "His threat grows with stacks, so denying free farm matters as much as dodging cage.",
+        "Veigar's (E) Event Horizon is his key defensive and pick tool, and can be used to stop engages or trap enemies for burst windows.",
       ],
     },
     primaryRoles: ["mid"],
-    secondaryRoles: [],
+    secondaryRoles: ["adc", "support"],
     primaryTradingPattern:
       "Farm stacks safely, punish movement with Event Horizon, then burst trapped targets.",
     punishProfile: {
@@ -86,7 +113,7 @@ export const veigarCombatProfile = {
       ],
       strugglesToPunish: [
         "Champions who outrange him and never commit into cage range.",
-        "Mobile champions who hold dashes until after Event Horizon is used.",
+        "Mobile champions who can gap close or dash close to all-in him.",
       ],
     },
     shields: [],

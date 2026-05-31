@@ -1,6 +1,13 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const ahriCombatProfile = {
+    profileQuality: "reviewed",
+    abilities: {
+      Q: "Orb of Deception",
+      W: "Fox-Fire",
+      E: "Charm",
+      R: "Spirit Rush",
+    },
     archetype: ["mobile mage", "pick", "roam", "playmaker"],
     debugNote: "Ahri's charm does have a delay, but it is not a skillshot.",
     primaryWinCondition: ["Land E Charm to pick off targets and snowball leads."],
@@ -45,7 +52,21 @@ export const ahriCombatProfile = {
       ],
     },
     laneIdentity:
-      "One of the safest blind picks in the game, very hard to gank after level 6.",
+      {
+      earlyGameAgency: "high",
+      scalingPriority: "medium",
+      lanePressure: "high",
+      preferredGameState: [
+        "Controlling wave tempo before slower scaling champions stabilize.",
+        "Creating roam and river movement opportunities after pushing safely.",
+        "Forcing opponents to respect Charm pick threat when they farm or contest space.",
+      ],
+      winLaneBy: [
+        "Building pressure through repeated short trades and Q return damage.",
+        "Denying calm scaling lanes by contesting exposed farming windows.",
+        "Using earlier tempo to impact the map before opponents reach stronger scaling spikes.",
+      ],
+    },
     majorPowerSpikes: [
       "Level 3 full basic ability access.",
       "Level 6 Spirit Rush.",
@@ -53,12 +74,14 @@ export const ahriCombatProfile = {
     ],
     matchupPreferences: {
       strongInto: [
-        "Champions who must walk into Charm range to trade.",
+        "Champions who must walk into (Q) Orb of Deception range to farm.",
         "Immobile targets that cannot easily dodge Q return damage or Charm pressure.",
+        "Champions that struggle to escape or punish when Ahri commits forward with Charm.",
       ],
       weakInto: [
-        "Champions who outrange her and do not need to commit into Charm.",
+        "Champions who outrange her and do not need to commit into (Q) Orb of Deception or (E) Charm range.",
         "Champions who can punish missed Charm before Spirit Rush is available.",
+        "Champions with lots of mobility who can dodge her skillshots",
       ],
     },
     mobilityLevel: "high",
@@ -96,7 +119,7 @@ export const ahriCombatProfile = {
     sustain: ["Passive healing from minion or champion takedown stacks."],
     trading: {
       badTradeConditions: [
-        "Charm is on cooldown.",
+        "If minions block (E) Charm options.",
         "Spirit Rush is unavailable and the enemy can force an extended all-in.",
         "The wave is too large to step forward safely.",
       ],
@@ -110,7 +133,8 @@ export const ahriCombatProfile = {
     },
     punishWindows: [
   "If Ahri misses charm, she can be punished hard.",
-  "If Ahri is forced to ult away, she has to play very carefully until its back up again"
+  "If Ahri is forced to ult away, she has to play very carefully until its back up again",
+  "(Q) Orb of Deception is her main damage spell, if she uses this on the wave its a good time to trade into her.",
 ]
   } satisfies LeagueChampionKnowledgeProfile;
 

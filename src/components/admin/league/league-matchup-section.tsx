@@ -5,7 +5,9 @@ import {
   ChevronDown,
   ListChecks,
   Pencil,
+  RefreshCw,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
@@ -60,6 +62,7 @@ export function AdminLeagueMatchupsSection({
   champions,
   createForm,
   createStatus,
+  deletingDraftMatchupId,
   editForm,
   editStatus,
   editingMatchupId,
@@ -71,6 +74,7 @@ export function AdminLeagueMatchupsSection({
   onGenerateBatch,
   onCreateChange,
   onCreateSubmit,
+  onDeleteDraft,
   onEditChange,
   onEditSubmit,
   onGenerateDraft,
@@ -80,6 +84,7 @@ export function AdminLeagueMatchupsSection({
   champions: AdminLeagueChampion[];
   createForm: LeagueMatchupFormState;
   createStatus: FormStatus;
+  deletingDraftMatchupId: number | null;
   editForm: LeagueMatchupFormState;
   editStatus: FormStatus;
   editingMatchupId: number | null;
@@ -90,6 +95,7 @@ export function AdminLeagueMatchupsSection({
   onCancelEdit: () => void;
   onCreateChange: (form: LeagueMatchupFormState) => void;
   onCreateSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onDeleteDraft: (matchup: AdminLeagueMatchup) => void;
   onEditChange: (form: LeagueMatchupFormState) => void;
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onGenerateBatch: (items: LeagueMatchupBatchPlanItem[]) => void;
@@ -375,6 +381,8 @@ export function AdminLeagueMatchupsSection({
                 const championB = championsById.get(matchup.champion_b_id);
                 const contentState = getMatchupContentState(matchup);
                 const isGenerating = generatingMatchupId === matchup.id;
+                const isDeletingDraft = deletingDraftMatchupId === matchup.id;
+                const hasDraftContent = hasMatchupDraftContent(matchup);
 
                 return (
                   <li
@@ -425,6 +433,7 @@ export function AdminLeagueMatchupsSection({
                         className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
                         disabled={
                           generatingMatchupId !== null ||
+                          deletingDraftMatchupId !== null ||
                           batchStatus.isLoading
                         }
                         onClick={() => onGenerateDraft(matchup)}
@@ -432,12 +441,24 @@ export function AdminLeagueMatchupsSection({
                         type="button"
                         variant="ghost"
                       >
-                        <Sparkles className="size-3.5" aria-hidden="true" />
-                        {isGenerating ? "Generating..." : "Generate draft"}
+                        {hasDraftContent ? (
+                          <RefreshCw className="size-3.5" aria-hidden="true" />
+                        ) : (
+                          <Sparkles className="size-3.5" aria-hidden="true" />
+                        )}
+                        {isGenerating
+                          ? "Generating..."
+                          : hasDraftContent
+                            ? "Regenerate draft"
+                            : "Generate draft"}
                       </Button>
                       <Button
                         className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                        disabled={isGenerating || batchStatus.isLoading}
+                        disabled={
+                          isGenerating ||
+                          isDeletingDraft ||
+                          batchStatus.isLoading
+                        }
                         onClick={() => onStartEdit(matchup)}
                         size="sm"
                         type="button"
@@ -450,7 +471,9 @@ export function AdminLeagueMatchupsSection({
                         className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
                         disabled={
                           isGenerating ||
+                          isDeletingDraft ||
                           batchStatus.isLoading ||
+                          !hasDraftContent ||
                           matchup.generation_status === "reviewed"
                         }
                         onClick={() => onMarkReviewed(matchup)}
@@ -460,6 +483,22 @@ export function AdminLeagueMatchupsSection({
                       >
                         <CheckCircle2 className="size-3.5" aria-hidden="true" />
                         Mark as reviewed
+                      </Button>
+                      <Button
+                        className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                        disabled={
+                          isGenerating ||
+                          deletingDraftMatchupId !== null ||
+                          batchStatus.isLoading ||
+                          !hasDraftContent
+                        }
+                        onClick={() => onDeleteDraft(matchup)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Trash2 className="size-3.5" aria-hidden="true" />
+                        {isDeletingDraft ? "Deleting..." : "Delete draft"}
                       </Button>
                     </div>
                   </li>
@@ -1150,14 +1189,7 @@ function getRoleLabel(role: AdminLeagueMatchup["role"]) {
 }
 
 function getMatchupContentState(matchup: AdminLeagueMatchup) {
-  const hasContent = [
-    matchup.overview,
-    matchup.early_game,
-    matchup.trading_pattern,
-    matchup.power_spikes,
-    matchup.danger_windows,
-    matchup.win_conditions,
-  ].some((value) => Boolean(value?.trim()));
+  const hasContent = hasMatchupDraftContent(matchup);
 
   if (!hasContent) {
     return {
@@ -1177,4 +1209,15 @@ function getMatchupContentState(matchup: AdminLeagueMatchup) {
     className: "border-violet-300/20 bg-violet-500/10 text-violet-100",
     label: "Draft / generated",
   };
+}
+
+function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
+  return [
+    matchup.overview,
+    matchup.early_game,
+    matchup.trading_pattern,
+    matchup.power_spikes,
+    matchup.danger_windows,
+    matchup.win_conditions,
+  ].some((value) => Boolean(value?.trim()));
 }

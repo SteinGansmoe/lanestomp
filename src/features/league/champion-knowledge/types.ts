@@ -1,5 +1,10 @@
 import type { LeagueRole } from "../roles";
 
+export type LeagueChampionAbilityKey = "E" | "Q" | "R" | "W";
+export type LeagueChampionAbilityMap = Record<
+  LeagueChampionAbilityKey,
+  string
+>;
 export type LeagueChampionDamageType = "magic" | "physical" | "mixed";
 export type LeagueChampionMobilityLevel =
   | "high"
@@ -7,11 +12,25 @@ export type LeagueChampionMobilityLevel =
   | "medium"
   | "none"
   | "very_high";
+export type LeagueChampionProfileQuality = "draft" | "reviewed";
+export type LeagueChampionLaneIdentityLevel =
+  | "high"
+  | "low"
+  | "medium"
+  | "very_high";
 
 export type LeagueChampionLanePlan = {
   avoids: string[];
   idealLaneState: string;
   wants: string[];
+};
+
+export type LeagueChampionLaneIdentity = {
+  earlyGameAgency: Exclude<LeagueChampionLaneIdentityLevel, "very_high">;
+  lanePressure: Exclude<LeagueChampionLaneIdentityLevel, "very_high">;
+  preferredGameState: string[];
+  scalingPriority: LeagueChampionLaneIdentityLevel;
+  winLaneBy: string[];
 };
 
 export type LeagueChampionTradingProfile = {
@@ -41,32 +60,34 @@ export type LeagueChampionPowerSpikeProfile = {
 };
 
 export type LeagueChampionKnowledgeProfile = {
-  archetype: string[];
-  commonWeaknesses: string[];
-  damageType: LeagueChampionDamageType;
+  abilities?: LeagueChampionAbilityMap;
+  archetype?: string[];
+  commonWeaknesses?: string[];
+  damageType?: LeagueChampionDamageType;
   dangerProfile?: LeagueChampionDangerProfile;
-  hardCrowdControl: string[];
+  hardCrowdControl?: string[];
   id: string;
-  importantAbilityNotes: string[];
+  importantAbilityNotes?: string[];
   lanePlan?: LeagueChampionLanePlan;
-  laneIdentity: string;
-  majorPowerSpikes: string[];
+  laneIdentity?: string | LeagueChampionLaneIdentity;
+  majorPowerSpikes?: string[];
   matchupPreferences?: LeagueChampionMatchupPreferences;
-  mobilityLevel: LeagueChampionMobilityLevel;
+  mobilityLevel?: LeagueChampionMobilityLevel;
   name: string;
-  offMetaRoles: LeagueRole[];
+  offMetaRoles?: LeagueRole[];
   powerSpikes?: LeagueChampionPowerSpikeProfile;
-  primaryRoles: LeagueRole[];
-  primaryTradingPattern: string;
-  secondaryRoles: LeagueRole[];
-  shields: string[];
-  softCrowdControl: string[];
-  stealthOrInvisibility: string | null;
-  sustain: string[];
-  dangerAbilities: string[];
-  primaryWinCondition: string[];
+  primaryRoles?: LeagueRole[];
+  primaryTradingPattern?: string;
+  profileQuality: LeagueChampionProfileQuality;
+  secondaryRoles?: LeagueRole[];
+  shields?: string[];
+  softCrowdControl?: string[];
+  stealthOrInvisibility?: string | null;
+  sustain?: string[];
+  dangerAbilities?: string[];
+  primaryWinCondition?: string[];
   punishProfile?: LeagueChampionPunishProfile;
-  punishWindows: string[];
+  punishWindows?: string[];
   trading?: LeagueChampionTradingProfile;
   debugNote?: string;
 };

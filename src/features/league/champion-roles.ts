@@ -232,15 +232,15 @@ export function getChampionRoleTier(
   const profile = getChampionCombatProfile(champion.id);
 
   if (profile) {
-    if (profile.primaryRoles.includes(role)) {
+    if (profile.primaryRoles?.includes(role)) {
       return "primary";
     }
 
-    if (profile.secondaryRoles.includes(role)) {
+    if (profile.secondaryRoles?.includes(role)) {
       return "secondary";
     }
 
-    if (profile.offMetaRoles.includes(role)) {
+    if (profile.offMetaRoles?.includes(role)) {
       return "off-meta";
     }
 
@@ -257,9 +257,9 @@ export function getChampionRoles(champion: Pick<LeagueChampion, "id">) {
 
   if (profile) {
     return [
-      ...profile.primaryRoles,
-      ...profile.secondaryRoles,
-      ...profile.offMetaRoles,
+      ...(profile.primaryRoles ?? []),
+      ...(profile.secondaryRoles ?? []),
+      ...(profile.offMetaRoles ?? []),
     ];
   }
 

@@ -55,7 +55,10 @@ import type {
   SeasonFormState,
   TimelineEventFormState,
 } from "./types";
-import { generateLeagueMatchupDraft } from "@/src/app/admin/league/matchups/actions";
+import {
+  deleteLeagueMatchupDraft,
+  generateLeagueMatchupDraft,
+} from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
@@ -153,6 +156,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [generatingLeagueMatchupId, setGeneratingLeagueMatchupId] = useState<
     number | null
   >(null);
+  const [deletingLeagueMatchupDraftId, setDeletingLeagueMatchupDraftId] =
+    useState<number | null>(null);
   const [batchLeagueMatchupStatus, setBatchLeagueMatchupStatus] = useState<{
     error: string | null;
     isLoading: boolean;
@@ -1179,6 +1184,89 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
+  async function handleDeleteLeagueMatchupDraft(matchup: AdminLeagueMatchup) {
+    const matchupLabel = getLeagueMatchupLabel(
+      matchup,
+      adminData.leagueChampions
+    );
+
+    if (
+      !window.confirm(
+        `Delete the saved AI draft for ${matchupLabel}? The matchup row and admin notes will remain.`
+      )
+    ) {
+      return;
+    }
+
+    if (!supabase) {
+      setEditLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setDeletingLeagueMatchupDraftId(matchup.id);
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: true,
+      success: null,
+    });
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (sessionError || !accessToken) {
+      setDeletingLeagueMatchupDraftId(null);
+      setEditLeagueMatchupStatus({
+        error: sessionError?.message ?? "Admin session is not ready.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const result = await deleteLeagueMatchupDraft({
+      accessToken,
+      matchupId: matchup.id,
+    });
+
+    if (!result.ok) {
+      setDeletingLeagueMatchupDraftId(null);
+      setEditLeagueMatchupStatus({
+        error: result.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+
+    if (editingLeagueMatchupId === matchup.id) {
+      setEditLeagueMatchupForm({
+        ...editLeagueMatchupForm,
+        ...normalizeDraftForForm({
+          danger_windows: "",
+          early_game: "",
+          overview: "",
+          power_spikes: "",
+          trading_pattern: "",
+          win_conditions: "",
+        }),
+      });
+    }
+
+    setDeletingLeagueMatchupDraftId(null);
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: "League matchup draft deleted.",
+    });
+  }
+
   async function handleGenerateLeagueMatchupBatch(
     items: LeagueMatchupBatchPlanItem[]
   ) {
@@ -1813,6 +1901,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     editForm={editLeagueMatchupForm}
                     editStatus={editLeagueMatchupStatus}
                     editingMatchupId={editingLeagueMatchupId}
+                    deletingDraftMatchupId={deletingLeagueMatchupDraftId}
                     batchProgress={batchLeagueMatchupProgress}
                     batchStatus={batchLeagueMatchupStatus}
                     matchups={adminData.leagueMatchups}
@@ -1821,6 +1910,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onCreateSubmit={handleCreateLeagueMatchup}
                     onEditChange={setEditLeagueMatchupForm}
                     onEditSubmit={handleUpdateLeagueMatchup}
+                    onDeleteDraft={handleDeleteLeagueMatchupDraft}
                     onGenerateBatch={handleGenerateLeagueMatchupBatch}
                     onGenerateDraft={handleGenerateLeagueMatchupDraft}
                     onMarkReviewed={handleMarkLeagueMatchupReviewed}
@@ -1911,4 +2001,17 @@ function normalizeDraftForForm(
     trading_pattern: draft.trading_pattern ?? "",
     win_conditions: draft.win_conditions ?? "",
   };
+}
+
+function getLeagueMatchupLabel(
+  matchup: AdminLeagueMatchup,
+  champions: AdminLeagueChampion[]
+) {
+  const championNamesById = new Map(
+    champions.map((champion) => [champion.id, champion.name] as const)
+  );
+
+  return `${
+    championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id
+  } vs ${championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id}`;
 }

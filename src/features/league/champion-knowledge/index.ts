@@ -27,13 +27,18 @@ import { aurelionSolCombatProfile } from "./aurelion-sol";
 import { auroraCombatProfile } from "./aurora";
 
 export type {
+  LeagueChampionAbilityKey,
+  LeagueChampionAbilityMap,
   LeagueChampionDangerProfile,
   LeagueChampionDamageType,
   LeagueChampionKnowledgeProfile,
+  LeagueChampionLaneIdentity,
+  LeagueChampionLaneIdentityLevel,
   LeagueChampionLanePlan,
   LeagueChampionMatchupPreferences,
   LeagueChampionMobilityLevel,
   LeagueChampionPowerSpikeProfile,
+  LeagueChampionProfileQuality,
   LeagueChampionPunishProfile,
   LeagueChampionTradingProfile,
 } from "./types";
