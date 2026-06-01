@@ -9,18 +9,18 @@ export const akaliCombatProfile = {
       R: "Perfect Execution",
     },
     archetype: ["assassin", "skirmisher", "burst"],
-    primaryWinCondition: ["Use W Twilight Shroud to create safe windows for extended trades and all-ins."],
-    dangerAbilities: ["W Twilight Shroud, E Shuriken Flip"],
+    primaryWinCondition: ["Use (W) to create safe windows for extended trades and all-ins."],
+    dangerAbilities: ["(W), (E)"],
     dangerProfile: {
-      dangerousWhen: ["W Twilight Shroud, E Shuriken Flip"],
+      dangerousWhen: ["(W), (E)"],
       mustRespect: [
-            "Twilight Shroud is not a level 6 spike.",
-            "Twilight Shroud creates her safest trading window.",
-            "Shuriken Flip recast is a major commit point.",
+            "(W) is not a level 6 spike.",
+            "(W) creates her safest trading window.",
+            "(E) recast is a major commit point.",
           ],
     },
     commonWeaknesses: [
-      "Can be punished when Twilight Shroud is down.",
+      "Can be punished when (W) is down.",
       "Early waveclear can be exploitable by ranged mids.",
       "Needs energy and ability access to extend trades.",
     ],
@@ -28,30 +28,30 @@ export const akaliCombatProfile = {
     hardCrowdControl: [],
     id: "Akali",
     importantAbilityNotes: [
-      "Twilight Shroud is not a level 6 spike.",
-      "Twilight Shroud creates her safest trading window.",
-      "Shuriken Flip recast is a major commit point.",
+      "(W) is not a level 6 spike.",
+      "(W) creates her safest trading window.",
+      "(E) recast is a major commit point.",
     ],
     lanePlan: {
       avoids: [
-            "Can be punished when Twilight Shroud is down.",
+            "Can be punished when (W) is down.",
             "Early waveclear can be exploitable by ranged mids.",
             "Needs energy and ability access to extend trades.",
           ],
       idealLaneState: "Melee AP assassin who gives ground early, becomes stronger after level 3.",
-      wants: ["Use W Twilight Shroud to create safe windows for extended trades and all-ins."],
+      wants: ["Use (W) to create safe windows for extended trades and all-ins."],
     },
     laneIdentity:
       {
       earlyGameAgency: "high",
       scalingPriority: "medium",
       lanePressure: "high",
-      preferredGameState: ["Use W Twilight Shroud to create safe windows for extended trades and all-ins."],
-      winLaneBy: ["Use W Twilight Shroud to create safe windows for extended trades and all-ins."],
+      preferredGameState: ["Use (W) to create safe windows for extended trades and all-ins."],
+      winLaneBy: ["Use (W) to create safe windows for extended trades and all-ins."],
     },
     majorPowerSpikes: [
-      "Level 3 unlocks Q-W-E trading with Shroud safety and E follow-up.",
-      "Level 6 Perfect Execution.",
+      "Level 3 unlocks (Q)-(W)-(E) trading with (W) safety and (E) follow-up.",
+      "Level 6 (R).",
       "First completed AP assassin item.",
     ],
     matchupPreferences: {
@@ -71,17 +71,17 @@ export const akaliCombatProfile = {
       major: [
         {
           timing: "Level 3",
-          reason: "Level 3 unlocks Q-W-E trading with Shroud safety and E follow-up",
+          reason: "Level 3 unlocks (Q)-(W)-(E) trading with (W) safety and (E) follow-up",
           changesGameplay: "The early ability combination gives Akali a real trade or all-in pattern instead of isolated lane pressure.",
           playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
           enemyResponse: "Respect the early combo unlock and avoid giving Akali the wave or spacing needed to start it cleanly.",
         },
         {
           timing: "Level 6",
-          reason: "Level 6 Perfect Execution",
+          reason: "Level 6 (R)",
           changesGameplay: "Akali's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Akali's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP assassin item",
@@ -95,27 +95,27 @@ export const akaliCombatProfile = {
     primaryRoles: ["mid"],
     secondaryRoles: ["top"],
     primaryTradingPattern:
-      "Look for Q poke into passive autos, then commit harder with Shroud or E when the opponent is exposed.",
+      "Look for (Q) poke into passive autos, then commit harder with (W) or (E) when the opponent is exposed.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
-            "Can be punished when Twilight Shroud is down.",
+            "Can be punished when (W) is down.",
             "Early waveclear can be exploitable by ranged mids.",
             "Needs energy and ability access to extend trades.",
           ],
     },
     shields: [],
-    softCrowdControl: ["Short slow on Q hit"],
-    stealthOrInvisibility: "W Twilight Shroud obscures Akali and enables trades.",
+    softCrowdControl: ["Short slow on (Q) hit"],
+    stealthOrInvisibility: "(W) obscures Akali and enables trades.",
     sustain: [],
     trading: {
       badTradeConditions: [
-        "When Akali uses W, if the opponent can step out of the shroud or wait it out, she can be punished hard.",
+        "When Akali uses (W), if the opponent can step out of the shroud or wait it out, she can be punished hard.",
       ],
       goodTradeConditions: [],
-      primaryPattern: "Look for Q poke into passive autos, then commit harder with Shroud or E when the opponent is exposed.",
+      primaryPattern: "Look for (Q) poke into passive autos, then commit harder with (W) or (E) when the opponent is exposed.",
     },
     punishWindows: [
-  "When Akali uses W, if the opponent can step out of the shroud or wait it out, she can be punished hard.",
+  "When Akali uses (W), if the opponent can step out of the shroud or wait it out, she can be punished hard.",
 ]
   } satisfies LeagueChampionKnowledgeProfile;

@@ -14,8 +14,8 @@ export const fizzCombatProfile = {
     dangerProfile: {
       dangerousWhen: [],
       mustRespect: [
-            "E Playful / Trickster is his main dodge, engage, and escape tool.",
-            "R Chum the Waters creates his level 6 kill threat.",
+            "(E) is his main dodge, engage, and escape tool.",
+            "(R) creates his level 6 kill threat.",
             "He has no reliable hard CC before ultimate.",
           ],
     },
@@ -25,11 +25,11 @@ export const fizzCombatProfile = {
       "Is a melee champion.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["R Chum the Waters knockup"],
+    hardCrowdControl: ["(R) knockup"],
     id: "Fizz",
     importantAbilityNotes: [
-      "E Playful / Trickster is his main dodge, engage, and escape tool.",
-      "R Chum the Waters creates his level 6 kill threat.",
+      "(E) is his main dodge, engage, and escape tool.",
+      "(R) creates his level 6 kill threat.",
       "He has no reliable hard CC before ultimate.",
     ],
     lanePlan: {
@@ -50,8 +50,8 @@ export const fizzCombatProfile = {
       winLaneBy: ["Short trades until target is in kill range."],
     },
     majorPowerSpikes: [
-      "Level 3 unlocks Fizz's first real trade pattern with Q engage, W damage, and E dodge or escape.",
-      "Level 6 Chum the Waters.",
+      "Level 3 unlocks Fizz's first real trade pattern with (Q) engage, (W) damage, and (E) dodge or escape.",
+      "Level 6 (R).",
       "First completed AP assassin item.",
     ],
     matchupPreferences: {
@@ -71,17 +71,17 @@ export const fizzCombatProfile = {
       major: [
         {
           timing: "Level 3",
-          reason: "Level 3 unlocks Fizz's first real trade pattern with Q engage, W damage, and E dodge or escape",
+          reason: "Level 3 unlocks Fizz's first real trade pattern with (Q) engage, (W) damage, and (E) dodge or escape",
           changesGameplay: "The early ability combination gives Fizz a real trade or all-in pattern instead of isolated lane pressure.",
           playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
           enemyResponse: "Respect the early combo unlock and avoid giving Fizz the wave or spacing needed to start it cleanly.",
         },
         {
           timing: "Level 6",
-          reason: "Level 6 Chum the Waters",
+          reason: "Level 6 (R)",
           changesGameplay: "Fizz's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Fizz's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP assassin item",
@@ -95,7 +95,7 @@ export const fizzCombatProfile = {
     primaryRoles: ["mid"],
     secondaryRoles: ["jungle"],
     primaryTradingPattern:
-      "Dash in for burst, use Playful / Trickster to dodge the key answer, then exit or finish.",
+      "Dash in for burst, use (E) to dodge the key answer, then exit or finish.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
@@ -105,19 +105,19 @@ export const fizzCombatProfile = {
           ],
     },
     shields: [],
-    softCrowdControl: ["E Playful / Trickster slow"],
+    softCrowdControl: ["(E) slow"],
     stealthOrInvisibility: null,
     sustain: [],
     trading: {
       badTradeConditions: [
-        "If Fizz uses E recklessly, he will struggle.",
+        "If Fizz uses (E) recklessly, he will struggle.",
         "Before Fizz turns level 3 he is very weak, if he steps up attack him"
       ],
       goodTradeConditions: [],
-      primaryPattern: "Dash in for burst, use Playful / Trickster to dodge the key answer, then exit or finish.",
+      primaryPattern: "Dash in for burst, use (E) to dodge the key answer, then exit or finish.",
     },
     punishWindows: [
-  "If Fizz uses E recklessly, he will struggle.",
+  "If Fizz uses (E) recklessly, he will struggle.",
   "Before Fizz turns level 3 he is very weak, if he steps up attack him"
 ]
   } satisfies LeagueChampionKnowledgeProfile;

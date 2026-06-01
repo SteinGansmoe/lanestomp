@@ -10,13 +10,13 @@ export const oriannaCombatProfile = {
     },
     archetype: ["control mage", "teamfight", "scaling"],
     primaryWinCondition: ["Control the lane with ball placement and create opportunities for teamfighting."],
-    dangerAbilities: ["R Command: Shockwave displacement"],
+    dangerAbilities: ["(R) displacement"],
     dangerProfile: {
-      dangerousWhen: ["R Command: Shockwave displacement"],
+      dangerousWhen: ["(R) displacement"],
       mustRespect: [
             "Ball position controls her threat zone.",
-            "Command: Protect gives a shield.",
-            "Shockwave is her level 6 teamfight spike.",
+            "(E) gives a shield.",
+            "(R) is her level 6 teamfight spike.",
           ],
     },
     commonWeaknesses: [
@@ -25,12 +25,12 @@ export const oriannaCombatProfile = {
       "Can be pressured before enough mana and AP.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["R Command: Shockwave displacement"],
+    hardCrowdControl: ["(R) displacement"],
     id: "Orianna",
     importantAbilityNotes: [
       "Ball position controls her threat zone.",
-      "Command: Protect gives a shield.",
-      "Shockwave is her level 6 teamfight spike.",
+      "(E) gives a shield.",
+      "(R) is her level 6 teamfight spike.",
     ],
     lanePlan: {
       avoids: [
@@ -50,7 +50,7 @@ export const oriannaCombatProfile = {
       winLaneBy: ["Control the lane with ball placement and create opportunities for teamfighting."],
     },
     majorPowerSpikes: [
-      "Level 6 Command: Shockwave.",
+      "Level 6 (R).",
       "First completed mage item.",
     ],
     matchupPreferences: {
@@ -70,10 +70,10 @@ export const oriannaCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Command: Shockwave",
+          reason: "Level 6 (R)",
           changesGameplay: "Orianna's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Orianna's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed mage item",
@@ -96,20 +96,20 @@ export const oriannaCombatProfile = {
             "Can be pressured before enough mana and AP.",
           ],
     },
-    shields: ["E Command: Protect"],
-    softCrowdControl: ["W Command: Dissonance slow/speed zone"],
+    shields: ["(E)"],
+    softCrowdControl: ["(W) slow/speed zone"],
     stealthOrInvisibility: null,
     sustain: [],
     trading: {
       badTradeConditions: [
-        "Punish early while Q has a longer cooldown.",
+        "Punish early while (Q) has a longer cooldown.",
         "She can be punished if she uses her abilities recklessly."
       ],
       goodTradeConditions: [],
       primaryPattern: "Use ball placement to zone and poke, then shield or speed herself through return trades.",
     },
     punishWindows: [
-  "Punish early while Q has a longer cooldown.",
+  "Punish early while (Q) has a longer cooldown.",
   "She can be punished if she uses her abilities recklessly."
 ]
   } satisfies LeagueChampionKnowledgeProfile;

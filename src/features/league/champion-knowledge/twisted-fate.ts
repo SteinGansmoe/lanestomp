@@ -10,18 +10,18 @@ export const twistedFateCombatProfile = {
   },
   archetype: ["roam", "utility mage", "pick", "wave control"],
   primaryWinCondition: [
-    "Control the wave, threaten Gold Card picks, and use R to create side-lane numbers advantage.",
+    "Control the wave, threaten Gold Card picks, and use (R) to create side-lane numbers advantage.",
   ],
-  dangerAbilities: ["W Pick a Card Gold Card stun", "R Destiny reveal and teleport"],
+  dangerAbilities: ["(W) Gold Card stun", "(R) reveal and teleport"],
   dangerProfile: {
     dangerousWhen: [
       "Gold Card is selected and he has follow-up nearby.",
-      "R is available and side lanes are overextended.",
+      "(R) is available and side lanes are overextended.",
       "He has wave priority and can leave lane first.",
     ],
     mustRespect: [
       "Gold Card is point-and-click setup when he is in range.",
-      "R gives global pressure and reveals enemies.",
+      "(R) gives global pressure and reveals enemies.",
       "His solo burst is lower than pure assassins, but his setup is reliable.",
     ],
   },
@@ -31,13 +31,13 @@ export const twistedFateCombatProfile = {
     "Lower direct duel power than many mid champions.",
   ],
   damageType: "magic",
-  hardCrowdControl: ["W Pick a Card Gold Card stun"],
+  hardCrowdControl: ["(W) Gold Card stun"],
   id: "TwistedFate",
   importantAbilityNotes: [
-    "Q is long-range poke and waveclear.",
-    "W card choice defines his trade or setup.",
-    "E adds periodic empowered auto damage.",
-    "R is a map pressure and pick tool, not a lane damage spell.",
+    "(Q) is long-range poke and waveclear.",
+    "(W) card choice defines his trade or setup.",
+    "(E) adds periodic empowered auto damage.",
+    "(R) is a map pressure and pick tool, not a lane damage spell.",
   ],
   lanePlan: {
     avoids: [
@@ -46,11 +46,11 @@ export const twistedFateCombatProfile = {
       "Taking extended duels against stronger combat mids.",
     ],
     idealLaneState:
-      "A controlled lane where Twisted Fate can clear waves, hold Gold Card threat, and move first with R or river pressure.",
+      "A controlled lane where Twisted Fate can clear waves, hold Gold Card threat, and move first with (R) or river pressure.",
     wants: [
-      "Wave priority before R or roam timings.",
+      "Wave priority before (R) or roam timings.",
       "Enemies stepping into Gold Card range.",
-      "Side lanes that can be punished by Destiny.",
+      "Side lanes that can be punished by (R).",
     ],
   },
   laneIdentity: {
@@ -69,7 +69,7 @@ export const twistedFateCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 6 Destiny.",
+    "Level 6 (R).",
     "First completed AP or utility item.",
   ],
   matchupPreferences: {
@@ -97,10 +97,10 @@ export const twistedFateCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Destiny",
+          reason: "Level 6 (R)",
           changesGameplay: "Level 6 is his largest map pressure spike",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Twisted Fate's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP or utility item",
@@ -114,7 +114,7 @@ export const twistedFateCombatProfile = {
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:
-    "Use Q and autos for wave control, hold Gold Card to discourage commits, and turn priority into R plays.",
+    "Use (Q) and autos for wave control, hold Gold Card to discourage commits, and turn priority into (R) plays.",
   punishProfile: {
     canPunish: [
       "Enemies entering Gold Card range.",
@@ -127,7 +127,7 @@ export const twistedFateCombatProfile = {
     ],
   },
   shields: [],
-  softCrowdControl: ["W Pick a Card Red Card slow"],
+  softCrowdControl: ["(W) Red Card slow"],
   stealthOrInvisibility: null,
   sustain: [],
   trading: {
@@ -138,15 +138,15 @@ export const twistedFateCombatProfile = {
     ],
     goodTradeConditions: [
       "Gold Card is selected and follow-up is available.",
-      "The wave is pushed before R or roam timing.",
+      "The wave is pushed before (R) or roam timing.",
       "The enemy has no way to punish his card range.",
     ],
     primaryPattern:
       "Control wave, threaten Gold Card for short trades or setup, and prioritize map plays over risky solo duels.",
   },
   punishWindows: [
-    "If Twisted Fate uses W poorly, he loses his main safety and pick tool.",
-    "If R is down, side lanes can play with less map pressure.",
+    "If Twisted Fate uses (W) poorly, he loses his main safety and pick tool.",
+    "If (R) is down, side lanes can play with less map pressure.",
     "All-in champions can punish him when Gold Card is unavailable.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;

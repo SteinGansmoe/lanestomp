@@ -9,13 +9,13 @@ export const xerathCombatProfile = {
       R: "Rite of the Arcane",
     },
     archetype: ["artillery mage", "poke", "siege"],
-    primaryWinCondition: ["Use Q and W to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
-    dangerAbilities: ["E Shocking Orb stun"],
+    primaryWinCondition: ["Use (Q) and (W) to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
+    dangerAbilities: ["(E) stun"],
     dangerProfile: {
-      dangerousWhen: ["E Shocking Orb stun"],
+      dangerousWhen: ["(E) stun"],
       mustRespect: [
-            "E is his key self-peel tool.",
-            "R gives long-range level 6 follow-up.",
+            "(E) is his key self-peel tool.",
+            "(R) gives long-range level 6 follow-up.",
             "Positioning is crucial for maximizing his damage potential and survival.",
           ],
     },
@@ -26,11 +26,11 @@ export const xerathCombatProfile = {
       "Becomes incredibly strong after 2 items are completed."
     ],
     damageType: "magic",
-    hardCrowdControl: ["E Shocking Orb stun"],
+    hardCrowdControl: ["(E) stun"],
     id: "Xerath",
     importantAbilityNotes: [
-      "E is his key self-peel tool.",
-      "R gives long-range level 6 follow-up.",
+      "(E) is his key self-peel tool.",
+      "(R) gives long-range level 6 follow-up.",
       "Positioning is crucial for maximizing his damage potential and survival.",
     ],
     lanePlan: {
@@ -41,18 +41,18 @@ export const xerathCombatProfile = {
             "Becomes incredibly strong after 2 items are completed."
           ],
       idealLaneState: "Long-range artillery mage who wins through poke, waveclear, and spacing.",
-      wants: ["Use Q and W to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
+      wants: ["Use (Q) and (W) to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
     },
     laneIdentity:
       {
       earlyGameAgency: "high",
       scalingPriority: "medium",
       lanePressure: "high",
-      preferredGameState: ["Use Q and W to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
-      winLaneBy: ["Use Q and W to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
+      preferredGameState: ["Use (Q) and (W) to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
+      winLaneBy: ["Use (Q) and (W) to control space and poke, can have decent map pressure post level 6 due to his ultimate."],
     },
     majorPowerSpikes: [
-      "Level 6 Rite of the Arcane.",
+      "Level 6 (R).",
       "First completed mana/AP item.",
     ],
     matchupPreferences: {
@@ -72,10 +72,10 @@ export const xerathCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Rite of the Arcane",
+          reason: "Level 6 (R)",
           changesGameplay: "Xerath's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Xerath's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed mana/AP item",
@@ -89,7 +89,7 @@ export const xerathCombatProfile = {
     primaryRoles: ["support"],
     secondaryRoles: ["mid"],
     primaryTradingPattern:
-      "Q for long range poke, use W for slow to hit Q easier, and hold E defensively or use if you're guaranteed to hit.",
+      "(Q) for long range poke, use (W) for slow to hit (Q) easier, and hold (E) defensively or use if you're guaranteed to hit.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
@@ -100,19 +100,19 @@ export const xerathCombatProfile = {
           ],
     },
     shields: [],
-    softCrowdControl: ["W Eye of Destruction slow"],
+    softCrowdControl: ["(W) slow"],
     stealthOrInvisibility: null,
     sustain: [],
     trading: {
       badTradeConditions: [
-        "If Xerath uses E and misses he has to play back.",
-        "When charging his Q."
+        "If Xerath uses (E) and misses he has to play back.",
+        "When charging his (Q)."
       ],
       goodTradeConditions: [],
-      primaryPattern: "Q for long range poke, use W for slow to hit Q easier, and hold E defensively or use if you're guaranteed to hit.",
+      primaryPattern: "(Q) for long range poke, use (W) for slow to hit (Q) easier, and hold (E) defensively or use if you're guaranteed to hit.",
     },
     punishWindows: [
-  "If Xerath uses E and misses he has to play back.",
-  "When charging his Q."
+  "If Xerath uses (E) and misses he has to play back.",
+  "When charging his (Q)."
 ]
   } satisfies LeagueChampionKnowledgeProfile;

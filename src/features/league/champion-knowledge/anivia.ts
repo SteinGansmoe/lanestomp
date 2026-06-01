@@ -10,14 +10,14 @@ export const aniviaCombatProfile = {
     },
     archetype: ["mage", "zoner", "control", "waveclear"],
     primaryWinCondition: ["Farm up and use her strong waveclear and zoning to control the lane and look for picks."],
-    dangerAbilities: ["(Q) Flash Frost stun", "(R) Glacial Storm slow and damage"],
+    dangerAbilities: ["(Q) stun", "(R) slow and damage"],
     dangerProfile: {
-      dangerousWhen: ["(Q) Flash Frost stun", "(R) Glacial Storm slow and damage"],
+      dangerousWhen: ["(Q) stun", "(R) slow and damage"],
       mustRespect: [
-            "(Q) Flash Frost is best used together with other abilities as its not always easy to land",
-            "(W) Crystal Shard can be used to block movement, also used to force enemy to move into Q if placed properly",
-            "(E) Frostbite is her main single target damage spell, use it after target is hit by Q for max damage",
-            "(R) Glacial Storm is her main zoning and teamfight tool, it can be used to block off areas and force enemies into unfavorable positions",
+            "(Q) is best used together with other abilities as its not always easy to land",
+            "(W) can be used to block movement and force the enemy to move into (Q) if placed properly",
+            "(E) is her main single target damage spell, use it after target is hit by (Q) for max damage",
+            "(R) is her main zoning and teamfight tool, it can be used to block off areas and force enemies into unfavorable positions",
           ],
     },
     commonWeaknesses: [
@@ -26,13 +26,13 @@ export const aniviaCombatProfile = {
       "She can be punished by fast all-ins.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["(Q) Flash Frost stun"],
+    hardCrowdControl: ["(Q) stun"],
     id: "Anivia",
     importantAbilityNotes: [
-      "(Q) Flash Frost is best used together with other abilities as its not always easy to land",
-      "(W) Crystal Shard can be used to block movement, also used to force enemy to move into Q if placed properly",
-      "(E) Frostbite is her main single target damage spell, use it after target is hit by Q for max damage",
-      "(R) Glacial Storm is her main zoning and teamfight tool, it can be used to block off areas and force enemies into unfavorable positions",
+      "(Q) is best used together with other abilities as its not always easy to land",
+      "(W) can be used to block movement and force the enemy to move into (Q) if placed properly",
+      "(E) is her main single target damage spell, use it after target is hit by (Q) for max damage",
+      "(R) is her main zoning and teamfight tool, it can be used to block off areas and force enemies into unfavorable positions",
     ],
     lanePlan: {
       avoids: [
@@ -53,7 +53,7 @@ export const aniviaCombatProfile = {
     },
     majorPowerSpikes: [
       "After 6 and Lost chapter, Anivia can basically free farm waves mid.",
-      "Its hard to siege into Anivia after 6 because of her R, so she can often get picks or force fights on her terms.",
+      "Its hard to siege into Anivia after 6 because of her (R), so she can often get picks or force fights on her terms.",
     ],
     matchupPreferences: {
       strongInto: [
@@ -86,8 +86,8 @@ export const aniviaCombatProfile = {
           enemyResponse: "Do not treat pre-item trades as still safe once Anivia's first item threshold is completed.",
         },
         {
-          timing: "It is hard to siege into Anivia after 6 because of her R, so she can often get picks or force fights on her terms",
-          reason: "It is hard to siege into Anivia after 6 because of her R, so she can often get picks or force fights on her terms",
+          timing: "It is hard to siege into Anivia after 6 because of her (R), so she can often get picks or force fights on her terms",
+          reason: "It is hard to siege into Anivia after 6 because of her (R), so she can often get picks or force fights on her terms",
           changesGameplay: "This timing changes how safely Anivia can contest trades, waves, or river space.",
           playerAction: "Change trading pace only when this timing is active and the enemy has no clean punish window.",
           enemyResponse: "Respect the timing until Anivia's key cooldowns or resources are spent.",
@@ -97,7 +97,7 @@ export const aniviaCombatProfile = {
     primaryRoles: ["mid"],
     secondaryRoles: ["adc", "support"],
     primaryTradingPattern:
-      "Q Flash Frost is her main trading and pick tool, E Frostbite is her main damage tool, and R Glacial Storm is her main zoning and teamfight tool.",
+      "(Q) is her main trading and pick tool, (E) is her main damage tool, and (R) is her main zoning and teamfight tool.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
@@ -107,19 +107,19 @@ export const aniviaCombatProfile = {
           ],
     },
     shields: [],
-    softCrowdControl: ["slow from (R) Glacial Storm"],
+    softCrowdControl: ["slow from (R)"],
     stealthOrInvisibility: null,
     sustain: [""],
     trading: {
       badTradeConditions: [
-            "If Anivia misses (Q) Flash Frost, thats when to punish her.",
+            "If Anivia misses (Q), thats when to punish her.",
       
       ],
       goodTradeConditions: [],
-      primaryPattern: "Q Flash Frost is her main trading and pick tool, E Frostbite is her main damage tool, and R Glacial Storm is her main zoning and teamfight tool.",
+      primaryPattern: "(Q) is her main trading and pick tool, (E) is her main damage tool, and (R) is her main zoning and teamfight tool.",
     },
     punishWindows: [
-      "If Anivia misses (Q) Flash Frost, thats when to punish her.",
+      "If Anivia misses (Q), thats when to punish her.",
 
 ]
   } satisfies LeagueChampionKnowledgeProfile;

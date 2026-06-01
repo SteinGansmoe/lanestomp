@@ -12,17 +12,17 @@ export const katarinaCombatProfile = {
   primaryWinCondition: [
     "Find dagger reset windows in skirmishes and snowball fights through takedown resets.",
   ],
-  dangerAbilities: ["E Shunpo mobility", "R Death Lotus channel", "Passive Voracity resets"],
+  dangerAbilities: ["(E) mobility", "(R) channel", "Passive Voracity resets"],
   dangerProfile: {
     dangerousWhen: [
       "Daggers are positioned near the enemy or escape paths.",
-      "Crowd control has been used and R can channel safely.",
+      "Crowd control has been used and (R) can channel safely.",
       "A takedown reset lets her chain mobility and damage.",
     ],
     mustRespect: [
       "Her daggers define where the burst will happen.",
-      "E resets around daggers and takedowns.",
-      "R is dangerous but can be interrupted by crowd control.",
+      "(E) resets around daggers and takedowns.",
+      "(R) is dangerous but can be interrupted by crowd control.",
     ],
   },
   commonWeaknesses: [
@@ -34,15 +34,15 @@ export const katarinaCombatProfile = {
   hardCrowdControl: [],
   id: "Katarina",
   importantAbilityNotes: [
-    "Q creates a dagger landing spot for follow-up.",
-    "W drops a dagger and gives movement speed.",
-    "E is targeted mobility and reset-based repositioning.",
-    "R is a channel that can be interrupted.",
+    "(Q) creates a dagger landing spot for follow-up.",
+    "(W) drops a dagger and gives movement speed.",
+    "(E) is targeted mobility and reset-based repositioning.",
+    "(R) is a channel that can be interrupted.",
   ],
   lanePlan: {
     avoids: [
       "Forcing trades without dagger setup.",
-      "Channeling R into available crowd control.",
+      "Channeling (R) into available crowd control.",
       "Staying trapped under wave pressure without roam options.",
     ],
     idealLaneState:
@@ -69,13 +69,13 @@ export const katarinaCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 3 unlocks Katarina's Q-W-E dagger setup with mobility for her first real burst trade.",
-    "Level 6 Death Lotus.",
+    "Level 3 unlocks (Q)-(W)-(E) dagger setup with mobility for her first real burst trade.",
+    "Level 6 (R).",
     "First completed burst item.",
   ],
   matchupPreferences: {
     strongInto: [
-      "Low crowd control teams that cannot interrupt R.",
+      "Low crowd control teams that cannot interrupt (R).",
       "Squishy champions who misposition near daggers.",
       "Skirmish-heavy games with reset opportunities.",
     ],
@@ -98,17 +98,17 @@ export const katarinaCombatProfile = {
       major: [
         {
           timing: "Level 3",
-          reason: "Level 3 unlocks Katarina's Q-W-E dagger setup with mobility for her first real burst trade",
+          reason: "Level 3 unlocks (Q)-(W)-(E) dagger setup with mobility for her first real burst trade",
           changesGameplay: "Level 6 adds major all-in threat if crowd control is unavailable",
           playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
           enemyResponse: "Respect the early combo unlock and avoid giving Katarina the wave or spacing needed to start it cleanly.",
         },
         {
           timing: "Level 6",
-          reason: "Level 6 Death Lotus",
+          reason: "Level 6 (R)",
           changesGameplay: "Her strongest spikes often come from skirmish kills and item acceleration",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Katarina's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed burst item",
@@ -122,7 +122,7 @@ export const katarinaCombatProfile = {
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:
-    "Set daggers with Q or W, wait for enemy cooldowns, then use E to take short burst trades or commit only when resets are realistic.",
+    "Set daggers with (Q) or (W), wait for enemy cooldowns, then use (E) to take short burst trades or commit only when resets are realistic.",
   punishProfile: {
     canPunish: [
       "Enemies standing near daggers.",
@@ -141,7 +141,7 @@ export const katarinaCombatProfile = {
   trading: {
     badTradeConditions: [
       "No dagger is positioned for damage or escape.",
-      "Enemy crowd control can interrupt R.",
+      "Enemy crowd control can interrupt (R).",
       "The wave is too large to jump forward safely.",
     ],
     goodTradeConditions: [
@@ -150,11 +150,11 @@ export const katarinaCombatProfile = {
       "A skirmish has low-health targets for resets.",
     ],
     primaryPattern:
-      "Trade around dagger placement, use E carefully, and commit fully only when crowd control is down or resets are likely.",
+      "Trade around dagger placement, use (E) carefully, and commit fully only when crowd control is down or resets are likely.",
   },
   punishWindows: [
-    "If Katarina uses E forward without a reset path, she is easier to punish.",
-    "If R is interrupted, her all-in loses much of its threat.",
+    "If Katarina uses (E) forward without a reset path, she is easier to punish.",
+    "If (R) is interrupted, her all-in loses much of its threat.",
     "Early wave pressure can deny her roam pattern.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;

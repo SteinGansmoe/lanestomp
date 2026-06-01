@@ -414,6 +414,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       ),
     [adminData.resources]
   );
+  const reviewedLeagueMatchupsCount = useMemo(
+    () =>
+      adminData.leagueMatchups.filter(
+        (matchup) => matchup.generation_status === "reviewed"
+      ).length,
+    [adminData.leagueMatchups]
+  );
+  const draftLeagueMatchupsCount =
+    adminData.leagueMatchups.length - reviewedLeagueMatchupsCount;
   const normalizedCreateResourceForm = normalizeResourceFormForSection(
     createResourceForm,
     editableLinkSection
@@ -2009,8 +2018,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               <div className="contents">
                 {section === "overview" ? (
                   <AdminOverview
+                    communityContentCount={communityRows.length}
                     gamesCount={adminData.games.length}
+                    leagueChampionsCount={adminData.leagueChampions.length}
+                    leagueDraftMatchupsCount={draftLeagueMatchupsCount}
                     leagueMatchupsCount={adminData.leagueMatchups.length}
+                    leagueReviewedMatchupsCount={reviewedLeagueMatchupsCount}
                     resourcesCount={resourcesRows.length}
                     seasonsCount={adminData.seasons.length}
                     timelineEventsCount={adminData.timelineEvents.length}

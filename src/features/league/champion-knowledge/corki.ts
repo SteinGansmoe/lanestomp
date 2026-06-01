@@ -12,41 +12,41 @@ export const corkiCombatProfile = {
   primaryWinCondition: [
     "Farm safely into item spikes, then use rockets and mixed damage poke to control mid-game fights.",
   ],
-  dangerAbilities: ["R Missile Barrage poke", "W Valkyrie reposition"],
+  dangerAbilities: ["(R) poke", "(W) reposition"],
   dangerProfile: {
     dangerousWhen: [
-      "R is stocked and he can poke before objectives.",
+      "(R) is stocked and he can poke before objectives.",
       "He has item spikes that make repeated rockets meaningful.",
-      "W is available to reposition away from all-ins.",
+      "(W) is available to reposition away from all-ins.",
     ],
     mustRespect: [
-      "R gives repeated long-range poke after level 6.",
-      "W is his main escape and should be tracked before forcing fights.",
+      "(R) gives repeated long-range poke after level 6.",
+      "(W) is his main escape and should be tracked before forcing fights.",
       "His damage pattern improves sharply with items.",
     ],
   },
   commonWeaknesses: [
     "Can be pressured before item spikes.",
-    "Vulnerable if W is forced or used forward.",
+    "Vulnerable if (W) is forced or used forward.",
     "Needs time and space to poke before committing.",
   ],
   damageType: "mixed",
   hardCrowdControl: [],
   id: "Corki",
   importantAbilityNotes: [
-    "Q reveals and adds poke in trades.",
-    "W is mobility, not a reliable combat engage in lane.",
-    "E shreds resistances during close trades.",
-    "R is his main post-6 poke pattern.",
+    "(Q) reveals and adds poke in trades.",
+    "(W) is mobility, not a reliable combat engage in lane.",
+    "(E) shreds resistances during close trades.",
+    "(R) is his main post-6 poke pattern.",
   ],
   lanePlan: {
     avoids: [
-      "Using W forward without knowing enemy cooldowns.",
+      "Using (W) forward without knowing enemy cooldowns.",
       "Taking extended early fights before items.",
       "Letting wave pressure force him away from safe farm.",
     ],
     idealLaneState:
-      "A stable mid lane where Corki farms safely, chips with Q and autos, then uses R poke after level 6.",
+      "A stable mid lane where Corki farms safely, chips with (Q) and autos, then uses (R) poke after level 6.",
     wants: [
       "Safe farm toward item spikes.",
       "Poke windows before objectives or recalls.",
@@ -59,7 +59,7 @@ export const corkiCombatProfile = {
     preferredGameState: [
       "Stable early waves with low all-in risk.",
       "Mid-game poke setups around objectives.",
-      "Fights where he can kite and fire repeated R casts.",
+      "Fights where he can kite and fire repeated (R) casts.",
     ],
     scalingPriority: "high",
     winLaneBy: [
@@ -69,7 +69,7 @@ export const corkiCombatProfile = {
     ],
   },
   majorPowerSpikes: [
-    "Level 6 Missile Barrage.",
+    "Level 6 (R).",
     "First completed damage item.",
     "Mid-game item spikes for stronger poke.",
   ],
@@ -80,7 +80,7 @@ export const corkiCombatProfile = {
       "Compositions vulnerable to pre-objective poke.",
     ],
     weakInto: [
-      "Hard engage when W is down.",
+      "Hard engage when (W) is down.",
       "Strong early lane bullies that deny farm.",
       "Long-range mages who can outpoke him before items.",
     ],
@@ -98,10 +98,10 @@ export const corkiCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Missile Barrage",
+          reason: "Level 6 (R)",
           changesGameplay: "Level 6 changes his lane from mostly short trades into repeat poke",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Corki's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed damage item",
@@ -122,16 +122,16 @@ export const corkiCombatProfile = {
   primaryRoles: ["mid"],
   secondaryRoles: ["adc"],
   primaryTradingPattern:
-    "Use Q and autos for short trades, preserve W for danger, then rely on R poke once level 6 is reached.",
+    "Use (Q) and autos for short trades, preserve (W) for danger, then rely on (R) poke once level 6 is reached.",
   punishProfile: {
     canPunish: [
       "Enemies who take repeated rockets before objectives.",
-      "Short-range champions walking into Q and E range.",
-      "Overcommits after he kites back with W.",
+      "Short-range champions walking into (Q) and (E) range.",
+      "Overcommits after he kites back with (W).",
     ],
     strugglesToPunish: [
       "Long-range champions who outrange his early poke.",
-      "Assassins that can force W and re-engage.",
+      "Assassins that can force (W) and re-engage.",
     ],
   },
   shields: [],
@@ -140,20 +140,20 @@ export const corkiCombatProfile = {
   sustain: [],
   trading: {
     badTradeConditions: [
-      "W is unavailable against all-in threat.",
+      "(W) is unavailable against all-in threat.",
       "He is fighting before meaningful item damage.",
       "The enemy can force melee range before Corki pokes first.",
     ],
     goodTradeConditions: [
-      "He can poke without spending W.",
-      "R is available for repeat follow-up.",
-      "The enemy is already low from rockets or Q.",
+      "He can poke without spending (W).",
+      "(R) is available for repeat follow-up.",
+      "The enemy is already low from rockets or (Q).",
     ],
     primaryPattern:
-      "Take short poke trades, avoid spending W casually, and use R to soften enemies before any longer fight.",
+      "Take short poke trades, avoid spending (W) casually, and use (R) to soften enemies before any longer fight.",
   },
   punishWindows: [
-    "If Corki uses W forward, he is much easier to all-in.",
+    "If Corki uses (W) forward, he is much easier to all-in.",
     "Before level 6, his lane poke is less oppressive.",
     "If rockets are low or unavailable, his posturing threat drops.",
   ],

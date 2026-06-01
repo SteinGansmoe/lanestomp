@@ -19,7 +19,7 @@ export const auroraCombatProfile = {
     },
     commonWeaknesses: [
       "Aurora has relativley low range, if she is poked out of lane she can struggle to farm and find picks.",
-      "The E animation is quite long, easily dodgable.",
+      "The (E) animation is quite long, easily dodgable.",
     ],
     damageType: "magic",
     hardCrowdControl: [""],
@@ -30,7 +30,7 @@ export const auroraCombatProfile = {
     lanePlan: {
       avoids: [
             "Aurora has relativley low range, if she is poked out of lane she can struggle to farm and find picks.",
-            "The E animation is quite long, easily dodgable.",
+            "The (E) animation is quite long, easily dodgable.",
           ],
       idealLaneState: "Mobile mage assassin who looks for picks and burst windows.",
       wants: [""],
@@ -66,8 +66,8 @@ export const auroraCombatProfile = {
           timing: "Level 6",
           reason: "Level 6 ultimate for high mobility and burst",
           changesGameplay: "Aurora's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Aurora's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP burst item",
@@ -81,28 +81,28 @@ export const auroraCombatProfile = {
     primaryRoles: ["mid"],
     secondaryRoles: ["top"],
     primaryTradingPattern:
-      "Cast Q, immediately follow up with E for repositioning and damage, reactivate Q again.",
+      "Cast (Q), immediately follow up with (E) for repositioning and damage, reactivate (Q) again.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
             "Aurora has relativley low range, if she is poked out of lane she can struggle to farm and find picks.",
-            "The E animation is quite long, easily dodgable.",
+            "The (E) animation is quite long, easily dodgable.",
           ],
     },
     shields: [],
-    softCrowdControl: ["E slow"],
-    stealthOrInvisibility: "W gives a brief burst of movement speed and invisibility, allowing Aurora to dodge skillshots and reposition in fights.",
+    softCrowdControl: ["(E) slow"],
+    stealthOrInvisibility: "(W) gives a brief burst of movement speed and invisibility, allowing Aurora to dodge skillshots and reposition in fights.",
     sustain: [""],
     trading: {
       badTradeConditions: [
-            "After Aurora uses W, she has no quick escape tool.",
-            "E is quite easy to dodge, trade back if you can avoid it."
+            "After Aurora uses (W), she has no quick escape tool.",
+            "(E) is quite easy to dodge, trade back if you can avoid it."
       ],
       goodTradeConditions: [],
-      primaryPattern: "Cast Q, immediately follow up with E for repositioning and damage, reactivate Q again.",
+      primaryPattern: "Cast (Q), immediately follow up with (E) for repositioning and damage, reactivate (Q) again.",
     },
     punishWindows: [
-      "After Aurora uses W, she has no quick escape tool.",
-      "E is quite easy to dodge, trade back if you can avoid it."
+      "After Aurora uses (W), she has no quick escape tool.",
+      "(E) is quite easy to dodge, trade back if you can avoid it."
 ]
   } satisfies LeagueChampionKnowledgeProfile;

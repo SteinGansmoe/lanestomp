@@ -9,14 +9,14 @@ export const ekkoCombatProfile = {
       R: "Chronobreak",
     },
     archetype: ["assassin", "skirmisher", "scaling", "burst"],
-    primaryWinCondition: ["Short trades with Q and E, a well-times W stun can turn a fight in his favor, and R can be used to dodge key damage or reset fights."],
-    dangerAbilities: ["W Parallel Convergence stun", "E Phase Dive", "R Chronobreak"],
+    primaryWinCondition: ["Short trades with (Q) and (E), a well-times (W) stun can turn a fight in his favor, and (R) can be used to dodge key damage or reset fights."],
+    dangerAbilities: ["(W) stun", "(E)", "(R)"],
     dangerProfile: {
-      dangerousWhen: ["W Parallel Convergence stun", "E Phase Dive", "R Chronobreak"],
+      dangerousWhen: ["(W) stun", "(E)", "(R)"],
       mustRespect: [
-            "Parallel Convergence is delayed and requires setup.",
-            "Chronobreak is his level 6 safety and burst reset.",
-            "Phase Dive is his main trading mobility.",
+            "(W) is delayed and requires setup.",
+            "(R) is his level 6 safety and burst reset.",
+            "(E) is his main trading mobility.",
           ],
     },
     commonWeaknesses: [
@@ -25,12 +25,12 @@ export const ekkoCombatProfile = {
       "Needs items to shine.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["W Parallel Convergence stun"],
+    hardCrowdControl: ["(W) stun"],
     id: "Ekko",
     importantAbilityNotes: [
-      "Parallel Convergence is delayed and requires setup.",
-      "Chronobreak is his level 6 safety and burst reset.",
-      "Phase Dive is his main trading mobility.",
+      "(W) is delayed and requires setup.",
+      "(R) is his level 6 safety and burst reset.",
+      "(E) is his main trading mobility.",
     ],
     lanePlan: {
       avoids: [
@@ -39,19 +39,19 @@ export const ekkoCombatProfile = {
             "Needs items to shine.",
           ],
       idealLaneState: "Scaling AP assassin who wants short trades, wave access, and explosive all-ins after setup.",
-      wants: ["Short trades with Q and E, a well-times W stun can turn a fight in his favor, and R can be used to dodge key damage or reset fights."],
+      wants: ["Short trades with (Q) and (E), a well-times (W) stun can turn a fight in his favor, and (R) can be used to dodge key damage or reset fights."],
     },
     laneIdentity:
       {
       earlyGameAgency: "low",
       scalingPriority: "high",
       lanePressure: "low",
-      preferredGameState: ["Short trades with Q and E, a well-times W stun can turn a fight in his favor, and R can be used to dodge key damage or reset fights."],
-      winLaneBy: ["Short trades with Q and E, a well-times W stun can turn a fight in his favor, and R can be used to dodge key damage or reset fights."],
+      preferredGameState: ["Short trades with (Q) and (E), a well-times (W) stun can turn a fight in his favor, and (R) can be used to dodge key damage or reset fights."],
+      winLaneBy: ["Short trades with (Q) and (E), a well-times (W) stun can turn a fight in his favor, and (R) can be used to dodge key damage or reset fights."],
     },
     majorPowerSpikes: [
-      "Level 3 unlocks Ekko's Q-W-E trade pattern with dash access and stun threat.",
-      "Level 6 Chronobreak.",
+      "Level 3 unlocks (Q)-(W)-(E) trade pattern with dash access and stun threat.",
+      "Level 6 (R).",
       "First completed AP burst item.",
     ],
     matchupPreferences: {
@@ -71,17 +71,17 @@ export const ekkoCombatProfile = {
       major: [
         {
           timing: "Level 3",
-          reason: "Level 3 unlocks Ekko's Q-W-E trade pattern with dash access and stun threat",
+          reason: "Level 3 unlocks (Q)-(W)-(E) trade pattern with dash access and stun threat",
           changesGameplay: "The early ability combination gives Ekko a real trade or all-in pattern instead of isolated lane pressure.",
           playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
           enemyResponse: "Respect the early combo unlock and avoid giving Ekko the wave or spacing needed to start it cleanly.",
         },
         {
           timing: "Level 6",
-          reason: "Level 6 Chronobreak",
+          reason: "Level 6 (R)",
           changesGameplay: "Ekko's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Ekko's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP burst item",
@@ -95,7 +95,7 @@ export const ekkoCombatProfile = {
     primaryRoles: ["jungle"],
     secondaryRoles: ["mid"],
     primaryTradingPattern:
-      "Use Timewinder and Phase Dive for quick burst, then disengage after proccing passive for movement speed to back off.",
+      "Use (Q) and (E) for quick burst, then disengage after proccing passive for movement speed to back off.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
@@ -104,22 +104,22 @@ export const ekkoCombatProfile = {
             "Needs items to shine.",
           ],
     },
-    shields: ["W Parallel Convergence shield if Ekko enters the zone"],
-    softCrowdControl: ["Q Timewinder slow"],
+    shields: ["(W) shield if Ekko enters the zone"],
+    softCrowdControl: ["(Q) slow"],
     stealthOrInvisibility: null,
-    sustain: ["R Chronobreak heal on cast."],
+    sustain: ["(R) heal on cast."],
     trading: {
       badTradeConditions: [
-        "W takes a while to activate, and if it misses he will take return damage in trades.",
-        "If Ekko engages with E but misses with Q, he will often lose out in trades.",
+        "(W) takes a while to activate, and if it misses he will take return damage in trades.",
+        "If Ekko engages with (E) but misses with (Q), he will often lose out in trades.",
         "Before level 6 Ekko is much easier to kill"
       ],
       goodTradeConditions: [],
-      primaryPattern: "Use Timewinder and Phase Dive for quick burst, then disengage after proccing passive for movement speed to back off.",
+      primaryPattern: "Use (Q) and (E) for quick burst, then disengage after proccing passive for movement speed to back off.",
     },
     punishWindows: [
-  "W takes a while to activate, and if it misses he will take return damage in trades.",
-  "If Ekko engages with E but misses with Q, he will often lose out in trades.",
+  "(W) takes a while to activate, and if it misses he will take return damage in trades.",
+  "If Ekko engages with (E) but misses with (Q), he will often lose out in trades.",
   "Before level 6 Ekko is much easier to kill"
 ]
   } satisfies LeagueChampionKnowledgeProfile;

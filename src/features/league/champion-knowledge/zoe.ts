@@ -9,39 +9,39 @@ export const zoeCombatProfile = {
       R: "Portal Jump",
     },
     archetype: ["poke mage", "pick", "burst"],
-    primaryWinCondition: ["Can find very good angles for E and have incredible range with R + Q."],
+    primaryWinCondition: ["Can find very good angles for (E) and have incredible range with (R) + (Q)."],
     commonWeaknesses: [
-      "Vulnerable if E miss or is on cooldown.",
-      "Skillshot reliant and punishable after missed bubble.",
+      "Vulnerable if (E) miss or is on cooldown.",
+      "Skillshot reliant and punishable after missed (E).",
       "Easily punished by targeted CC.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["E"],
+    hardCrowdControl: ["(E)"],
     id: "Zoe",
     importantAbilityNotes: [
-      "E is her key pick and damage amp setup.",
-      "R is her key dodge ability skill, she also use it to extend the range of her Q.",
-      "W can provide Zoe with great summoner abilities and items effects.",
+      "(E) is her key pick and damage amp setup.",
+      "(R) is her key dodge ability skill, she also use it to extend the range of her (Q).",
+      "(W) can provide Zoe with great summoner abilities and items effects.",
     ],
     lanePlan: {
       avoids: [
-            "Vulnerable if E miss or is on cooldown.",
-            "Skillshot reliant and punishable after missed bubble.",
+            "Vulnerable if (E) miss or is on cooldown.",
+            "Skillshot reliant and punishable after missed (E).",
             "Easily punished by targeted CC.",
           ],
-      idealLaneState: "Pick-focused poke mage who threatens long-range burst after bubble connects.",
-      wants: ["Can find very good angles for E and have incredible range with R + Q."],
+      idealLaneState: "Pick-focused poke mage who threatens long-range burst after (E) connects.",
+      wants: ["Can find very good angles for (E) and have incredible range with (R) + (Q)."],
     },
     laneIdentity:
       {
       earlyGameAgency: "high",
       scalingPriority: "medium",
       lanePressure: "high",
-      preferredGameState: ["Can find very good angles for E and have incredible range with R + Q."],
-      winLaneBy: ["Can find very good angles for E and have incredible range with R + Q."],
+      preferredGameState: ["Can find very good angles for (E) and have incredible range with (R) + (Q)."],
+      winLaneBy: ["Can find very good angles for (E) and have incredible range with (R) + (Q)."],
     },
     majorPowerSpikes: [
-      "Level 6 Portal Jump for extended poke angles.",
+      "Level 6 (R) for extended poke angles.",
       "First completed AP burst item.",
     ],
     matchupPreferences: {
@@ -61,10 +61,10 @@ export const zoeCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Portal Jump for extended poke angles",
+          reason: "Level 6 (R) for extended poke angles",
           changesGameplay: "Zoe's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Zoe's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP burst item",
@@ -78,38 +78,38 @@ export const zoeCombatProfile = {
     primaryRoles: ["mid"],
     secondaryRoles: [],
     primaryTradingPattern:
-      "Fish for E, then use Q and R for burst.",
+      "Fish for (E), then use (Q) and (R) for burst.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
-            "Vulnerable if E miss or is on cooldown.",
-            "Skillshot reliant and punishable after missed bubble.",
+            "Vulnerable if (E) miss or is on cooldown.",
+            "Skillshot reliant and punishable after missed (E).",
             "Easily punished by targeted CC.",
           ],
     },
     shields: [],
-    softCrowdControl: ["E applies sleep after a short delay, and the next damaging hit wakes the target up."],
+    softCrowdControl: ["(E) applies sleep after a short delay, and the next damaging hit wakes the target up."],
     stealthOrInvisibility: null,
     sustain: [],
     trading: {
       badTradeConditions: [
-        "After E is missed.",
-        "If R is used at bad timings."
+        "After (E) is missed.",
+        "If (R) is used at bad timings."
       ],
       goodTradeConditions: [],
-      primaryPattern: "Fish for E, then use Q and R for burst.",
+      primaryPattern: "Fish for (E), then use (Q) and (R) for burst.",
     },
-    dangerAbilities: ["E Paddle Star"],
+    dangerAbilities: ["(E) (Q)"],
     dangerProfile: {
-      dangerousWhen: ["E Paddle Star"],
+      dangerousWhen: ["(E) (Q)"],
       mustRespect: [
-            "E is her key pick and damage amp setup.",
-            "R is her key dodge ability skill, she also use it to extend the range of her Q.",
-            "W can provide Zoe with great summoner abilities and items effects.",
+            "(E) is her key pick and damage amp setup.",
+            "(R) is her key dodge ability skill, she also use it to extend the range of her (Q).",
+            "(W) can provide Zoe with great summoner abilities and items effects.",
           ],
     },
     punishWindows: [
-  "After E is missed.",
-  "If R is used at bad timings."
+  "After (E) is missed.",
+  "If (R) is used at bad timings."
 ]
   } satisfies LeagueChampionKnowledgeProfile;

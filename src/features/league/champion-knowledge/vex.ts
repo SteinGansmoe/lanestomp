@@ -15,7 +15,7 @@ export const vexCombatProfile = {
       dangerousWhen: ["Passive Doom fear"],
       mustRespect: [
             "Using her passive correctly is key to winning lane.",
-            "R is her level 6 engage/reset tool.",
+            "(R) is her level 6 engage/reset tool.",
             "She is strongest into champions that dash often.",
           ],
     },
@@ -29,7 +29,7 @@ export const vexCombatProfile = {
     id: "Vex",
     importantAbilityNotes: [
       "Using her passive correctly is key to winning lane.",
-      "R is her level 6 engage/reset tool.",
+      "(R) is her level 6 engage/reset tool.",
       "She is strongest into champions that dash often.",
     ],
     lanePlan: {
@@ -50,7 +50,7 @@ export const vexCombatProfile = {
       winLaneBy: ["Utilize her passive to win trades in lane."],
     },
     majorPowerSpikes: [
-      "Level 6 Shadow Surge.",
+      "Level 6 (R).",
       "First completed AP burst item.",
     ],
     matchupPreferences: {
@@ -70,10 +70,10 @@ export const vexCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Shadow Surge",
+          reason: "Level 6 (R)",
           changesGameplay: "Vex's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Vex's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed AP burst item",
@@ -96,20 +96,20 @@ export const vexCombatProfile = {
             "Can be outranged by artillery mages.",
           ],
     },
-    shields: ["W Personal Space shield"],
-    softCrowdControl: ["E Looming Darkness slow"],
+    shields: ["(W) shield"],
+    softCrowdControl: ["(E) slow"],
     stealthOrInvisibility: null,
     sustain: [],
     trading: {
       badTradeConditions: [
         "If Vex fails to land her fear, she can be all-inned.",
-        "While her R is down she has no way to reset."
+        "While her (R) is down she has no way to reset."
       ],
       goodTradeConditions: [],
       primaryPattern: "Use passive fear to win trades and easily proc electrocute.",
     },
     punishWindows: [
   "If Vex fails to land her fear, she can be all-inned.",
-  "While her R is down she has no way to reset."
+  "While her (R) is down she has no way to reset."
 ]
   } satisfies LeagueChampionKnowledgeProfile;

@@ -12,45 +12,45 @@ export const azirCombatProfile = {
   primaryWinCondition: [
     "Scale into soldier DPS and use controlled spacing to turn lane priority into strong objective fights.",
   ],
-  dangerAbilities: ["R Emperor's Divide displacement", "W Arise! soldier DPS"],
+  dangerAbilities: ["(R) displacement", "(W) soldier DPS"],
   dangerProfile: {
     dangerousWhen: [
       "Soldiers are positioned between Azir and the enemy.",
-      "R is available to disengage, isolate, or punish overcommits.",
+      "(R) is available to disengage, isolate, or punish overcommits.",
       "He has enough items to make extended soldier trades meaningful.",
     ],
     mustRespect: [
       "Soldier placement controls the lane more than Azir's own body position.",
-      "R can deny dives or force enemies into his team.",
-      "E gives repositioning, but committing with it removes a major escape option.",
+      "(R) can deny dives or force enemies into his team.",
+      "(E) gives repositioning, but committing with it removes a major escape option.",
     ],
   },
   commonWeaknesses: [
     "Weaker before items and levels give soldiers real threat.",
-    "Punishable if E or R is forced out defensively.",
+    "Punishable if (E) or (R) is forced out defensively.",
     "Can struggle when pressured before he sets soldiers and wave control.",
   ],
   damageType: "magic",
-  hardCrowdControl: ["R Emperor's Divide displacement"],
+  hardCrowdControl: ["(R) displacement"],
   id: "Azir",
   importantAbilityNotes: [
-    "W creates soldiers and is the center of his trading pattern.",
-    "Q repositions soldiers for poke and spacing.",
-    "E is mobility and should not be treated as free engage when danger is nearby.",
-    "R is a major defensive and teamfight tool.",
+    "(W) creates soldiers and is the center of his trading pattern.",
+    "(Q) repositions soldiers for poke and spacing.",
+    "(E) is mobility and should not be treated as free engage when danger is nearby.",
+    "(R) is a major defensive and teamfight tool.",
   ],
   lanePlan: {
     avoids: [
-      "Using E aggressively without a safe exit.",
+      "Using (E) aggressively without a safe exit.",
       "Taking early extended fights before soldier DPS is threatening.",
       "Letting assassins force trades before soldiers are placed.",
     ],
     idealLaneState:
-      "A controlled mid wave where Azir can farm safely, poke through soldiers, and preserve E or R against all-ins.",
+      "A controlled mid wave where Azir can farm safely, poke through soldiers, and preserve (E) or (R) against all-ins.",
     wants: [
       "Stable waves that let him farm toward item spikes.",
       "Enemy movement through soldier zones.",
-      "Objective setups where soldiers and R control space.",
+      "Objective setups where soldiers and (R) control space.",
     ],
   },
   laneIdentity: {
@@ -64,12 +64,12 @@ export const azirCombatProfile = {
     scalingPriority: "very_high",
     winLaneBy: [
       "Maintaining safe farm while chipping with soldiers.",
-      "Preventing all-ins with disciplined E and R usage.",
+      "Preventing all-ins with disciplined (E) and (R) usage.",
       "Outscaling and controlling fights with soldier positioning.",
     ],
   },
   majorPowerSpikes: [
-    "Level 6 Emperor's Divide.",
+    "Level 6 (R).",
     "First completed mage DPS item.",
   ],
   matchupPreferences: {
@@ -81,7 +81,7 @@ export const azirCombatProfile = {
     weakInto: [
       "Early assassins that can force him before he has space.",
       "Long-range poke that outranges soldier control.",
-      "Hard engage when E and R are unavailable.",
+      "Hard engage when (E) and (R) are unavailable.",
     ],
   },
   mobilityLevel: "medium",
@@ -97,10 +97,10 @@ export const azirCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Emperor's Divide",
+          reason: "Level 6 (R)",
           changesGameplay: "Level 6 improves his safety and playmaking",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Azir's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed mage DPS item",
@@ -114,11 +114,11 @@ export const azirCombatProfile = {
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:
-    "Place soldiers with W, reposition them with Q for short poke, and avoid committing E unless the trade or escape is clearly safe.",
+    "Place soldiers with (W), reposition them with (Q) for short poke, and avoid committing (E) unless the trade or escape is clearly safe.",
   punishProfile: {
     canPunish: [
       "Enemies walking through soldier zones.",
-      "Overcommits that can be denied by R.",
+      "Overcommits that can be denied by (R).",
       "Champions who cannot pressure him before item spikes.",
     ],
     strugglesToPunish: [
@@ -126,27 +126,27 @@ export const azirCombatProfile = {
       "Assassins holding mobility until after soldiers are misplaced.",
     ],
   },
-  shields: ["E Shifting Sands shield while dashing to a soldier."],
-  softCrowdControl: ["Q Conquering Sands slow"],
+  shields: ["(E) shield while dashing to a soldier."],
+  softCrowdControl: ["(Q) slow"],
   stealthOrInvisibility: null,
   sustain: [],
   trading: {
     badTradeConditions: [
       "No soldiers are placed in useful space.",
-      "E is needed defensively and cannot be spent forward.",
+      "(E) is needed defensively and cannot be spent forward.",
       "The enemy can all-in before Azir's DPS ramps.",
     ],
     goodTradeConditions: [
       "The enemy must last-hit near soldiers.",
-      "Q can reposition soldiers without exposing Azir.",
-      "R is available to stop a commit.",
+      "(Q) can reposition soldiers without exposing Azir.",
+      "(R) is available to stop a commit.",
     ],
     primaryPattern:
-      "Use W and Q to poke through soldiers, keep distance, and save E or R for repositioning or disengage.",
+      "Use (W) and (Q) to poke through soldiers, keep distance, and save (E) or (R) for repositioning or disengage.",
   },
   punishWindows: [
-    "If Azir uses E aggressively, he is easier to collapse on.",
-    "If R is down, dives and all-ins are much more threatening.",
+    "If Azir uses (E) aggressively, he is easier to collapse on.",
+    "If (R) is down, dives and all-ins are much more threatening.",
     "Before items, his extended damage is easier to absorb or punish.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;

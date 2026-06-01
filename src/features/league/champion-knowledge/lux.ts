@@ -14,27 +14,27 @@ export const luxCombatProfile = {
     dangerProfile: {
       dangerousWhen: [],
       mustRespect: [
-            "Light Binding is her key defensive and pick tool.",
-            "Prismatic Barrier shields allies and herself.",
-            "Q + E + R does significant damage.",
+            "(Q) is her key defensive and pick tool.",
+            "(W) shields allies and herself.",
+            "(Q) + (E) + (R) does significant damage.",
           ],
     },
     commonWeaknesses: [
-      "If Q is used recklessly, she can be punished.",
+      "If (Q) is used recklessly, she can be punished.",
       "Skillshot reliant.",
       "Can be all-inned if she loses range control.",
     ],
     damageType: "magic",
-    hardCrowdControl: ["Q Light Binding root"],
+    hardCrowdControl: ["(Q) root"],
     id: "Lux",
     importantAbilityNotes: [
-      "Light Binding is her key defensive and pick tool.",
-      "Prismatic Barrier shields allies and herself.",
-      "Q + E + R does significant damage.",
+      "(Q) is her key defensive and pick tool.",
+      "(W) shields allies and herself.",
+      "(Q) + (E) + (R) does significant damage.",
     ],
     lanePlan: {
       avoids: [
-            "If Q is used recklessly, she can be punished.",
+            "If (Q) is used recklessly, she can be punished.",
             "Skillshot reliant.",
             "Can be all-inned if she loses range control.",
           ],
@@ -50,7 +50,7 @@ export const luxCombatProfile = {
       winLaneBy: [],
     },
     majorPowerSpikes: [
-      "Level 6 Final Spark.",
+      "Level 6 (R).",
       "First completed mage item.",
     ],
     matchupPreferences: {
@@ -70,10 +70,10 @@ export const luxCombatProfile = {
       major: [
         {
           timing: "Level 6",
-          reason: "Level 6 Final Spark",
+          reason: "Level 6 (R)",
           changesGameplay: "Lux's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
-          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect Lux's R window, hold key defensive tools for the commit, and punish after R is spent.",
+          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
         },
         {
           timing: "First completed mage item",
@@ -87,29 +87,29 @@ export const luxCombatProfile = {
     primaryRoles: ["support"],
     secondaryRoles: ["mid"],
     primaryTradingPattern:
-      "Poke with Lucent Singularity and punish oversteps with Light Binding into burst.",
+      "Poke with (E) and punish oversteps with (Q) into burst.",
     punishProfile: {
       canPunish: [],
       strugglesToPunish: [
-            "If Q is used recklessly, she can be punished.",
+            "If (Q) is used recklessly, she can be punished.",
             "Skillshot reliant.",
             "Can be all-inned if she loses range control.",
           ],
     },
-    shields: ["W Prismatic Barrier"],
-    softCrowdControl: ["E Lucent Singularity slow"],
+    shields: ["(W)"],
+    softCrowdControl: ["(E) slow"],
     stealthOrInvisibility: null,
     sustain: [],
     trading: {
       badTradeConditions: [
-        "If Lux misses Q she can be punished.",
+        "If Lux misses (Q) she can be punished.",
         "Skillshot reliant champions like Lux can be punished by dodging their key abilities and forcing them into unfavorable trades."
       ],
       goodTradeConditions: [],
-      primaryPattern: "Poke with Lucent Singularity and punish oversteps with Light Binding into burst.",
+      primaryPattern: "Poke with (E) and punish oversteps with (Q) into burst.",
     },
     punishWindows: [
-  "If Lux misses Q she can be punished.",
+  "If Lux misses (Q) she can be punished.",
   "Skillshot reliant champions like Lux can be punished by dodging their key abilities and forcing them into unfavorable trades."
 ]
   } satisfies LeagueChampionKnowledgeProfile;
