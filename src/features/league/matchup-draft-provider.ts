@@ -236,12 +236,12 @@ async function generateDraftSectionWithOpenAIProvider({
       {
         championName: championAName,
         profile: championAProfile,
-        replacementPrefix: "",
+        replacementOwner: null,
       },
       {
         championName: championBName,
         profile: championBProfile,
-        replacementPrefix: `${championBName} `,
+        replacementOwner: championBName,
       }
     ),
     ok: true,
@@ -498,12 +498,12 @@ function normalizeDraftAbilityReferences({
         {
           championName: playerChampionName,
           profile: playerChampionProfile,
-          replacementPrefix: "",
+          replacementOwner: null,
         },
         {
           championName: enemyChampionName,
           profile: enemyChampionProfile,
-          replacementPrefix: `${enemyChampionName} `,
+          replacementOwner: enemyChampionName,
         }
       ),
     ])
@@ -515,7 +515,7 @@ function normalizeSectionAbilityReferences(
   ...champions: Array<{
     championName: string;
     profile?: LeagueChampionKnowledgeProfile | null;
-    replacementPrefix: string;
+    replacementOwner: string | null;
   }>
 ) {
   return champions.reduce((currentSection, champion) => {
@@ -529,14 +529,18 @@ function normalizeSectionAbilityReferences(
       keyof typeof abilities,
       string,
     ]>).reduce((currentText, [abilityKey, abilityName]) => {
-      const replacement = `${champion.replacementPrefix}${abilityKey}`;
+      const replacement = champion.replacementOwner
+        ? `${champion.replacementOwner}'s (${abilityKey})`
+        : `(${abilityKey})`;
       const aliases = [
         `(${abilityKey}) ${abilityName}`,
         `${abilityKey} ${abilityName}`,
         abilityName,
+        `(${abilityKey})`,
+        abilityKey,
       ];
 
-      return aliases.reduce(
+      const nextText = aliases.reduce(
         (nextText, alias) =>
           replaceAbilityAlias(
             replaceChampionOwnedAbilityAlias(
@@ -547,8 +551,15 @@ function normalizeSectionAbilityReferences(
             ),
             alias,
             replacement
-          ),
+        ),
         currentText
+      );
+
+      return normalizeAbilityOwnerReferences(
+        nextText,
+        champion.championName,
+        abilityKey,
+        champion.replacementOwner
       );
     }, currentSection);
   }, section);
@@ -572,6 +583,32 @@ function replaceChampionOwnedAbilityAlias(
 
 function replaceAbilityAlias(text: string, alias: string, replacement: string) {
   return text.replace(getAbilityAliasPattern(alias), `$1${replacement}`);
+}
+
+function normalizeAbilityOwnerReferences(
+  text: string,
+  championName: string,
+  abilityKey: string,
+  replacementOwner: string | null
+) {
+  if (!replacementOwner) {
+    return text.replace(
+      getAbilityAliasPattern(`${championName}'s (${abilityKey})`),
+      `$1(${abilityKey})`
+    );
+  }
+
+  return text
+    .replace(
+      getAbilityAliasPattern(
+        `${replacementOwner}'s ${replacementOwner}'s (${abilityKey})`
+      ),
+      `$1${replacementOwner}'s (${abilityKey})`
+    )
+    .replace(
+      getAbilityAliasPattern(`${replacementOwner} ${replacementOwner}'s (${abilityKey})`),
+      `$1${replacementOwner}'s (${abilityKey})`
+    );
 }
 
 function getAbilityAliasPattern(alias: string) {
