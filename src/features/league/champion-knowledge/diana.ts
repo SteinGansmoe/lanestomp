@@ -61,6 +61,12 @@ export const dianaCombatProfile = {
     mobilityLevel: "high",
     name: "Diana",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["all-in pressure", "skirmish burst", "teamfight engage"],
+    },
     powerSpikes: {
       major: [
         {

@@ -70,6 +70,12 @@ export const aniviaCombatProfile = {
     mobilityLevel: "low",
     name: "Anivia",
     offMetaRoles: ["top"],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "late",
+      preferredGameLength: "long",
+      winMethod: ["wave control", "zone denial", "scaling teamfights"],
+    },
     powerSpikes: {
       major: [
         {

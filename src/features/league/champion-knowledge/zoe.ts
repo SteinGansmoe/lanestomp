@@ -51,6 +51,12 @@ export const zoeCombatProfile = {
     mobilityLevel: "medium",
     name: "Zoe",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["long-range picks", "fog pressure", "poke setup"],
+    },
     powerSpikes: {
       major: [
         {

@@ -60,6 +60,12 @@ export const oriannaCombatProfile = {
     mobilityLevel: "none",
     name: "Orianna",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "teamfight",
+      scalingProfile: "late",
+      preferredGameLength: "long",
+      winMethod: ["wave control", "teamfight scaling", "ball delivery"],
+    },
     powerSpikes: {
       major: [
         {

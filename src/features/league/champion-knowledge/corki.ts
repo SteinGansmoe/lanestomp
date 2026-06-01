@@ -88,6 +88,12 @@ export const corkiCombatProfile = {
   mobilityLevel: "medium",
   name: "Corki",
   offMetaRoles: ["adc"],
+      strategicIdentity: {
+        laneGoal: "scale",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["poke pressure", "item scaling", "objective siege"],
+      },
       powerSpikes: {
       major: [
         {

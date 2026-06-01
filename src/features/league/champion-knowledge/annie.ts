@@ -58,6 +58,12 @@ export const annieCombatProfile = {
     mobilityLevel: "medium",
     name: "Annie",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "teamfight",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["flash engage", "burst picks", "teamfight initiation"],
+    },
     powerSpikes: {
       major: [
         {

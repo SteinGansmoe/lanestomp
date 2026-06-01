@@ -87,6 +87,12 @@ export const naafiriCombatProfile = {
   mobilityLevel: "high",
   name: "Naafiri",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "snowball",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["target access", "roam pressure", "burst all-ins"],
+      },
       powerSpikes: {
       major: [
         {

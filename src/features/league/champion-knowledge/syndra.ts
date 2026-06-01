@@ -60,6 +60,12 @@ export const syndraCombatProfile = {
     mobilityLevel: "none",
     name: "Syndra",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["lane pressure", "pick threat", "burst control"],
+    },
     powerSpikes: {
       major: [
         {

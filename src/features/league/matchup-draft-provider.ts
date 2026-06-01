@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   buildLeagueMatchupDraftPrompt,
+  createMatchupDraftSchema,
   matchupDraftSchema,
   matchupDraftSectionKeys,
   type LeagueRole,
@@ -18,8 +19,14 @@ export type GenerateLeagueMatchupDraftContentInput = {
   championAName: string;
   championBProfile?: LeagueChampionKnowledgeProfile | null;
   championBName: string;
+  existingSections?: Partial<MatchupDraftSections> | null;
   role: LeagueRole;
 };
+
+export type GenerateLeagueMatchupDraftSectionContentInput =
+  GenerateLeagueMatchupDraftContentInput & {
+    sectionKey: MatchupDraftSectionKey;
+  };
 
 export type GenerateLeagueMatchupDraftContentResult =
   | {
@@ -27,6 +34,19 @@ export type GenerateLeagueMatchupDraftContentResult =
       ok: true;
       provider: LeagueMatchupDraftProvider;
       profileWarning?: string;
+      providerWarning?: string;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type GenerateLeagueMatchupDraftSectionContentResult =
+  | {
+      content: string;
+      ok: true;
+      profileWarning?: string;
+      provider: LeagueMatchupDraftProvider;
       providerWarning?: string;
     }
   | {
@@ -69,6 +89,38 @@ export async function generateLeagueMatchupDraftContent(
   };
 }
 
+export async function generateLeagueMatchupDraftSectionContent(
+  input: GenerateLeagueMatchupDraftSectionContentInput
+): Promise<GenerateLeagueMatchupDraftSectionContentResult> {
+  const profileWarning = getMissingChampionProfileWarning(input);
+
+  if (!openaiApiKey) {
+    return {
+      content: generateDraftWithPlaceholderProvider(input)[input.sectionKey],
+      ok: true,
+      profileWarning,
+      provider: "placeholder",
+    };
+  }
+
+  const openaiResult = await generateDraftSectionWithOpenAIProvider(input);
+
+  if (openaiResult.ok) {
+    return {
+      ...openaiResult,
+      profileWarning,
+    };
+  }
+
+  return {
+    content: generateDraftWithPlaceholderProvider(input)[input.sectionKey],
+    ok: true,
+    profileWarning,
+    provider: "placeholder",
+    providerWarning: openaiResult.error,
+  };
+}
+
 function getMissingChampionProfileWarning({
   championAProfile,
   championAName,
@@ -95,16 +147,126 @@ async function generateDraftWithOpenAIProvider({
   championAName,
   championBProfile,
   championBName,
+  existingSections,
   role,
 }: GenerateLeagueMatchupDraftContentInput): Promise<GenerateLeagueMatchupDraftContentResult> {
   const prompt = buildLeagueMatchupDraftPrompt({
     adminNotes,
     enemyChampionProfile: championBProfile,
     enemyChampionName: championBName,
+    existingSections,
     playerChampionProfile: championAProfile,
     playerChampionName: championAName,
     role,
   });
+  const responseResult = await requestOpenAIDraft({
+    prompt,
+    schema: matchupDraftSchema,
+    schemaName: "league_matchup_draft",
+  });
+
+  if (!responseResult.ok) {
+    return responseResult;
+  }
+
+  const draft = parseDraftSections(responseResult.outputText);
+
+  if (!draft) {
+    return {
+      error: "AI provider returned draft content in an unexpected format.",
+      ok: false,
+    };
+  }
+
+  return {
+    draft: normalizeDraftAbilityReferences({
+      draft,
+      enemyChampionName: championBName,
+      enemyChampionProfile: championBProfile,
+      playerChampionName: championAName,
+      playerChampionProfile: championAProfile,
+    }),
+    ok: true,
+    provider: "openai",
+  };
+}
+
+async function generateDraftSectionWithOpenAIProvider({
+  adminNotes,
+  championAProfile,
+  championAName,
+  championBProfile,
+  championBName,
+  existingSections,
+  role,
+  sectionKey,
+}: GenerateLeagueMatchupDraftSectionContentInput): Promise<GenerateLeagueMatchupDraftSectionContentResult> {
+  const prompt = buildLeagueMatchupDraftPrompt({
+    adminNotes,
+    enemyChampionProfile: championBProfile,
+    enemyChampionName: championBName,
+    existingSections,
+    playerChampionProfile: championAProfile,
+    playerChampionName: championAName,
+    role,
+    targetSection: sectionKey,
+  });
+  const responseResult = await requestOpenAIDraft({
+    prompt,
+    schema: createMatchupDraftSchema([sectionKey]),
+    schemaName: "league_matchup_draft_section",
+  });
+
+  if (!responseResult.ok) {
+    return responseResult;
+  }
+
+  const section = parseDraftSection(responseResult.outputText, sectionKey);
+
+  if (!section) {
+    return {
+      error: "AI provider returned draft card content in an unexpected format.",
+      ok: false,
+    };
+  }
+
+  return {
+    content: normalizeSectionAbilityReferences(
+      section,
+      {
+        championName: championAName,
+        profile: championAProfile,
+        replacementPrefix: "",
+      },
+      {
+        championName: championBName,
+        profile: championBProfile,
+        replacementPrefix: `${championBName} `,
+      }
+    ),
+    ok: true,
+    provider: "openai",
+  };
+}
+
+async function requestOpenAIDraft({
+  prompt,
+  schema,
+  schemaName,
+}: {
+  prompt: ReturnType<typeof buildLeagueMatchupDraftPrompt>;
+  schema: object;
+  schemaName: string;
+}): Promise<
+  | {
+      ok: true;
+      outputText: string;
+    }
+  | {
+      error: string;
+      ok: false;
+    }
+> {
   let response: Response;
 
   try {
@@ -126,8 +288,8 @@ async function generateDraftWithOpenAIProvider({
         temperature: 0.4,
         text: {
           format: {
-            name: "league_matchup_draft",
-            schema: matchupDraftSchema,
+            name: schemaName,
+            schema,
             strict: true,
             type: "json_schema",
           },
@@ -182,25 +344,9 @@ async function generateDraftWithOpenAIProvider({
     };
   }
 
-  const draft = parseDraftSections(outputText);
-
-  if (!draft) {
-    return {
-      error: "AI provider returned draft content in an unexpected format.",
-      ok: false,
-    };
-  }
-
   return {
-    draft: normalizeDraftAbilityReferences({
-      draft,
-      enemyChampionName: championBName,
-      enemyChampionProfile: championBProfile,
-      playerChampionName: championAName,
-      playerChampionProfile: championAProfile,
-    }),
     ok: true,
-    provider: "openai",
+    outputText,
   };
 }
 
@@ -294,6 +440,26 @@ function parseDraftSections(outputText: string): MatchupDraftSections | null {
           normalizeDraftSection(parsed[key]?.toString() ?? ""),
         ])
       ) as MatchupDraftSections;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function parseDraftSection(
+  outputText: string,
+  sectionKey: MatchupDraftSectionKey
+) {
+  try {
+    const parsed = JSON.parse(outputText) as Partial<
+      Record<MatchupDraftSectionKey, unknown>
+    >;
+    const section = parsed[sectionKey];
+
+    if (typeof section === "string" && section.trim()) {
+      return normalizeDraftSection(section);
     }
   } catch {
     return null;

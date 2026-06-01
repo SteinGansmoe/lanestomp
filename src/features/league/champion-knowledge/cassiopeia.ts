@@ -87,6 +87,12 @@ export const cassiopeiaCombatProfile = {
   mobilityLevel: "low",
   name: "Cassiopeia",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "scale",
+        scalingProfile: "late",
+        preferredGameLength: "long",
+        winMethod: ["extended fights", "anti-dash zones", "sustained DPS"],
+      },
       powerSpikes: {
       major: [
         {

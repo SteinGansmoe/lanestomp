@@ -54,6 +54,12 @@ export const auroraCombatProfile = {
     mobilityLevel: "medium",
     name: "Aurora",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "teamfight",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["mobile skirmishes", "teamfight disruption", "flank pressure"],
+    },
     powerSpikes: {
       major: [
         {

@@ -5,14 +5,22 @@ import { createClient } from "@supabase/supabase-js";
 import type { AdminLeagueMatchup } from "@/src/components/admin/types";
 import {
   generateLeagueMatchupDraftContent,
+  generateLeagueMatchupDraftSectionContent,
   type LeagueMatchupDraftProvider,
 } from "@/src/features/league/matchup-draft-provider";
-import { type MatchupDraftSections } from "@/src/features/league/matchup-draft-prompt";
+import {
+  type MatchupDraftSectionKey,
+  type MatchupDraftSections,
+} from "@/src/features/league/matchup-draft-prompt";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 
 type GenerateDraftInput = {
   accessToken: string;
   matchupId: number;
+};
+
+type GenerateDraftSectionInput = GenerateDraftInput & {
+  sectionKey: MatchupDraftSectionKey;
 };
 
 type DeleteDraftInput = GenerateDraftInput;
@@ -25,6 +33,21 @@ type GenerateDraftResult =
       profileWarning?: string;
       provider: LeagueMatchupDraftProvider;
       providerWarning?: string;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+type GenerateDraftSectionResult =
+  | {
+      content: string;
+      matchup: SavedMatchupDraftRow;
+      ok: true;
+      profileWarning?: string;
+      provider: LeagueMatchupDraftProvider;
+      providerWarning?: string;
+      sectionKey: MatchupDraftSectionKey;
     }
   | {
       error: string;
@@ -46,7 +69,13 @@ type MatchupRow = {
   champion_a_id: string;
   champion_b_id: string;
   confidence_level: string | null;
+  danger_windows: string | null;
+  early_game: string | null;
+  overview: string | null;
+  power_spikes: string | null;
   role: AdminLeagueMatchup["role"];
+  trading_pattern: string | null;
+  win_conditions: string | null;
 };
 
 type SavedMatchupDraftRow = MatchupDraftSections & {
@@ -92,7 +121,9 @@ export async function generateLeagueMatchupDraft({
   const { supabase } = authResult;
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
-    .select("admin_notes, champion_a_id, champion_b_id, confidence_level, role")
+    .select(
+      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, overview, power_spikes, role, trading_pattern, win_conditions"
+    )
     .eq("id", matchupId)
     .maybeSingle<MatchupRow>();
 
@@ -137,6 +168,7 @@ export async function generateLeagueMatchupDraft({
     championAName,
     championBProfile,
     championBName,
+    existingSections: getDraftFromMatchupRow(matchup),
     role: matchup.role,
   });
 
@@ -192,6 +224,109 @@ export async function generateLeagueMatchupDraft({
     profileWarning: providerResult.profileWarning,
     provider,
     providerWarning: providerResult.providerWarning,
+  };
+}
+
+export async function generateLeagueMatchupDraftSection({
+  accessToken,
+  matchupId,
+  sectionKey,
+}: GenerateDraftSectionInput): Promise<GenerateDraftSectionResult> {
+  const authResult = await getAuthorizedSupabaseClient(
+    accessToken,
+    "generate matchup draft cards"
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const { supabase } = authResult;
+  const { data: matchup, error: matchupError } = await supabase
+    .from("league_matchups")
+    .select(
+      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, overview, power_spikes, role, trading_pattern, win_conditions"
+    )
+    .eq("id", matchupId)
+    .maybeSingle<MatchupRow>();
+
+  if (matchupError || !matchup) {
+    return {
+      error: matchupError?.message ?? "League matchup could not be found.",
+      ok: false,
+    };
+  }
+
+  const { data: champions, error: championsError } = await supabase
+    .from("league_champions")
+    .select("id, name")
+    .in("id", [matchup.champion_a_id, matchup.champion_b_id]);
+
+  if (championsError) {
+    return {
+      error: championsError.message,
+      ok: false,
+    };
+  }
+
+  const championNamesById = new Map(
+    ((champions ?? []) as ChampionRow[]).map((champion) => [
+      champion.id,
+      champion.name,
+    ])
+  );
+  const championAName =
+    championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
+  const championBName =
+    championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
+  const providerResult = await generateLeagueMatchupDraftSectionContent({
+    adminNotes: matchup.admin_notes,
+    championAProfile: getChampionCombatProfile(matchup.champion_a_id),
+    championAName,
+    championBProfile: getChampionCombatProfile(matchup.champion_b_id),
+    championBName,
+    existingSections: getDraftFromMatchupRow(matchup),
+    role: matchup.role,
+    sectionKey,
+  });
+
+  if (!providerResult.ok) {
+    return providerResult;
+  }
+
+  const generatedAt = new Date().toISOString();
+  const confidenceLevel =
+    providerResult.profileWarning ? "low" : matchup.confidence_level;
+
+  const { data: savedMatchup, error: updateError } = await supabase
+    .from("league_matchups")
+    .update({
+      [sectionKey]: providerResult.content,
+      confidence_level: confidenceLevel,
+      generated_at: generatedAt,
+      generation_status: "draft",
+      reviewed_at: null,
+      reviewed_by: null,
+    })
+    .eq("id", matchupId)
+    .select(savedMatchupDraftSelect)
+    .maybeSingle<SavedMatchupDraftRow>();
+
+  if (updateError || !savedMatchup) {
+    return {
+      error: updateError?.message ?? "Generated draft card could not be saved.",
+      ok: false,
+    };
+  }
+
+  return {
+    content: providerResult.content,
+    matchup: savedMatchup,
+    ok: true,
+    profileWarning: providerResult.profileWarning,
+    provider: providerResult.provider,
+    providerWarning: providerResult.providerWarning,
+    sectionKey,
   };
 }
 
@@ -305,6 +440,17 @@ function getDraftFromSavedMatchup(
     power_spikes: matchup.power_spikes,
     trading_pattern: matchup.trading_pattern,
     win_conditions: matchup.win_conditions,
+  };
+}
+
+function getDraftFromMatchupRow(matchup: MatchupRow): MatchupDraftSections {
+  return {
+    danger_windows: matchup.danger_windows ?? "",
+    early_game: matchup.early_game ?? "",
+    overview: matchup.overview ?? "",
+    power_spikes: matchup.power_spikes ?? "",
+    trading_pattern: matchup.trading_pattern ?? "",
+    win_conditions: matchup.win_conditions ?? "",
   };
 }
 

@@ -60,6 +60,12 @@ export const vexCombatProfile = {
     mobilityLevel: "medium",
     name: "Vex",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["anti-dash punishment", "reset fights", "burst picks"],
+    },
     powerSpikes: {
       major: [
         {

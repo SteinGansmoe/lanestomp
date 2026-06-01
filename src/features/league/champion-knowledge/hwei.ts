@@ -61,6 +61,12 @@ export const hweiCombatProfile = {
     mobilityLevel: "none",
     name: "Hwei",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["wave control", "zone control", "teamfight utility"],
+    },
     powerSpikes: {
       major: [
         {

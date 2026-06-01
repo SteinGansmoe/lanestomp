@@ -87,6 +87,12 @@ export const neekoCombatProfile = {
   mobilityLevel: "medium",
   name: "Neeko",
   offMetaRoles: ["support"],
+      strategicIdentity: {
+        laneGoal: "teamfight",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["pick setup", "flank engages", "teamfight burst"],
+      },
       powerSpikes: {
       major: [
         {

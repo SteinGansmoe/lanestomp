@@ -61,6 +61,12 @@ export const fizzCombatProfile = {
     mobilityLevel: "high",
     name: "Fizz",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "early",
+      preferredGameLength: "short",
+      winMethod: ["level 6 all-ins", "roam kills", "burst picks"],
+    },
     powerSpikes: {
       major: [
         {

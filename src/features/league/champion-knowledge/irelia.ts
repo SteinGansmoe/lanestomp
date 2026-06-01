@@ -88,6 +88,12 @@ export const ireliaCombatProfile = {
   mobilityLevel: "very_high",
   name: "Irelia",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "snowball",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["wave-based all-ins", "side-lane pressure", "extended skirmishes"],
+      },
       powerSpikes: {
       major: [
         {

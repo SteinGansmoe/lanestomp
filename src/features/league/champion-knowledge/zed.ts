@@ -61,6 +61,12 @@ export const zedCombatProfile = {
     mobilityLevel: "high",
     name: "Zed",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "early",
+      preferredGameLength: "short",
+      winMethod: ["burst all-ins", "side-lane picks", "roam pressure"],
+    },
     powerSpikes: {
       major: [
         {

@@ -61,6 +61,12 @@ export const akshanCombatProfile = {
     mobilityLevel: "high",
     name: "Akshan",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "early",
+      preferredGameLength: "short",
+      winMethod: ["early lane pressure", "roam resets", "skirmish cleanup"],
+    },
     powerSpikes: {
       major: [
         {

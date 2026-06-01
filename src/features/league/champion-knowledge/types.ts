@@ -54,6 +54,24 @@ export type LeagueChampionPunishProfile = {
   strugglesToPunish: string[];
 };
 
+export type LeagueChampionStrategicLaneGoal =
+  | "control"
+  | "roam"
+  | "scale"
+  | "snowball"
+  | "splitpush"
+  | "survive"
+  | "teamfight";
+export type LeagueChampionStrategicScalingProfile = "early" | "late" | "mid";
+export type LeagueChampionStrategicGameLength = "long" | "medium" | "short";
+
+export type LeagueChampionStrategicIdentity = {
+  laneGoal: LeagueChampionStrategicLaneGoal;
+  preferredGameLength: LeagueChampionStrategicGameLength;
+  scalingProfile: LeagueChampionStrategicScalingProfile;
+  winMethod: string[];
+};
+
 export type LeagueChampionPowerSpike = {
   changesGameplay: string;
   enemyResponse?: string;
@@ -90,6 +108,7 @@ export type LeagueChampionKnowledgeProfile = {
   secondaryRoles?: LeagueRole[];
   shields?: string[];
   softCrowdControl?: string[];
+  strategicIdentity: LeagueChampionStrategicIdentity;
   stealthOrInvisibility?: string | null;
   sustain?: string[];
   dangerAbilities?: string[];

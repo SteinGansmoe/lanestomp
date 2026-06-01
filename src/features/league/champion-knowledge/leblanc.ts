@@ -61,6 +61,12 @@ export const leblancCombatProfile = {
     mobilityLevel: "very_high",
     name: "LeBlanc",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "early",
+      preferredGameLength: "short",
+      winMethod: ["lane picks", "roam pressure", "burst trades"],
+    },
     powerSpikes: {
       major: [
         {

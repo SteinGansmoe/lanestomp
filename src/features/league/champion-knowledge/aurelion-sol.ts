@@ -57,6 +57,12 @@ export const aurelionSolCombatProfile = {
     mobilityLevel: "medium",
     name: "Aurelion Sol",
     offMetaRoles: ["adc", "support"],
+    strategicIdentity: {
+      laneGoal: "scale",
+      scalingProfile: "late",
+      preferredGameLength: "long",
+      winMethod: ["stack scaling", "teamfight damage", "map movement"],
+    },
     powerSpikes: {
       major: [
         {

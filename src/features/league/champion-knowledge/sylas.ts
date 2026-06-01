@@ -61,6 +61,12 @@ export const sylasCombatProfile = {
     mobilityLevel: "high",
     name: "Sylas",
     offMetaRoles: ["top", "jungle"],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["skirmish healing", "ultimate theft", "all-in pressure"],
+    },
     powerSpikes: {
       major: [
         {

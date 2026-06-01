@@ -87,6 +87,12 @@ export const lissandraCombatProfile = {
   mobilityLevel: "medium",
   name: "Lissandra",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "teamfight",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["reliable engage", "pick setup", "carry lockdown"],
+      },
       powerSpikes: {
       major: [
         {

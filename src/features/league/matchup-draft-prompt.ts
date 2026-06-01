@@ -18,6 +18,15 @@ export type MatchupDraftSectionKey = (typeof matchupDraftSectionKeys)[number];
 
 export type MatchupDraftSections = Record<MatchupDraftSectionKey, string>;
 
+export const matchupDraftSectionLabels = {
+  danger_windows: "Danger windows",
+  early_game: "Early game",
+  overview: "Overview",
+  power_spikes: "Power spikes",
+  trading_pattern: "Trading pattern",
+  win_conditions: "Win conditions",
+} as const satisfies Record<MatchupDraftSectionKey, string>;
+
 export const matchupDraftSchema = {
   type: "object",
   additionalProperties: false,
@@ -32,13 +41,33 @@ export const matchupDraftSchema = {
   required: matchupDraftSectionKeys,
 };
 
+export function createMatchupDraftSchema(
+  sectionKeys: readonly MatchupDraftSectionKey[] = matchupDraftSectionKeys
+) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: Object.fromEntries(
+      sectionKeys.map((key) => [
+        key,
+        {
+          type: "string",
+        },
+      ])
+    ),
+    required: sectionKeys,
+  };
+}
+
 export type LeagueMatchupDraftPromptInput = {
   adminNotes: string | null;
   enemyChampionProfile?: LeagueChampionKnowledgeProfile | null;
   enemyChampionName: string;
+  existingSections?: Partial<MatchupDraftSections> | null;
   playerChampionProfile?: LeagueChampionKnowledgeProfile | null;
   playerChampionName: string;
   role: LeagueRole;
+  targetSection?: MatchupDraftSectionKey | null;
 };
 
 export type LeagueMatchupDraftPrompt = {
@@ -52,12 +81,16 @@ export function buildLeagueMatchupDraftPrompt({
   adminNotes,
   enemyChampionProfile,
   enemyChampionName,
+  existingSections,
   playerChampionProfile,
   playerChampionName,
   role,
+  targetSection,
 }: LeagueMatchupDraftPromptInput): LeagueMatchupDraftPrompt {
   const roleLabel = role === "adc" ? "ADC" : role;
+  const outputKeys = targetSection ? [targetSection] : matchupDraftSectionKeys;
   const sourceNotes = adminNotes?.trim() || "No admin notes supplied.";
+  const existingSectionContext = formatExistingSections(existingSections);
   const playerChampionContext = formatChampionKnowledgeForPrompt(
     playerChampionName,
     playerChampionProfile
@@ -106,7 +139,12 @@ export function buildLeagueMatchupDraftPrompt({
       `Player champion combat profile:\n${playerChampionContext}`,
       `Enemy champion combat profile:\n${enemyChampionContext}`,
       "",
-      "Write JSON for these exact keys: overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions.",
+      `Existing matchup context:\n${existingSectionContext}`,
+      "",
+      targetSection
+        ? `Regenerate only the ${matchupDraftSectionLabels[targetSection]} card. Preserve the intent of the other existing cards as context, but do not rewrite them.`
+        : "Regenerate the full matchup draft.",
+      `Write JSON for these exact keys: ${outputKeys.join(", ")}.`,
       "Each value must be a newline-separated bullet list.",
       "Use 1-3 bullets per key, never more.",
       "Each bullet must be one short actionable sentence.",
@@ -119,13 +157,17 @@ export function buildLeagueMatchupDraftPrompt({
       "Do not repeat wave control, spacing, or cooldown tracking across sections unless that concept is uniquely relevant to the section.",
       "If a concept belongs in one section, do not restate it elsewhere.",
       "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, trading patterns, lane identity, and real spikes.",
-      "When structured lanePlan, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields are supplied, treat them as higher priority than the older summary fields.",
+      "When structured lanePlan, laneIdentity, strategicIdentity, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields are supplied, treat them as higher priority than the older summary fields.",
+      "Use strategicIdentity to infer high-level matchup identities such as snowball vs scale, roam vs scale, control vs roam, teamfight vs splitpush, or lane pressure vs scaling carry.",
+      "Do not name a matchup identity unless it follows from the supplied strategicIdentity fields.",
       "Power spike objects include timing, reason, changesGameplay, playerAction, and sometimes enemyResponse.",
       "Do not echo power spike timing by itself; explain what changes in lane, who becomes more dangerous, and what the player should do differently.",
       "If a structured field is not supplied, fall back to the older summary field for that topic. If neither is supplied, keep the advice conservative and avoid invented details.",
       "Use laneIdentity to reason about who controls early lane pace, who wants time to scale, who wants lane pressure, and who benefits from a passive lane state.",
+      "Use strategicIdentity to reason about each champion's lane goal, scaling curve, preferred game length, and general win method.",
       `Compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
       `Compare ${playerChampionName}'s laneIdentity against ${enemyChampionName}'s laneIdentity before writing overview, early_game, trading_pattern, or win_conditions.`,
+      `Compare ${playerChampionName}'s strategicIdentity against ${enemyChampionName}'s strategicIdentity before writing overview or win_conditions.`,
       `Compare ${playerChampionName}'s punishProfile.canPunish against ${enemyChampionName}'s dangerProfile.mustRespect and trading.badTradeConditions.`,
       `Compare ${enemyChampionName}'s punishProfile.canPunish and dangerProfile.dangerousWhen against ${playerChampionName}'s trading.badTradeConditions.`,
       "Use primary win conditions, danger abilities, and punish windows as matchup facts for all-ins, spacing, cooldown punish, and danger window advice.",
@@ -164,6 +206,7 @@ export function buildLeagueMatchupDraftPrompt({
       "Section requirements:",
       `overview: Use 1-2 bullets from ${playerChampionName}'s point of view only; state the matchup identity and the main thing ${playerChampionName} must manage.`,
       `overview: Use laneIdentity to explain whether ${playerChampionName} should pressure, deny scaling, or avoid giving ${enemyChampionName} a passive lane.`,
+      `overview: Use strategicIdentity to summarize whether this is snowball vs scale, roam vs control, control vs teamfight, or another supplied-profile identity.`,
       `overview: Mention defensive adaptation here only when it materially changes how ${playerChampionName} should play the matchup.`,
       `early_game: Cover what ${playerChampionName} should do in the first waves and levels 1-6 based on who has earlyGameAgency and lanePressure.`,
       `trading_pattern: Explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
@@ -174,7 +217,7 @@ export function buildLeagueMatchupDraftPrompt({
       "power_spikes: Never mention recalls, mana refreshes, Lost Chapter sustain, generic tempo, or non-spike ability unlocks here.",
       `danger_windows: List only moments where ${playerChampionName} is actually in danger from lethal trades, all-ins, ganks, dives, or forced summoners.`,
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
-      `win_conditions: Explain concrete ways ${playerChampionName} can win this matchup by using lane agency, denying scaling, or reaching the preferred game state.`,
+      `win_conditions: Explain concrete ways ${playerChampionName} can win this matchup by using lane agency, denying scaling, reaching the preferred game state, or executing strategicIdentity.winMethod.`,
       "",
       "Negative examples to avoid:",
       "- Do not say play safe unless you explain what cooldown, wave state, or enemy spike requires caution.",
@@ -297,6 +340,18 @@ function formatChampionKnowledgeForPrompt(
     )}`,
     `power_spikes.major: ${formatPowerSpikes(profile.powerSpikes?.major)}`,
     `power_spikes.minor: ${formatPowerSpikes(profile.powerSpikes?.minor)}`,
+    `strategic_identity.lane_goal: ${
+      profile.strategicIdentity?.laneGoal ?? "not supplied"
+    }`,
+    `strategic_identity.scaling_profile: ${
+      profile.strategicIdentity?.scalingProfile ?? "not supplied"
+    }`,
+    `strategic_identity.preferred_game_length: ${
+      profile.strategicIdentity?.preferredGameLength ?? "not supplied"
+    }`,
+    `strategic_identity.win_method: ${formatOptionalList(
+      profile.strategicIdentity?.winMethod
+    )}`,
     `primary_trading_pattern: ${
       profile.primaryTradingPattern ?? "not supplied"
     }`,
@@ -319,6 +374,22 @@ function formatList(values: readonly string[]) {
 
 function formatOptionalList(values?: readonly string[]) {
   return values && values.length > 0 ? formatList(values) : "not supplied";
+}
+
+function formatExistingSections(
+  existingSections?: Partial<MatchupDraftSections> | null
+) {
+  if (!existingSections) {
+    return "not supplied";
+  }
+
+  const lines = matchupDraftSectionKeys.map((key) => {
+    const value = existingSections[key]?.trim();
+
+    return `${key}: ${value || "not supplied"}`;
+  });
+
+  return lines.join("\n");
 }
 
 function formatPowerSpikes(spikes?: readonly LeagueChampionPowerSpike[]) {

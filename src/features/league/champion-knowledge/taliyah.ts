@@ -87,6 +87,12 @@ export const taliyahCombatProfile = {
   mobilityLevel: "medium",
   name: "Taliyah",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "roam",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["wave control into roams", "anti-dash punishment", "map pressure"],
+      },
       powerSpikes: {
       major: [
         {

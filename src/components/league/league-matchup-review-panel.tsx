@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Edit3,
   Leaf,
+  RefreshCw,
   RotateCcw,
   Save,
   ShieldCheck,
@@ -17,6 +18,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/src/components/ui/button";
+import { generateLeagueMatchupDraftSection } from "@/src/app/admin/league/matchups/actions";
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 import type { LeagueMatchup } from "@/src/features/league/matchups";
@@ -121,12 +123,18 @@ export function LeagueMatchupReviewPanel({
   );
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [regeneratingSectionKey, setRegeneratingSectionKey] =
+    useState<MatchupSectionKey | null>(null);
+  const [sectionErrors, setSectionErrors] = useState<
+    Partial<Record<MatchupSectionKey, string>>
+  >({});
   const [status, setStatus] = useState<ReviewStatus>({
     error: null,
     isLoading: false,
     success: null,
   });
   const displayMatchup = adminMatchup ?? initialMatchup;
+  const isRegeneratingSection = regeneratingSectionKey !== null;
   const sections = useMemo(
     () =>
       matchupSectionDefinitions.map((section) => ({
@@ -317,6 +325,58 @@ export function LeagueMatchupReviewPanel({
     });
   }
 
+  async function regenerateSection(sectionKey: MatchupSectionKey) {
+    if (!supabase || !adminMatchup || regeneratingSectionKey) {
+      return;
+    }
+
+    setRegeneratingSectionKey(sectionKey);
+    setSectionErrors((current) => ({ ...current, [sectionKey]: undefined }));
+    setStatus({ error: null, isLoading: false, success: null });
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (sessionError || !accessToken) {
+      setSectionErrors((current) => ({
+        ...current,
+        [sectionKey]: sessionError?.message ?? "Admin session is not ready.",
+      }));
+      setRegeneratingSectionKey(null);
+      return;
+    }
+
+    const result = await generateLeagueMatchupDraftSection({
+      accessToken,
+      matchupId: adminMatchup.id,
+      sectionKey,
+    });
+
+    if (!result.ok) {
+      setSectionErrors((current) => ({
+        ...current,
+        [sectionKey]: result.error,
+      }));
+      setRegeneratingSectionKey(null);
+      return;
+    }
+
+    const nextMatchup = {
+      ...adminMatchup,
+      ...result.matchup,
+    };
+
+    setAdminMatchup(nextMatchup);
+    setForm(getReviewFormState(nextMatchup));
+    setRegeneratingSectionKey(null);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${getSectionTitle(sectionKey)} regenerated and marked as draft.`,
+    });
+  }
+
   return (
     <>
       {isAdmin ? (
@@ -343,7 +403,7 @@ export function LeagueMatchupReviewPanel({
                 <>
                   <Button
                     className="h-9 bg-violet-500/80 px-3 text-white hover:bg-violet-500"
-                    disabled={status.isLoading}
+                    disabled={status.isLoading || isRegeneratingSection}
                     onClick={saveEdits}
                     type="button"
                   >
@@ -352,7 +412,7 @@ export function LeagueMatchupReviewPanel({
                   </Button>
                   <Button
                     className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
-                    disabled={status.isLoading}
+                    disabled={status.isLoading || isRegeneratingSection}
                     onClick={cancelEditing}
                     type="button"
                     variant="ghost"
@@ -365,7 +425,9 @@ export function LeagueMatchupReviewPanel({
                 <>
                   <Button
                     className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
-                    disabled={!adminMatchup || status.isLoading}
+                    disabled={
+                      !adminMatchup || status.isLoading || isRegeneratingSection
+                    }
                     onClick={startEditing}
                     type="button"
                     variant="ghost"
@@ -378,6 +440,7 @@ export function LeagueMatchupReviewPanel({
                     disabled={
                       !adminMatchup ||
                       status.isLoading ||
+                      isRegeneratingSection ||
                       adminMatchup.generation_status === "reviewed"
                     }
                     onClick={markReviewed}
@@ -409,12 +472,21 @@ export function LeagueMatchupReviewPanel({
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {sections.map((section) => (
           <MatchupGuideCard
+            canRegenerate={Boolean(
+              isAdmin &&
+                adminMatchup &&
+                !isEditing &&
+                (!isRegeneratingSection || regeneratingSectionKey === section.key)
+            )}
             formValue={form[section.key]}
             isEditing={isEditing}
+            isRegenerating={regeneratingSectionKey === section.key}
             key={section.title}
             onChange={(value) =>
               setForm((current) => ({ ...current, [section.key]: value }))
             }
+            onRegenerate={() => regenerateSection(section.key)}
+            regenerateError={sectionErrors[section.key] ?? null}
             section={section}
           />
         ))}
@@ -424,14 +496,22 @@ export function LeagueMatchupReviewPanel({
 }
 
 function MatchupGuideCard({
+  canRegenerate,
   formValue,
   isEditing,
+  isRegenerating,
   onChange,
+  onRegenerate,
+  regenerateError,
   section,
 }: {
+  canRegenerate: boolean;
   formValue: string;
   isEditing: boolean;
+  isRegenerating: boolean;
   onChange: (value: string) => void;
+  onRegenerate: () => void;
+  regenerateError: string | null;
   section: (typeof matchupSectionDefinitions)[number] & { body: string };
 }) {
   const Icon = section.icon;
@@ -439,18 +519,43 @@ function MatchupGuideCard({
 
   return (
     <article className="group rounded-lg border border-white/10 bg-[#10182b]/90 p-4 shadow-lg shadow-black/10 ring-1 ring-white/5 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]">
-      <div className="flex items-center gap-3">
-        <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
-            section.accent
-          )}`}
-        >
-          <Icon className="size-4" aria-hidden="true" />
-        </span>
-        <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-white">
-          {section.title}
-        </h2>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={`flex size-9 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
+              section.accent
+            )}`}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+          </span>
+          <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-white">
+            {section.title}
+          </h2>
+        </div>
+
+        {canRegenerate ? (
+          <Button
+            aria-label={`Regenerate ${section.title}`}
+            className="h-8 border-white/10 bg-white/5 px-2 text-xs text-zinc-100 hover:bg-white/10"
+            disabled={isRegenerating}
+            onClick={onRegenerate}
+            type="button"
+            variant="ghost"
+          >
+            <RefreshCw
+              className={`size-3.5 ${isRegenerating ? "animate-spin" : ""}`}
+              aria-hidden="true"
+            />
+            {isRegenerating ? "Regenerating..." : "Regenerate"}
+          </Button>
+        ) : null}
       </div>
+
+      {regenerateError ? (
+        <p className="mt-3 rounded-md border border-rose-400/20 bg-rose-500/10 p-2 text-xs leading-5 text-rose-100">
+          {regenerateError}
+        </p>
+      ) : null}
 
       {isEditing ? (
         <textarea
@@ -514,6 +619,13 @@ function getGuideBullets(value: string) {
 
 function getStatusLabel(status: AdminMatchupRow["generation_status"]) {
   return status === "reviewed" ? "Reviewed / published" : "Draft";
+}
+
+function getSectionTitle(sectionKey: MatchupSectionKey) {
+  return (
+    matchupSectionDefinitions.find((section) => section.key === sectionKey)
+      ?.title ?? "Card"
+  );
 }
 
 function getSectionDotClass(

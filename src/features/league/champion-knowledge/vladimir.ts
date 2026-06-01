@@ -88,6 +88,12 @@ export const vladimirCombatProfile = {
   mobilityLevel: "low",
   name: "Vladimir",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "scale",
+        scalingProfile: "late",
+        preferredGameLength: "long",
+        winMethod: ["item scaling", "teamfight flanks", "late game burst"],
+      },
       powerSpikes: {
       major: [
         {

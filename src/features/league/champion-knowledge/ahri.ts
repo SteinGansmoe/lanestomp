@@ -86,6 +86,12 @@ export const ahriCombatProfile = {
     mobilityLevel: "high",
     name: "Ahri",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "roam",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["pick setup", "roam pressure", "short trade tempo"],
+    },
     powerSpikes: {
       major: [
         {

@@ -61,6 +61,12 @@ export const akaliCombatProfile = {
     mobilityLevel: "very_high",
     name: "Akali",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["side-lane picks", "burst all-ins", "flank pressure"],
+    },
     powerSpikes: {
       major: [
         {

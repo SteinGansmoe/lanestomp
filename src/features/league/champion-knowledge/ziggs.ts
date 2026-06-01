@@ -87,6 +87,12 @@ export const ziggsCombatProfile = {
   mobilityLevel: "low",
   name: "Ziggs",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "control",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["wave control", "siege pressure", "objective control"],
+      },
       powerSpikes: {
       major: [
         {

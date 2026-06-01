@@ -87,6 +87,12 @@ export const azirCombatProfile = {
   mobilityLevel: "medium",
   name: "Azir",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "scale",
+        scalingProfile: "late",
+        preferredGameLength: "long",
+        winMethod: ["soldier DPS", "safe scaling", "teamfight control"],
+      },
       powerSpikes: {
       major: [
         {

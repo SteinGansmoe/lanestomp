@@ -61,6 +61,12 @@ export const yoneCombatProfile = {
     mobilityLevel: "high",
     name: "Yone",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["side-lane pressure", "extended trades", "teamfight engage"],
+    },
     powerSpikes: {
       major: [
         {

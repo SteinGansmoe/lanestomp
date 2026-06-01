@@ -87,6 +87,12 @@ export const ryzeCombatProfile = {
   mobilityLevel: "medium",
   name: "Ryze",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "scale",
+        scalingProfile: "late",
+        preferredGameLength: "long",
+        winMethod: ["item scaling", "side lane pressure", "map movement"],
+      },
       powerSpikes: {
       major: [
         {

@@ -87,6 +87,12 @@ export const twistedFateCombatProfile = {
   mobilityLevel: "medium",
   name: "Twisted Fate",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "roam",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["global picks", "side-lane pressure", "map tempo"],
+      },
       powerSpikes: {
       major: [
         {

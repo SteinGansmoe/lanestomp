@@ -88,6 +88,12 @@ export const qiyanaCombatProfile = {
   mobilityLevel: "high",
   name: "Qiyana",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "snowball",
+        scalingProfile: "early",
+        preferredGameLength: "short",
+        winMethod: ["terrain all-ins", "roam pressure", "burst picks"],
+      },
       powerSpikes: {
       major: [
         {

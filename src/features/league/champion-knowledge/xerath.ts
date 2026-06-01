@@ -62,6 +62,12 @@ export const xerathCombatProfile = {
     mobilityLevel: "none",
     name: "Xerath",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["long-range poke", "wave control", "objective siege"],
+    },
     powerSpikes: {
       major: [
         {

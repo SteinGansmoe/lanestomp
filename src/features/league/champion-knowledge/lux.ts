@@ -60,6 +60,12 @@ export const luxCombatProfile = {
     mobilityLevel: "none",
     name: "Lux",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["long-range poke", "pick setup", "objective control"],
+    },
     powerSpikes: {
       major: [
         {

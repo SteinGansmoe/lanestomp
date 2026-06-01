@@ -88,6 +88,12 @@ export const kassadinCombatProfile = {
   mobilityLevel: "very_high",
   name: "Kassadin",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "scale",
+        scalingProfile: "late",
+        preferredGameLength: "long",
+        winMethod: ["item scaling", "late game carry", "side lane pressure"],
+      },
       powerSpikes: {
       major: [
         {

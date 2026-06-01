@@ -61,6 +61,12 @@ export const ekkoCombatProfile = {
     mobilityLevel: "high",
     name: "Ekko",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["skirmish picks", "side-lane pressure", "reset-based dives"],
+    },
     powerSpikes: {
       major: [
         {

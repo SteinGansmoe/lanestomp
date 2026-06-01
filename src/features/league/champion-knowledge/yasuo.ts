@@ -61,6 +61,12 @@ export const yasuoCombatProfile = {
     mobilityLevel: "very_high",
     name: "Yasuo",
     offMetaRoles: ["adc"],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["wave-based trades", "extended skirmishes", "side-lane pressure"],
+    },
     powerSpikes: {
       major: [
         {

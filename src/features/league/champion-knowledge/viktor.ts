@@ -65,6 +65,12 @@ export const viktorCombatProfile = {
     mobilityLevel: "none",
     name: "Viktor",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "scale",
+      scalingProfile: "late",
+      preferredGameLength: "long",
+      winMethod: ["wave control", "item scaling", "teamfight damage"],
+    },
     powerSpikes: {
       major: [
         {

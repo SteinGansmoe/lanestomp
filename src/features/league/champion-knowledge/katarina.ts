@@ -88,6 +88,12 @@ export const katarinaCombatProfile = {
   mobilityLevel: "very_high",
   name: "Katarina",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "snowball",
+        scalingProfile: "mid",
+        preferredGameLength: "short",
+        winMethod: ["roam resets", "skirmish cleanup", "snowball fights"],
+      },
       powerSpikes: {
       major: [
         {

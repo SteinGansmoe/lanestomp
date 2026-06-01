@@ -87,6 +87,12 @@ export const galioCombatProfile = {
   mobilityLevel: "medium",
   name: "Galio",
   offMetaRoles: ["support"],
+      strategicIdentity: {
+        laneGoal: "roam",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["push and roam", "counter-engage", "teamfight setup"],
+      },
       powerSpikes: {
       major: [
         {

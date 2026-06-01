@@ -58,6 +58,10 @@ export type {
   LeagueChampionPowerSpikeProfile,
   LeagueChampionProfileQuality,
   LeagueChampionPunishProfile,
+  LeagueChampionStrategicGameLength,
+  LeagueChampionStrategicIdentity,
+  LeagueChampionStrategicLaneGoal,
+  LeagueChampionStrategicScalingProfile,
   LeagueChampionTradingProfile,
 } from "./types";
 

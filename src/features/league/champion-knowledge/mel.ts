@@ -87,6 +87,12 @@ export const melCombatProfile = {
   mobilityLevel: "low",
   name: "Mel",
   offMetaRoles: [],
+      strategicIdentity: {
+        laneGoal: "control",
+        scalingProfile: "mid",
+        preferredGameLength: "medium",
+        winMethod: ["poke control", "projectile denial", "teamfight follow-up"],
+      },
       powerSpikes: {
       major: [
         {

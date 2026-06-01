@@ -60,6 +60,12 @@ export const malzaharCombatProfile = {
     mobilityLevel: "none",
     name: "Malzahar",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "control",
+      scalingProfile: "mid",
+      preferredGameLength: "medium",
+      winMethod: ["wave control", "suppression picks", "objective setup"],
+    },
     powerSpikes: {
       major: [
         {

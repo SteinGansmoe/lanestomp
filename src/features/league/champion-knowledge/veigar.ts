@@ -88,6 +88,12 @@ export const veigarCombatProfile = {
     mobilityLevel: "none",
     name: "Veigar",
     offMetaRoles: ["adc", "support"],
+    strategicIdentity: {
+      laneGoal: "scale",
+      scalingProfile: "late",
+      preferredGameLength: "long",
+      winMethod: ["stack scaling", "zone control", "late game burst"],
+    },
     powerSpikes: {
       major: [
         {

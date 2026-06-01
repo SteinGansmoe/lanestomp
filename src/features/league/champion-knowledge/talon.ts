@@ -63,6 +63,12 @@ export const talonCombatProfile = {
     mobilityLevel: "high",
     name: "Talon",
     offMetaRoles: [],
+    strategicIdentity: {
+      laneGoal: "snowball",
+      scalingProfile: "early",
+      preferredGameLength: "short",
+      winMethod: ["roams", "early kills", "map pressure"],
+    },
     powerSpikes: {
       major: [
         {
