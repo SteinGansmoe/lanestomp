@@ -13,7 +13,6 @@ import { useMemo, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import {
-  getChampionSlug,
   type LeagueChampion,
 } from "@/src/features/league/champions";
 import {
@@ -22,6 +21,7 @@ import {
   sortChampionsForRole,
 } from "@/src/features/league/champion-roles";
 import { type LeagueRole } from "@/src/features/league/roles";
+import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
 import { cn } from "@/src/lib/utils";
 
 type MatchupSelectorProps = {
@@ -116,7 +116,7 @@ export function MatchupSelector({
   }, [activeFilter, champions, includeOffMeta, query]);
   const matchupHref =
     championA && championB
-      ? `/league/matchups/${getChampionSlug(championA)}-vs-${getChampionSlug(championB)}?role=${role}`
+      ? getLeagueMatchupHref({ championA, championB, role })
       : null;
 
   function handleChampionPick(champion: LeagueChampion) {

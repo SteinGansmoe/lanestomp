@@ -8,6 +8,7 @@ import {
 import { connection } from "next/server";
 
 import { BackButton } from "@/src/components/back-button";
+import { ChangeMatchupPanel } from "@/src/components/league/change-matchup-panel";
 import { LeagueMatchupReviewPanel } from "@/src/components/league/league-matchup-review-panel";
 import { SummonersRiftMinimap } from "@/src/components/league/summoners-rift-minimap";
 import { SiteHeader } from "@/src/components/site-header";
@@ -56,10 +57,19 @@ export default async function LeagueMatchupPage({
       <section className="mx-auto flex max-w-7xl flex-col gap-5 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <BackButton href="/league/matchups" label="Back to matchup selector" />
+          {!championsResult.error && championsResult.champions.length > 0 ? (
+            <ChangeMatchupPanel
+              champions={championsResult.champions}
+              currentChampionAId={championA?.id}
+              currentChampionBId={championB?.id}
+              currentRole={role}
+              key={`${championA?.id ?? "unknown"}-${championB?.id ?? "unknown"}-${role}`}
+            />
+          ) : null}
           <Link
-            className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
+            className="ml-auto inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
             href="/games/league-of-legends/champions"
           >
             Champion data
