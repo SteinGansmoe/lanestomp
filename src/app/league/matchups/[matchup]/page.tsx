@@ -9,6 +9,7 @@ import {
 import { connection } from "next/server";
 
 import { LeagueMatchupReviewPanel } from "@/src/components/league/league-matchup-review-panel";
+import { SummonersRiftMinimap } from "@/src/components/league/summoners-rift-minimap";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import {
@@ -211,6 +212,7 @@ function MatchupHero({
                 ) : null}
               </div>
             ) : null}
+            <SummonersRiftMinimap className="mt-5" role={role} />
           </div>
         </div>
         <ChampionPanel champion={championB} label="Opponent" side="right" />
