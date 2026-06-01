@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { ArrowLeft, ClipboardCheck, LinkIcon, ListChecks, StickyNote } from "lucide-react";
+import { ClipboardCheck, LinkIcon, ListChecks, StickyNote } from "lucide-react";
 
+import { BackButton } from "@/src/components/back-button";
 import { PlanningBoardEditor } from "@/src/components/planning-board/planning-board-editor";
 import { SiteHeader } from "@/src/components/site-header";
 import {
@@ -31,13 +31,7 @@ export default async function PlanningBoardPage({
         <SiteHeader />
 
         <div className="flex max-w-6xl flex-col gap-6">
-          <Link
-            className="inline-flex w-fit items-center gap-2 text-sm text-violet-300 transition hover:text-violet-200"
-            href={`/games/${gameId}`}
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to season
-          </Link>
+          <BackButton href={`/games/${gameId}`} label="Back to season" />
 
           <section className="rounded-xl border border-white/10 bg-[#10182b]/90 p-5 shadow-xl shadow-black/20 ring-1 ring-white/5 sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

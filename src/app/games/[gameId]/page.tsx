@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { connection } from "next/server";
 
+import { BackButton } from "@/src/components/back-button";
 import {
   CommunityLinks,
   GameDetailHero,
@@ -125,13 +124,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href="/"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to dashboard
-          </Link>
+          <BackButton href="/" label="Back to dashboard" />
           <Card className="mt-8 border-white/10 bg-[#10182b]/90 p-8 text-white">
             <CardTitle className="font-mono text-2xl">Game not found</CardTitle>
             <p className="mt-3 text-zinc-400">
@@ -168,13 +161,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href="/"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to dashboard
-          </Link>
+          <BackButton href="/" label="Back to dashboard" />
           <Card className="mt-8 border-rose-400/20 bg-[#10182b]/90 p-8 text-white">
             <CardTitle className="font-mono text-2xl">
               Could not load game details
@@ -209,13 +196,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href="/"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to dashboard
-          </Link>
+          <BackButton href="/" label="Back to dashboard" />
           <Card className="mt-8 border-white/10 bg-[#10182b]/90 p-8 text-white">
             <CardTitle className="font-mono text-2xl">
               No seasons found

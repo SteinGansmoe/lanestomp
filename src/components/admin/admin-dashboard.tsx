@@ -7,10 +7,10 @@ import {
   useState,
   ViewTransition,
 } from "react";
-import Link from "next/link";
-import { ArrowLeft, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
+import { BackButton } from "@/src/components/back-button";
 import { AdminNavigation } from "./admin-nav";
 import { AdminOverview } from "./admin-overview";
 import {
@@ -1941,13 +1941,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href="/"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to dashboard
-          </Link>
+          <BackButton href="/" label="Back to dashboard" />
         </div>
 
         <div>

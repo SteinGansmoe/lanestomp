@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Database, ShieldAlert, Swords } from "lucide-react";
+import { Database, ShieldAlert, Swords } from "lucide-react";
 import { connection } from "next/server";
 
+import { BackButton } from "@/src/components/back-button";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import { getPrimarySeasonRouteForGame } from "@/src/features";
@@ -20,13 +21,10 @@ export default async function LeagueChampionsPage() {
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
+          <BackButton
             href={getPrimarySeasonRouteForGame("league-of-legends")}
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to League of Legends
-          </Link>
+            label="Back to League of Legends"
+          />
           <Link
             className="inline-flex items-center gap-2 rounded-md border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-sm font-medium text-emerald-100 transition hover:bg-emerald-400/15"
             href="/league/matchups"

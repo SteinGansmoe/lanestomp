@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft,
   ClipboardCheck,
   ExternalLink,
   Gamepad2,
@@ -10,6 +9,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { BackButton } from "@/src/components/back-button";
 import { FollowGameButton } from "@/src/components/follow-game-button";
 import { Badge } from "@/src/components/ui/badge";
 import type { Game, Season } from "@/src/features";
@@ -64,13 +64,11 @@ export function GameDetailHero({
       />
 
       <div className="relative flex min-h-[720px] flex-col px-5 py-6 sm:min-h-[680px] sm:px-7 sm:py-8 lg:min-h-[720px] lg:px-10 lg:py-10">
-        <Link
-          className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-sm font-medium text-violet-100 shadow-lg shadow-black/20 backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-black/50 hover:text-white"
+        <BackButton
+          className="bg-black/35 text-violet-100 shadow-black/20 backdrop-blur"
           href="/"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Back to games
-        </Link>
+          label="Back to games"
+        />
 
         <div className="mt-10 flex max-w-5xl flex-col gap-8 pb-20 sm:mt-12 sm:flex-row sm:items-start lg:mt-14 lg:gap-10 xl:pb-24">
           <div className="relative size-28 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-black/35 shadow-2xl shadow-black/35 backdrop-blur sm:mt-2 sm:size-36">

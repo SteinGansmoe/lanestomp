@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Crosshair,
   Lightbulb,
   ShieldAlert,
 } from "lucide-react";
 import { connection } from "next/server";
 
+import { BackButton } from "@/src/components/back-button";
 import { LeagueMatchupReviewPanel } from "@/src/components/league/league-matchup-review-panel";
 import { SummonersRiftMinimap } from "@/src/components/league/summoners-rift-minimap";
 import { SiteHeader } from "@/src/components/site-header";
@@ -57,13 +57,7 @@ export default async function LeagueMatchupPage({
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href="/league/matchups"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to matchup selector
-          </Link>
+          <BackButton href="/league/matchups" label="Back to matchup selector" />
           <Link
             className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
             href="/games/league-of-legends/champions"

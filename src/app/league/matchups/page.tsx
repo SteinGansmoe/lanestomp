@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldAlert, Swords } from "lucide-react";
+import { ShieldAlert, Swords } from "lucide-react";
 import { connection } from "next/server";
 
+import { BackButton } from "@/src/components/back-button";
 import { MatchupSelector } from "@/src/components/league/matchup-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
@@ -18,13 +19,7 @@ export default async function LeagueMatchupsPage() {
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link
-            className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-200"
-            href="/"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to LaneTips
-          </Link>
+          <BackButton href="/" label="Back to LaneTips" />
           <Link
             className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
             href="/games/league-of-legends/champions"
