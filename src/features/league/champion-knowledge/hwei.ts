@@ -63,11 +63,30 @@ export const hweiCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 unlocks all three spellbooks for full poke, control, and shield options.",
-            "Level 6 Spiraling Despair.",
-            "First completed mage item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 6",
+          reason: "Level 6 Spiraling Despair",
+          changesGameplay: "Hwei's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Hwei's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage item",
+          reason: "First completed mage item",
+          changesGameplay: "Hwei's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Hwei's first item threshold is completed.",
+        },
+      ],
+      minor: [
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks all three spellbooks for full poke, control, and shield options",
+          changesGameplay: "Hwei gains access to his full toolkit, but the spike is about options and safety more than sudden lethal pressure.",
+          playerAction: "Use the extra spellbook coverage to control space, thin waves, and keep defensive tools available.",
+          enemyResponse: "Pressure him when key control or shield options are spent instead of treating level 3 as an all-in spike.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["adc", "support"],

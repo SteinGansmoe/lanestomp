@@ -88,17 +88,31 @@ export const kassadinCombatProfile = {
   mobilityLevel: "very_high",
   name: "Kassadin",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 Riftwalk.",
-      "First completed scaling AP item.",
-      "Level 11 stronger Riftwalk uptime and damage.",
-    ],
-    notes: [
-      "Level 6 is the critical breakpoint that gives mobility and agency.",
-      "Later levels and items make repeated R use more threatening.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Riftwalk",
+          changesGameplay: "Level 6 is the critical breakpoint that gives mobility and agency",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Kassadin's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed scaling AP item",
+          reason: "First completed scaling AP item",
+          changesGameplay: "Later levels and items make repeated R use more threatening",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Kassadin's first item threshold is completed.",
+        },
+        {
+          timing: "Level 11",
+          reason: "Level 11 stronger Riftwalk uptime and damage",
+          changesGameplay: "Kassadin's later level scaling improves repeat threat and makes loose positioning harder to recover from.",
+          playerAction: "Use the stronger level breakpoint to contest space more often, but do not skip cooldown or wave checks.",
+          enemyResponse: "Avoid loose extended fights after this level breakpoint unless Kassadin's key cooldowns are down.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

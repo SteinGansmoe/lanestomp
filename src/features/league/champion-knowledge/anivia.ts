@@ -72,10 +72,21 @@ export const aniviaCombatProfile = {
     offMetaRoles: ["top"],
     powerSpikes: {
       major: [
-            "After 6 and Lost chapter, Anivia can basically free farm waves mid.",
-            "Its hard to siege into Anivia after 6 because of her R, so she can often get picks or force fights on her terms.",
-          ],
-      notes: [],
+        {
+          timing: "First mana/AP item",
+          reason: "After 6 and first mana/AP item, Anivia can basically free farm waves mid",
+          changesGameplay: "Anivia's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Anivia's first item threshold is completed.",
+        },
+        {
+          timing: "It is hard to siege into Anivia after 6 because of her R, so she can often get picks or force fights on her terms",
+          reason: "It is hard to siege into Anivia after 6 because of her R, so she can often get picks or force fights on her terms",
+          changesGameplay: "This timing changes how safely Anivia can contest trades, waves, or river space.",
+          playerAction: "Change trading pace only when this timing is active and the enemy has no clean punish window.",
+          enemyResponse: "Respect the timing until Anivia's key cooldowns or resources are spent.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["adc", "support"],

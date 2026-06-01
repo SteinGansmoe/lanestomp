@@ -88,17 +88,31 @@ export const qiyanaCombatProfile = {
   mobilityLevel: "high",
   name: "Qiyana",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 3 unlocks Q-W-E element setup, dash access, and her first real burst trade pattern.",
-      "Level 6 Supreme Display of Talent.",
-      "First completed lethality item.",
-    ],
-    notes: [
-      "Level 6 makes terrain positioning extremely important.",
-      "Lethality spikes determine whether her burst is lethal or only poke.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks Q-W-E element setup, dash access, and her first real burst trade pattern",
+          changesGameplay: "Level 6 makes terrain positioning extremely important",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Qiyana the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Supreme Display of Talent",
+          changesGameplay: "Lethality spikes determine whether her burst is lethal or only poke",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Qiyana's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed lethality item",
+          reason: "First completed lethality item",
+          changesGameplay: "Qiyana's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Qiyana's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

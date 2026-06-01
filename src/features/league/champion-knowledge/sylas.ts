@@ -63,11 +63,28 @@ export const sylasCombatProfile = {
     offMetaRoles: ["top", "jungle"],
     powerSpikes: {
       major: [
-            "Level 3 unlocks Sylas's Q-W-E skirmish pattern with dash, chain, and sustain access.",
-            "Level 6 Hijack if valuable ultimates are available.",
-            "First completed AP skirmish item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks Sylas's Q-W-E skirmish pattern with dash, chain, and sustain access",
+          changesGameplay: "The early ability combination gives Sylas a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Sylas the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Hijack if valuable ultimates are available",
+          changesGameplay: "Sylas's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Sylas's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP skirmish item",
+          reason: "First completed AP skirmish item",
+          changesGameplay: "Sylas's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Sylas's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: [],

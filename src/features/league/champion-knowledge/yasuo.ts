@@ -63,11 +63,28 @@ export const yasuoCombatProfile = {
     offMetaRoles: ["adc"],
     powerSpikes: {
       major: [
-            "Level 2 access to Q plus E mobility.",
-            "Level 6 R if knockup access exists.",
-            "First completed item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 2",
+          reason: "Level 2 access to Q plus E mobility",
+          changesGameplay: "The early ability combination gives Yasuo a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Yasuo the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 R if knockup access exists",
+          changesGameplay: "Yasuo's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Yasuo's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed item",
+          reason: "First completed item",
+          changesGameplay: "Yasuo's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Yasuo's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["top"],

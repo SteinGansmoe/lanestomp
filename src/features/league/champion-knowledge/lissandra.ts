@@ -87,16 +87,24 @@ export const lissandraCombatProfile = {
   mobilityLevel: "medium",
   name: "Lissandra",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 Frozen Tomb.",
-      "First completed AP or utility item.",
-    ],
-    notes: [
-      "Level 6 is her biggest lane threat increase.",
-      "Her power is often in reliability and setup rather than raw damage.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Frozen Tomb",
+          changesGameplay: "Level 6 is her biggest lane threat increase",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Lissandra's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP or utility item",
+          reason: "First completed AP or utility item",
+          changesGameplay: "Her power is often in reliability and setup rather than raw damage",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Lissandra's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

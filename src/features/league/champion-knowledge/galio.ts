@@ -87,16 +87,24 @@ export const galioCombatProfile = {
   mobilityLevel: "medium",
   name: "Galio",
   offMetaRoles: ["support"],
-  powerSpikes: {
-    major: [
-      "Level 6 Hero's Entrance.",
-      "First durability or AP utility item.",
-    ],
-    notes: [
-      "Level 6 increases his map impact more than his solo kill threat.",
-      "Early durability makes his short trade and roam pattern safer.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Hero's Entrance",
+          changesGameplay: "Level 6 increases his map impact more than his solo kill threat",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Galio's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First durability or AP utility item",
+          reason: "First durability or AP utility item",
+          changesGameplay: "Early durability makes his short trade and roam pattern safer",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Galio's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: ["support"],
   primaryTradingPattern:

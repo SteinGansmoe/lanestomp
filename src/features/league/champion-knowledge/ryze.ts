@@ -87,16 +87,24 @@ export const ryzeCombatProfile = {
   mobilityLevel: "medium",
   name: "Ryze",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "First mana/AP item.",
-      "Level 6 Realm Warp for map plays.",
-    ],
-    notes: [
-      "Item and mana scaling are more important to combat threat than level 6 damage.",
-      "Realm Warp changes map options rather than direct duel power.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "First mana/AP item",
+          reason: "First mana/AP item",
+          changesGameplay: "Item and mana scaling are more important to combat threat than level 6 damage",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Ryze's first item threshold is completed.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Realm Warp for map plays",
+          changesGameplay: "Realm Warp changes map options rather than direct duel power",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Ryze's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: ["top"],
   primaryTradingPattern:

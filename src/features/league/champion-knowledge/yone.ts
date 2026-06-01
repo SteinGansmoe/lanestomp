@@ -63,11 +63,28 @@ export const yoneCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 unlocks Yone's Q-W-E trade pattern with E extension and W shield.",
-            "First back for more attack speed.",
-            "Bork is a great item for him.",
-          ],
-      notes: [],
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks Yone's Q-W-E trade pattern with E extension and W shield",
+          changesGameplay: "The early ability combination gives Yone a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Yone the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "First attack-speed buy",
+          reason: "First back for more attack speed",
+          changesGameplay: "Yone's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Yone's first item threshold is completed.",
+        },
+        {
+          timing: "Blade of the Ruined King timing",
+          reason: "Bork is a great item for him",
+          changesGameplay: "Yone's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Yone's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["top"],

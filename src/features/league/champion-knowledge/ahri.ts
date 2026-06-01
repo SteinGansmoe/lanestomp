@@ -88,15 +88,29 @@ export const ahriCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-        "Level 6 Spirit Rush.",
-        "First completed mage item.",
+        {
+          timing: "Level 6",
+          reason: "Level 6 Spirit Rush",
+          changesGameplay: "Level 6 changes Ahri from punishable mage into a much safer pick and chase champion",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Ahri's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage item",
+          reason: "First completed mage item",
+          changesGameplay: "First completed mage item improves her ability to clear waves and convert picks",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Ahri's first item threshold is completed.",
+        },
       ],
       minor: [
-        "Level 3 improves short-trade flexibility, but her matchup-defining threat starts at R and item waveclear.",
-      ],
-      notes: [
-        "Level 6 changes Ahri from punishable mage into a much safer pick and chase champion.",
-        "First completed mage item improves her ability to clear waves and convert picks.",
+        {
+          timing: "Level 3",
+          reason: "Level 3 improves short-trade flexibility, but her matchup-defining threat starts at R and item waveclear",
+          changesGameplay: "Ahri has more short-trade options, but this is context for lane trading rather than her main kill spike.",
+          playerAction: "Use the extra flexibility for short Q and W trades while saving E for real punish windows.",
+          enemyResponse: "Do not overreact to level 3 alone; respect Charm angles and punish if she spends E carelessly.",
+        },
       ],
     },
     primaryRoles: ["mid"],

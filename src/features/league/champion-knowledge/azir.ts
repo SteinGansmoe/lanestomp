@@ -87,16 +87,24 @@ export const azirCombatProfile = {
   mobilityLevel: "medium",
   name: "Azir",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 Emperor's Divide.",
-      "First completed mage DPS item.",
-    ],
-    notes: [
-      "Level 6 improves his safety and playmaking.",
-      "Item spikes matter because soldier DPS needs time and stats.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Emperor's Divide",
+          changesGameplay: "Level 6 improves his safety and playmaking",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Azir's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage DPS item",
+          reason: "First completed mage DPS item",
+          changesGameplay: "Item spikes matter because soldier DPS needs time and stats",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Azir's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

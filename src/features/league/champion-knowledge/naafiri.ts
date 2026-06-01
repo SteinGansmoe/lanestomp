@@ -87,16 +87,24 @@ export const naafiriCombatProfile = {
   mobilityLevel: "high",
   name: "Naafiri",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 The Call of the Pack.",
-      "First completed lethality item.",
-    ],
-    notes: [
-      "Level 6 increases her chase and all-in reliability.",
-      "Lethality spikes make Q poke and committed burst more threatening.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 The Call of the Pack",
+          changesGameplay: "Level 6 increases her chase and all-in reliability",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Naafiri's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed lethality item",
+          reason: "First completed lethality item",
+          changesGameplay: "Lethality spikes make Q poke and committed burst more threatening",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Naafiri's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

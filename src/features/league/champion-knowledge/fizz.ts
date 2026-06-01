@@ -63,11 +63,28 @@ export const fizzCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 unlocks Fizz's first real trade pattern with Q engage, W damage, and E dodge or escape.",
-            "Level 6 Chum the Waters.",
-            "First completed AP assassin item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks Fizz's first real trade pattern with Q engage, W damage, and E dodge or escape",
+          changesGameplay: "The early ability combination gives Fizz a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Fizz the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Chum the Waters",
+          changesGameplay: "Fizz's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Fizz's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP assassin item",
+          reason: "First completed AP assassin item",
+          changesGameplay: "Fizz's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Fizz's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["jungle"],

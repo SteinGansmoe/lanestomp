@@ -54,6 +54,7 @@ export type {
   LeagueChampionLanePlan,
   LeagueChampionMatchupPreferences,
   LeagueChampionMobilityLevel,
+  LeagueChampionPowerSpike,
   LeagueChampionPowerSpikeProfile,
   LeagueChampionProfileQuality,
   LeagueChampionPunishProfile,

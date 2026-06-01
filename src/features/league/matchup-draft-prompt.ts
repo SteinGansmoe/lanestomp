@@ -1,4 +1,7 @@
-import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge/types";
+import type {
+  LeagueChampionKnowledgeProfile,
+  LeagueChampionPowerSpike,
+} from "./champion-knowledge/types";
 
 export type LeagueRole = "mid" | "top" | "jungle" | "adc" | "support";
 
@@ -117,6 +120,8 @@ export function buildLeagueMatchupDraftPrompt({
       "If a concept belongs in one section, do not restate it elsewhere.",
       "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, trading patterns, lane identity, and real spikes.",
       "When structured lanePlan, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields are supplied, treat them as higher priority than the older summary fields.",
+      "Power spike objects include timing, reason, changesGameplay, playerAction, and sometimes enemyResponse.",
+      "Do not echo power spike timing by itself; explain what changes in lane, who becomes more dangerous, and what the player should do differently.",
       "If a structured field is not supplied, fall back to the older summary field for that topic. If neither is supplied, keep the advice conservative and avoid invented details.",
       "Use laneIdentity to reason about who controls early lane pace, who wants time to scale, who wants lane pressure, and who benefits from a passive lane state.",
       `Compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
@@ -164,7 +169,8 @@ export function buildLeagueMatchupDraftPrompt({
       `trading_pattern: Explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
       `power_spikes: List ${playerChampionName}'s real spikes and ${enemyChampionName}'s real spikes that ${playerChampionName} must respect.`,
       "power_spikes: Use power_spikes.major as the source for the card; use power_spikes.minor only as context for early_game or trading_pattern when it changes lane behavior.",
-      "power_spikes: Treat power_spikes.notes as explanation for supplied spikes; do not list notes as standalone spikes unless they name a concrete major threshold.",
+      "power_spikes: For player champion spikes, use playerAction as the recommended action and enemyResponse as what the opponent must respect.",
+      "power_spikes: For enemy champion spikes, translate enemy playerAction and enemyResponse into what the player must respect or punish.",
       "power_spikes: Never mention recalls, mana refreshes, Lost Chapter sustain, generic tempo, or non-spike ability unlocks here.",
       `danger_windows: List only moments where ${playerChampionName} is actually in danger from lethal trades, all-ins, ganks, dives, or forced summoners.`,
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
@@ -289,9 +295,8 @@ function formatChampionKnowledgeForPrompt(
     `punish_profile.struggles_to_punish: ${formatOptionalList(
       profile.punishProfile?.strugglesToPunish
     )}`,
-    `power_spikes.major: ${formatOptionalList(profile.powerSpikes?.major)}`,
-    `power_spikes.minor: ${formatOptionalList(profile.powerSpikes?.minor)}`,
-    `power_spikes.notes: ${formatOptionalList(profile.powerSpikes?.notes)}`,
+    `power_spikes.major: ${formatPowerSpikes(profile.powerSpikes?.major)}`,
+    `power_spikes.minor: ${formatPowerSpikes(profile.powerSpikes?.minor)}`,
     `primary_trading_pattern: ${
       profile.primaryTradingPattern ?? "not supplied"
     }`,
@@ -314,6 +319,24 @@ function formatList(values: readonly string[]) {
 
 function formatOptionalList(values?: readonly string[]) {
   return values && values.length > 0 ? formatList(values) : "not supplied";
+}
+
+function formatPowerSpikes(spikes?: readonly LeagueChampionPowerSpike[]) {
+  if (!spikes || spikes.length === 0) {
+    return "not supplied";
+  }
+
+  return spikes
+    .map((spike) =>
+      [
+        `timing=${spike.timing}`,
+        `reason=${spike.reason}`,
+        `changes_gameplay=${spike.changesGameplay}`,
+        `player_action=${spike.playerAction}`,
+        `enemy_response=${spike.enemyResponse ?? "not supplied"}`,
+      ].join(" | ")
+    )
+    .join("; ");
 }
 
 function formatAbilityMap(

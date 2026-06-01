@@ -63,11 +63,28 @@ export const zedCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 unlocks W-E-Q shadow combo for real poke and all-in setup.",
-            "Level 6 Death Mark.",
-            "First completed lethality item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks W-E-Q shadow combo for real poke and all-in setup",
+          changesGameplay: "The early ability combination gives Zed a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Zed the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Death Mark",
+          changesGameplay: "Zed's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Zed's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed lethality item",
+          reason: "First completed lethality item",
+          changesGameplay: "Zed's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Zed's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["jungle"],

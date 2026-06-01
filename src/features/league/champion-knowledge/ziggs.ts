@@ -87,16 +87,24 @@ export const ziggsCombatProfile = {
   mobilityLevel: "low",
   name: "Ziggs",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 Mega Inferno Bomb.",
-      "First completed mage poke item.",
-    ],
-    notes: [
-      "Level 6 adds cross-map and objective fight damage.",
-      "W cooldown is important because it is both safety and turret pressure.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Mega Inferno Bomb",
+          changesGameplay: "Level 6 adds cross-map and objective fight damage",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Ziggs's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage poke item",
+          reason: "First completed mage poke item",
+          changesGameplay: "W cooldown is important because it is both safety and turret pressure",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Ziggs's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: ["adc"],
   primaryTradingPattern:

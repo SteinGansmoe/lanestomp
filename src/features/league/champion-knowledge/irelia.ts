@@ -88,17 +88,31 @@ export const ireliaCombatProfile = {
   mobilityLevel: "very_high",
   name: "Irelia",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 2 with Q and E access.",
-      "Level 6 Vanguard's Edge.",
-      "First completed fighter item.",
-    ],
-    notes: [
-      "Minion wave state can be as important as level spikes.",
-      "Level 6 gives stronger stickiness and all-in threat.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 2",
+          reason: "Level 2 with Q and E access",
+          changesGameplay: "Minion wave state can be as important as level spikes",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Irelia the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Vanguard's Edge",
+          changesGameplay: "Level 6 gives stronger stickiness and all-in threat",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Irelia's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed fighter item",
+          reason: "First completed fighter item",
+          changesGameplay: "Irelia's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Irelia's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: ["top"],
   primaryTradingPattern:

@@ -63,11 +63,28 @@ export const akaliCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 3 unlocks Q-W-E trading with Shroud safety and E follow-up.",
-            "Level 6 Perfect Execution.",
-            "First completed AP assassin item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 3",
+          reason: "Level 3 unlocks Q-W-E trading with Shroud safety and E follow-up",
+          changesGameplay: "The early ability combination gives Akali a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving Akali the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Perfect Execution",
+          changesGameplay: "Akali's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Akali's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP assassin item",
+          reason: "First completed AP assassin item",
+          changesGameplay: "Akali's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Akali's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["top"],

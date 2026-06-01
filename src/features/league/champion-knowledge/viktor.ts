@@ -67,14 +67,30 @@ export const viktorCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-              "Level 6 Chaos Storm.",
-              "First completed mage item and evolution progress.",
-              "Can adapt to a more tankier build (Rod of Ages and Liandry's Torment) if enemy team has strong all-in or dive threats."
-            ],
+        {
+          timing: "Level 6",
+          reason: "Level 6 Chaos Storm",
+          changesGameplay: "Viktor's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Viktor's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage item and evolution progress",
+          reason: "First completed mage item and evolution progress",
+          changesGameplay: "Viktor's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Viktor's first item threshold is completed.",
+        },
+      ],
       minor: [
-              "Level 3 improves access to poke and field control, but his real spikes are R and evolution or item progress.",
-            ],
-      notes: [],
+        {
+          timing: "Level 3",
+          reason: "Level 3 improves access to poke and field control, but his real spikes are R and evolution or item progress",
+          changesGameplay: "Viktor gains more lane coverage, but the matchup should still revolve around R, item, and evolution progress.",
+          playerAction: "Use level 3 to manage spacing and wave control rather than forcing extended trades.",
+          enemyResponse: "Punish misplaced W or wave-only spell usage instead of treating level 3 as a kill spike.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["top"],

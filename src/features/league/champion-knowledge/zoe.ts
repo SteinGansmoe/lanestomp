@@ -53,10 +53,21 @@ export const zoeCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 6 Portal Jump for extended poke angles.",
-            "First completed AP burst item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 6",
+          reason: "Level 6 Portal Jump for extended poke angles",
+          changesGameplay: "Zoe's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Zoe's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP burst item",
+          reason: "First completed AP burst item",
+          changesGameplay: "Zoe's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Zoe's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: [],

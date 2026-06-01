@@ -87,16 +87,24 @@ export const melCombatProfile = {
   mobilityLevel: "low",
   name: "Mel",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 Golden Eclipse.",
-      "First completed mage item.",
-    ],
-    notes: [
-      "W timing can decide trades more than raw damage.",
-      "R is strongest after she has already marked and chipped targets.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Golden Eclipse",
+          changesGameplay: "W timing can decide trades more than raw damage",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Mel's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage item",
+          reason: "First completed mage item",
+          changesGameplay: "R is strongest after she has already marked and chipped targets",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Mel's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

@@ -59,11 +59,28 @@ export const aurelionSolCombatProfile = {
     offMetaRoles: ["adc", "support"],
     powerSpikes: {
       major: [
-            "At 75+ stacks hes ultimate gets upgraded",
-            "Once Rylais is completed, he becomes much harder to run from",
-            "Late game is where Aurelion Sol shines, as his roaming and teamfight presence becomes very impactful",
-          ],
-      notes: [],
+        {
+          timing: "75+ Stardust stacks",
+          reason: "At 75+ stacks his ultimate gets upgraded",
+          changesGameplay: "Aurelion Sol's scaling turns more lane-neutral states into teamfight or chase pressure.",
+          playerAction: "Play toward stable farm, safe resets, and fights where the scaling payoff can actually matter.",
+          enemyResponse: "Pressure earlier windows and avoid letting Aurelion Sol reach the scaling state for free.",
+        },
+        {
+          timing: "Rylai's completed",
+          reason: "Once Rylais is completed, he becomes much harder to run from",
+          changesGameplay: "Aurelion Sol's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Aurelion Sol's first item threshold is completed.",
+        },
+        {
+          timing: "Late game scaling",
+          reason: "Late game is where Aurelion Sol shines, as his roaming and teamfight presence becomes very impactful",
+          changesGameplay: "Aurelion Sol's scaling turns more lane-neutral states into teamfight or chase pressure.",
+          playerAction: "Play toward stable farm, safe resets, and fights where the scaling payoff can actually matter.",
+          enemyResponse: "Pressure earlier windows and avoid letting Aurelion Sol reach the scaling state for free.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: ["support", "top"],

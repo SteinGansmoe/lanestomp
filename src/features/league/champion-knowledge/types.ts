@@ -54,10 +54,17 @@ export type LeagueChampionPunishProfile = {
   strugglesToPunish: string[];
 };
 
+export type LeagueChampionPowerSpike = {
+  changesGameplay: string;
+  enemyResponse?: string;
+  playerAction: string;
+  reason: string;
+  timing: string;
+};
+
 export type LeagueChampionPowerSpikeProfile = {
-  major: string[];
-  minor?: string[];
-  notes: string[];
+  major: LeagueChampionPowerSpike[];
+  minor?: LeagueChampionPowerSpike[];
 };
 
 export type LeagueChampionKnowledgeProfile = {

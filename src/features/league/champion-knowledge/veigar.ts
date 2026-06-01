@@ -90,16 +90,29 @@ export const veigarCombatProfile = {
     offMetaRoles: ["adc", "support"],
     powerSpikes: {
       major: [
-        "Level 6 Primordial Burst.",
-        "First completed mage item plus stack growth.",
+        {
+          timing: "Level 6",
+          reason: "Level 6 Primordial Burst",
+          changesGameplay: "Level 6 makes trapped targets far more punishable if they are already low",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Veigar's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed mage item plus stack growth",
+          reason: "First completed mage item plus stack growth",
+          changesGameplay: "His threat grows with stacks, so denying free farm matters as much as dodging cage",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Veigar's first item threshold is completed.",
+        },
       ],
       minor: [
-        "Level 3 improves defensive options, but his meaningful spike is R plus stack and item growth.",
-      ],
-      notes: [
-        "Level 6 makes trapped targets far more punishable if they are already low.",
-        "His threat grows with stacks, so denying free farm matters as much as dodging cage.",
-        "Veigar's (E) Event Horizon is his key defensive and pick tool, and can be used to stop engages or trap enemies for burst windows.",
+        {
+          timing: "Level 3",
+          reason: "Level 3 improves defensive options, but his meaningful spike is R plus stack and item growth",
+          changesGameplay: "Veigar's (E) Event Horizon is his key defensive and pick tool, and can be used to stop engages or trap enemies for burst windows",
+          playerAction: "Use E mainly to deny commits or punish trapped movement while continuing to build stacks safely.",
+          enemyResponse: "Track E cooldown carefully; pressure is much safer after cage is unavailable.",
+        },
       ],
     },
     primaryRoles: ["mid"],

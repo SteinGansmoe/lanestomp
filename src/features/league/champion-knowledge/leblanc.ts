@@ -63,11 +63,28 @@ export const leblancCombatProfile = {
     offMetaRoles: [],
     powerSpikes: {
       major: [
-            "Level 2 burst with Q plus W or E.",
-            "Level 6 Mimic.",
-            "First completed AP burst item.",
-          ],
-      notes: [],
+        {
+          timing: "Level 2",
+          reason: "Level 2 burst with Q plus W or E",
+          changesGameplay: "The early ability combination gives LeBlanc a real trade or all-in pattern instead of isolated lane pressure.",
+          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+          enemyResponse: "Respect the early combo unlock and avoid giving LeBlanc the wave or spacing needed to start it cleanly.",
+        },
+        {
+          timing: "Level 6",
+          reason: "Level 6 Mimic",
+          changesGameplay: "LeBlanc's ultimate becomes available, so the matchup shifts around whether the commit, pick, roam, or escape threat is ready.",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect LeBlanc's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP burst item",
+          reason: "First completed AP burst item",
+          changesGameplay: "LeBlanc's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once LeBlanc's first item threshold is completed.",
+        },
+      ],
     },
     primaryRoles: ["mid"],
     secondaryRoles: [],

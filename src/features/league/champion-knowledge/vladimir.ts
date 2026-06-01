@@ -88,17 +88,31 @@ export const vladimirCombatProfile = {
   mobilityLevel: "low",
   name: "Vladimir",
   offMetaRoles: [],
-  powerSpikes: {
-    major: [
-      "Level 6 Hemoplague.",
-      "First completed AP item.",
-      "Mid-game AP and cooldown spikes.",
-    ],
-    notes: [
-      "Level 6 adds real all-in threat but he still values item scaling.",
-      "W cooldown is one of the clearest windows to punish him.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Hemoplague",
+          changesGameplay: "Level 6 adds real all-in threat but he still values item scaling",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Vladimir's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP item",
+          reason: "First completed AP item",
+          changesGameplay: "W cooldown is one of the clearest windows to punish him",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Vladimir's first item threshold is completed.",
+        },
+        {
+          timing: "Mid-game item progression",
+          reason: "Mid-game AP and cooldown spikes",
+          changesGameplay: "This timing changes how safely Vladimir can contest trades, waves, or river space.",
+          playerAction: "Change trading pace only when this timing is active and the enemy has no clean punish window.",
+          enemyResponse: "Respect the timing until Vladimir's key cooldowns or resources are spent.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: ["top"],
   primaryTradingPattern:

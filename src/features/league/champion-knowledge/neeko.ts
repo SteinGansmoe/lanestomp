@@ -87,16 +87,24 @@ export const neekoCombatProfile = {
   mobilityLevel: "medium",
   name: "Neeko",
   offMetaRoles: ["support"],
-  powerSpikes: {
-    major: [
-      "Level 6 Pop Blossom.",
-      "First completed AP burst item.",
-    ],
-    notes: [
-      "Level 6 creates strong all-in and teamfight threat.",
-      "Her best moments often come from fog, disguise, or minion-enhanced E.",
-    ],
-  },
+      powerSpikes: {
+      major: [
+        {
+          timing: "Level 6",
+          reason: "Level 6 Pop Blossom",
+          changesGameplay: "Level 6 creates strong all-in and teamfight threat",
+          playerAction: "Track R availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+          enemyResponse: "Respect Neeko's R window, hold key defensive tools for the commit, and punish after R is spent.",
+        },
+        {
+          timing: "First completed AP burst item",
+          reason: "First completed AP burst item",
+          changesGameplay: "Her best moments often come from fog, disguise, or minion-enhanced E",
+          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+          enemyResponse: "Do not treat pre-item trades as still safe once Neeko's first item threshold is completed.",
+        },
+      ],
+    },
   primaryRoles: ["mid"],
   secondaryRoles: ["support"],
   primaryTradingPattern:
