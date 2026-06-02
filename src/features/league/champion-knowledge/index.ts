@@ -1,4 +1,5 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
+import { aatroxCombatProfile } from "./aatrox";
 import { ahriCombatProfile } from "./ahri";
 import { akaliCombatProfile } from "./akali";
 import { akshanCombatProfile } from "./akshan";
@@ -42,6 +43,17 @@ import { aniviaCombatProfile } from "./anivia";
 import { annieCombatProfile } from "./annie";
 import { aurelionSolCombatProfile } from "./aurelion-sol";
 import { auroraCombatProfile } from "./aurora";
+import { camilleCombatProfile } from "./camille";
+import { dariusCombatProfile } from "./darius";
+import { fioraCombatProfile } from "./fiora";
+import { garenCombatProfile } from "./garen";
+import { jaxCombatProfile } from "./jax";
+import { malphiteCombatProfile } from "./malphite";
+import { mordekaiserCombatProfile } from "./mordekaiser";
+import { ornnCombatProfile } from "./ornn";
+import { renektonCombatProfile } from "./renekton";
+import { rivenCombatProfile } from "./riven";
+import { settCombatProfile } from "./sett";
 
 export type {
   LeagueChampionAbilityKey,
@@ -66,6 +78,7 @@ export type {
 } from "./types";
 
 export { ahriCombatProfile } from "./ahri";
+export { aatroxCombatProfile } from "./aatrox";
 export { akaliCombatProfile } from "./akali";
 export { akshanCombatProfile } from "./akshan";
 export { azirCombatProfile } from "./azir";
@@ -108,8 +121,20 @@ export { aniviaCombatProfile } from "./anivia";
 export { annieCombatProfile } from "./annie";
 export { aurelionSolCombatProfile } from "./aurelion-sol";
 export { auroraCombatProfile } from "./aurora";
+export { camilleCombatProfile } from "./camille";
+export { dariusCombatProfile } from "./darius";
+export { fioraCombatProfile } from "./fiora";
+export { garenCombatProfile } from "./garen";
+export { jaxCombatProfile } from "./jax";
+export { malphiteCombatProfile } from "./malphite";
+export { mordekaiserCombatProfile } from "./mordekaiser";
+export { ornnCombatProfile } from "./ornn";
+export { renektonCombatProfile } from "./renekton";
+export { rivenCombatProfile } from "./riven";
+export { settCombatProfile } from "./sett";
 
 export const leagueChampionKnowledgeProfiles = {
+  Aatrox: aatroxCombatProfile,
   Ahri: ahriCombatProfile,
   Akali: akaliCombatProfile,
   Akshan: akshanCombatProfile,
@@ -153,6 +178,17 @@ export const leagueChampionKnowledgeProfiles = {
   Annie: annieCombatProfile,
   AurelionSol: aurelionSolCombatProfile,
   Aurora: auroraCombatProfile,
+  Camille: camilleCombatProfile,
+  Darius: dariusCombatProfile,
+  Fiora: fioraCombatProfile,
+  Garen: garenCombatProfile,
+  Jax: jaxCombatProfile,
+  Malphite: malphiteCombatProfile,
+  Mordekaiser: mordekaiserCombatProfile,
+  Ornn: ornnCombatProfile,
+  Renekton: renektonCombatProfile,
+  Riven: rivenCombatProfile,
+  Sett: settCombatProfile,
 } satisfies Record<string, LeagueChampionKnowledgeProfile>;
 
 const championProfilesByLookupKey = new Map<string, LeagueChampionKnowledgeProfile>();
