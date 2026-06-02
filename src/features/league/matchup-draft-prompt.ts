@@ -291,6 +291,7 @@ function formatChampionKnowledgeForPrompt(
     "profile_status: supplied",
     "combat_profile_status: supplied",
     `profile_quality: ${profile.profileQuality}`,
+    `mastery_difficulty: ${profile.masteryDifficulty ?? "not supplied"}`,
     `ability_map: ${formatAbilityMap(profile.abilities)}`,
     `primary_roles: ${formatOptionalList(profile.primaryRoles)}`,
     `secondary_roles: ${formatOptionalList(profile.secondaryRoles)}`,

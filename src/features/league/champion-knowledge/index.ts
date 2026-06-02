@@ -47,13 +47,18 @@ import { camilleCombatProfile } from "./camille";
 import { dariusCombatProfile } from "./darius";
 import { fioraCombatProfile } from "./fiora";
 import { garenCombatProfile } from "./garen";
+import { gwenCombatProfile } from "./gwen";
 import { jaxCombatProfile } from "./jax";
 import { malphiteCombatProfile } from "./malphite";
 import { mordekaiserCombatProfile } from "./mordekaiser";
+import { nasusCombatProfile } from "./nasus";
 import { ornnCombatProfile } from "./ornn";
 import { renektonCombatProfile } from "./renekton";
 import { rivenCombatProfile } from "./riven";
 import { settCombatProfile } from "./sett";
+import { shenCombatProfile } from "./shen";
+import { tryndamereCombatProfile } from "./tryndamere";
+import { volibearCombatProfile } from "./volibear";
 
 export type {
   LeagueChampionAbilityKey,
@@ -64,6 +69,7 @@ export type {
   LeagueChampionLaneIdentity,
   LeagueChampionLaneIdentityLevel,
   LeagueChampionLanePlan,
+  LeagueChampionMasteryDifficulty,
   LeagueChampionMatchupPreferences,
   LeagueChampionMobilityLevel,
   LeagueChampionPowerSpike,
@@ -125,13 +131,18 @@ export { camilleCombatProfile } from "./camille";
 export { dariusCombatProfile } from "./darius";
 export { fioraCombatProfile } from "./fiora";
 export { garenCombatProfile } from "./garen";
+export { gwenCombatProfile } from "./gwen";
 export { jaxCombatProfile } from "./jax";
 export { malphiteCombatProfile } from "./malphite";
 export { mordekaiserCombatProfile } from "./mordekaiser";
+export { nasusCombatProfile } from "./nasus";
 export { ornnCombatProfile } from "./ornn";
 export { renektonCombatProfile } from "./renekton";
 export { rivenCombatProfile } from "./riven";
 export { settCombatProfile } from "./sett";
+export { shenCombatProfile } from "./shen";
+export { tryndamereCombatProfile } from "./tryndamere";
+export { volibearCombatProfile } from "./volibear";
 
 export const leagueChampionKnowledgeProfiles = {
   Aatrox: aatroxCombatProfile,
@@ -182,13 +193,18 @@ export const leagueChampionKnowledgeProfiles = {
   Darius: dariusCombatProfile,
   Fiora: fioraCombatProfile,
   Garen: garenCombatProfile,
+  Gwen: gwenCombatProfile,
   Jax: jaxCombatProfile,
   Malphite: malphiteCombatProfile,
   Mordekaiser: mordekaiserCombatProfile,
+  Nasus: nasusCombatProfile,
   Ornn: ornnCombatProfile,
   Renekton: renektonCombatProfile,
   Riven: rivenCombatProfile,
   Sett: settCombatProfile,
+  Shen: shenCombatProfile,
+  Tryndamere: tryndamereCombatProfile,
+  Volibear: volibearCombatProfile,
 } satisfies Record<string, LeagueChampionKnowledgeProfile>;
 
 const championProfilesByLookupKey = new Map<string, LeagueChampionKnowledgeProfile>();

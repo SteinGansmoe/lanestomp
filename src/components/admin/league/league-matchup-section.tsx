@@ -41,8 +41,8 @@ import { fieldClassName, selectOptionClassName } from "../constants";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
 import {
+  LeagueMatchupGenerateFormCard,
   LeagueMatchupForm,
-  LeagueMatchupFormCard,
 } from "./league-matchup-form";
 
 type LeagueMatchupRoleFilter = AdminLeagueMatchup["role"] | "all";
@@ -259,14 +259,12 @@ export function AdminLeagueMatchupsSection({
   return (
     <>
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <LeagueMatchupFormCard
+        <LeagueMatchupGenerateFormCard
           champions={champions}
           form={createForm}
           onChange={onCreateChange}
           onSubmit={onCreateSubmit}
           status={createStatus}
-          submitLabel="Create matchup"
-          title="Create League matchup"
         />
 
         <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">

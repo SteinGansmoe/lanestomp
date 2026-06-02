@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { Plus, Save, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Plus, Save, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import {
@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
+import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import { leagueRoles } from "@/src/features/league/roles";
 import { fieldClassName, selectOptionClassName } from "../constants";
 import type {
@@ -26,39 +27,136 @@ const matchupTextFields = [
   { key: "win_conditions", label: "Win conditions" },
 ] as const;
 
-export function LeagueMatchupFormCard({
+export function LeagueMatchupGenerateFormCard({
   champions,
   form,
   onChange,
   onSubmit,
   status,
-  submitLabel,
-  title,
 }: {
   champions: AdminLeagueChampion[];
   form: LeagueMatchupFormState;
   onChange: (form: LeagueMatchupFormState) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   status: FormStatus;
-  submitLabel: string;
-  title: string;
 }) {
   return (
     <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
       <CardHeader>
-        <CardTitle className="font-mono text-xl">{title}</CardTitle>
+        <CardTitle className="font-mono text-xl">
+          Generate League matchup draft
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <LeagueMatchupForm
+        <LeagueMatchupGenerateForm
           champions={champions}
           form={form}
           onChange={onChange}
           onSubmit={onSubmit}
           status={status}
-          submitLabel={submitLabel}
         />
       </CardContent>
     </Card>
+  );
+}
+
+export function LeagueMatchupGenerateForm({
+  champions,
+  form,
+  onChange,
+  onSubmit,
+  status,
+}: {
+  champions: AdminLeagueChampion[];
+  form: LeagueMatchupFormState;
+  onChange: (form: LeagueMatchupFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  status: FormStatus;
+}) {
+  const championA = champions.find(
+    (champion) => champion.id === form.champion_a_id
+  );
+  const championB = champions.find(
+    (champion) => champion.id === form.champion_b_id
+  );
+
+  function updateField(
+    field: keyof LeagueMatchupFormState,
+    value: LeagueMatchupFormState[keyof LeagueMatchupFormState]
+  ) {
+    onChange({
+      ...form,
+      [field]: value,
+    });
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <ChampionSelect
+          champions={champions}
+          disabled={status.isLoading}
+          label="Champion A"
+          onChange={(value) => updateField("champion_a_id", value)}
+          value={form.champion_a_id}
+        />
+        <ChampionSelect
+          champions={champions}
+          disabled={status.isLoading}
+          label="Champion B"
+          onChange={(value) => updateField("champion_b_id", value)}
+          value={form.champion_b_id}
+        />
+      </div>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-zinc-300">Role</span>
+        <select
+          className={fieldClassName}
+          disabled={status.isLoading}
+          onChange={(event) =>
+            updateField(
+              "role",
+              event.target.value as LeagueMatchupFormState["role"]
+            )
+          }
+          required
+          value={form.role}
+        >
+          {leagueRoles.map((role) => (
+            <option className={selectOptionClassName} key={role} value={role}>
+              {role === "adc" ? "ADC" : titleCase(role)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <ProfileReadiness champion={championA} label="Champion A profile" />
+        <ProfileReadiness champion={championB} label="Champion B profile" />
+      </div>
+
+      {status.error ? (
+        <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+          {status.error}
+        </p>
+      ) : null}
+
+      {status.success ? (
+        <p className="rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+          {status.success}
+        </p>
+      ) : null}
+
+      <Button
+        className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+        disabled={status.isLoading}
+        type="submit"
+      >
+        <Sparkles className="size-4" aria-hidden="true" />
+        {status.isLoading ? "Generating..." : "Generate draft"}
+      </Button>
+    </form>
   );
 }
 
@@ -265,6 +363,41 @@ function ChampionSelect({
         ))}
       </select>
     </label>
+  );
+}
+
+function ProfileReadiness({
+  champion,
+  label,
+}: {
+  champion: AdminLeagueChampion | undefined;
+  label: string;
+}) {
+  const profile = champion ? getChampionCombatProfile(champion.id) : null;
+  const hasProfile = Boolean(profile);
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+      <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+        {label}
+      </p>
+      {champion ? (
+        <p
+          className={`mt-2 flex items-center gap-2 text-sm ${
+            hasProfile ? "text-emerald-100" : "text-amber-100"
+          }`}
+        >
+          {hasProfile ? (
+            <CheckCircle2 className="size-4" aria-hidden="true" />
+          ) : (
+            <AlertTriangle className="size-4" aria-hidden="true" />
+          )}
+          {hasProfile ? "Combat profile available" : "Missing combat profile"}
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-zinc-400">Select a champion</p>
+      )}
+    </div>
   );
 }
 

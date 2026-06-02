@@ -13,6 +13,11 @@ export type LeagueChampionMobilityLevel =
   | "none"
   | "very_high";
 export type LeagueChampionProfileQuality = "draft" | "reviewed";
+export type LeagueChampionMasteryDifficulty =
+  | "high"
+  | "low"
+  | "medium"
+  | "very_high";
 export type LeagueChampionLaneIdentityLevel =
   | "high"
   | "low"
@@ -97,6 +102,7 @@ export type LeagueChampionKnowledgeProfile = {
   lanePlan?: LeagueChampionLanePlan;
   laneIdentity?: string | LeagueChampionLaneIdentity;
   majorPowerSpikes?: string[];
+  masteryDifficulty?: LeagueChampionMasteryDifficulty;
   matchupPreferences?: LeagueChampionMatchupPreferences;
   mobilityLevel?: LeagueChampionMobilityLevel;
   name: string;

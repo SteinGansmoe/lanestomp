@@ -68,7 +68,7 @@ export const renektonCombatProfile = {
       "Punishing weak early champions before level or item scaling.",
     ],
   },
-  majorPowerSpikes: ["Level 3 with full basic combo.", "Level 6 (R).", "First combat item."],
+  majorPowerSpikes: ["Level 3 with full basic combo.", "Level 6 (R).", "First item."],
   matchupPreferences: {
     strongInto: [
       "Weak early scalers.",
@@ -104,7 +104,7 @@ export const renektonCombatProfile = {
   },
   primaryRoles: ["top"],
   primaryTradingPattern:
-    "Build fury, dash in with (E), use empowered (W) or (Q), then exit with the second (E) unless the all-in is clearly winning.",
+    "Build fury, dash in with (E), use empowered (W), use (Q) and then exit with the second (E) unless the all-in is clearly winning.",
   punishProfile: {
     canPunish: [
       "Scaling champions before they stabilize.",
@@ -116,7 +116,7 @@ export const renektonCombatProfile = {
       "Lanes where he cannot control early wave tempo.",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["mid"],
   shields: [],
   softCrowdControl: [],
   stealthOrInvisibility: null,
@@ -124,7 +124,7 @@ export const renektonCombatProfile = {
     laneGoal: "snowball",
     preferredGameLength: "short",
     scalingProfile: "early",
-    winMethod: ["early lane pressure", "fury trades", "dives and skirmishes"],
+    winMethod: ["early lane pressure", "high fury trades", "dives and skirmishes"],
   },
   sustain: ["(Q) healing, improved with fury"],
   trading: {
@@ -137,9 +137,10 @@ export const renektonCombatProfile = {
       "High fury and (W) available.",
       "Enemy key cooldown is down.",
       "Wave state lets him dash in and out safely.",
+      "All 3 of his abilities are up for a full combo.",
     ],
     primaryPattern:
-      "Use fury as the trade timer, take explosive short trades with (E) plus empowered (W), and leave before lower-scaling extended damage becomes a problem.",
+      "Use fury as the trade timer, take explosive short trades with (E) plus empowered (W), finish with (Q) and dash away with the second (E).",
   },
   punishWindows: [
     "When fury is low, Renekton's burst is weaker.",

@@ -1061,20 +1061,92 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       success: null,
     });
 
-    const { error: createError } = await supabase
-      .from("league_matchups")
-      .insert(getLeagueMatchupPayload(createLeagueMatchupForm));
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (createError) {
+    if (sessionError || !accessToken) {
       setCreateLeagueMatchupStatus({
-        error: createError.message,
+        error: sessionError?.message ?? "Admin session is not ready.",
         isLoading: false,
         success: null,
       });
       return;
     }
 
+    const { data: existingMatchup, error: existingMatchupError } =
+      await supabase
+        .from("league_matchups")
+        .select(leagueMatchupSelect)
+        .eq("champion_a_id", createLeagueMatchupForm.champion_a_id)
+        .eq("champion_b_id", createLeagueMatchupForm.champion_b_id)
+        .eq("role", createLeagueMatchupForm.role)
+        .maybeSingle<AdminLeagueMatchup>();
+
+    if (existingMatchupError) {
+      setCreateLeagueMatchupStatus({
+        error: existingMatchupError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (existingMatchup && hasSavedLeagueMatchupDraftContent(existingMatchup)) {
+      setCreateLeagueMatchupStatus({
+        error:
+          "This matchup already has saved guidance. Use the existing matchup row to regenerate or edit it.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    let matchupId = existingMatchup?.id ?? null;
+
+    if (!matchupId) {
+      const { data: createdMatchup, error: createError } = await supabase
+        .from("league_matchups")
+        .insert({
+          champion_a_id: createLeagueMatchupForm.champion_a_id,
+          champion_b_id: createLeagueMatchupForm.champion_b_id,
+          role: createLeagueMatchupForm.role,
+        })
+        .select("id")
+        .single<{ id: number }>();
+
+      if (createError || !createdMatchup) {
+        setCreateLeagueMatchupStatus({
+          error: createError?.message ?? "League matchup could not be created.",
+          isLoading: false,
+          success: null,
+        });
+        return;
+      }
+
+      matchupId = createdMatchup.id;
+    }
+
+    setGeneratingLeagueMatchupId(matchupId);
+
+    const result = await generateLeagueMatchupDraft({
+      accessToken,
+      matchupId,
+    });
+
+    if (!result.ok) {
+      setGeneratingLeagueMatchupId(null);
+      setCreateLeagueMatchupStatus({
+        error: result.error,
+        isLoading: false,
+        success: null,
+      });
+      await reloadAdminData();
+      return;
+    }
+
     await reloadAdminData();
+    setGeneratingLeagueMatchupId(null);
     setCreateLeagueMatchupForm({
       ...emptyLeagueMatchupForm,
       champion_a_id: createLeagueMatchupForm.champion_a_id,
@@ -1083,7 +1155,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setCreateLeagueMatchupStatus({
       error: null,
       isLoading: false,
-      success: "League matchup created.",
+      success: result.profileWarning
+        ? `League matchup draft generated and saved with lower confidence. ${result.profileWarning}`
+        : "League matchup draft generated and saved. Review before publishing.",
     });
   }
 
