@@ -135,7 +135,7 @@ export const shenCombatProfile = {
       "Wave-clear champions that punish him when he uses (R).",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["jungle"],
   shields: ["(R) shield"],
   softCrowdControl: [],
   stealthOrInvisibility: null,

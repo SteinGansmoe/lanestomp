@@ -135,7 +135,7 @@ export const tryndamereCombatProfile = {
       "Enemies who can kite out (R) and re-engage afterward.",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["jungle"],
   shields: [],
   softCrowdControl: ["(W) slow"],
   stealthOrInvisibility: null,

@@ -44,21 +44,47 @@ import { annieCombatProfile } from "./annie";
 import { aurelionSolCombatProfile } from "./aurelion-sol";
 import { auroraCombatProfile } from "./aurora";
 import { camilleCombatProfile } from "./camille";
+import { chogathCombatProfile } from "./chogath";
 import { dariusCombatProfile } from "./darius";
+import { drMundoCombatProfile } from "./dr-mundo";
 import { fioraCombatProfile } from "./fiora";
+import { gangplankCombatProfile } from "./gangplank";
 import { garenCombatProfile } from "./garen";
+import { gnarCombatProfile } from "./gnar";
+import { gragasCombatProfile } from "./gragas";
 import { gwenCombatProfile } from "./gwen";
+import { heimerdingerCombatProfile } from "./heimerdinger";
+import { illaoiCombatProfile } from "./illaoi";
+import { jayceCombatProfile } from "./jayce";
 import { jaxCombatProfile } from "./jax";
+import { kayleCombatProfile } from "./kayle";
+import { kennenCombatProfile } from "./kennen";
+import { kledCombatProfile } from "./kled";
+import { ksanteCombatProfile } from "./ksante";
 import { malphiteCombatProfile } from "./malphite";
 import { mordekaiserCombatProfile } from "./mordekaiser";
 import { nasusCombatProfile } from "./nasus";
+import { olafCombatProfile } from "./olaf";
 import { ornnCombatProfile } from "./ornn";
+import { pantheonCombatProfile } from "./pantheon";
+import { poppyCombatProfile } from "./poppy";
+import { quinnCombatProfile } from "./quinn";
 import { renektonCombatProfile } from "./renekton";
 import { rivenCombatProfile } from "./riven";
+import { rumbleCombatProfile } from "./rumble";
 import { settCombatProfile } from "./sett";
 import { shenCombatProfile } from "./shen";
+import { singedCombatProfile } from "./singed";
+import { sionCombatProfile } from "./sion";
+import { tahmKenchCombatProfile } from "./tahm-kench";
+import { teemoCombatProfile } from "./teemo";
+import { trundleCombatProfile } from "./trundle";
 import { tryndamereCombatProfile } from "./tryndamere";
+import { urgotCombatProfile } from "./urgot";
+import { vayneCombatProfile } from "./vayne";
 import { volibearCombatProfile } from "./volibear";
+import { warwickCombatProfile } from "./warwick";
+import { yorickCombatProfile } from "./yorick";
 
 export type {
   LeagueChampionAbilityKey,
@@ -128,21 +154,47 @@ export { annieCombatProfile } from "./annie";
 export { aurelionSolCombatProfile } from "./aurelion-sol";
 export { auroraCombatProfile } from "./aurora";
 export { camilleCombatProfile } from "./camille";
+export { chogathCombatProfile } from "./chogath";
 export { dariusCombatProfile } from "./darius";
+export { drMundoCombatProfile } from "./dr-mundo";
 export { fioraCombatProfile } from "./fiora";
+export { gangplankCombatProfile } from "./gangplank";
 export { garenCombatProfile } from "./garen";
+export { gnarCombatProfile } from "./gnar";
+export { gragasCombatProfile } from "./gragas";
 export { gwenCombatProfile } from "./gwen";
+export { heimerdingerCombatProfile } from "./heimerdinger";
+export { illaoiCombatProfile } from "./illaoi";
+export { jayceCombatProfile } from "./jayce";
 export { jaxCombatProfile } from "./jax";
+export { kayleCombatProfile } from "./kayle";
+export { kennenCombatProfile } from "./kennen";
+export { kledCombatProfile } from "./kled";
+export { ksanteCombatProfile } from "./ksante";
 export { malphiteCombatProfile } from "./malphite";
 export { mordekaiserCombatProfile } from "./mordekaiser";
 export { nasusCombatProfile } from "./nasus";
+export { olafCombatProfile } from "./olaf";
 export { ornnCombatProfile } from "./ornn";
+export { pantheonCombatProfile } from "./pantheon";
+export { poppyCombatProfile } from "./poppy";
+export { quinnCombatProfile } from "./quinn";
 export { renektonCombatProfile } from "./renekton";
 export { rivenCombatProfile } from "./riven";
+export { rumbleCombatProfile } from "./rumble";
 export { settCombatProfile } from "./sett";
 export { shenCombatProfile } from "./shen";
+export { singedCombatProfile } from "./singed";
+export { sionCombatProfile } from "./sion";
+export { tahmKenchCombatProfile } from "./tahm-kench";
+export { teemoCombatProfile } from "./teemo";
+export { trundleCombatProfile } from "./trundle";
 export { tryndamereCombatProfile } from "./tryndamere";
+export { urgotCombatProfile } from "./urgot";
+export { vayneCombatProfile } from "./vayne";
 export { volibearCombatProfile } from "./volibear";
+export { warwickCombatProfile } from "./warwick";
+export { yorickCombatProfile } from "./yorick";
 
 export const leagueChampionKnowledgeProfiles = {
   Aatrox: aatroxCombatProfile,
@@ -190,21 +242,47 @@ export const leagueChampionKnowledgeProfiles = {
   AurelionSol: aurelionSolCombatProfile,
   Aurora: auroraCombatProfile,
   Camille: camilleCombatProfile,
+  Chogath: chogathCombatProfile,
   Darius: dariusCombatProfile,
+  DrMundo: drMundoCombatProfile,
   Fiora: fioraCombatProfile,
+  Gangplank: gangplankCombatProfile,
   Garen: garenCombatProfile,
+  Gnar: gnarCombatProfile,
+  Gragas: gragasCombatProfile,
   Gwen: gwenCombatProfile,
+  Heimerdinger: heimerdingerCombatProfile,
+  Illaoi: illaoiCombatProfile,
+  Jayce: jayceCombatProfile,
   Jax: jaxCombatProfile,
+  Kayle: kayleCombatProfile,
+  Kennen: kennenCombatProfile,
+  Kled: kledCombatProfile,
+  KSante: ksanteCombatProfile,
   Malphite: malphiteCombatProfile,
   Mordekaiser: mordekaiserCombatProfile,
   Nasus: nasusCombatProfile,
+  Olaf: olafCombatProfile,
   Ornn: ornnCombatProfile,
+  Pantheon: pantheonCombatProfile,
+  Poppy: poppyCombatProfile,
+  Quinn: quinnCombatProfile,
   Renekton: renektonCombatProfile,
   Riven: rivenCombatProfile,
+  Rumble: rumbleCombatProfile,
   Sett: settCombatProfile,
   Shen: shenCombatProfile,
+  Singed: singedCombatProfile,
+  Sion: sionCombatProfile,
+  TahmKench: tahmKenchCombatProfile,
+  Teemo: teemoCombatProfile,
+  Trundle: trundleCombatProfile,
   Tryndamere: tryndamereCombatProfile,
+  Urgot: urgotCombatProfile,
+  Vayne: vayneCombatProfile,
   Volibear: volibearCombatProfile,
+  Warwick: warwickCombatProfile,
+  Yorick: yorickCombatProfile,
 } satisfies Record<string, LeagueChampionKnowledgeProfile>;
 
 const championProfilesByLookupKey = new Map<string, LeagueChampionKnowledgeProfile>();

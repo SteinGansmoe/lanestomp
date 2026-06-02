@@ -83,7 +83,7 @@ export const settCombatProfile = {
   },
   mobilityLevel: "low",
   name: "Sett",
-  offMetaRoles: ["support"],
+  offMetaRoles: ["support", "jungle"],
   powerSpikes: {
     major: [
       {
@@ -116,7 +116,7 @@ export const settCombatProfile = {
       "Mobile targets that never stand in (W) center.",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["mid"],
   shields: ["(W) shield"],
   softCrowdControl: ["(E) pull"],
   stealthOrInvisibility: null,

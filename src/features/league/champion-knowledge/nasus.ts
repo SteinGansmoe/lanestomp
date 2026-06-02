@@ -19,9 +19,11 @@ export const nasusCombatProfile = {
       "He has enough (Q) stacks to punish melee range.",
       "(W) lands on a target that needs movement or attack speed to trade back.",
       "(R) is active and the fight lasts long enough for repeated (Q) casts.",
+      "At around 15-20 minutes Nasus becomes a significant threat if he havent been punished in the early levels.",
+      "If Nasus is ahead in lane, he can often 1v2 if enemy jungler ganks",
     ],
     mustRespect: [
-      "A calm lane favors his scaling plan.",
+      "A passive lane favors his scaling plan.",
       "(W) can turn overextended trades into forced all-ins.",
       "His side-lane threat rises sharply once (Q) stacks and durability come online.",
     ],
@@ -78,13 +80,13 @@ export const nasusCombatProfile = {
     ],
     weakInto: [
       "Early lane bullies who can freeze or dive.",
-      "Ranged poke that denies safe (Q) stacks.",
-      "Champions that can kite him even through (W).",
+      "Ranged poke that denies him from stacking (Q).",
+      "High mobility champions early game.",
     ],
   },
   mobilityLevel: "low",
   name: "Nasus",
-  offMetaRoles: [],
+  offMetaRoles: ["mid"],
   powerSpikes: {
     major: [
       {
@@ -123,7 +125,7 @@ export const nasusCombatProfile = {
       "Teams that collapse before he can reach side-lane targets.",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["jungle"],
   shields: [],
   softCrowdControl: ["(W) slow", "(E) armor reduction zone"],
   stealthOrInvisibility: null,
@@ -131,7 +133,7 @@ export const nasusCombatProfile = {
     laneGoal: "scale",
     preferredGameLength: "long",
     scalingProfile: "late",
-    winMethod: ["safe stacking", "side-lane scaling", "extended juggernaut fights"],
+    winMethod: ["high stacks of (Q)", "side-lane scaling", "extended juggernaut fights"],
   },
   sustain: ["Passive lifesteal"],
   trading: {

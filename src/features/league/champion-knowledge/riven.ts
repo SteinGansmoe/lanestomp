@@ -116,7 +116,7 @@ export const rivenCombatProfile = {
       "Tanks that absorb her combo and force extended fights.",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["mid"],
   shields: ["(E) shield"],
   softCrowdControl: [],
   stealthOrInvisibility: null,
