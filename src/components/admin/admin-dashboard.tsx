@@ -21,12 +21,14 @@ import {
   emptySeasonForm,
   emptyTimelineEventForm,
   missingLeagueMatchupsTableMessage,
+  missingLeagueFeedbackTableMessage,
   missingResourcesTableMessage,
   missingTimelineEventsTableMessage,
   sessionCheckTimeoutMs,
 } from "./constants";
 import {
   isMissingLeagueMatchupsTableError,
+  isMissingLeagueFeedbackTableError,
   isMissingGameResourcesTableError,
   isMissingTimelineEventsTableError,
   toDateTimeLocalValue,
@@ -42,6 +44,7 @@ import type {
   AdminData,
   AdminGame,
   AdminLeagueChampion,
+  AdminLeagueMatchupFeedback,
   AdminLeagueMatchup,
   AdminResource,
   AdminSeason,
@@ -90,6 +93,21 @@ const leagueMatchupSelect = [
   "reviewed_at",
   "reviewed_by",
   "admin_notes",
+  "updated_at",
+].join(", ");
+const leagueFeedbackSelect = [
+  "id",
+  "matchup_id",
+  "player_champion",
+  "enemy_champion",
+  "lane",
+  "card_type",
+  "feedback_type",
+  "reason",
+  "message",
+  "user_id",
+  "status",
+  "created_at",
   "updated_at",
 ].join(", ");
 
@@ -209,6 +227,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [leagueMatchupsSetupMessage, setLeagueMatchupsSetupMessage] = useState<
     string | null
   >(null);
+  const [leagueFeedbackSetupMessage, setLeagueFeedbackSetupMessage] = useState<
+    string | null
+  >(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
   const pageTitle =
     section === "games" ? "Game management"
@@ -287,6 +308,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         timelineResult,
         leagueChampionsResult,
         leagueMatchupsResult,
+        leagueFeedbackResult,
       ] = await Promise.all([
           supabase
             .from("games")
@@ -318,6 +340,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             .select("id, name, title, image_url")
             .order("name", { ascending: true }),
           fetchAllLeagueMatchups(),
+          fetchAllLeagueFeedback(),
         ]);
 
       if (!isMounted) {
@@ -333,6 +356,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
         leagueMatchupsResult.error
       );
+      const isMissingLeagueFeedbackTable = isMissingLeagueFeedbackTableError(
+        leagueFeedbackResult.error
+      );
 
       if (
         gamesResult.error ||
@@ -340,7 +366,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         seasonsResult.error ||
         (resourcesResult.error && !isMissingResourcesTable) ||
         (timelineResult.error && !isMissingTimelineTable) ||
-        (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable)
+        (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable) ||
+        (leagueFeedbackResult.error && !isMissingLeagueFeedbackTable)
       ) {
         setError(
           gamesResult.error?.message ??
@@ -350,6 +377,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
             (!isMissingLeagueMatchupsTable ?
               leagueMatchupsResult.error?.message
+            : null) ??
+            (!isMissingLeagueFeedbackTable ?
+              leagueFeedbackResult.error?.message
             : null) ??
             "Could not load admin data."
         );
@@ -366,10 +396,16 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setLeagueMatchupsSetupMessage(
         isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null
       );
+      setLeagueFeedbackSetupMessage(
+        isMissingLeagueFeedbackTable ? missingLeagueFeedbackTableMessage : null
+      );
 
       const nextAdminData = {
         games: (gamesResult.data ?? []) as AdminGame[],
         leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
+        leagueFeedback: isMissingLeagueFeedbackTable
+          ? []
+          : (((leagueFeedbackResult.data ?? []) as unknown) as AdminLeagueMatchupFeedback[]),
         leagueMatchups: isMissingLeagueMatchupsTable
           ? []
           : ((leagueMatchupsResult.data ?? []) as AdminLeagueMatchup[]),
@@ -445,6 +481,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       timelineResult,
       leagueChampionsResult,
       leagueMatchupsResult,
+      leagueFeedbackResult,
     ] = await Promise.all([
         supabase
           .from("games")
@@ -476,6 +513,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           .select("id, name, title, image_url")
           .order("name", { ascending: true }),
         fetchAllLeagueMatchups(),
+        fetchAllLeagueFeedback(),
       ]);
 
     const isMissingResourcesTable = isMissingGameResourcesTableError(
@@ -487,6 +525,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
       leagueMatchupsResult.error
     );
+    const isMissingLeagueFeedbackTable = isMissingLeagueFeedbackTableError(
+      leagueFeedbackResult.error
+    );
 
     if (
       gamesResult.error ||
@@ -494,7 +535,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       seasonsResult.error ||
       (resourcesResult.error && !isMissingResourcesTable) ||
       (timelineResult.error && !isMissingTimelineTable) ||
-      (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable)
+      (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable) ||
+      (leagueFeedbackResult.error && !isMissingLeagueFeedbackTable)
     ) {
       setError(
         gamesResult.error?.message ??
@@ -504,6 +546,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
           (!isMissingLeagueMatchupsTable ?
             leagueMatchupsResult.error?.message
+          : null) ??
+          (!isMissingLeagueFeedbackTable ?
+            leagueFeedbackResult.error?.message
           : null) ??
           "Could not load admin data."
       );
@@ -519,10 +564,16 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setLeagueMatchupsSetupMessage(
       isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null
     );
+    setLeagueFeedbackSetupMessage(
+      isMissingLeagueFeedbackTable ? missingLeagueFeedbackTableMessage : null
+    );
 
     const nextAdminData = {
       games: (gamesResult.data ?? []) as AdminGame[],
       leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
+      leagueFeedback: isMissingLeagueFeedbackTable
+        ? []
+        : (((leagueFeedbackResult.data ?? []) as unknown) as AdminLeagueMatchupFeedback[]),
       leagueMatchups: isMissingLeagueMatchupsTable
         ? []
         : ((leagueMatchupsResult.data ?? []) as AdminLeagueMatchup[]),
@@ -1219,6 +1270,43 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       success: `${uniqueMatchupIds.length} ${championName} draft matchup${
         uniqueMatchupIds.length === 1 ? "" : "s"
       } marked as reviewed.`,
+    });
+  }
+
+  async function handleUpdateLeagueFeedbackStatus(
+    feedback: AdminLeagueMatchupFeedback,
+    status: AdminLeagueMatchupFeedback["status"]
+  ) {
+    if (!supabase) {
+      setEditLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
+
+    const { error: updateError } = await supabase
+      .from("matchup_feedback")
+      .update({ status })
+      .eq("id", feedback.id);
+
+    if (updateError) {
+      setEditLeagueMatchupStatus({
+        error: updateError.message,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await reloadAdminData();
+    setEditLeagueMatchupStatus({
+      error: null,
+      isLoading: false,
+      success: `Feedback marked as ${status}.`,
     });
   }
 
@@ -1996,6 +2084,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               </Card>
             ) : null}
 
+            {leagueFeedbackSetupMessage ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
+                {leagueFeedbackSetupMessage}
+              </Card>
+            ) : null}
+
             <ViewTransition
               key={section}
               name="admin-section-content"
@@ -2119,6 +2213,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     batchProgress={batchLeagueMatchupProgress}
                     batchStatus={batchLeagueMatchupStatus}
                     matchups={adminData.leagueMatchups}
+                    feedback={adminData.leagueFeedback}
                     onCancelEdit={stopEditingLeagueMatchup}
                     onCreateChange={setCreateLeagueMatchupForm}
                     onCreateSubmit={handleCreateLeagueMatchup}
@@ -2133,6 +2228,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     onMarkReviewedForChampion={
                       handleMarkLeagueMatchupsReviewedForChampion
                     }
+                    onUpdateFeedbackStatus={handleUpdateLeagueFeedbackStatus}
                     onStartEdit={startEditingLeagueMatchup}
                     generatingMatchupId={generatingLeagueMatchupId}
                   />
@@ -2179,6 +2275,23 @@ async function fetchAllLeagueMatchups() {
       return { data: rows, error: null };
     }
   }
+}
+
+async function fetchAllLeagueFeedback() {
+  if (!supabase) {
+    return {
+      data: null,
+      error: { message: "Supabase is not configured." },
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("matchup_feedback")
+    .select(leagueFeedbackSelect)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  return { data, error };
 }
 
 function getSessionWithTimeout(): Promise<SessionResult> {

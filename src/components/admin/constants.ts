@@ -67,6 +67,7 @@ export const emptyLeagueMatchupForm: LeagueMatchupFormState = {
 export const emptyAdminData: AdminData = {
   games: [],
   leagueChampions: [],
+  leagueFeedback: [],
   leagueMatchups: [],
   resources: [],
   seasons: [],
@@ -79,6 +80,8 @@ export const missingTimelineEventsTableMessage =
   "Timeline events are not set up in Supabase yet. Apply the timeline_events migration to enable the Timeline admin page.";
 export const missingLeagueMatchupsTableMessage =
   "League matchup management is not fully set up in Supabase yet. Apply the latest league_matchups migration to enable this admin page.";
+export const missingLeagueFeedbackTableMessage =
+  "League matchup feedback is not fully set up in Supabase yet. Apply the latest matchup_feedback migration to enable feedback review.";
 
 export const fieldClassName =
   "w-full rounded-lg border border-white/10 bg-[#111a2c] px-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20 disabled:cursor-not-allowed disabled:opacity-50";

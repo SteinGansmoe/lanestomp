@@ -19,6 +19,7 @@ import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/src/components/ui/button";
 import { generateLeagueMatchupDraftSection } from "@/src/app/admin/league/matchups/actions";
+import { MatchupFeedbackControls } from "@/src/components/league/matchup-feedback-controls";
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 import type { LeagueMatchup } from "@/src/features/league/matchups";
@@ -49,7 +50,9 @@ type ReviewStatus = {
 
 type LeagueMatchupReviewPanelProps = {
   championAId: string;
+  championAName: string;
   championBId: string;
+  championBName: string;
   initialMatchup: LeagueMatchup | null;
   role: LeagueRole;
 };
@@ -113,7 +116,9 @@ const matchupSectionDefinitions = [
 
 export function LeagueMatchupReviewPanel({
   championAId,
+  championAName,
   championBId,
+  championBName,
   initialMatchup,
   role,
 }: LeagueMatchupReviewPanelProps) {
@@ -482,6 +487,17 @@ export function LeagueMatchupReviewPanel({
             isEditing={isEditing}
             isRegenerating={regeneratingSectionKey === section.key}
             key={section.title}
+            feedbackContext={
+              displayMatchup?.id
+                ? {
+                    cardType: section.key,
+                    enemyChampion: championBName,
+                    lane: role,
+                    matchupId: displayMatchup.id,
+                    playerChampion: championAName,
+                  }
+                : null
+            }
             onChange={(value) =>
               setForm((current) => ({ ...current, [section.key]: value }))
             }
@@ -498,6 +514,7 @@ export function LeagueMatchupReviewPanel({
 function MatchupGuideCard({
   canRegenerate,
   formValue,
+  feedbackContext,
   isEditing,
   isRegenerating,
   onChange,
@@ -507,6 +524,13 @@ function MatchupGuideCard({
 }: {
   canRegenerate: boolean;
   formValue: string;
+  feedbackContext: {
+    cardType: string;
+    enemyChampion: string;
+    lane: LeagueRole;
+    matchupId: number;
+    playerChampion: string;
+  } | null;
   isEditing: boolean;
   isRegenerating: boolean;
   onChange: (value: string) => void;
@@ -577,6 +601,10 @@ function MatchupGuideCard({
           ))}
         </ul>
       )}
+
+      {!isEditing && feedbackContext ? (
+        <MatchupFeedbackControls {...feedbackContext} />
+      ) : null}
     </article>
   );
 }

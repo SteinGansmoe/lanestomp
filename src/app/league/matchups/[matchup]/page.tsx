@@ -138,7 +138,9 @@ export default async function LeagueMatchupPage({
 
             <LeagueMatchupReviewPanel
               championAId={championA.id}
+              championAName={championA.name}
               championBId={championB.id}
+              championBName={championB.name}
               initialMatchup={matchupResult?.matchup ?? null}
               role={role}
             />

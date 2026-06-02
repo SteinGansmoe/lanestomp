@@ -69,6 +69,29 @@ export type AdminLeagueMatchup = {
   win_conditions: string | null;
 };
 
+export type AdminLeagueMatchupFeedback = {
+  card_type: string;
+  created_at: string;
+  enemy_champion: string;
+  feedback_type: "helpful" | "not_helpful" | "report_issue";
+  id: number;
+  lane: AdminLeagueMatchup["role"];
+  matchup_id: number;
+  message: string | null;
+  player_champion: string;
+  reason:
+    | "ability_formatting_issue"
+    | "incorrect_advice"
+    | "missing_information"
+    | "other"
+    | "too_generic"
+    | "wrong_champion_perspective"
+    | null;
+  status: "dismissed" | "open" | "resolved" | "reviewing";
+  updated_at: string;
+  user_id: string | null;
+};
+
 export type LeagueMatchupBatchPlanItem = {
   championAId: string;
   championBId: string;
@@ -91,6 +114,7 @@ export type LeagueMatchupQueueItemResult =
 export type AdminData = {
   games: AdminGame[];
   leagueChampions: AdminLeagueChampion[];
+  leagueFeedback: AdminLeagueMatchupFeedback[];
   leagueMatchups: AdminLeagueMatchup[];
   resources: AdminResource[];
   seasons: AdminSeason[];

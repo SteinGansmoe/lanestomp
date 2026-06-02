@@ -15,6 +15,7 @@ export type LeagueMatchup = {
   win_conditions: string | null;
   difficulty_rating: number | null;
   confidence_level: string | null;
+  id: number;
   updated_at: string | null;
 };
 
@@ -58,6 +59,7 @@ export async function getLeagueMatchup({
         "win_conditions",
         "difficulty_rating",
         "confidence_level",
+        "id",
         "updated_at",
       ].join(", ")
     )

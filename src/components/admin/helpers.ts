@@ -81,6 +81,18 @@ export function isMissingLeagueMatchupsTableError(
   );
 }
 
+export function isMissingLeagueFeedbackTableError(
+  error: { code?: string; message?: string } | null
+) {
+  return (
+    error?.code === "PGRST205" ||
+    Boolean(
+      error?.message?.includes("matchup_feedback") &&
+        error.message.includes("schema cache")
+    )
+  );
+}
+
 export function toSlug(value: string) {
   return value
     .trim()
