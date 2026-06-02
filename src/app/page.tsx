@@ -25,15 +25,15 @@ export default async function Home() {
                   <Swords className="size-6" aria-hidden="true" />
                 </div>
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                  LaneTips.app
+                  LaneStomp
                 </p>
                 <h1 className="mt-3 font-mono text-3xl font-semibold tracking-normal text-white sm:text-5xl">
-                  League matchup prep, built for champ select speed.
+                  Master matchups, sharpen champion pools, and climb with confidence.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300 sm:text-base">
-                  Pick your champion, choose the enemy laner, and jump straight
-                  into concise matchup notes designed for loading screen and
-                  second monitor checks.
+                  Pick your champion, choose the enemy laner, and jump into
+                  concise matchup notes built for champ select, loading screen,
+                  and second monitor checks.
                 </p>
               </div>
 

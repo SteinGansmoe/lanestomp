@@ -14,9 +14,42 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LaneTips.app",
+  metadataBase: new URL("https://lanestomp.com"),
+  title: {
+    default: "LaneStomp",
+    template: "%s | LaneStomp",
+  },
   description:
-    "Fast League of Legends matchup prep for champion select and loading screen.",
+    "LaneStomp helps League players master matchups, improve champion pools, and climb with confidence.",
+  applicationName: "LaneStomp",
+  openGraph: {
+    description:
+      "LaneStomp helps League players master matchups, improve champion pools, and climb with confidence.",
+    images: [
+      {
+        alt: "LaneStomp League matchup improvement platform",
+        height: 630,
+        url: "/opengraph-image.png",
+        width: 1200,
+      },
+    ],
+    siteName: "LaneStomp",
+    title: "LaneStomp",
+    type: "website",
+    url: "https://lanestomp.com",
+  },
+  twitter: {
+    card: "summary_large_image",
+    description:
+      "LaneStomp helps League players master matchups, improve champion pools, and climb with confidence.",
+    images: [
+      {
+        alt: "LaneStomp League matchup improvement platform",
+        url: "/twitter-image.png",
+      },
+    ],
+    title: "LaneStomp",
+  },
 };
 
 export default function RootLayout({

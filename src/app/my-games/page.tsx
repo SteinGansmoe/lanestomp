@@ -35,8 +35,7 @@ function MyGamesDataError({ message }: { message: string }) {
                 Could not load followed games
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-                Season Tracker could not fetch season data from Supabase right
-                now.
+                LaneStomp could not fetch season data from Supabase right now.
               </p>
               <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-rose-100">
                 {message}

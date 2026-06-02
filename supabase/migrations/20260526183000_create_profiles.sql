@@ -76,4 +76,4 @@ on conflict (id) do update
   set email = excluded.email;
 
 comment on table public.profiles is
-  'Authenticated user profile records and app roles for Season Tracker.';
+  'Authenticated user profile records and app roles for LaneStomp.';

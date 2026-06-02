@@ -39,13 +39,13 @@ create policy "Seasons are publicly readable"
   using (true);
 
 comment on table public.games is
-  'Public game catalog for Season Tracker.';
+  'Public game catalog for LaneStomp.';
 
 comment on table public.seasons is
   'Public season schedule entries associated with games.';
 
 comment on column public.games.icon_url is
-  'Public icon or image path used by the Season Tracker UI.';
+  'Public icon or image path used by the LaneStomp UI.';
 
 -- Tiny example dataset for local reference only:
 -- insert into public.games (id, name, slug, description, icon_url)

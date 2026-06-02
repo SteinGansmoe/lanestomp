@@ -179,7 +179,7 @@ export function AdminTimelineSection({
           id: group.gameId,
           title: group.gameName,
         }))}
-        storageKey="seasontracker.admin.timeline.collapsedGroups"
+        storageKey="lanestomp.admin.timeline.collapsedGroups"
         title="Timeline events"
       />
     </>

@@ -50,7 +50,7 @@ const filterChips: Array<{ label: string; value: DashboardFilter }> = [
   { label: "ARPG", value: "arpg" },
   { label: "MOBA", value: "moba" },
 ];
-const collapsedSectionsStorageKey = "seasontracker.dashboardCollapsedSections";
+const collapsedSectionsStorageKey = "lanestomp.dashboardCollapsedSections";
 const defaultCollapsedSections: CollapsedSections = {
   active: false,
   followed: false,

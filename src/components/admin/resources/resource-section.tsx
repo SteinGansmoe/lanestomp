@@ -180,7 +180,7 @@ export function AdminResourcesSection({
           id: group.gameId,
           title: group.gameName,
         }))}
-        storageKey={`seasontracker.admin.${mode}.collapsedGroups`}
+        storageKey={`lanestomp.admin.${mode}.collapsedGroups`}
         title={copy.listTitle}
       />
     </>

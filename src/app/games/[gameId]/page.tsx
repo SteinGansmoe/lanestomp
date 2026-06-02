@@ -167,7 +167,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               Could not load game details
             </CardTitle>
             <p className="mt-3 text-zinc-400">
-              Season Tracker could not fetch this game detail content from Supabase right now.
+              LaneStomp could not fetch this game detail content from Supabase right now.
             </p>
             <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-rose-100">
               {seasonsResult.error ??

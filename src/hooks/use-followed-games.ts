@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { seasons } from "@/src/features";
 
-const followedGamesStorageKey = "seasontracker.followedGameIds";
-const followedGamesChangedEvent = "seasontracker:followed-games-changed";
+const followedGamesStorageKey = "lanestomp.followedGameIds";
+const followedGamesChangedEvent = "lanestomp:followed-games-changed";
 const legacySeasonIdToGameId = new Map<string, string>(
   seasons.flatMap((season) => [
     [season.id, season.gameId],

@@ -101,7 +101,7 @@ export function AdminOverview({
 
       <AdminProductArea
         title="League"
-        description="Primary workspace for the actively developed LaneTips matchup tool and the League-specific systems that will grow around it."
+        description="Primary workspace for the actively developed LaneStomp matchup tool and the League-specific systems that will grow around it."
       >
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           <AdminSectionCard
@@ -191,7 +191,7 @@ export function AdminOverview({
 
       <AdminProductArea
         title="Platform"
-        description="Foundational SeasonTracker CMS tools remain available, but they are lower-priority than the current League feature work."
+        description="Foundational LaneStomp CMS tools remain available, but they are lower-priority than the current League feature work."
       >
         <div className="grid gap-6 md:grid-cols-3">
           <AdminSectionCard

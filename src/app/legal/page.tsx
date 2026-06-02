@@ -4,8 +4,8 @@ import { Scale } from "lucide-react";
 import { SiteHeader } from "@/src/components/site-header";
 
 export const metadata: Metadata = {
-  title: "Legal & Disclaimers | LaneTips.app",
-  description: "Riot Games disclaimer for LaneTips.app.",
+  title: "Legal & Disclaimers",
+  description: "Riot Games disclaimer for LaneStomp.",
 };
 
 const legalDisclaimers = [
@@ -13,7 +13,7 @@ const legalDisclaimers = [
     id: "riot-games",
     provider: "Riot Games",
     relatedGames: ["League of Legends"],
-    text: "LaneTips.app is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+    text: "LaneStomp is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
   },
 ];
 

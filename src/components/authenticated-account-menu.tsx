@@ -73,7 +73,7 @@ export function AuthenticatedAccountMenu({
     }
 
     void loadUser();
-    window.addEventListener("lanetips-profile-updated", loadUser);
+    window.addEventListener("lanestomp-profile-updated", loadUser);
 
     const { data: listener } =
       supabase?.auth.onAuthStateChange((_event, session) => {
@@ -83,7 +83,7 @@ export function AuthenticatedAccountMenu({
 
     return () => {
       isMounted = false;
-      window.removeEventListener("lanetips-profile-updated", loadUser);
+      window.removeEventListener("lanestomp-profile-updated", loadUser);
       listener?.subscription.unsubscribe();
     };
   }, []);

@@ -21,7 +21,7 @@ export default function Loading() {
         </section>
 
         <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
-          Loading LaneTips...
+          Loading LaneStomp...
         </Card>
       </section>
     </main>

@@ -50,20 +50,19 @@ export function SiteFooter() {
         <section className="min-w-0">
           <Link className="flex items-center gap-4" href="/">
             <Image
-              alt=""
-              aria-hidden="true"
-              className="size-11 rounded-lg shadow-lg shadow-violet-950/30"
-              height={44}
-              src="/seasontracker-logo.svg"
-              width={44}
+              alt="LaneStomp"
+              className="h-auto w-36 object-contain"
+              height={96}
+              src="/images/lanestomp-logo.png"
+              width={144}
             />
             <span className="font-mono text-sm font-bold uppercase tracking-[0.12em] text-white">
-              LaneTips.app
+              LaneStomp
             </span>
           </Link>
           <p className="mt-5 max-w-64 text-sm leading-6 text-zinc-400">
-            Fast League matchup prep for champ select, loading screen, and
-            second monitor checks.
+            League matchup prep, champion pool improvement, and climbing
+            confidence in one focused workspace.
           </p>
           <div className="mt-6 flex gap-3">
             {socialLinks.map((item) => {
@@ -92,7 +91,7 @@ export function SiteFooter() {
             About
           </h2>
           <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-400">
-            LaneTips.app is a fan-made League of Legends companion and is not
+            LaneStomp is a fan-made League of Legends companion and is not
             affiliated with Riot Games.
           </p>
           <p className="mt-6 inline-flex items-center gap-2 text-sm text-zinc-300">
@@ -105,7 +104,7 @@ export function SiteFooter() {
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-4 text-sm text-zinc-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
-          <p>&copy; 2026 LaneTips.app. All rights reserved.</p>
+          <p>&copy; 2026 LaneStomp. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <FooterAuthLinks />
             <p>Made for League players, by a League player.</p>

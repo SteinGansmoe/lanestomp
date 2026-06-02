@@ -86,7 +86,7 @@ export function AdminLoginForm() {
         </div>
         <CardTitle className="font-mono text-2xl">Login</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
-          Sign in with your LaneTips.app account.
+          Sign in with your LaneStomp account.
         </p>
       </CardHeader>
       <CardContent>
@@ -139,7 +139,7 @@ export function AdminLoginForm() {
         </form>
 
         <p className="mt-5 text-center text-sm text-zinc-400">
-          New to LaneTips.app?{" "}
+          New to LaneStomp?{" "}
           <Link
             className="font-medium text-violet-200 transition hover:text-white"
             href="/register"

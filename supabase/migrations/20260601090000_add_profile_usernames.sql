@@ -102,7 +102,7 @@ $$;
 revoke all on function public.handle_new_user() from public;
 
 comment on column public.profiles.username is
-  'SeasonTracker display username. Separate from Riot Game Name, tag, or region.';
+  'LaneStomp display username. Separate from Riot Game Name, tag, or region.';
 
 comment on column public.profiles.updated_at is
   'Last profile update timestamp.';

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -51,7 +52,7 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
     <>
       <header className="border-b border-white/10 pb-5 lg:hidden">
         <div className="flex items-center justify-between gap-4">
-          <BrandLink />
+          <BrandLink className="h-14 w-40 justify-start" />
           <Button
             aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={isMenuOpen}
@@ -90,7 +91,7 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
       </header>
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-white/10 bg-[#07101f] px-5 py-6 text-white shadow-2xl shadow-black/30 lg:flex">
-        <BrandLink />
+        <BrandLink className="h-24 w-full justify-center" />
         {shouldShowSearch ? (
           <SearchInput
             className="mt-7"
@@ -105,13 +106,21 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
   );
 }
 
-function BrandLink() {
+function BrandLink({ className }: { className?: string }) {
   return (
-    <Link className="flex items-center gap-3" href="/">
-      <span className="flex size-10 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 shadow-lg shadow-cyan-950/20">
-        <Swords className="size-5" aria-hidden="true" />
-      </span>
-      <span className="font-mono text-xl font-semibold">LaneTips.app</span>
+    <Link
+      aria-label="LaneStomp home"
+      className={`relative flex items-center ${className ?? ""}`}
+      href="/"
+    >
+      <Image
+        alt="LaneStomp"
+        className="object-contain"
+        fill
+        priority
+        sizes="176px"
+        src="/images/lanestomp-logo.png"
+      />
     </Link>
   );
 }

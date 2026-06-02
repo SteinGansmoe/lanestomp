@@ -101,9 +101,9 @@ type LaneMatchupGroup = {
 };
 
 const championGroupStorageKey =
-  "seasontracker.admin.leagueMatchups.collapsedChampionGroups";
+  "lanestomp.admin.leagueMatchups.collapsedChampionGroups";
 const matchupQueueStorageKey =
-  "seasontracker.admin.leagueMatchups.midBulkGenerationQueue";
+  "lanestomp.admin.leagueMatchups.midBulkGenerationQueue";
 
 export function AdminLeagueMatchupsSection({
   champions,

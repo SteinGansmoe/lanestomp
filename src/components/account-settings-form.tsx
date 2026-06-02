@@ -146,7 +146,7 @@ export function AccountSettingsForm() {
     setProfile(data);
     setUsername(data.username ?? nextUsername);
     setSuccess("Username updated.");
-    window.dispatchEvent(new Event("lanetips-profile-updated"));
+    window.dispatchEvent(new Event("lanestomp-profile-updated"));
     router.refresh();
   }
 
@@ -168,7 +168,7 @@ export function AccountSettingsForm() {
         </div>
         <CardTitle className="font-mono text-2xl">Account settings</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
-          Manage your LaneTips.app identity. Your username is separate from any
+          Manage your LaneStomp identity. Your username is separate from any
           Riot account details.
         </p>
       </CardHeader>

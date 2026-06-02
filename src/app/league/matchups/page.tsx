@@ -19,7 +19,7 @@ export default async function LeagueMatchupsPage() {
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <BackButton href="/" label="Back to LaneTips" />
+          <BackButton href="/" label="Back to LaneStomp" />
           <Link
             className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
             href="/games/league-of-legends/champions"
@@ -36,13 +36,13 @@ export default async function LeagueMatchupsPage() {
               </div>
               <div>
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                LaneTips.app
+                LaneStomp
               </p>
                 <h1 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
                   Pick your lane opponent
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">
-                  Select two champions and a role for fast matchup prep.
+                  Select two champions and a role for fast LaneStomp matchup prep.
                 </p>
               </div>
             </div>

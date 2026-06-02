@@ -39,8 +39,9 @@ const optionClassName = "bg-[#10182b] text-zinc-100";
 type OpenPicker = "champion" | "opponent" | null;
 type ChampionFilter = LeagueRole | "all";
 
-const championFilterStorageKey = "lanetips-change-matchup-role-filter";
-const championFilterChangeEvent = "lanetips-change-matchup-role-filter-change";
+const championFilterStorageKey = "lanestomp-change-matchup-role-filter";
+const championFilterChangeEvent =
+  "lanestomp-change-matchup-role-filter-change";
 const roleFilterOptions = [
   {
     iconSrc: "/images/All_icon.png",

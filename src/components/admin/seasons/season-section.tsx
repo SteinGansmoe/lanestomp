@@ -140,7 +140,7 @@ export function AdminSeasonsSection({
           id: group.gameId,
           title: group.gameName,
         }))}
-        storageKey="seasontracker.admin.seasons.collapsedGroups"
+        storageKey="lanestomp.admin.seasons.collapsedGroups"
         title="Seasons"
       />
     </>

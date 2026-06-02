@@ -102,7 +102,7 @@ export function buildLeagueMatchupDraftPrompt({
 
   return {
     systemPrompt: [
-      "You write League of Legends matchup draft notes for LaneTips admins.",
+      "You write League of Legends matchup draft notes for LaneStomp admins.",
       `Champion A is always ${playerChampionName}, the player champion.`,
       `Champion B is always ${enemyChampionName}, the opponent.`,
       `Every generated bullet must answer: what should ${playerChampionName} do?`,
