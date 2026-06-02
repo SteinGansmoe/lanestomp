@@ -91,7 +91,7 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
       </header>
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-white/10 bg-[#07101f] px-5 py-6 text-white shadow-2xl shadow-black/30 lg:flex">
-        <BrandLink className="h-24 w-full justify-center" />
+        <BrandLink className="h-32 w-full justify-center" />
         {shouldShowSearch ? (
           <SearchInput
             className="mt-7"
