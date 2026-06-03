@@ -20,7 +20,7 @@ const navigationLinks = [
 
 const resourceLinks = [
   { href: "#", label: "Matchup Requests" },
-  { href: "https://github.com/SteinGansmoe/lanestomp", label: "Contact" },
+  { href: "#", label: "Contact" },
   { href: "#", label: "Discord" },
   { href: "#", label: "Reddit" },
 ];
@@ -36,7 +36,7 @@ const socialLinks = [
   { href: "#", icon: Radio, label: "Reddit" },
   { href: "#", icon: Send, label: "X" },
   {
-    href: "https://github.com/SteinGansmoe/lanestomp",
+    href: "#",
     icon: GitBranch,
     label: "GitHub",
   },
