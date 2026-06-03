@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   CheckCircle2,
   CheckSquare,
   ChevronDown,
@@ -26,6 +27,7 @@ import {
   isChampionInRole,
   sortChampionsForRole,
 } from "@/src/features/league/champion-roles";
+import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import type {
   AdminLeagueChampion,
   AdminLeagueMatchupFeedback,
@@ -1527,6 +1529,10 @@ function LeagueMatchupBulkGenerationQueue({
       ),
     [champions, queueRole]
   );
+  const queueProfileReadiness = useMemo(
+    () => getCombatProfileReadiness(roleChampions),
+    [roleChampions]
+  );
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
@@ -1932,6 +1938,12 @@ function LeagueMatchupBulkGenerationQueue({
               </p>
             </div>
 
+            <CombatProfileReadinessNotice
+              readiness={queueProfileReadiness}
+              role={queueRole}
+              tone={queueRole === "jungle" ? "jungle" : "default"}
+            />
+
             <label className="grid gap-2 text-sm text-zinc-300">
               Lane
               <select
@@ -2169,6 +2181,51 @@ function QueueStat({
   );
 }
 
+function CombatProfileReadinessNotice({
+  readiness,
+  role,
+  tone,
+}: {
+  readiness: ReturnType<typeof getCombatProfileReadiness>;
+  role: AdminLeagueMatchup["role"];
+  tone: "default" | "jungle";
+}) {
+  const hasMissingProfiles = readiness.missingProfileCount > 0;
+
+  return (
+    <div
+      className={cn(
+        "rounded-md border p-3 text-sm",
+        hasMissingProfiles
+          ? "border-amber-300/20 bg-amber-400/10 text-amber-100"
+          : "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
+      )}
+    >
+      <p className="flex items-center gap-2 font-medium">
+        {hasMissingProfiles ? (
+          <AlertTriangle className="size-4" aria-hidden="true" />
+        ) : (
+          <CheckCircle2 className="size-4" aria-hidden="true" />
+        )}
+        {getRoleLabel(role)} combat profile readiness
+      </p>
+      <p className="mt-1 text-xs leading-5">
+        {hasMissingProfiles
+          ? `${readiness.missingProfileCount} of ${readiness.totalCount} selected-role champion profiles are missing. Generated drafts will be saved with lower confidence and an admin warning when either side lacks a profile.`
+          : `${readiness.totalCount} selected-role champion profile${
+              readiness.totalCount === 1 ? "" : "s"
+            } available for generation.`}
+      </p>
+      {tone === "jungle" ? (
+        <p className="mt-1 text-xs leading-5">
+          Jungle totals are ready to preview here; keep full queue generation for
+          the next coverage pass.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function LeagueMatchupBatchPlanner({
   champions,
   isDisabled,
@@ -2197,6 +2254,22 @@ function LeagueMatchupBatchPlanner({
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
+  );
+  const roleChampionPool = useMemo(
+    () =>
+      sortChampionsForRole(
+        champions.filter((champion) =>
+          isChampionInRole(champion, role, { includeOffMeta })
+        ),
+        role
+      ),
+    [champions, includeOffMeta, role]
+  );
+  const sourceChampionPool =
+    poolFilter === "role" ? roleChampionPool : champions;
+  const plannerProfileReadiness = useMemo(
+    () => getCombatProfileReadiness(roleChampionPool),
+    [roleChampionPool]
   );
   const existingMatchupIds = useMemo(
     () =>
@@ -2286,6 +2359,74 @@ function LeagueMatchupBatchPlanner({
   function updateRole(nextRole: AdminLeagueMatchup["role"]) {
     setRole(nextRole);
     setSelectedOpponentIds([]);
+
+    if (
+      !isSourceChampionAvailableForPool({
+        championId: sourceChampionId,
+        includeOffMeta,
+        poolFilter,
+        role: nextRole,
+      })
+    ) {
+      setSourceChampionId("");
+    }
+  }
+
+  function updatePoolFilter(nextPoolFilter: "role" | "all") {
+    setPoolFilter(nextPoolFilter);
+
+    if (
+      !isSourceChampionAvailableForPool({
+        championId: sourceChampionId,
+        includeOffMeta,
+        poolFilter: nextPoolFilter,
+        role,
+      })
+    ) {
+      setSourceChampionId("");
+      setSelectedOpponentIds([]);
+    }
+  }
+
+  function updateIncludeOffMeta(nextIncludeOffMeta: boolean) {
+    setIncludeOffMeta(nextIncludeOffMeta);
+
+    if (
+      !isSourceChampionAvailableForPool({
+        championId: sourceChampionId,
+        includeOffMeta: nextIncludeOffMeta,
+        poolFilter,
+        role,
+      })
+    ) {
+      setSourceChampionId("");
+      setSelectedOpponentIds([]);
+    }
+  }
+
+  function isSourceChampionAvailableForPool({
+    championId,
+    includeOffMeta: nextIncludeOffMeta,
+    poolFilter: nextPoolFilter,
+    role: nextRole,
+  }: {
+    championId: string;
+    includeOffMeta: boolean;
+    poolFilter: "role" | "all";
+    role: AdminLeagueMatchup["role"];
+  }) {
+    if (!championId || nextPoolFilter === "all") {
+      return true;
+    }
+
+    const champion = championsById.get(championId);
+
+    return Boolean(
+      champion &&
+        isChampionInRole(champion, nextRole, {
+          includeOffMeta: nextIncludeOffMeta,
+        })
+    );
   }
 
   function updateSourceChampion(nextChampionId: string) {
@@ -2371,7 +2512,7 @@ function LeagueMatchupBatchPlanner({
               <option className={selectOptionClassName} value="">
                 Select source
               </option>
-              {champions.map((champion) => (
+              {sourceChampionPool.map((champion) => (
                 <option
                   className={selectOptionClassName}
                   key={champion.id}
@@ -2381,6 +2522,11 @@ function LeagueMatchupBatchPlanner({
                 </option>
               ))}
             </select>
+            <span className="text-xs text-zinc-500">
+              {sourceChampionPool.length} champion
+              {sourceChampionPool.length === 1 ? "" : "s"} available in the
+              current pool.
+            </span>
           </label>
 
           <label className="block space-y-2">
@@ -2425,13 +2571,19 @@ function LeagueMatchupBatchPlanner({
 
         <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <CombatProfileReadinessNotice
+              readiness={plannerProfileReadiness}
+              role={role}
+              tone={role === "jungle" ? "jungle" : "default"}
+            />
+
             <label className="block space-y-2">
               <span className="text-sm text-zinc-300">Champion pool</span>
               <select
                 className={fieldClassName}
                 disabled={status.isLoading}
                 onChange={(event) =>
-                  setPoolFilter(event.target.value as "role" | "all")
+                  updatePoolFilter(event.target.value as "role" | "all")
                 }
                 value={poolFilter}
               >
@@ -2460,7 +2612,7 @@ function LeagueMatchupBatchPlanner({
                 checked={includeOffMeta}
                 className="size-4 accent-violet-500"
                 disabled={status.isLoading || poolFilter !== "role"}
-                onChange={(event) => setIncludeOffMeta(event.target.checked)}
+                onChange={(event) => updateIncludeOffMeta(event.target.checked)}
                 type="checkbox"
               />
               Include off-meta role picks
@@ -3373,6 +3525,17 @@ function getQueueStats(queueState: LeagueMatchupQueueState) {
     processed,
     remaining,
     total: queueState.items.length,
+  };
+}
+
+function getCombatProfileReadiness(champions: AdminLeagueChampion[]) {
+  const missingProfileCount = champions.filter(
+    (champion) => !getChampionCombatProfile(champion.id)
+  ).length;
+
+  return {
+    missingProfileCount,
+    totalCount: champions.length,
   };
 }
 

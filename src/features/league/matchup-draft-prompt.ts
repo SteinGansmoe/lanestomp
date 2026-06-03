@@ -89,6 +89,7 @@ export function buildLeagueMatchupDraftPrompt({
 }: LeagueMatchupDraftPromptInput): LeagueMatchupDraftPrompt {
   const roleLabel = role === "adc" ? "ADC" : role;
   const outputKeys = targetSection ? [targetSection] : matchupDraftSectionKeys;
+  const roleGuidance = getRolePromptGuidance(role);
   const sourceNotes = adminNotes?.trim() || "No admin notes supplied.";
   const existingSectionContext = formatExistingSections(existingSections);
   const playerChampionContext = formatChampionKnowledgeForPrompt(
@@ -138,6 +139,7 @@ export function buildLeagueMatchupDraftPrompt({
       `Champion B: ${enemyChampionName} (opponent)`,
       `Matchup direction: ${playerChampionName} into ${enemyChampionName}`,
       `Role: ${roleLabel}`,
+      `Role-specific guidance:\n${roleGuidance}`,
       `Admin notes or source context: ${sourceNotes}`,
       "",
       "Structured champion profiles:",
@@ -271,6 +273,47 @@ export function buildLeagueMatchupDraftPrompt({
       "- Can a player use this in champion select within 15-20 seconds?",
     ].join("\n"),
   };
+}
+
+function getRolePromptGuidance(role: LeagueRole) {
+  if (role === "jungle") {
+    return [
+      "Treat this as a jungle-vs-jungle matchup, not a lane matchup.",
+      "Replace lane-wave advice with first-clear tempo, camp sequencing, invade and counter-invade windows, river control, scuttle setup, objective access, gank angles, countergank risk, and skirmish rules.",
+      "Use lane terms only when they explain which lanes create pathing, gank, countergank, or objective opportunities.",
+      "early_game should focus on first clear, first river move, early invade safety, and when the player should avoid contesting.",
+      "trading_pattern should describe jungle duels, skirmishes, invade spacing, cooldown respect, and how the player should fight or disengage around camps and river.",
+      "danger_windows should include invade timing, isolated river fights, objective setups, low-health clears, forced smite fights, and lanes that can move first.",
+      "win_conditions should explain how the player converts jungle tempo into objectives, lane pressure, counterjungling, or teamfight access.",
+    ].join("\n");
+  }
+
+  if (role === "mid") {
+    return [
+      "Treat this as a mid-lane matchup.",
+      "Use wave states, level breakpoints, roam timers, reset timing, river vision, and jungle threat only when they change the player's decision.",
+      "Avoid long-freeze advice unless the matchup and wave state clearly support it.",
+    ].join("\n");
+  }
+
+  if (role === "top") {
+    return [
+      "Treat this as a top-lane matchup.",
+      "Use wave control, side-lane pressure, all-in windows, jungle vulnerability, teleport timing, and splitpush or teamfight identity only when supported by profiles.",
+    ].join("\n");
+  }
+
+  if (role === "adc") {
+    return [
+      "Treat this as a Bot / ADC matchup.",
+      "Frame advice around lane pairing constraints, wave access, range, all-in or poke windows, support setup, reset timing, and scaling safety.",
+    ].join("\n");
+  }
+
+  return [
+    "Treat this as a support matchup.",
+    "Frame advice around lane control, engage or peel windows, roam timing, warding access, partner safety, and objective setup.",
+  ].join("\n");
 }
 
 function formatChampionKnowledgeForPrompt(
