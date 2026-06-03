@@ -2,8 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Crosshair,
+  Hourglass,
   Lightbulb,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { connection } from "next/server";
 
@@ -20,7 +22,9 @@ import {
   type LeagueChampion,
 } from "@/src/features/league/champions";
 import {
+  getLeagueMatchupCoverage,
   getLeagueMatchup,
+  type LeagueMatchupCoverage,
   type LeagueMatchup,
 } from "@/src/features/league/matchups";
 import { isLeagueRole, type LeagueRole } from "@/src/features/league/roles";
@@ -43,14 +47,20 @@ export default async function LeagueMatchupPage({
   ]);
   const role = getValidRole(query.role);
   const { championA, championB } = parseMatchup(matchup, championsResult.champions);
-  const matchupResult =
+  const [matchupResult, coverageResult] =
     championA && championB
-      ? await getLeagueMatchup({
-          championAId: championA.id,
-          championBId: championB.id,
-          role,
-        })
-      : null;
+      ? await Promise.all([
+          getLeagueMatchup({
+            championAId: championA.id,
+            championBId: championB.id,
+            role,
+          }),
+          getLeagueMatchupCoverage({
+            champions: championsResult.champions,
+            role,
+          }),
+        ])
+      : [null, null];
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
@@ -126,7 +136,8 @@ export default async function LeagueMatchupPage({
                       Live matchup data is not ready yet
                     </CardTitle>
                     <p className="mt-2 text-sm leading-6 text-amber-100/80">
-                      Showing the placeholder matchup guide until the structured matchup table is available.
+                      Showing the generation progress state until the structured
+                      matchup table is available.
                     </p>
                     <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
                       {matchupResult.error}
@@ -136,21 +147,33 @@ export default async function LeagueMatchupPage({
               </Card>
             ) : null}
 
-            <LeagueMatchupReviewPanel
-              championAId={championA.id}
-              championAName={championA.name}
-              championBId={championB.id}
-              championBName={championB.name}
-              initialMatchup={matchupResult?.matchup ?? null}
-              role={role}
-            />
+            {matchupResult?.matchup ? (
+              <>
+                <LeagueMatchupReviewPanel
+                  championAId={championA.id}
+                  championAName={championA.name}
+                  championBId={championB.id}
+                  championBName={championB.name}
+                  initialMatchup={matchupResult.matchup}
+                  role={role}
+                />
 
-            <TipStrip
-              championA={championA}
-              championB={championB}
-              role={role}
-              updatedAt={matchupResult?.matchup?.updated_at ?? null}
-            />
+                <TipStrip
+                  championA={championA}
+                  championB={championB}
+                  role={role}
+                  updatedAt={matchupResult.matchup.updated_at}
+                />
+              </>
+            ) : (
+              <UnavailableMatchupState
+                championA={championA}
+                championB={championB}
+                coverage={coverageResult?.coverage ?? null}
+                coverageError={coverageResult?.error ?? null}
+                role={role}
+              />
+            )}
           </>
         ) : (
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
@@ -170,6 +193,138 @@ export default async function LeagueMatchupPage({
         )}
       </section>
     </main>
+  );
+}
+
+function UnavailableMatchupState({
+  championA,
+  championB,
+  coverage,
+  coverageError,
+  role,
+}: {
+  championA: LeagueChampion;
+  championB: LeagueChampion;
+  coverage: LeagueMatchupCoverage | null;
+  coverageError: string | null;
+  role: LeagueRole;
+}) {
+  const roleLabel = getRoleLabel(role);
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-cyan-300/15 bg-[#10182b]/90 shadow-xl shadow-black/20">
+      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
+        <div className="flex items-start gap-4">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+            <Hourglass className="size-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+              Matchup generation in progress
+            </p>
+            <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white">
+              This guide is not available yet
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
+              LaneStomp is currently generating thousands of matchup guides.
+              This {roleLabel} lane matchup for {championA.name} vs{" "}
+              {championB.name} is not available yet, but new matchups are being
+              added continuously.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">
+              Check back later, or choose another matchup while coverage expands.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link
+                className="inline-flex items-center gap-2 rounded-md border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/15"
+                href={`/league/matchups?role=${role}`}
+              >
+                <Crosshair className="size-4" aria-hidden="true" />
+                Pick another matchup
+              </Link>
+              <Link
+                className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white"
+                href="/games/league-of-legends/champions"
+              >
+                Champion data
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <CoverageProgressCard
+          coverage={coverage}
+          coverageError={coverageError}
+          roleLabel={roleLabel}
+        />
+      </div>
+    </section>
+  );
+}
+
+function CoverageProgressCard({
+  coverage,
+  coverageError,
+  roleLabel,
+}: {
+  coverage: LeagueMatchupCoverage | null;
+  coverageError: string | null;
+  roleLabel: string;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/15 p-4">
+      <div className="flex items-center gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/15 text-violet-100">
+          <Sparkles className="size-4" aria-hidden="true" />
+        </span>
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-violet-200">
+            Current {roleLabel} Lane progress
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Publicly available guides
+          </p>
+        </div>
+      </div>
+
+      {coverage ? (
+        <>
+          <div className="mt-5 flex items-end justify-between gap-3">
+            <p className="font-mono text-3xl font-semibold text-white">
+              {formatNumber(coverage.generatedCount)}
+              <span className="text-base text-zinc-500">
+                {" "}
+                / {formatNumber(coverage.totalCount)}
+              </span>
+            </p>
+            <p className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 font-mono text-sm text-cyan-100">
+              {coverage.percentComplete}%
+            </p>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/40">
+            <div
+              className="h-full rounded-full bg-cyan-300 transition-[width] duration-300"
+              style={{ width: `${coverage.percentComplete}%` }}
+            />
+          </div>
+          <p className="mt-3 text-xs leading-5 text-zinc-500">
+            Based on {coverage.roleChampionCount} champions currently classified
+            for this lane.
+          </p>
+        </>
+      ) : (
+        <p className="mt-5 text-sm leading-6 text-zinc-400">
+          Coverage totals are temporarily unavailable, but matchup generation is
+          still in progress.
+        </p>
+      )}
+
+      {coverageError ? (
+        <p className="mt-3 rounded-md border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-5 text-amber-100/80">
+          Progress could not refresh: {coverageError}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -361,6 +516,10 @@ function getValidRole(role: string | string[] | undefined): LeagueRole {
 
 function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en").format(value);
 }
 
 function formatMatchupDate(value: string) {
