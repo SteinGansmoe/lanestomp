@@ -21,6 +21,30 @@ import {
 } from "@/src/lib/profile";
 import { supabase } from "@/src/lib/supabase";
 
+function AccountSettingsFormSkeleton() {
+  return (
+    <Card className="mx-auto w-full max-w-2xl border-white/10 bg-[#10182b]/90 p-6 text-white shadow-xl shadow-black/25">
+      <div className="size-12 rounded-lg bg-violet-500/20 ring-1 ring-violet-300/20" />
+      <div className="mt-5 h-8 w-56 rounded bg-white/10" />
+      <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
+
+      <div className="mt-8 space-y-5">
+        <div className="space-y-2">
+          <div className="h-4 w-20 rounded bg-white/10" />
+          <div className="h-11 rounded-lg border border-white/10 bg-white/[0.04]" />
+          <div className="h-3 w-52 rounded bg-white/5" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-14 rounded bg-white/10" />
+          <div className="h-11 rounded-lg border border-white/10 bg-white/[0.03]" />
+        </div>
+        <div className="h-28 rounded-lg border border-white/10 bg-white/[0.03]" />
+        <div className="h-11 w-40 rounded-lg bg-violet-500/20" />
+      </div>
+    </Card>
+  );
+}
+
 export function AccountSettingsForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,13 +175,7 @@ export function AccountSettingsForm() {
   }
 
   if (isLoading) {
-    return (
-      <Card className="mx-auto w-full max-w-2xl border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25">
-        <CardContent className="p-6">
-          <p className="text-sm text-zinc-400">Loading account settings...</p>
-        </CardContent>
-      </Card>
-    );
+    return <AccountSettingsFormSkeleton />;
   }
 
   return (

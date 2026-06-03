@@ -114,6 +114,60 @@ const leagueFeedbackSelect = [
   "updated_at",
 ].join(", ");
 
+function AdminDashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="flex gap-2 overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/90 p-2">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            className="h-10 min-w-28 rounded-md bg-white/[0.04]"
+            key={index}
+          />
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Card
+            className="h-28 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
+            key={index}
+          />
+        ))}
+      </div>
+
+      <section className="space-y-5">
+        <div className="space-y-3">
+          <div className="h-8 w-32 rounded bg-white/10" />
+          <div className="h-4 w-full max-w-2xl rounded bg-white/5" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card
+              className="h-40 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
+              key={index}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-5">
+        <div className="space-y-3">
+          <div className="h-8 w-28 rounded bg-white/10" />
+          <div className="h-4 w-full max-w-xl rounded bg-white/5" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <Card
+              className="h-36 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
+              key={index}
+            />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 let cachedAdminData: AdminData | null = null;
 let cachedAdminProfile: UserProfile | null = null;
 let cachedAdminUser: User | null = null;
@@ -2170,9 +2224,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         </div>
 
         {isLoading ? (
-          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
-            Loading admin data from Supabase...
-          </Card>
+          <AdminDashboardSkeleton />
         ) : null}
 
         {error && !isLoading ? (

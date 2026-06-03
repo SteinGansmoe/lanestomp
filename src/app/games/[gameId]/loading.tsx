@@ -1,9 +1,12 @@
 import { SiteHeader } from "@/src/components/site-header";
-import { Card } from "@/src/components/ui/card";
 
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
+    <main
+      className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6"
+      role="status"
+      aria-label="Loading game detail"
+    >
       <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
@@ -20,9 +23,38 @@ export default function Loading() {
             </div>
           </section>
 
-          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
-            Loading seasons...
-          </Card>
+          <section className="grid gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                className="h-24 rounded-lg border border-white/10 bg-[#10182b]/80"
+                key={index}
+              />
+            ))}
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="space-y-5">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  className="rounded-lg border border-white/10 bg-[#10182b]/90 p-5"
+                  key={index}
+                >
+                  <div className="h-5 w-36 rounded bg-white/10" />
+                  <div className="mt-4 space-y-2">
+                    <div className="h-3 rounded bg-white/5" />
+                    <div className="h-3 w-5/6 rounded bg-white/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+              <div className="h-5 w-32 rounded bg-white/10" />
+              <div className="mt-4 grid gap-3">
+                <div className="h-16 rounded bg-white/[0.05]" />
+                <div className="h-16 rounded bg-white/[0.05]" />
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </main>
