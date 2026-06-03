@@ -80,20 +80,23 @@ const leagueMatchupSelect = [
   "champion_a_id",
   "champion_b_id",
   "role",
-  "overview",
-  "early_game",
-  "trading_pattern",
-  "power_spikes",
-  "danger_windows",
-  "win_conditions",
   "difficulty_rating",
   "confidence_level",
   "generation_status",
   "generated_at",
   "reviewed_at",
   "reviewed_by",
-  "admin_notes",
   "updated_at",
+].join(", ");
+const leagueMatchupDetailSelect = [
+  leagueMatchupSelect,
+  "admin_notes",
+  "danger_windows",
+  "early_game",
+  "overview",
+  "power_spikes",
+  "trading_pattern",
+  "win_conditions",
 ].join(", ");
 const leagueFeedbackSelect = [
   "id",
@@ -1161,9 +1164,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
-  function startEditingLeagueMatchup(matchup: AdminLeagueMatchup) {
+  async function startEditingLeagueMatchup(matchup: AdminLeagueMatchup) {
     setEditingLeagueMatchupId(matchup.id);
-    setEditLeagueMatchupStatus({ error: null, isLoading: false, success: null });
+    setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
     setEditLeagueMatchupForm({
       admin_notes: matchup.admin_notes ?? "",
       champion_a_id: matchup.champion_a_id,
@@ -1180,6 +1183,48 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       trading_pattern: matchup.trading_pattern ?? "",
       win_conditions: matchup.win_conditions ?? "",
     });
+
+    if (!supabase) {
+      setEditLeagueMatchupStatus({
+        error: "Supabase is not configured.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("league_matchups")
+      .select(leagueMatchupDetailSelect)
+      .eq("id", matchup.id)
+      .single<AdminLeagueMatchup>();
+
+    if (error || !data) {
+      setEditLeagueMatchupStatus({
+        error: error?.message ?? "League matchup details could not be loaded.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setEditLeagueMatchupForm({
+      admin_notes: data.admin_notes ?? "",
+      champion_a_id: data.champion_a_id,
+      champion_b_id: data.champion_b_id,
+      confidence_level: data.confidence_level ?? "",
+      danger_windows: data.danger_windows ?? "",
+      difficulty_rating: data.difficulty_rating
+        ? String(data.difficulty_rating)
+        : "",
+      early_game: data.early_game ?? "",
+      overview: data.overview ?? "",
+      power_spikes: data.power_spikes ?? "",
+      role: data.role,
+      trading_pattern: data.trading_pattern ?? "",
+      win_conditions: data.win_conditions ?? "",
+    });
+    setEditLeagueMatchupStatus({ error: null, isLoading: false, success: null });
   }
 
   function stopEditingLeagueMatchup() {
@@ -2447,6 +2492,8 @@ function normalizeDraftForForm(
 function hasSavedLeagueMatchupDraftContent(
   matchup: Pick<
     AdminLeagueMatchup,
+    | "generated_at"
+    | "generation_status"
     | "danger_windows"
     | "early_game"
     | "overview"
@@ -2455,14 +2502,18 @@ function hasSavedLeagueMatchupDraftContent(
     | "win_conditions"
   >
 ) {
-  return [
-    matchup.overview,
-    matchup.early_game,
-    matchup.trading_pattern,
-    matchup.power_spikes,
-    matchup.danger_windows,
-    matchup.win_conditions,
-  ].some((value) => Boolean(value?.trim()));
+  return (
+    Boolean(matchup.generated_at) ||
+    matchup.generation_status === "reviewed" ||
+    [
+      matchup.overview,
+      matchup.early_game,
+      matchup.trading_pattern,
+      matchup.power_spikes,
+      matchup.danger_windows,
+      matchup.win_conditions,
+    ].some((value) => Boolean(value?.trim()))
+  );
 }
 
 function getLeagueMatchupPlanLabel(

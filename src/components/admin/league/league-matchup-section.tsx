@@ -47,6 +47,8 @@ import {
 
 type LeagueMatchupRoleFilter = AdminLeagueMatchup["role"] | "all";
 type LeagueMatchupFeedbackStatusFilter = AdminLeagueMatchupFeedback["status"] | "all";
+type LeagueMatchupStatusFilter = AdminLeagueMatchup["generation_status"] | "all";
+type LeagueMatchupReviewedFilter = "all" | "reviewed" | "unreviewed";
 type LeagueMatchupSortMode =
   | "alphabetical"
   | "least-reviewed"
@@ -183,6 +185,16 @@ export function AdminLeagueMatchupsSection({
     Record<string, boolean>
   >(() => getDefaultCollapsedLaneGroups("all"));
   const [roleFilter, setRoleFilter] = useState<LeagueMatchupRoleFilter>("all");
+  const [statusFilter, setStatusFilter] =
+    useState<LeagueMatchupStatusFilter>("all");
+  const [confidenceFilter, setConfidenceFilter] = useState("all");
+  const [reviewedFilter, setReviewedFilter] =
+    useState<LeagueMatchupReviewedFilter>("all");
+  const [championAFilter, setChampionAFilter] = useState("all");
+  const [championBFilter, setChampionBFilter] = useState("all");
+  const [matchupSearchQuery, setMatchupSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
   const [sortMode, setSortMode] =
     useState<LeagueMatchupSortMode>("alphabetical");
   const [isBulkQueueActive, setIsBulkQueueActive] = useState(false);
@@ -190,15 +202,59 @@ export function AdminLeagueMatchupsSection({
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
   );
+  const confidenceOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          matchups
+            .map((matchup) => matchup.confidence_level?.trim())
+            .filter((value): value is string => Boolean(value))
+        )
+      ).sort((optionA, optionB) => optionA.localeCompare(optionB)),
+    [matchups]
+  );
+  const filteredMatchups = useMemo(
+    () =>
+      filterLeagueMatchups({
+        championAFilter,
+        championBFilter,
+        championsById,
+        confidenceFilter,
+        matchups,
+        query: matchupSearchQuery,
+        reviewedFilter,
+        roleFilter,
+        statusFilter,
+      }),
+    [
+      championAFilter,
+      championBFilter,
+      championsById,
+      confidenceFilter,
+      matchups,
+      matchupSearchQuery,
+      reviewedFilter,
+      roleFilter,
+      statusFilter,
+    ]
+  );
+  const totalPages = Math.max(Math.ceil(filteredMatchups.length / pageSize), 1);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedMatchups = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * pageSize;
+
+    return filteredMatchups.slice(startIndex, startIndex + pageSize);
+  }, [filteredMatchups, pageSize, safeCurrentPage]);
   const laneGroups = useMemo(
     () =>
       getLaneMatchupGroups({
         champions,
-        matchups,
-        roleFilter,
+        includeMissingCount: false,
+        matchups: paginatedMatchups,
+        roleFilter: "all",
         sortMode,
       }),
-    [champions, matchups, roleFilter, sortMode]
+    [champions, paginatedMatchups, sortMode]
   );
 
   useEffect(() => {
@@ -255,8 +311,14 @@ export function AdminLeagueMatchupsSection({
   }
 
   function updateRoleFilter(nextRoleFilter: LeagueMatchupRoleFilter) {
+    setCurrentPage(1);
     setRoleFilter(nextRoleFilter);
     setCollapsedLaneGroups(getDefaultCollapsedLaneGroups(nextRoleFilter));
+  }
+
+  function updateMatchupListFilter(updateFilter: () => void) {
+    setCurrentPage(1);
+    updateFilter();
   }
 
   return (
@@ -343,7 +405,24 @@ export function AdminLeagueMatchupsSection({
                 matchups for the selected lane filter.
               </p>
             </div>
-            <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
+            <div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <label className="block space-y-2 sm:col-span-2 xl:col-span-4">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Search champions
+                </span>
+                <input
+                  className={`${fieldClassName} h-10`}
+                  onChange={(event) =>
+                    updateMatchupListFilter(() =>
+                      setMatchupSearchQuery(event.target.value)
+                    )
+                  }
+                  placeholder="Search champion names or ids..."
+                  type="search"
+                  value={matchupSearchQuery}
+                />
+              </label>
+
               <label className="block space-y-2">
                 <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
                   Lane filter
@@ -374,6 +453,147 @@ export function AdminLeagueMatchupsSection({
 
               <label className="block space-y-2">
                 <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Status
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-40`}
+                  onChange={(event) =>
+                    updateMatchupListFilter(() =>
+                      setStatusFilter(
+                        event.target.value as LeagueMatchupStatusFilter
+                      )
+                    )
+                  }
+                  value={statusFilter}
+                >
+                  <option className={selectOptionClassName} value="all">
+                    All statuses
+                  </option>
+                  <option className={selectOptionClassName} value="draft">
+                    Draft
+                  </option>
+                  <option className={selectOptionClassName} value="reviewed">
+                    Reviewed
+                  </option>
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Review state
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-40`}
+                  onChange={(event) =>
+                    updateMatchupListFilter(() =>
+                      setReviewedFilter(
+                        event.target.value as LeagueMatchupReviewedFilter
+                      )
+                    )
+                  }
+                  value={reviewedFilter}
+                >
+                  <option className={selectOptionClassName} value="all">
+                    All rows
+                  </option>
+                  <option className={selectOptionClassName} value="reviewed">
+                    Reviewed only
+                  </option>
+                  <option className={selectOptionClassName} value="unreviewed">
+                    Unreviewed only
+                  </option>
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Confidence
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-40`}
+                  onChange={(event) =>
+                    updateMatchupListFilter(() =>
+                      setConfidenceFilter(event.target.value)
+                    )
+                  }
+                  value={confidenceFilter}
+                >
+                  <option className={selectOptionClassName} value="all">
+                    All confidence
+                  </option>
+                  <option className={selectOptionClassName} value="none">
+                    No confidence
+                  </option>
+                  {confidenceOptions.map((confidence) => (
+                    <option
+                      className={selectOptionClassName}
+                      key={confidence}
+                      value={confidence}
+                    >
+                      {confidence}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Champion A
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-40`}
+                  onChange={(event) =>
+                    updateMatchupListFilter(() =>
+                      setChampionAFilter(event.target.value)
+                    )
+                  }
+                  value={championAFilter}
+                >
+                  <option className={selectOptionClassName} value="all">
+                    All Champion A
+                  </option>
+                  {champions.map((champion) => (
+                    <option
+                      className={selectOptionClassName}
+                      key={champion.id}
+                      value={champion.id}
+                    >
+                      {champion.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Champion B
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-40`}
+                  onChange={(event) =>
+                    updateMatchupListFilter(() =>
+                      setChampionBFilter(event.target.value)
+                    )
+                  }
+                  value={championBFilter}
+                >
+                  <option className={selectOptionClassName} value="all">
+                    All Champion B
+                  </option>
+                  {champions.map((champion) => (
+                    <option
+                      className={selectOptionClassName}
+                      key={champion.id}
+                      value={champion.id}
+                    >
+                      {champion.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
                   Sort
                 </span>
                 <select
@@ -397,10 +617,71 @@ export function AdminLeagueMatchupsSection({
                   </option>
                 </select>
               </label>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Page size
+                </span>
+                <select
+                  className={`${fieldClassName} h-10 min-w-32`}
+                  onChange={(event) => {
+                    setCurrentPage(1);
+                    setPageSize(Number.parseInt(event.target.value, 10));
+                  }}
+                  value={pageSize}
+                >
+                  {[25, 50, 100].map((size) => (
+                    <option
+                      className={selectOptionClassName}
+                      key={size}
+                      value={size}
+                    >
+                      {size} rows
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
+            <p>
+              Showing {paginatedMatchups.length} of {filteredMatchups.length}{" "}
+              filtered matchup{filteredMatchups.length === 1 ? "" : "s"}.
+              {matchups.length !== filteredMatchups.length
+                ? ` ${matchups.length} total loaded.`
+                : ""}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Previous
+              </Button>
+              <span className="font-mono text-xs text-zinc-500">
+                Page {safeCurrentPage} / {totalPages}
+              </span>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(page + 1, totalPages))
+                }
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+
           {laneGroups.length > 0 ? (
             <ul className="space-y-4">
               {laneGroups.map((laneGroup) => {
@@ -634,14 +915,6 @@ export function AdminLeagueMatchupsSection({
                         ) : null}
                       </div>
                     </div>
-                    <p className="mt-3 line-clamp-2 text-sm text-zinc-400">
-                      {matchup.overview ?? "No overview yet."}
-                    </p>
-                    {matchup.admin_notes ? (
-                      <p className="mt-3 rounded-md border border-white/10 bg-black/15 p-3 text-xs leading-5 text-zinc-400">
-                        {matchup.admin_notes}
-                      </p>
-                    ) : null}
                     <div className="mt-4 flex flex-wrap gap-3">
                       <Button
                         className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
@@ -2457,13 +2730,104 @@ function getMatchupKey(
   return `${role}:${championAId}:${championBId}`;
 }
 
+function filterLeagueMatchups({
+  championAFilter,
+  championBFilter,
+  championsById,
+  confidenceFilter,
+  matchups,
+  query,
+  reviewedFilter,
+  roleFilter,
+  statusFilter,
+}: {
+  championAFilter: string;
+  championBFilter: string;
+  championsById: Map<string, AdminLeagueChampion>;
+  confidenceFilter: string;
+  matchups: AdminLeagueMatchup[];
+  query: string;
+  reviewedFilter: LeagueMatchupReviewedFilter;
+  roleFilter: LeagueMatchupRoleFilter;
+  statusFilter: LeagueMatchupStatusFilter;
+}) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  return matchups.filter((matchup) => {
+    if (roleFilter !== "all" && matchup.role !== roleFilter) {
+      return false;
+    }
+
+    if (statusFilter !== "all" && matchup.generation_status !== statusFilter) {
+      return false;
+    }
+
+    if (
+      reviewedFilter === "reviewed" &&
+      matchup.generation_status !== "reviewed"
+    ) {
+      return false;
+    }
+
+    if (
+      reviewedFilter === "unreviewed" &&
+      matchup.generation_status === "reviewed"
+    ) {
+      return false;
+    }
+
+    if (
+      confidenceFilter === "none" &&
+      Boolean(matchup.confidence_level?.trim())
+    ) {
+      return false;
+    }
+
+    if (
+      confidenceFilter !== "all" &&
+      confidenceFilter !== "none" &&
+      matchup.confidence_level !== confidenceFilter
+    ) {
+      return false;
+    }
+
+    if (championAFilter !== "all" && matchup.champion_a_id !== championAFilter) {
+      return false;
+    }
+
+    if (championBFilter !== "all" && matchup.champion_b_id !== championBFilter) {
+      return false;
+    }
+
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const championA = championsById.get(matchup.champion_a_id);
+    const championB = championsById.get(matchup.champion_b_id);
+    const searchableText = [
+      matchup.champion_a_id,
+      matchup.champion_b_id,
+      championA?.name,
+      championB?.name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(normalizedQuery);
+  });
+}
+
 function getLaneMatchupGroups({
   champions,
+  includeMissingCount = true,
   matchups,
   roleFilter,
   sortMode,
 }: {
   champions: AdminLeagueChampion[];
+  includeMissingCount?: boolean;
   matchups: AdminLeagueMatchup[];
   roleFilter: LeagueMatchupRoleFilter;
   sortMode: LeagueMatchupSortMode;
@@ -2474,6 +2838,7 @@ function getLaneMatchupGroups({
     const roleMatchups = matchups.filter((matchup) => matchup.role === role);
     const championGroups = getChampionMatchupGroupsForRole({
       champions,
+      includeMissingCount,
       matchups: roleMatchups,
       role,
       sortMode,
@@ -2496,11 +2861,13 @@ function getLaneMatchupGroups({
 
 function getChampionMatchupGroupsForRole({
   champions,
+  includeMissingCount,
   matchups,
   role,
   sortMode,
 }: {
   champions: AdminLeagueChampion[];
+  includeMissingCount: boolean;
   matchups: AdminLeagueMatchup[];
   role: AdminLeagueMatchup["role"];
   sortMode: LeagueMatchupSortMode;
@@ -2545,13 +2912,16 @@ function getChampionMatchupGroupsForRole({
         (matchup) => matchup.generation_status === "reviewed"
       ).length;
       const draftCount = totalCount - reviewedCount;
-      const missingCount = Math.max(
-        champions.filter(
-          (championOption) =>
-            championOption.id !== championId && isChampionInRole(championOption, role)
-        ).length - totalCount,
-        0
-      );
+      const missingCount = includeMissingCount
+        ? Math.max(
+            champions.filter(
+              (championOption) =>
+                championOption.id !== championId &&
+                isChampionInRole(championOption, role)
+            ).length - totalCount,
+            0
+          )
+        : null;
       const status = getChampionGroupStatus({
         draftCount,
         missingCount,
@@ -2731,14 +3101,18 @@ function getMatchupContentState(matchup: AdminLeagueMatchup) {
 }
 
 function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
-  return [
-    matchup.overview,
-    matchup.early_game,
-    matchup.trading_pattern,
-    matchup.power_spikes,
-    matchup.danger_windows,
-    matchup.win_conditions,
-  ].some((value) => Boolean(value?.trim()));
+  return (
+    Boolean(matchup.generated_at) ||
+    matchup.generation_status === "reviewed" ||
+    [
+      matchup.overview,
+      matchup.early_game,
+      matchup.trading_pattern,
+      matchup.power_spikes,
+      matchup.danger_windows,
+      matchup.win_conditions,
+    ].some((value) => Boolean(value?.trim()))
+  );
 }
 
 function createEmptyQueueState(
