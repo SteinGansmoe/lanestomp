@@ -50,6 +50,7 @@ type LeagueMatchupFeedbackStatusFilter = AdminLeagueMatchupFeedback["status"] | 
 type LeagueMatchupStatusFilter = AdminLeagueMatchup["generation_status"] | "all";
 type LeagueMatchupReviewedFilter = "all" | "reviewed" | "unreviewed";
 type LeagueMatchupSortMode =
+  | "needs-review"
   | "alphabetical"
   | "least-reviewed"
   | "most-drafts"
@@ -196,7 +197,7 @@ export function AdminLeagueMatchupsSection({
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortMode, setSortMode] =
-    useState<LeagueMatchupSortMode>("alphabetical");
+    useState<LeagueMatchupSortMode>("needs-review");
   const [isBulkQueueActive, setIsBulkQueueActive] = useState(false);
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
@@ -238,13 +239,20 @@ export function AdminLeagueMatchupsSection({
       statusFilter,
     ]
   );
-  const totalPages = Math.max(Math.ceil(filteredMatchups.length / pageSize), 1);
+  const sortedFilteredMatchups = useMemo(
+    () => sortLeagueMatchupsForAdminList(filteredMatchups, championsById, sortMode),
+    [championsById, filteredMatchups, sortMode]
+  );
+  const totalPages = Math.max(
+    Math.ceil(sortedFilteredMatchups.length / pageSize),
+    1
+  );
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedMatchups = useMemo(() => {
     const startIndex = (safeCurrentPage - 1) * pageSize;
 
-    return filteredMatchups.slice(startIndex, startIndex + pageSize);
-  }, [filteredMatchups, pageSize, safeCurrentPage]);
+    return sortedFilteredMatchups.slice(startIndex, startIndex + pageSize);
+  }, [pageSize, safeCurrentPage, sortedFilteredMatchups]);
   const laneGroups = useMemo(
     () =>
       getLaneMatchupGroups({
@@ -289,9 +297,10 @@ export function AdminLeagueMatchupsSection({
 
   function toggleChampionGroup(groupId: string) {
     setCollapsedChampionGroups((currentGroups) => {
+      const isCollapsed = currentGroups[groupId] ?? true;
       const nextGroups = {
         ...currentGroups,
-        [groupId]: !currentGroups[groupId],
+        [groupId]: !isCollapsed,
       };
 
       window.localStorage.setItem(
@@ -301,6 +310,10 @@ export function AdminLeagueMatchupsSection({
 
       return nextGroups;
     });
+  }
+
+  function isChampionGroupCollapsed(groupId: string) {
+    return collapsedChampionGroups[groupId] ?? true;
   }
 
   function toggleLaneGroup(role: AdminLeagueMatchup["role"]) {
@@ -599,10 +612,15 @@ export function AdminLeagueMatchupsSection({
                 <select
                   className={`${fieldClassName} h-10 min-w-44`}
                   onChange={(event) =>
-                    setSortMode(event.target.value as LeagueMatchupSortMode)
+                    updateMatchupListFilter(() =>
+                      setSortMode(event.target.value as LeagueMatchupSortMode)
+                    )
                   }
                   value={sortMode}
                 >
+                  <option className={selectOptionClassName} value="needs-review">
+                    Needs review first
+                  </option>
                   <option className={selectOptionClassName} value="alphabetical">
                     Alphabetical
                   </option>
@@ -647,9 +665,9 @@ export function AdminLeagueMatchupsSection({
         <CardContent>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
             <p>
-              Showing {paginatedMatchups.length} of {filteredMatchups.length}{" "}
-              filtered matchup{filteredMatchups.length === 1 ? "" : "s"}.
-              {matchups.length !== filteredMatchups.length
+              Showing {paginatedMatchups.length} of {sortedFilteredMatchups.length}{" "}
+              filtered matchup{sortedFilteredMatchups.length === 1 ? "" : "s"}.
+              {matchups.length !== sortedFilteredMatchups.length
                 ? ` ${matchups.length} total loaded.`
                 : ""}
             </p>
@@ -758,10 +776,10 @@ export function AdminLeagueMatchupsSection({
                       inert={isLaneCollapsed ? true : undefined}
                     >
                       <div className="overflow-hidden">
-                        {laneGroup.championGroups.length > 0 ? (
+                        {!isLaneCollapsed && laneGroup.championGroups.length > 0 ? (
                           <ul className="space-y-4 p-4">
                             {laneGroup.championGroups.map((group) => {
-                const isCollapsed = Boolean(collapsedChampionGroups[group.id]);
+                const isCollapsed = isChampionGroupCollapsed(group.id);
                 const contentId = `${championGroupStorageKey}-${group.id}`;
                 const isApproveAllDisabled =
                   editStatus.isLoading ||
@@ -869,7 +887,7 @@ export function AdminLeagueMatchupsSection({
                       inert={isCollapsed ? true : undefined}
                     >
                       <div className="overflow-hidden">
-                        {group.items.length > 0 ? (
+                        {!isCollapsed && group.items.length > 0 ? (
                           <ul className="space-y-3 p-4">
                             {group.items.map((matchup) => {
                 const championA = championsById.get(matchup.champion_a_id);
@@ -996,27 +1014,27 @@ export function AdminLeagueMatchupsSection({
                 );
                             })}
                           </ul>
-                        ) : (
+                        ) : !isCollapsed ? (
                           <div className="p-4">
                             <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
                               No saved matchups for this champion in the current
                               lane filter.
                             </p>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </li>
                 );
                             })}
                           </ul>
-                        ) : (
+                        ) : !isLaneCollapsed ? (
                           <div className="p-4">
                             <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
                               No champion matchup groups for this lane yet.
                             </p>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </li>
@@ -2819,6 +2837,111 @@ function filterLeagueMatchups({
   });
 }
 
+function sortLeagueMatchupsForAdminList(
+  matchups: AdminLeagueMatchup[],
+  championsById: Map<string, AdminLeagueChampion>,
+  sortMode: LeagueMatchupSortMode
+) {
+  return [...matchups].sort((matchupA, matchupB) => {
+    if (sortMode === "needs-review") {
+      const statusDifference =
+        getMatchupReviewPriority(matchupA) - getMatchupReviewPriority(matchupB);
+
+      if (statusDifference !== 0) {
+        return statusDifference;
+      }
+
+      const confidenceDifference =
+        getMatchupConfidencePriority(matchupA) -
+        getMatchupConfidencePriority(matchupB);
+
+      if (confidenceDifference !== 0) {
+        return confidenceDifference;
+      }
+
+      const activityDifference =
+        getMatchupActivityTimestamp(matchupB) -
+        getMatchupActivityTimestamp(matchupA);
+
+      if (activityDifference !== 0) {
+        return activityDifference;
+      }
+    }
+
+    return compareLeagueMatchupsAlphabetically(
+      matchupA,
+      matchupB,
+      championsById
+    );
+  });
+}
+
+function getMatchupReviewPriority(matchup: AdminLeagueMatchup) {
+  return matchup.generation_status === "reviewed" ? 1 : 0;
+}
+
+function getMatchupConfidencePriority(matchup: AdminLeagueMatchup) {
+  const confidence = matchup.confidence_level?.trim().toLowerCase() ?? "";
+
+  if (confidence.includes("low")) {
+    return 0;
+  }
+
+  if (confidence.includes("medium")) {
+    return 1;
+  }
+
+  if (confidence.includes("high")) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function getMatchupActivityTimestamp(matchup: AdminLeagueMatchup) {
+  return Math.max(
+    parseMatchupTimestamp(matchup.updated_at),
+    parseMatchupTimestamp(matchup.generated_at),
+    parseMatchupTimestamp(matchup.reviewed_at)
+  );
+}
+
+function parseMatchupTimestamp(value: string | null) {
+  if (!value) {
+    return 0;
+  }
+
+  const timestamp = Date.parse(value);
+
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function compareLeagueMatchupsAlphabetically(
+  matchupA: AdminLeagueMatchup,
+  matchupB: AdminLeagueMatchup,
+  championsById: Map<string, AdminLeagueChampion>
+) {
+  const roleDifference =
+    leagueRoles.indexOf(matchupA.role) - leagueRoles.indexOf(matchupB.role);
+
+  if (roleDifference !== 0) {
+    return roleDifference;
+  }
+
+  const championADifference = getChampionSortName(
+    matchupA.champion_a_id,
+    championsById
+  ).localeCompare(getChampionSortName(matchupB.champion_a_id, championsById));
+
+  if (championADifference !== 0) {
+    return championADifference;
+  }
+
+  return getChampionSortName(matchupA.champion_b_id, championsById).localeCompare(
+    getChampionSortName(matchupB.champion_b_id, championsById)
+  );
+}
+
 function getLaneMatchupGroups({
   champions,
   includeMissingCount = true,
@@ -2905,7 +3028,8 @@ function getChampionMatchupGroupsForRole({
       const champion = championsById.get(championId);
       const items = sortMatchupsForChampion(
         matchupsBySourceChampion.get(championId) ?? [],
-        championsById
+        championsById,
+        sortMode
       );
       const totalCount = items.length;
       const reviewedCount = items.filter(
@@ -2949,16 +3073,14 @@ function getChampionMatchupGroupsForRole({
 
 function sortMatchupsForChampion(
   matchups: AdminLeagueMatchup[],
-  championsById: Map<string, AdminLeagueChampion>
+  championsById: Map<string, AdminLeagueChampion>,
+  sortMode: LeagueMatchupSortMode
 ) {
+  if (sortMode === "needs-review") {
+    return sortLeagueMatchupsForAdminList(matchups, championsById, sortMode);
+  }
+
   return [...matchups].sort((matchupA, matchupB) => {
-    const roleDifference =
-      leagueRoles.indexOf(matchupA.role) - leagueRoles.indexOf(matchupB.role);
-
-    if (roleDifference !== 0) {
-      return roleDifference;
-    }
-
     return getChampionSortName(matchupA.champion_b_id, championsById).localeCompare(
       getChampionSortName(matchupB.champion_b_id, championsById)
     );
@@ -2971,6 +3093,16 @@ function sortChampionGroups(
   sortMode: LeagueMatchupSortMode
 ) {
   switch (sortMode) {
+    case "needs-review": {
+      const draftDifference = groupB.draftCount - groupA.draftCount;
+      const reviewedDifference = groupA.reviewedCount - groupB.reviewedCount;
+
+      return (
+        draftDifference ||
+        reviewedDifference ||
+        groupA.title.localeCompare(groupB.title)
+      );
+    }
     case "least-reviewed": {
       const reviewedDifference = groupA.reviewedCount - groupB.reviewedCount;
 
