@@ -77,6 +77,7 @@ type LeagueMatchupQueueItem = LeagueMatchupBatchPlanItem & {
 type LeagueMatchupQueueState = {
   createdAt: number;
   mode: LeagueMatchupQueueMode;
+  role: AdminLeagueMatchup["role"];
   status: LeagueMatchupQueueStatus;
   updatedAt: number;
   items: LeagueMatchupQueueItem[];
@@ -107,8 +108,10 @@ type LaneMatchupGroup = {
 
 const championGroupStorageKey =
   "lanestomp.admin.leagueMatchups.collapsedChampionGroups";
-const matchupQueueStorageKey =
+const legacyMidMatchupQueueStorageKey =
   "lanestomp.admin.leagueMatchups.midBulkGenerationQueue";
+const matchupQueueStorageKeyPrefix =
+  "lanestomp.admin.leagueMatchups.bulkGenerationQueue";
 
 export function AdminLeagueMatchupsSection({
   champions,
@@ -1207,6 +1210,7 @@ function LeagueMatchupBulkGenerationQueue({
   ) => Promise<LeagueMatchupQueueItemResult>;
   onRefresh: () => Promise<boolean>;
 }) {
+  const [queueRole, setQueueRole] = useState<AdminLeagueMatchup["role"]>("mid");
   const [queueMode, setQueueMode] =
     useState<LeagueMatchupQueueMode>("missing-only");
   const [queueMessage, setQueueMessage] = useState<{
@@ -1217,32 +1221,34 @@ function LeagueMatchupBulkGenerationQueue({
     { id: string; text: string; type: "error" | "info" | "success" }[]
   >([]);
   const [queueState, setQueueState] = useState<LeagueMatchupQueueState>(() =>
-    createEmptyQueueState("missing-only")
+    createEmptyQueueState("missing-only", "mid")
   );
   const isProcessingRef = useRef(false);
   const matchupsRef = useRef(matchups);
   const queueDebugMessageIdRef = useRef(0);
   const queueStateRef = useRef(queueState);
 
-  const midChampions = useMemo(
+  const roleChampions = useMemo(
     () =>
       sortChampionsForRole(
-        champions.filter((champion) => isChampionInRole(champion, "mid")),
-        "mid"
+        champions.filter((champion) => isChampionInRole(champion, queueRole)),
+        queueRole
       ),
-    [champions]
+    [champions, queueRole]
   );
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
   );
   const previewItems = useMemo(
-    () => buildMidLaneQueueItems(midChampions, matchups, queueMode),
-    [matchups, midChampions, queueMode]
+    () => buildLaneQueueItems(roleChampions, matchups, queueMode, queueRole),
+    [matchups, queueMode, queueRole, roleChampions]
   );
   const stats = getQueueStats(queueState);
   const failedItems = queueState.items.filter((item) => item.status === "failed");
   const activeItem = queueState.items.find((item) => item.status === "running");
+  const queueRoleLabel = getRoleLabel(queueRole);
+  const queueLaneLabel = `${queueRoleLabel} lane`;
   const canStart =
     !isDisabled &&
     queueState.status === "idle" &&
@@ -1265,16 +1271,32 @@ function LeagueMatchupBulkGenerationQueue({
 
   useEffect(() => {
     const animationFrameId = window.requestAnimationFrame(() => {
-      const storedValue = window.localStorage.getItem(matchupQueueStorageKey);
+      const storageKey = getMatchupQueueStorageKey(queueRole);
+      const storedValue =
+        window.localStorage.getItem(storageKey) ??
+        (queueRole === "mid"
+          ? window.localStorage.getItem(legacyMidMatchupQueueStorageKey)
+          : null);
 
       if (!storedValue) {
+        const emptyState = createEmptyQueueState("missing-only", queueRole);
+        setQueueMode(emptyState.mode);
+        queueStateRef.current = emptyState;
+        setQueueState(emptyState);
         return;
       }
 
-      const restoredState = parseStoredQueueState(storedValue);
+      const restoredState = parseStoredQueueState(storedValue, queueRole);
 
       if (!restoredState) {
-        window.localStorage.removeItem(matchupQueueStorageKey);
+        window.localStorage.removeItem(storageKey);
+        if (queueRole === "mid") {
+          window.localStorage.removeItem(legacyMidMatchupQueueStorageKey);
+        }
+        const emptyState = createEmptyQueueState("missing-only", queueRole);
+        setQueueMode(emptyState.mode);
+        queueStateRef.current = emptyState;
+        setQueueState(emptyState);
         return;
       }
 
@@ -1285,15 +1307,15 @@ function LeagueMatchupBulkGenerationQueue({
 
       setQueueMode(normalizedState.mode);
       queueStateRef.current = normalizedState;
-      window.localStorage.setItem(
-        matchupQueueStorageKey,
-        JSON.stringify(normalizedState)
-      );
+      window.localStorage.setItem(storageKey, JSON.stringify(normalizedState));
+      if (queueRole === "mid") {
+        window.localStorage.removeItem(legacyMidMatchupQueueStorageKey);
+      }
       setQueueState(normalizedState);
     });
 
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, []);
+  }, [queueRole]);
 
   useEffect(() => {
     const isActive = queueState.status === "running";
@@ -1309,15 +1331,20 @@ function LeagueMatchupBulkGenerationQueue({
   }
 
   function persistQueueState(nextState: LeagueMatchupQueueState) {
+    const storageKey = getMatchupQueueStorageKey(nextState.role);
+
     if (nextState.status === "idle" && nextState.items.length === 0) {
-      window.localStorage.removeItem(matchupQueueStorageKey);
+      window.localStorage.removeItem(storageKey);
+      if (nextState.role === "mid") {
+        window.localStorage.removeItem(legacyMidMatchupQueueStorageKey);
+      }
       return;
     }
 
-    window.localStorage.setItem(
-      matchupQueueStorageKey,
-      JSON.stringify(nextState)
-    );
+    window.localStorage.setItem(storageKey, JSON.stringify(nextState));
+    if (nextState.role === "mid") {
+      window.localStorage.removeItem(legacyMidMatchupQueueStorageKey);
+    }
   }
 
   function updateQueueState(
@@ -1344,14 +1371,20 @@ function LeagueMatchupBulkGenerationQueue({
   }
 
   function startQueue() {
-    const items = buildMidLaneQueueItems(midChampions, matchupsRef.current, queueMode);
+    const items = buildLaneQueueItems(
+      roleChampions,
+      matchupsRef.current,
+      queueMode,
+      queueRole
+    );
     const skippedExistingDraftCount =
       queueMode === "missing-only"
         ? Math.max(
-            buildMidLaneQueueItems(
-              midChampions,
+            buildLaneQueueItems(
+              roleChampions,
               matchupsRef.current,
-              "regenerate-all"
+              "regenerate-all",
+              queueRole
             ).length - items.length,
             0
           )
@@ -1361,8 +1394,8 @@ function LeagueMatchupBulkGenerationQueue({
       setQueueMessage({
         text:
           queueMode === "missing-only"
-            ? "No missing mid lane matchup drafts found."
-            : "No mid lane champion pairs are available to generate.",
+            ? `No missing ${queueLaneLabel} matchup drafts found.`
+            : `No ${queueLaneLabel} champion pairs are available to generate.`,
         type: "error",
       });
       return;
@@ -1373,6 +1406,7 @@ function LeagueMatchupBulkGenerationQueue({
       createdAt: now,
       items,
       mode: queueMode,
+      role: queueRole,
       status: "running" as const,
       updatedAt: now,
     };
@@ -1447,11 +1481,21 @@ function LeagueMatchupBulkGenerationQueue({
   }
 
   function clearQueue() {
-    const nextState = createEmptyQueueState(queueMode);
+    const nextState = createEmptyQueueState(queueMode, queueRole);
 
     setQueueMessage(null);
     setQueueDebugMessages([]);
     commitQueueState(nextState);
+  }
+
+  function updateQueueRole(nextRole: AdminLeagueMatchup["role"]) {
+    if (queueState.status === "running") {
+      return;
+    }
+
+    setQueueMessage(null);
+    setQueueDebugMessages([]);
+    setQueueRole(nextRole);
   }
 
   async function processQueue() {
@@ -1563,11 +1607,11 @@ function LeagueMatchupBulkGenerationQueue({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="font-mono text-xl">
-              Mid lane bulk generation queue
+              {queueRoleLabel} lane bulk generation queue
             </CardTitle>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Generate missing mid lane matchup drafts one at a time with pause,
-              resume, stop, retry, and refresh-safe progress.
+              Generate missing {queueLaneLabel} matchup drafts one at a time
+              with pause, resume, stop, retry, and refresh-safe progress.
             </p>
           </div>
           <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
@@ -1590,12 +1634,35 @@ function LeagueMatchupBulkGenerationQueue({
         <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-4">
             <div>
-              <p className="font-semibold text-white">Queue mode</p>
+              <p className="font-semibold text-white">Queue lane and mode</p>
               <p className="mt-1 text-xs text-zinc-500">
-                {midChampions.length} mid champions available for directional
-                matchup generation.
+                {roleChampions.length} {queueLaneLabel} champions available for
+                directional matchup generation.
               </p>
             </div>
+
+            <label className="grid gap-2 text-sm text-zinc-300">
+              Lane
+              <select
+                className={fieldClassName}
+                disabled={queueState.status === "running"}
+                onChange={(event) =>
+                  updateQueueRole(event.target.value as AdminLeagueMatchup["role"])
+                }
+                value={queueRole}
+              >
+                {leagueRoles.map((role) => (
+                  <option className={selectOptionClassName} key={role} value={role}>
+                    {getRoleLabel(role)}
+                  </option>
+                ))}
+              </select>
+              {queueState.status === "running" ? (
+                <span className="text-xs text-zinc-500">
+                  Stop or finish the running queue before switching lanes.
+                </span>
+              ) : null}
+            </label>
 
             <div className="grid gap-2">
               <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/10 p-3 text-sm text-zinc-300">
@@ -2675,7 +2742,8 @@ function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
 }
 
 function createEmptyQueueState(
-  mode: LeagueMatchupQueueMode
+  mode: LeagueMatchupQueueMode,
+  role: AdminLeagueMatchup["role"]
 ): LeagueMatchupQueueState {
   const now = getQueueTimestamp();
 
@@ -2683,6 +2751,7 @@ function createEmptyQueueState(
     createdAt: now,
     items: [],
     mode,
+    role,
     status: "idle",
     updatedAt: now,
   };
@@ -2692,10 +2761,15 @@ function getQueueTimestamp() {
   return Date.now();
 }
 
-function buildMidLaneQueueItems(
-  midChampions: AdminLeagueChampion[],
+function getMatchupQueueStorageKey(role: AdminLeagueMatchup["role"]) {
+  return `${matchupQueueStorageKeyPrefix}.${role}`;
+}
+
+function buildLaneQueueItems(
+  roleChampions: AdminLeagueChampion[],
   matchups: AdminLeagueMatchup[],
-  mode: LeagueMatchupQueueMode
+  mode: LeagueMatchupQueueMode,
+  role: AdminLeagueMatchup["role"]
 ): LeagueMatchupQueueItem[] {
   const existingMatchupsByKey = new Map(
     matchups.map((matchup) => [
@@ -2705,13 +2779,13 @@ function buildMidLaneQueueItems(
   );
   const items: LeagueMatchupQueueItem[] = [];
 
-  for (const championA of midChampions) {
-    for (const championB of midChampions) {
+  for (const championA of roleChampions) {
+    for (const championB of roleChampions) {
       if (championA.id === championB.id) {
         continue;
       }
 
-      const key = getMatchupKey(championA.id, championB.id, "mid");
+      const key = getMatchupKey(championA.id, championB.id, role);
       const existingMatchup = existingMatchupsByKey.get(key);
 
       if (
@@ -2731,7 +2805,7 @@ function buildMidLaneQueueItems(
         existingMatchupId: existingMatchup?.id ?? null,
         id: key,
         matchupId: existingMatchup?.id ?? null,
-        role: "mid",
+        role,
         status: "pending",
       });
     }
@@ -2813,7 +2887,10 @@ function formatDuration(durationMs: number) {
   return `${seconds}s`;
 }
 
-function parseStoredQueueState(value: string): LeagueMatchupQueueState | null {
+function parseStoredQueueState(
+  value: string,
+  fallbackRole: AdminLeagueMatchup["role"]
+): LeagueMatchupQueueState | null {
   try {
     const parsedValue: unknown = JSON.parse(value);
 
@@ -2844,14 +2921,23 @@ function parseStoredQueueState(value: string): LeagueMatchupQueueState | null {
       return null;
     }
 
+    const role = isLeagueMatchupRole(candidate.role)
+      ? candidate.role
+      : fallbackRole;
+
+    if (role !== fallbackRole) {
+      return null;
+    }
+
     const items = candidate.items
-      .map((item) => parseStoredQueueItem(item))
+      .map((item) => parseStoredQueueItem(item, role))
       .filter((item): item is LeagueMatchupQueueItem => Boolean(item));
 
     return {
       createdAt: candidate.createdAt,
       items,
       mode: candidate.mode,
+      role,
       status: candidate.status,
       updatedAt: candidate.updatedAt,
     };
@@ -2860,18 +2946,24 @@ function parseStoredQueueState(value: string): LeagueMatchupQueueState | null {
   }
 }
 
-function parseStoredQueueItem(value: unknown): LeagueMatchupQueueItem | null {
+function parseStoredQueueItem(
+  value: unknown,
+  fallbackRole: AdminLeagueMatchup["role"]
+): LeagueMatchupQueueItem | null {
   if (!value || typeof value !== "object") {
     return null;
   }
 
   const candidate = value as Partial<LeagueMatchupQueueItem>;
+  const role = isLeagueMatchupRole(candidate.role)
+    ? candidate.role
+    : fallbackRole;
 
   if (
     typeof candidate.championAId !== "string" ||
     typeof candidate.championBId !== "string" ||
     typeof candidate.id !== "string" ||
-    candidate.role !== "mid" ||
+    role !== fallbackRole ||
     !candidate.status ||
     !isQueueItemStatus(candidate.status)
   ) {
@@ -2891,9 +2983,18 @@ function parseStoredQueueItem(value: unknown): LeagueMatchupQueueItem | null {
         : null,
     id: candidate.id,
     matchupId: typeof candidate.matchupId === "number" ? candidate.matchupId : null,
-    role: "mid",
+    role,
     status: candidate.status === "running" ? "pending" : candidate.status,
   };
+}
+
+function isLeagueMatchupRole(
+  value: unknown
+): value is AdminLeagueMatchup["role"] {
+  return (
+    typeof value === "string" &&
+    leagueRoles.includes(value as AdminLeagueMatchup["role"])
+  );
 }
 
 function isQueueStatus(value: string): value is LeagueMatchupQueueStatus {
