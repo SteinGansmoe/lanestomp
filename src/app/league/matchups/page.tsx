@@ -7,11 +7,16 @@ import { MatchupSelector } from "@/src/components/league/matchup-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import { getLeagueChampions } from "@/src/features/league/champions";
+import { getLeagueMatchupCoverageSummary } from "@/src/features/league/matchups";
 
 export default async function LeagueMatchupsPage() {
   await connection();
 
   const { champions, error } = await getLeagueChampions();
+  const { coverage } =
+    champions.length > 0
+      ? await getLeagueMatchupCoverageSummary(champions)
+      : { coverage: null };
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
@@ -67,7 +72,7 @@ export default async function LeagueMatchupsPage() {
             </div>
           </Card>
         ) : champions.length > 0 ? (
-          <MatchupSelector champions={champions} />
+          <MatchupSelector champions={champions} matchupCoverage={coverage} />
         ) : (
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
             <CardTitle className="font-mono text-xl">

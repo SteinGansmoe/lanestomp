@@ -15,6 +15,7 @@ import { Input } from "@/src/components/ui/input";
 import {
   type LeagueChampion,
 } from "@/src/features/league/champions";
+import type { LeagueMatchupCoverageSummary } from "@/src/features/league/matchups";
 import {
   getChampionRoles,
   isChampionInRole,
@@ -27,6 +28,7 @@ import { cn } from "@/src/lib/utils";
 type MatchupSelectorProps = {
   champions: LeagueChampion[];
   initialRole?: LeagueRole;
+  matchupCoverage?: LeagueMatchupCoverageSummary | null;
 };
 
 type ChampionFilter = LeagueRole | "all";
@@ -78,6 +80,7 @@ const roleFilterOptions = [
 export function MatchupSelector({
   champions,
   initialRole,
+  matchupCoverage,
 }: MatchupSelectorProps) {
   const [championAId, setChampionAId] = useState<string | null>(null);
   const [championBId, setChampionBId] = useState<string | null>(null);
@@ -118,6 +121,8 @@ export function MatchupSelector({
     championA && championB
       ? getLeagueMatchupHref({ championA, championB, role })
       : null;
+  const visibleCoverage =
+    matchupCoverage?.[activeFilter] ?? matchupCoverage?.all ?? null;
 
   function handleChampionPick(champion: LeagueChampion) {
     if (!championAId || (championAId && championBId)) {
@@ -207,20 +212,26 @@ export function MatchupSelector({
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0">
           <div className="flex flex-col gap-3 border-b border-white/10 pb-4 xl:flex-row xl:items-center xl:justify-between">
-            <label className="relative block w-full xl:max-w-md">
-              <span className="sr-only">Search champions</span>
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500"
-                aria-hidden="true"
-              />
-              <Input
-                className="h-11 border-white/10 bg-black/25 pl-10 pr-4 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:ring-cyan-300/20"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search champions..."
-                type="search"
-                value={query}
-              />
-            </label>
+            <div className="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:items-center">
+              <label className="relative block w-full xl:max-w-md">
+                <span className="sr-only">Search champions</span>
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500"
+                  aria-hidden="true"
+                />
+                <Input
+                  className="h-11 border-white/10 bg-black/25 pl-10 pr-4 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:ring-cyan-300/20"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search champions..."
+                  type="search"
+                  value={query}
+                />
+              </label>
+
+              {visibleCoverage ? (
+                <MatchupCoverageIndicator coverage={visibleCoverage} />
+              ) : null}
+            </div>
 
             <button
               aria-label="Swap selected champions"
@@ -352,6 +363,35 @@ function RoleIconSelector({
   );
 }
 
+function MatchupCoverageIndicator({
+  coverage,
+}: {
+  coverage: LeagueMatchupCoverageSummary["all"];
+}) {
+  const helperText =
+    "We're actively expanding the matchup database and adding new guides every day.";
+  const label = `🚀 ${formatMatchupCount(
+    coverage.generatedCount
+  )} / ${formatMatchupCount(coverage.totalCount)} matchups available`;
+
+  return (
+    <div
+      aria-label={`${label}. ${helperText}`}
+      className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/[0.06] px-3 text-sm text-cyan-100 shadow-inner shadow-cyan-950/10 xl:w-auto xl:justify-start"
+      title={helperText}
+    >
+      <span className="mr-2" aria-hidden="true">
+        🚀
+      </span>
+      <span className="whitespace-nowrap font-medium">
+        {formatMatchupCount(coverage.generatedCount)} /{" "}
+        {formatMatchupCount(coverage.totalCount)} matchups available
+      </span>
+      <span className="sr-only">{helperText}</span>
+    </div>
+  );
+}
+
 function ChampionButton({
   champion,
   isChampionA,
@@ -475,6 +515,10 @@ function InfoPanel() {
       </ol>
     </div>
   );
+}
+
+function formatMatchupCount(value: number) {
+  return new Intl.NumberFormat("en").format(value);
 }
 
 function getRoleLabel(role: ChampionFilter) {
