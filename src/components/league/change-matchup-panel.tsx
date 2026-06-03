@@ -2,8 +2,11 @@
 
 import Image from "next/image";
 import {
+  type KeyboardEvent,
+  useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -213,6 +216,9 @@ export function ChangeMatchupPanel({
               <MatchupChampionPicker
                 disabledChampionId={championBId}
                 id={`${panelId}-champion`}
+                key={`${panelId}-champion-${
+                  openPicker === "champion" ? "open" : "closed"
+                }`}
                 label="Champion"
                 onOpenChange={() =>
                   setOpenPicker(openPicker === "champion" ? null : "champion")
@@ -238,6 +244,9 @@ export function ChangeMatchupPanel({
               <MatchupChampionPicker
                 disabledChampionId={championAId}
                 id={`${panelId}-opponent`}
+                key={`${panelId}-opponent-${
+                  openPicker === "opponent" ? "open" : "closed"
+                }`}
                 label="Opponent"
                 onOpenChange={() =>
                   setOpenPicker(openPicker === "opponent" ? null : "opponent")
@@ -336,6 +345,10 @@ function MatchupChampionPicker({
   selectedChampionId: string;
 }) {
   const [query, setQuery] = useState("");
+  const [highlightedChampionId, setHighlightedChampionId] = useState<
+    string | null
+  >(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const selectedChampion =
     champions.find((champion) => champion.id === selectedChampionId) ?? null;
   const filteredChampions = useMemo(() => {
@@ -362,6 +375,80 @@ function MatchupChampionPicker({
 
     return roleFilteredChampions;
   }, [championFilter, champions, query]);
+  const selectableChampions = useMemo(
+    () =>
+      filteredChampions.filter(
+        (champion) => champion.id !== disabledChampionId
+      ),
+    [disabledChampionId, filteredChampions]
+  );
+  const highlightedChampion =
+    selectableChampions.find(
+      (champion) => champion.id === highlightedChampionId
+    ) ??
+    selectableChampions[0] ??
+    null;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [isOpen]);
+
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!selectableChampions.length) {
+      return;
+    }
+
+    const currentIndex = Math.max(
+      selectableChampions.findIndex(
+        (champion) => champion.id === highlightedChampion?.id
+      ),
+      0
+    );
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const nextIndex = (currentIndex + 1) % selectableChampions.length;
+      setHighlightedChampionId(selectableChampions[nextIndex].id);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const nextIndex =
+        (currentIndex - 1 + selectableChampions.length) %
+        selectableChampions.length;
+      setHighlightedChampionId(selectableChampions[nextIndex].id);
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      setHighlightedChampionId(selectableChampions[0].id);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      setHighlightedChampionId(
+        selectableChampions[selectableChampions.length - 1].id
+      );
+      return;
+    }
+
+    if (event.key === "Enter" && highlightedChampion) {
+      event.preventDefault();
+      onChange(highlightedChampion.id);
+    }
+  }
 
   return (
     <div className="relative grid gap-2">
@@ -412,9 +499,22 @@ function MatchupChampionPicker({
               aria-hidden="true"
             />
             <input
+              aria-activedescendant={
+                highlightedChampion ? `${id}-option-${highlightedChampion.id}` : undefined
+              }
+              aria-controls={`${id}-options`}
+              aria-expanded={isOpen}
+              aria-haspopup="listbox"
+              autoComplete="off"
               className="h-10 w-full rounded-md border border-white/10 bg-black/25 pl-10 pr-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/20"
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setHighlightedChampionId(null);
+              }}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search champions..."
+              ref={searchInputRef}
+              role="combobox"
               type="search"
               value={query}
             />
@@ -428,11 +528,13 @@ function MatchupChampionPicker({
           <div
             aria-label={`${label} champion options`}
             className="mt-3 grid max-h-64 grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2 overflow-y-auto pr-1"
+            id={`${id}-options`}
             role="listbox"
           >
             {filteredChampions.map((champion) => {
               const isDisabled = champion.id === disabledChampionId;
               const isSelected = champion.id === selectedChampionId;
+              const isHighlighted = champion.id === highlightedChampion?.id;
 
               return (
                 <button
@@ -441,11 +543,19 @@ function MatchupChampionPicker({
                   className={cn(
                     "relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/[0.035] transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
                     isSelected && "border-cyan-300/80 ring-2 ring-cyan-300/30",
+                    isHighlighted &&
+                      "border-cyan-300/70 shadow-[0_0_18px_rgba(34,211,238,0.2)] ring-2 ring-cyan-300/35",
                     isDisabled && "cursor-not-allowed opacity-25"
                   )}
                   disabled={isDisabled}
+                  id={`${id}-option-${champion.id}`}
                   key={champion.id}
                   onClick={() => onChange(champion.id)}
+                  onMouseEnter={() => {
+                    if (!isDisabled) {
+                      setHighlightedChampionId(champion.id);
+                    }
+                  }}
                   role="option"
                   title={champion.name}
                   type="button"

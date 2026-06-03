@@ -116,7 +116,7 @@ export const garenCombatProfile = {
       "Duelists who outdamage him after (E) ends.",
     ],
   },
-  secondaryRoles: [],
+  secondaryRoles: ["mid"],
   shields: [],
   softCrowdControl: ["(Q) silence"],
   stealthOrInvisibility: null,
