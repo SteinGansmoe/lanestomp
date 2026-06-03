@@ -20,7 +20,7 @@ const navigationLinks = [
 
 const resourceLinks = [
   { href: "#", label: "Matchup Requests" },
-  { href: "#", label: "Contact" },
+  { href: "https://github.com/SteinGansmoe/lanestomp", label: "Contact" },
   { href: "#", label: "Discord" },
   { href: "#", label: "Reddit" },
 ];
@@ -35,7 +35,11 @@ const socialLinks = [
   { href: "#", icon: MessageCircle, label: "Discord" },
   { href: "#", icon: Radio, label: "Reddit" },
   { href: "#", icon: Send, label: "X" },
-  { href: "#", icon: GitBranch, label: "GitHub" },
+  {
+    href: "https://github.com/SteinGansmoe/lanestomp",
+    icon: GitBranch,
+    label: "GitHub",
+  },
 ];
 
 const riotDisclaimer =
