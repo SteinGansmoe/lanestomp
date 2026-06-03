@@ -86,7 +86,7 @@ export const twistedFateCombatProfile = {
   },
   mobilityLevel: "medium",
   name: "Twisted Fate",
-  offMetaRoles: [],
+  offMetaRoles: ["adc", "support"],
       strategicIdentity: {
         laneGoal: "roam",
         scalingProfile: "mid",
