@@ -23,6 +23,7 @@ import { MatchupFeedbackControls } from "@/src/components/league/matchup-feedbac
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 import type { LeagueMatchup } from "@/src/features/league/matchups";
+import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
 import type { LeagueRole } from "@/src/features/league/roles";
 
 type MatchupSectionKey =
@@ -114,6 +115,15 @@ const matchupSectionDefinitions = [
   title: string;
 }>;
 
+type MatchupGuideSection = Omit<
+  (typeof matchupSectionDefinitions)[number],
+  "placeholder" | "title"
+> & {
+  body: string;
+  placeholder: string;
+  title: string;
+};
+
 export function LeagueMatchupReviewPanel({
   championAId,
   championAName,
@@ -144,9 +154,14 @@ export function LeagueMatchupReviewPanel({
     () =>
       matchupSectionDefinitions.map((section) => ({
         ...section,
-        body: getMatchupSectionBody(displayMatchup, section.key, section.placeholder),
+        body: getMatchupSectionBody(
+          displayMatchup,
+          section.key,
+          getSectionPlaceholder(section.key, role, section.placeholder)
+        ),
+        title: getMatchupDraftSectionLabel(section.key, role),
       })),
-    [displayMatchup]
+    [displayMatchup, role]
   );
 
   useEffect(() => {
@@ -378,7 +393,7 @@ export function LeagueMatchupReviewPanel({
     setStatus({
       error: null,
       isLoading: false,
-      success: `${getSectionTitle(sectionKey)} regenerated and marked as draft.`,
+      success: `${getSectionTitle(sectionKey, role)} regenerated and marked as draft.`,
     });
   }
 
@@ -536,7 +551,7 @@ function MatchupGuideCard({
   onChange: (value: string) => void;
   onRegenerate: () => void;
   regenerateError: string | null;
-  section: (typeof matchupSectionDefinitions)[number] & { body: string };
+  section: MatchupGuideSection;
 }) {
   const Icon = section.icon;
   const bullets = getGuideBullets(section.body);
@@ -649,11 +664,20 @@ function getStatusLabel(status: AdminMatchupRow["generation_status"]) {
   return status === "reviewed" ? "Reviewed / published" : "Draft";
 }
 
-function getSectionTitle(sectionKey: MatchupSectionKey) {
-  return (
-    matchupSectionDefinitions.find((section) => section.key === sectionKey)
-      ?.title ?? "Card"
-  );
+function getSectionPlaceholder(
+  sectionKey: MatchupSectionKey,
+  role: LeagueRole,
+  fallback: string
+) {
+  if (role !== "jungle" || sectionKey !== "trading_pattern") {
+    return fallback;
+  }
+
+  return "Build the jungle plan around first clear, invade timing, river control, Scuttle or objective setup, tempo resets, and how to deny the opposing jungler's scaling window.";
+}
+
+function getSectionTitle(sectionKey: MatchupSectionKey, role: LeagueRole) {
+  return getMatchupDraftSectionLabel(sectionKey, role);
 }
 
 function getSectionDotClass(

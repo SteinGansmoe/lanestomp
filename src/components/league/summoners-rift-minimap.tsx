@@ -16,8 +16,12 @@ export function SummonersRiftMinimap({
   const isBot = role === "adc" || role === "support";
   const isSupport = role === "support";
   const glowId = `rift-lane-glow-${role}`;
+  const junglePathGradientId = `rift-jungle-path-${role}`;
   const activeStroke = isSupport ? "#f3c969" : "#67e8f9";
   const activeSoftStroke = isSupport ? "#d6b45d" : "#38bdf8";
+  const blueSideStroke = "#67e8f9";
+  const redSideStroke = "#fb7185";
+  const redSideSoftStroke = "#fda4af";
   const activeClassName = "opacity-100";
   const inactiveClassName = "opacity-25";
 
@@ -57,6 +61,19 @@ export function SummonersRiftMinimap({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            <linearGradient
+              gradientUnits="userSpaceOnUse"
+              id={junglePathGradientId}
+              x1="50"
+              x2="50"
+              y1="24"
+              y2="76"
+            >
+              <stop offset="0%" stopColor={redSideSoftStroke} />
+              <stop offset="45%" stopColor={redSideStroke} />
+              <stop offset="55%" stopColor={blueSideStroke} />
+              <stop offset="100%" stopColor={activeSoftStroke} />
+            </linearGradient>
           </defs>
 
           <rect
@@ -129,23 +146,38 @@ export function SummonersRiftMinimap({
             <path
               d="M25 68 C28 52 36 40 48 32"
               fill="none"
-              stroke={isJungle ? activeStroke : "#94a3b8"}
+              stroke={
+                isJungle ? `url(#${junglePathGradientId})` : "#94a3b8"
+              }
               strokeLinecap="round"
               strokeWidth={isJungle ? 4.5 : 2}
             />
             <path
               d="M52 68 C63 59 70 48 75 32"
               fill="none"
-              stroke={isJungle ? activeSoftStroke : "#94a3b8"}
+              stroke={
+                isJungle ? `url(#${junglePathGradientId})` : "#94a3b8"
+              }
               strokeLinecap="round"
               strokeWidth={isJungle ? 4.5 : 2}
             />
-            {[28, 40, 61, 72].map((x, index) => (
+            {[
+              { cx: 28, cy: 54 },
+              { cx: 40, cy: 40 },
+              { cx: 61, cy: 52 },
+              { cx: 72, cy: 65 },
+            ].map((marker) => (
               <circle
-                cx={x}
-                cy={index < 2 ? 54 - index * 14 : 52 + (index - 2) * 13}
-                fill={isJungle ? activeStroke : "#94a3b8"}
-                key={x}
+                cx={marker.cx}
+                cy={marker.cy}
+                fill={
+                  isJungle
+                    ? marker.cy < 50
+                      ? redSideStroke
+                      : blueSideStroke
+                    : "#94a3b8"
+                }
+                key={`${marker.cx}-${marker.cy}`}
                 r={isJungle ? 3.2 : 2}
               />
             ))}
@@ -167,7 +199,7 @@ export function SummonersRiftMinimap({
           ) : null}
 
           <circle cx="13" cy="87" fill="#67e8f9" opacity="0.85" r="3" />
-          <circle cx="87" cy="13" fill="#f3c969" opacity="0.85" r="3" />
+          <circle cx="87" cy="13" fill={redSideStroke} opacity="0.85" r="3" />
           <path
             d="M12 87 L20 87 L12 79 Z"
             fill="#67e8f9"
@@ -175,7 +207,7 @@ export function SummonersRiftMinimap({
           />
           <path
             d="M88 13 L80 13 L88 21 Z"
-            fill="#f3c969"
+            fill={redSideStroke}
             opacity="0.22"
           />
         </svg>

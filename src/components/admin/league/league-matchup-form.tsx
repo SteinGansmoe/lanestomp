@@ -10,6 +10,7 @@ import {
 } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
+import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
 import { leagueRoles } from "@/src/features/league/roles";
 import { fieldClassName, selectOptionClassName } from "../constants";
 import type {
@@ -273,18 +274,22 @@ export function LeagueMatchupForm({
       </label>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        {matchupTextFields.map((field) => (
-          <label className="block space-y-2" key={field.key}>
-            <span className="text-sm text-zinc-300">{field.label}</span>
-            <textarea
-              className={`${fieldClassName} min-h-28 resize-y py-2`}
-              disabled={status.isLoading}
-              onChange={(event) => updateField(field.key, event.target.value)}
-              placeholder={`Write ${field.label.toLowerCase()} guidance`}
-              value={form[field.key]}
-            />
-          </label>
-        ))}
+        {matchupTextFields.map((field) => {
+          const label = getMatchupDraftSectionLabel(field.key, form.role);
+
+          return (
+            <label className="block space-y-2" key={field.key}>
+              <span className="text-sm text-zinc-300">{label}</span>
+              <textarea
+                className={`${fieldClassName} min-h-28 resize-y py-2`}
+                disabled={status.isLoading}
+                onChange={(event) => updateField(field.key, event.target.value)}
+                placeholder={`Write ${label.toLowerCase()} guidance`}
+                value={form[field.key]}
+              />
+            </label>
+          );
+        })}
       </div>
 
       {status.error ? (

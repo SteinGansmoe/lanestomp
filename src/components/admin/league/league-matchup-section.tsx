@@ -46,6 +46,7 @@ import {
   LeagueMatchupGenerateFormCard,
   LeagueMatchupForm,
 } from "./league-matchup-form";
+import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
 
 type LeagueMatchupRoleFilter = AdminLeagueMatchup["role"] | "all";
 type LeagueMatchupFeedbackStatusFilter = AdminLeagueMatchupFeedback["status"] | "all";
@@ -1168,7 +1169,7 @@ function LeagueMatchupFeedbackReview({
     setTargetedStatus({
       error: null,
       isLoading: false,
-      success: `${getCardTypeLabel(item.card_type)} regenerated as a draft.`,
+      success: `${getCardTypeLabel(item.card_type, item.lane)} regenerated as a draft.`,
     });
   }
 
@@ -1188,7 +1189,7 @@ function LeagueMatchupFeedbackReview({
     setTargetedStatus({
       error: null,
       isLoading: false,
-      success: `${getCardTypeLabel(item.card_type)} is ready in the edit form above.`,
+      success: `${getCardTypeLabel(item.card_type, item.lane)} is ready in the edit form above.`,
     });
   }
 
@@ -1366,7 +1367,7 @@ function LeagueMatchupFeedbackReview({
                                 {getRoleLabel(item.lane)}
                               </span>
                               <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-violet-100">
-                                {getCardTypeLabel(item.card_type)}
+                                {getCardTypeLabel(item.card_type, item.lane)}
                               </span>
                               <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300">
                                 {titleCase(item.status)}
@@ -2787,10 +2788,15 @@ function groupFeedbackForAdmin(feedback: AdminLeagueMatchupFeedback[]) {
       item.reason ? getFeedbackReasonLabel(item.reason) : getFeedbackTypeLabel(item.feedback_type)
     } · ${titleCase(item.status)}`;
 
+    const roleAwareTitle = title.replace(
+      getCardTypeLabel(item.card_type),
+      getCardTypeLabel(item.card_type, item.lane)
+    );
+
     if (existingGroup) {
       existingGroup.items.push(item);
     } else {
-      groups.set(id, { id, items: [item], title });
+      groups.set(id, { id, items: [item], title: roleAwareTitle });
     }
   }
 
@@ -2844,7 +2850,16 @@ function getFeedbackCardText(
   return sectionKey && matchup ? matchup[sectionKey] : null;
 }
 
-function getCardTypeLabel(value: string) {
+function getCardTypeLabel(
+  value: string,
+  role?: AdminLeagueMatchup["role"] | null
+) {
+  const sectionKey = getFeedbackSectionKey(value);
+
+  if (sectionKey) {
+    return getMatchupDraftSectionLabel(sectionKey, role);
+  }
+
   return value
     .split("_")
     .map((part) => titleCase(part))

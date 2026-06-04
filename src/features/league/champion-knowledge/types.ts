@@ -23,6 +23,12 @@ export type LeagueChampionLaneIdentityLevel =
   | "low"
   | "medium"
   | "very_high";
+export type LeagueChampionJungleProfileLevel =
+  | "high"
+  | "low"
+  | "medium"
+  | "very_high"
+  | "very_low";
 
 export type LeagueChampionLanePlan = {
   avoids: string[];
@@ -90,6 +96,23 @@ export type LeagueChampionPowerSpikeProfile = {
   minor?: LeagueChampionPowerSpike[];
 };
 
+export type LeagueChampionJungleProfileCategory = {
+  notes: string[];
+  rating: LeagueChampionJungleProfileLevel;
+};
+
+export type LeagueChampionJungleProfile = {
+  clearSpeed: LeagueChampionJungleProfileCategory;
+  dueling: LeagueChampionJungleProfileCategory;
+  earlyGamePressure: LeagueChampionJungleProfileCategory;
+  gankThreat: LeagueChampionJungleProfileCategory;
+  invadeResistance: LeagueChampionJungleProfileCategory;
+  matchupFocus: string[];
+  objectiveControl: LeagueChampionJungleProfileCategory;
+  pathingNotes: string[];
+  scaling: LeagueChampionJungleProfileCategory;
+};
+
 export type LeagueChampionKnowledgeProfile = {
   abilities?: LeagueChampionAbilityMap;
   archetype?: string[];
@@ -99,6 +122,7 @@ export type LeagueChampionKnowledgeProfile = {
   hardCrowdControl?: string[];
   id: string;
   importantAbilityNotes?: string[];
+  jungleProfile?: LeagueChampionJungleProfile;
   lanePlan?: LeagueChampionLanePlan;
   laneIdentity?: string | LeagueChampionLaneIdentity;
   majorPowerSpikes?: string[];

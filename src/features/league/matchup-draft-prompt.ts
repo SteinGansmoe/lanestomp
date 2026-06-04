@@ -1,5 +1,6 @@
 import type {
   LeagueChampionKnowledgeProfile,
+  LeagueChampionJungleProfileCategory,
   LeagueChampionPowerSpike,
 } from "./champion-knowledge/types";
 
@@ -26,6 +27,17 @@ export const matchupDraftSectionLabels = {
   trading_pattern: "Trading pattern",
   win_conditions: "Win conditions",
 } as const satisfies Record<MatchupDraftSectionKey, string>;
+
+export function getMatchupDraftSectionLabel(
+  sectionKey: MatchupDraftSectionKey,
+  role?: LeagueRole | null
+) {
+  if (role === "jungle" && sectionKey === "trading_pattern") {
+    return "Jungle Plan";
+  }
+
+  return matchupDraftSectionLabels[sectionKey];
+}
 
 export const matchupDraftSchema = {
   type: "object",
@@ -92,6 +104,20 @@ const writingStyleRules = [
   "- Explain how to execute advice whenever possible: where to hold the wave, when to step forward, what to punish, or when to back off.",
   "- Do not say apply pressure, control the lane, play safe, or scale for free unless the bullet explains the concrete action that makes it true.",
   "- Keep bullets direct and practical, like advice from a player who understands the matchup.",
+].join("\n");
+
+const junglePlanRules = [
+  "Jungle Plan Rules:",
+  "- For jungle matchups, the trading_pattern JSON key is displayed as Jungle Plan.",
+  "- Jungle Plan must answer: what should this jungler try to do on the map?",
+  "- Focus on pathing strategy, first clear goals, Scuttle contest conditions, river control, invade opportunities, counter-jungling, counter-gank timing, objective setup, dragon, Void Grubs, Rift Herald, tempo management, scaling denial, and lane priority requirements before invading or contesting.",
+  "- Each Jungle Plan bullet should name a map action plus the condition that makes it correct.",
+  "- Avoid writing Jungle Plan as duel instructions only, cooldown trading advice, lane-style spacing advice, or generic engage when cooldowns are down advice.",
+  "- Do not use the phrases short trades, trading patterns, trade windows, use spacing, force extended fights, or engage when cooldowns are down in Jungle Plan.",
+  "- Good Jungle Plan examples: Invade Karthus during his first clears and force him off camps before level 6.",
+  "- Good Jungle Plan examples: Fight for first Scuttle only when nearby lanes can move first.",
+  "- Good Jungle Plan examples: Track Jarvan IV's early pathing and be ready to counter-gank his first lane pressure.",
+  "- Good Jungle Plan examples: Prioritize early dragon and objective control, then use vision to force Kha'Zix into team-based fights instead of isolated picks.",
 ].join("\n");
 
 // This builder is the provider-facing prompt contract for League draft generation.
@@ -165,7 +191,7 @@ export function buildLeagueMatchupDraftPrompt({
       leagueTerminologyRules,
       "",
       writingStyleRules,
-      "",
+      ...(role === "jungle" ? ["", junglePlanRules, ""] : [""]),
       "Structured champion profiles:",
       `Player champion combat profile:\n${playerChampionContext}`,
       `Enemy champion combat profile:\n${enemyChampionContext}`,
@@ -173,7 +199,10 @@ export function buildLeagueMatchupDraftPrompt({
       `Existing matchup context:\n${existingSectionContext}`,
       "",
       targetSection
-        ? `Regenerate only the ${matchupDraftSectionLabels[targetSection]} card. Preserve the intent of the other existing cards as context, but do not rewrite them.`
+        ? `Regenerate only the ${getMatchupDraftSectionLabel(
+            targetSection,
+            role
+          )} card. Preserve the intent of the other existing cards as context, but do not rewrite them.`
         : "Regenerate the full matchup draft.",
       `Write JSON for these exact keys: ${outputKeys.join(", ")}.`,
       "Each value must be a newline-separated bullet list.",
@@ -182,7 +211,7 @@ export function buildLeagueMatchupDraftPrompt({
       "Start every bullet with '- '.",
       "Do not use paragraphs.",
       `Every bullet must directly help a player piloting Champion A (${playerChampionName}) against Champion B (${enemyChampionName}).`,
-      `Every bullet must be actionable coaching for ${playerChampionName}; it should name what ${playerChampionName} should do, avoid, respect, punish, trade around, or play toward.`,
+      `Every bullet must be actionable coaching for ${playerChampionName}; it should name what ${playerChampionName} should do, avoid, respect, punish, play around, or play toward.`,
       `Never write from ${enemyChampionName}'s point of view or tell ${enemyChampionName} what to do.`,
       `When using ${enemyChampionName}'s weaknesses or punish windows, translate them into concrete ${playerChampionName} actions.`,
       `When mentioning ${enemyChampionName}'s strengths, phrase them as respect windows, spacing rules, or lane-state choices for ${playerChampionName}.`,
@@ -190,27 +219,33 @@ export function buildLeagueMatchupDraftPrompt({
       `If ${playerChampionName} following a bullet would not increase their chance of winning, rewrite or discard that bullet.`,
       "Do not repeat wave control, spacing, or cooldown tracking across sections unless that concept is uniquely relevant to the section.",
       "If a concept belongs in one section, do not restate it elsewhere.",
-      "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, trading patterns, lane identity, and real spikes.",
-      "When structured lanePlan, laneIdentity, strategicIdentity, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields are supplied, treat them as higher priority than the older summary fields.",
+      "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, jungle profile categories, role-appropriate patterns, lane identity, and real spikes.",
+      "For jungle matchups, treat jungle_profile fields as higher priority than lanePlan, laneIdentity, trading, or lane-focused summary fields.",
+      "For jungle matchups, compare early_game_pressure, clear_speed, objective_control, dueling, gank_threat, invade_resistance, scaling, pathing_notes, and matchup_focus before writing any section.",
+      "For non-jungle matchups, treat lanePlan, laneIdentity, strategicIdentity, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields as higher priority than the older summary fields.",
       "Use strategicIdentity to infer high-level matchup identities such as snowball vs scale, roam vs scale, control vs roam, teamfight vs splitpush, or lane pressure vs scaling carry.",
       "Do not name a matchup identity unless it follows from the supplied strategicIdentity fields.",
       "Power spike objects include timing, reason, changesGameplay, playerAction, and sometimes enemyResponse.",
       "Do not echo power spike timing by itself; explain what changes in lane, who becomes more dangerous, and what the player should do differently.",
       "If a structured field is not supplied, fall back to the older summary field for that topic. If neither is supplied, keep the advice conservative and avoid invented details.",
-      "Use laneIdentity to reason about who controls early lane pace, who wants time to scale, who wants lane pressure, and who benefits from a passive lane state.",
+      "For jungle matchups, use jungle_profile to reason about who can invade, who full clears faster, who wins river fights, who controls early objectives, who ganks better, and who scales harder.",
+      "For non-jungle matchups, use laneIdentity to reason about who controls early lane pace, who wants time to scale, who wants lane pressure, and who benefits from a passive lane state.",
       "Use strategicIdentity to reason about each champion's lane goal, scaling curve, preferred game length, and general win method.",
-      `Compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
-      `Compare ${playerChampionName}'s laneIdentity against ${enemyChampionName}'s laneIdentity before writing overview, early_game, trading_pattern, or win_conditions.`,
+      `For jungle matchups, compare ${playerChampionName}'s jungle_profile against ${enemyChampionName}'s jungle_profile and explain what pathing, tempo, river, invade, objective, or scaling plan ${playerChampionName} should play toward.`,
+      `For non-jungle matchups, compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
+      `For non-jungle matchups, compare ${playerChampionName}'s laneIdentity against ${enemyChampionName}'s laneIdentity before writing overview, early_game, trading_pattern, or win_conditions.`,
       `Compare ${playerChampionName}'s strategicIdentity against ${enemyChampionName}'s strategicIdentity before writing overview or win_conditions.`,
-      `Compare ${playerChampionName}'s punishProfile.canPunish against ${enemyChampionName}'s dangerProfile.mustRespect and trading.badTradeConditions.`,
-      `Compare ${enemyChampionName}'s punishProfile.canPunish and dangerProfile.dangerousWhen against ${playerChampionName}'s trading.badTradeConditions.`,
-      "Use primary win conditions, danger abilities, and punish windows as matchup facts for all-ins, spacing, cooldown punish, and danger window advice.",
+      `For non-jungle matchups, compare ${playerChampionName}'s punishProfile.canPunish against ${enemyChampionName}'s dangerProfile.mustRespect and trading.badTradeConditions.`,
+      `For non-jungle matchups, compare ${enemyChampionName}'s punishProfile.canPunish and dangerProfile.dangerousWhen against ${playerChampionName}'s trading.badTradeConditions.`,
+      "For jungle matchups, use primary win conditions, jungle_profile, danger abilities, and punish windows as matchup facts for map plan, invade, counter-gank, objective, river, tempo, and danger window advice.",
+      "For non-jungle matchups, use primary win conditions, danger abilities, and punish windows as matchup facts for all-ins, spacing, cooldown punish, and danger window advice.",
       "Prefer supplied profile facts over model assumptions, especially for champion abilities, item direction, and class-specific build advice.",
       "Only reference abilities, crowd control, shields, sustain, stealth, or power spikes that appear in the profiles or admin notes.",
       "If a champion profile says a champion has no hard crowd control, do not describe that champion as having hard crowd control.",
       "If a champion profile is missing, avoid specific ability claims for that champion unless supplied by admin notes.",
       "If either profile is missing, keep the draft more conservative and lower-confidence instead of inventing details.",
-      "Use natural League terms such as wave on your side, punish cooldowns, avoid all-in windows, short trades, spacing, roam timers, freeze, crash, slow push, and reset only when they fit the role and lane.",
+      "For jungle matchups, use natural jungle terms such as full clear, three-camp, level 3 invade, counter-invade, scuttle contest, river fight, objective setup, cross-map, counter-jungle, tempo reset, tracking, gank angle, and scaling window.",
+      "For non-jungle matchups, use natural League terms such as wave on your side, punish cooldowns, avoid all-in windows, short trades, spacing, roam timers, freeze, crash, slow push, and reset only when they fit the role and lane.",
       "Use the ability_map as the canonical ability name source for reasoning, not as the default display format.",
       "Apply short ability references consistently in overview, early_game, trading_pattern, power_spikes, danger_windows, and win_conditions.",
       `If source profile text names a mapped ${playerChampionName} ability, shorten it to (Q), (W), (E), or (R) in the returned JSON.`,
@@ -220,8 +255,8 @@ export function buildLeagueMatchupDraftPrompt({
       "If defensive adaptation matters, include it briefly in overview as a matchup need rather than naming full items or builds.",
       "",
       "Perspective examples:",
-      "- Bad: Use (Q) Orb of Deception and (W) Fox-Fire for short trades.",
-      "- Better: Use (Q) and (W) for short trades.",
+      "- Bad: Use (Q) Orb of Deception and (W) Fox-Fire before committing.",
+      "- Better: Use (Q) and (W) before committing.",
       "- Bad: Respect Syndra's (E) Scatter the Weak cooldown.",
       "- Better: Respect Syndra's (E) stun threat.",
       "- Bad: Ahri is vulnerable when (R) Spirit Rush is unavailable.",
@@ -247,23 +282,33 @@ export function buildLeagueMatchupDraftPrompt({
       "",
       "Section requirements:",
       `overview: Use 1-2 bullets from ${playerChampionName}'s point of view only; state the matchup identity and the main thing ${playerChampionName} must manage.`,
-      `overview: Use laneIdentity to explain whether ${playerChampionName} should pressure, deny scaling, or avoid giving ${enemyChampionName} a passive lane.`,
+      `overview: For jungle, use jungle_profile to explain whether ${playerChampionName} should invade, full clear, contest river, trade objectives, play through ganks, or avoid early fights.`,
+      `overview: For non-jungle roles, use laneIdentity to explain whether ${playerChampionName} should pressure, deny scaling, or avoid giving ${enemyChampionName} a passive lane.`,
       `overview: Use strategicIdentity to summarize whether this is snowball vs scale, roam vs control, control vs teamfight, or another supplied-profile identity.`,
       `overview: Mention defensive adaptation here only when it materially changes how ${playerChampionName} should play the matchup.`,
-      `early_game: Cover what ${playerChampionName} should do in the first waves and levels 1-6 based on who has earlyGameAgency and lanePressure.`,
-      `early_game: Focus on how ${playerChampionName} should approach levels 1-6; never describe ${enemyChampionName}'s early plan unless it changes ${playerChampionName}'s action.`,
-      `trading_pattern: Explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
-      `trading_pattern: Never explain how ${enemyChampionName} should trade; translate ${enemyChampionName}'s mistakes into ${playerChampionName}'s punish actions.`,
+      `early_game: For jungle, cover first clear choice, level 3 strength, first river move, invade/counter-invade risk, scuttle contest, and whether ${playerChampionName} should fight or path away.`,
+      `early_game: For non-jungle roles, cover what ${playerChampionName} should do in the first waves and levels 1-6 based on who has earlyGameAgency and lanePressure.`,
+      `early_game: Focus on how ${playerChampionName} should approach the opening minutes; never describe ${enemyChampionName}'s early plan unless it changes ${playerChampionName}'s action.`,
+      `trading_pattern: For jungle, this card is displayed as Jungle Plan; it must answer what ${playerChampionName} should try to do on the map, not how ${playerChampionName} should trade.`,
+      `trading_pattern: For jungle, write pathing strategy, first clear goals, Scuttle contest conditions, river control, invade opportunities, counter-jungling, counter-gank timing, objective setup, dragon, Void Grubs, Rift Herald, tempo management, scaling denial, and lane priority requirements before invading or contesting.`,
+      `trading_pattern: For jungle, include whether ${playerChampionName} should fight for first Scuttle, invade before a scaling breakpoint, contest Void Grubs or dragon, track and counter-gank ${enemyChampionName}'s first pressure, cross-map, or avoid direct early fights.`,
+      "trading_pattern: For jungle, each bullet must name a map action plus the condition that makes it correct.",
+      "trading_pattern: For jungle, do not write cooldown-only advice such as engage when key cooldowns are down, use spacing to avoid engage, or force extended fights.",
+      "trading_pattern: For jungle, do not use the phrases short trades, trading patterns, trade windows, use spacing, force extended fights, or engage when cooldowns are down; use Jungle Plan wording even though the JSON key remains trading_pattern.",
+      `trading_pattern: For non-jungle roles, explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
+      `trading_pattern: Never explain how ${enemyChampionName} should trade or skirmish; translate ${enemyChampionName}'s mistakes into ${playerChampionName} punish actions.`,
       `power_spikes: List ${playerChampionName}'s real spikes and ${enemyChampionName}'s real spikes that ${playerChampionName} must respect.`,
       "power_spikes: Use power_spikes.major as the source for the card; use power_spikes.minor only as context for early_game or trading_pattern when it changes lane behavior.",
       "power_spikes: For player champion spikes, use playerAction as the recommended action and enemyResponse as what the opponent must respect.",
       "power_spikes: For enemy champion spikes, translate enemy playerAction and enemyResponse into what the player must respect or punish.",
       "power_spikes: Never mention recalls, mana refreshes, Lost Chapter sustain, generic tempo, or non-spike ability unlocks here.",
       `danger_windows: List only moments where ${playerChampionName} is actually in danger from lethal trades, all-ins, ganks, dives, or forced summoners.`,
+      `danger_windows: For jungle, include invade timing, isolated river fights, forced objective setups, low-health clears, losing smite fights, bad lane-priority states, and scaling windows where ${enemyChampionName} becomes harder to contest.`,
       `danger_windows: Describe ${enemyChampionName}'s threat windows, ${playerChampionName}'s vulnerability windows, and matchup swing moments that require caution from ${playerChampionName}.`,
       `danger_windows: Never describe ${enemyChampionName}'s vulnerability windows here; move those to trading_pattern or win_conditions as ${playerChampionName} punish opportunities.`,
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
-      `win_conditions: Explain concrete ways ${playerChampionName} can win this matchup by using lane agency, denying scaling, reaching the preferred game state, or executing strategicIdentity.winMethod.`,
+      `win_conditions: For jungle, explain concrete ways ${playerChampionName} can win through pathing, camp tempo, counter-jungling, objective control, gank timing, river fights, scaling denial, or executing strategicIdentity.winMethod.`,
+      `win_conditions: For non-jungle roles, explain concrete ways ${playerChampionName} can win this matchup by using lane agency, denying scaling, reaching the preferred game state, or executing strategicIdentity.winMethod.`,
       `win_conditions: Never describe how ${enemyChampionName} wins; only explain how ${playerChampionName} increases their chance of winning.`,
       "",
       "Negative examples to avoid:",
@@ -272,6 +317,8 @@ export function buildLeagueMatchupDraftPrompt({
       "- Do not say scale into late game unless you explain how the player survives lane and what later condition improves.",
       "- Do not say calm farming phase, calm laning phase, comfortable lane, safe farming environment, peaceful lane, relaxed laning, farming safely, or farm safely.",
       "- Do not say control lane tempo unless lane priority, wave control, crash timing, reset timing, or roam timer would be more precise.",
+      "- For jungle matchups, do not force wave control, last hitting, laning pressure, lane priority, or trading patterns unless lane state directly changes pathing, invade, gank, or objective decisions.",
+      "- For jungle matchups, do not say short trades, trading patterns, trade windows, use spacing, force extended fights, or engage when cooldowns are down; say Jungle Plan concepts such as pathing, first clear, Scuttle conditions, invade timing, counter-gank timing, objective setup, river control, tempo management, or scaling denial.",
       `- Do not write any bullet that is mainly useful for a ${enemyChampionName} player.`,
       "- Do not recommend Morellonomicon just because the enemy has minor healing.",
       "- Do not recommend AD items to AP champions, including Hexdrinker for a mage.",
@@ -298,6 +345,10 @@ export function buildLeagueMatchupDraftPrompt({
       "- Did mapped abilities use only (Q), (W), (E), or (R)?",
       "- Did the draft avoid ability names and repeated champion-owned ability phrases?",
       "- Is this advice actually true for this role?",
+      "- For jungle matchups, does the draft talk like jungle coaching rather than lane coaching with renamed terms?",
+      "- For jungle matchups, did it use pathing, tempo, objective, river, invade, counter-jungle, gank, and scaling concepts from jungle_profile?",
+      "- For jungle matchups, does trading_pattern/Jungle Plan answer what this jungler should do on the map?",
+      "- For jungle matchups, did trading_pattern/Jungle Plan avoid cooldown-only duel advice, lane spacing advice, and generic engage when cooldowns are down phrasing?",
       "- Does the wording sound like a high-ELO League coach rather than generic AI advice?",
       "- Did the draft use authentic League terms and avoid the banned comfort/farming phrases?",
       "- Is each power_spikes bullet a real power spike?",
@@ -312,11 +363,15 @@ function getRolePromptGuidance(role: LeagueRole) {
     return [
       "Treat this as a jungle-vs-jungle matchup, not a lane matchup.",
       "Replace lane-wave advice with first-clear tempo, camp sequencing, invade and counter-invade windows, river control, scuttle setup, objective access, gank angles, countergank risk, and skirmish rules.",
+      "Use jungle_profile categories as the main source of truth: early_game_pressure, scaling, clear_speed, objective_control, dueling, gank_threat, and invade_resistance.",
       "Use lane terms only when they explain which lanes create pathing, gank, countergank, or objective opportunities.",
+      "Avoid wave control, last-hitting, trading patterns, and laning pressure unless they directly affect jungle pathing or objective choices.",
       "early_game should focus on first clear, first river move, early invade safety, and when the player should avoid contesting.",
-      "trading_pattern should describe jungle duels, skirmishes, invade spacing, cooldown respect, and how the player should fight or disengage around camps and river.",
+      "The trading_pattern key is displayed as Jungle Plan for jungle matchups and must answer what this jungler should try to do on the map.",
+      "Jungle Plan should describe pathing strategy, first clear goals, Scuttle contest conditions, river control, invade opportunities, counter-jungling, counter-gank timing, objective setup, dragon, Void Grubs, Rift Herald, tempo management, scaling denial, and lane priority requirements before invading or contesting.",
+      "Jungle Plan should not become duel instructions only, cooldown trading advice, lane-style spacing advice, or generic engage when cooldowns are down advice.",
       "danger_windows should include invade timing, isolated river fights, objective setups, low-health clears, forced smite fights, and lanes that can move first.",
-      "win_conditions should explain how the player converts jungle tempo into objectives, lane pressure, counterjungling, or teamfight access.",
+      "win_conditions should explain how the player converts jungle tempo into objectives, gank pressure, counterjungling, scaling denial, or teamfight access.",
     ].join("\n");
   }
 
@@ -383,6 +438,33 @@ function formatChampionKnowledgeForPrompt(
     )}`,
     `sustain: ${formatOptionalList(profile.sustain)}`,
     `shields: ${formatOptionalList(profile.shields)}`,
+    `jungle_profile.early_game_pressure: ${formatJungleProfileCategory(
+      profile.jungleProfile?.earlyGamePressure
+    )}`,
+    `jungle_profile.scaling: ${formatJungleProfileCategory(
+      profile.jungleProfile?.scaling
+    )}`,
+    `jungle_profile.clear_speed: ${formatJungleProfileCategory(
+      profile.jungleProfile?.clearSpeed
+    )}`,
+    `jungle_profile.objective_control: ${formatJungleProfileCategory(
+      profile.jungleProfile?.objectiveControl
+    )}`,
+    `jungle_profile.dueling: ${formatJungleProfileCategory(
+      profile.jungleProfile?.dueling
+    )}`,
+    `jungle_profile.gank_threat: ${formatJungleProfileCategory(
+      profile.jungleProfile?.gankThreat
+    )}`,
+    `jungle_profile.invade_resistance: ${formatJungleProfileCategory(
+      profile.jungleProfile?.invadeResistance
+    )}`,
+    `jungle_profile.pathing_notes: ${formatOptionalList(
+      profile.jungleProfile?.pathingNotes
+    )}`,
+    `jungle_profile.matchup_focus: ${formatOptionalList(
+      profile.jungleProfile?.matchupFocus
+    )}`,
     `lane_plan.wants: ${formatOptionalList(profile.lanePlan?.wants)}`,
     `lane_plan.avoids: ${formatOptionalList(profile.lanePlan?.avoids)}`,
     `lane_plan.ideal_lane_state: ${
@@ -505,6 +587,16 @@ function formatPowerSpikes(spikes?: readonly LeagueChampionPowerSpike[]) {
       ].join(" | ")
     )
     .join("; ");
+}
+
+function formatJungleProfileCategory(
+  category?: LeagueChampionJungleProfileCategory
+) {
+  if (!category) {
+    return "not supplied";
+  }
+
+  return `rating=${category.rating} | notes=${formatList(category.notes)}`;
 }
 
 function formatAbilityMap(

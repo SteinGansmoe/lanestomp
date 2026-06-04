@@ -85,12 +85,28 @@ import { vayneCombatProfile } from "./vayne";
 import { volibearCombatProfile } from "./volibear";
 import { warwickCombatProfile } from "./warwick";
 import { yorickCombatProfile } from "./yorick";
+import {
+  belvethCombatProfile,
+  jarvanIvCombatProfile,
+  karthusCombatProfile,
+  khazixCombatProfile,
+  leeSinCombatProfile,
+  masterYiCombatProfile,
+  nunuCombatProfile,
+  remainingJungleCombatProfiles,
+  sejuaniCombatProfile,
+  viegoCombatProfile,
+  xinZhaoCombatProfile,
+} from "./jungle";
 
 export type {
   LeagueChampionAbilityKey,
   LeagueChampionAbilityMap,
   LeagueChampionDangerProfile,
   LeagueChampionDamageType,
+  LeagueChampionJungleProfile,
+  LeagueChampionJungleProfileCategory,
+  LeagueChampionJungleProfileLevel,
   LeagueChampionKnowledgeProfile,
   LeagueChampionLaneIdentity,
   LeagueChampionLaneIdentityLevel,
@@ -195,8 +211,55 @@ export { vayneCombatProfile } from "./vayne";
 export { volibearCombatProfile } from "./volibear";
 export { warwickCombatProfile } from "./warwick";
 export { yorickCombatProfile } from "./yorick";
+export {
+  belvethCombatProfile,
+  jarvanIvCombatProfile,
+  karthusCombatProfile,
+  khazixCombatProfile,
+  leeSinCombatProfile,
+  masterYiCombatProfile,
+  nunuCombatProfile,
+  remainingJungleCombatProfiles,
+  sejuaniCombatProfile,
+  viegoCombatProfile,
+  xinZhaoCombatProfile,
+} from "./jungle";
+
+const dianaCombatProfileWithJungle = {
+  ...dianaCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Diana.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const ekkoCombatProfileWithJungle = {
+  ...ekkoCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Ekko.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const gragasCombatProfileWithJungle = {
+  ...gragasCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Gragas.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const poppyCombatProfileWithJungle = {
+  ...poppyCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Poppy.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const taliyahCombatProfileWithJungle = {
+  ...taliyahCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Taliyah.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const trundleCombatProfileWithJungle = {
+  ...trundleCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Trundle.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const volibearCombatProfileWithJungle = {
+  ...volibearCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Volibear.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
+const warwickCombatProfileWithJungle = {
+  ...warwickCombatProfile,
+  jungleProfile: remainingJungleCombatProfiles.Warwick.jungleProfile,
+} satisfies LeagueChampionKnowledgeProfile;
 
 export const leagueChampionKnowledgeProfiles = {
+  ...remainingJungleCombatProfiles,
   Aatrox: aatroxCombatProfile,
   Ahri: ahriCombatProfile,
   Akali: akaliCombatProfile,
@@ -204,8 +267,8 @@ export const leagueChampionKnowledgeProfiles = {
   Azir: azirCombatProfile,
   Cassiopeia: cassiopeiaCombatProfile,
   Corki: corkiCombatProfile,
-  Diana: dianaCombatProfile,
-  Ekko: ekkoCombatProfile,
+  Diana: dianaCombatProfileWithJungle,
+  Ekko: ekkoCombatProfileWithJungle,
   Fizz: fizzCombatProfile,
   Galio: galioCombatProfile,
   Hwei: hweiCombatProfile,
@@ -224,7 +287,7 @@ export const leagueChampionKnowledgeProfiles = {
   Ryze: ryzeCombatProfile,
   Sylas: sylasCombatProfile,
   Syndra: syndraCombatProfile,
-  Taliyah: taliyahCombatProfile,
+  Taliyah: taliyahCombatProfileWithJungle,
   Talon: talonCombatProfile,
   TwistedFate: twistedFateCombatProfile,
   Veigar: veigarCombatProfile,
@@ -249,7 +312,7 @@ export const leagueChampionKnowledgeProfiles = {
   Gangplank: gangplankCombatProfile,
   Garen: garenCombatProfile,
   Gnar: gnarCombatProfile,
-  Gragas: gragasCombatProfile,
+  Gragas: gragasCombatProfileWithJungle,
   Gwen: gwenCombatProfile,
   Heimerdinger: heimerdingerCombatProfile,
   Illaoi: illaoiCombatProfile,
@@ -265,7 +328,7 @@ export const leagueChampionKnowledgeProfiles = {
   Olaf: olafCombatProfile,
   Ornn: ornnCombatProfile,
   Pantheon: pantheonCombatProfile,
-  Poppy: poppyCombatProfile,
+  Poppy: poppyCombatProfileWithJungle,
   Quinn: quinnCombatProfile,
   Renekton: renektonCombatProfile,
   Riven: rivenCombatProfile,
@@ -276,13 +339,23 @@ export const leagueChampionKnowledgeProfiles = {
   Sion: sionCombatProfile,
   TahmKench: tahmKenchCombatProfile,
   Teemo: teemoCombatProfile,
-  Trundle: trundleCombatProfile,
+  Trundle: trundleCombatProfileWithJungle,
   Tryndamere: tryndamereCombatProfile,
   Urgot: urgotCombatProfile,
   Vayne: vayneCombatProfile,
-  Volibear: volibearCombatProfile,
-  Warwick: warwickCombatProfile,
+  Volibear: volibearCombatProfileWithJungle,
+  Warwick: warwickCombatProfileWithJungle,
   Yorick: yorickCombatProfile,
+  Belveth: belvethCombatProfile,
+  JarvanIV: jarvanIvCombatProfile,
+  Karthus: karthusCombatProfile,
+  Khazix: khazixCombatProfile,
+  LeeSin: leeSinCombatProfile,
+  MasterYi: masterYiCombatProfile,
+  Nunu: nunuCombatProfile,
+  Sejuani: sejuaniCombatProfile,
+  Viego: viegoCombatProfile,
+  XinZhao: xinZhaoCombatProfile,
 } satisfies Record<string, LeagueChampionKnowledgeProfile>;
 
 const championProfilesByLookupKey = new Map<string, LeagueChampionKnowledgeProfile>();

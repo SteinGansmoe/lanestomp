@@ -355,6 +355,41 @@ function generateDraftWithPlaceholderProvider({
 }: GenerateLeagueMatchupDraftContentInput): MatchupDraftSections {
   const roleLabel = role === "adc" ? "ADC" : role;
 
+  if (role === "jungle") {
+    return {
+      danger_windows: [
+        `- Respect ${enemyChampionName}'s strongest invade, river, or objective fight timing before walking into fog.`,
+        `- Avoid isolated jungle fights after ${playerChampionName} spends mobility, Smite, or defensive cooldowns.`,
+        "- Treat missing lane priority around Scuttle, dragon, Void Grubs, or Herald as a forced caution window.",
+      ].join("\n"),
+      early_game: [
+        "- Choose the first clear around lane priority and the enemy jungler's level 3 threat.",
+        `- Path ${playerChampionName} toward the first river move only when nearby lanes can collapse first.`,
+        "- Cross-map camps or gank opposite side instead of flipping a bad Scuttle fight.",
+      ].join("\n"),
+      overview: [
+        `- Review the non-obvious ${roleLabel} matchup identity before publishing.`,
+        `- Explain whether ${playerChampionName} should invade, full clear, contest river, trade objectives, or deny ${enemyChampionName}'s scaling window.`,
+        "- Keep broad notes out of this section unless they add real jungle matchup context.",
+      ].join("\n"),
+      power_spikes: [
+        "- List only real level, ultimate, first-item, objective, or scaling breakpoints.",
+        `- Slow down only when ${enemyChampionName} reaches a verified jungle fight or objective spike.`,
+        `- Push harder only when ${playerChampionName}'s own clear, duel, gank, or objective breakpoint is verified.`,
+      ].join("\n"),
+      trading_pattern: [
+        `- Build ${playerChampionName}'s jungle plan around first clear, river control, and whether the first Scuttle is contestable.`,
+        `- Invade ${enemyChampionName} only when nearby lanes can move or the enemy jungler is tracked on the opposite side.`,
+        "- Convert tempo leads into Void Grubs, dragon, Herald, counter-jungle camps, or scaling denial.",
+      ].join("\n"),
+      win_conditions: [
+        `- Turn ${playerChampionName}'s jungle tempo into objective access and repeatable gank pressure.`,
+        `- Deny ${enemyChampionName} the clears, objective setups, or scaling windows that let them play on their terms.`,
+        "- Use cross-map trades when direct river fights are not favorable.",
+      ].join("\n"),
+    };
+  }
+
   return {
     danger_windows: [
       `- ${enemyChampionName} can threaten lethal when engage or burst tools are ready.`,
