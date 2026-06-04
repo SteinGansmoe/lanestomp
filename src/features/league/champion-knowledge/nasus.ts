@@ -51,7 +51,7 @@ export const nasusCombatProfile = {
     idealLaneState:
       "A controlled top wave near his side where Nasus can last-hit with (Q), preserve health through passive sustain, and avoid early all-in pressure.",
     wants: [
-      "Safe farm and repeated (Q) stacks.",
+      "CS access and repeated (Q) stacks.",
       "Slow, low-interaction lanes that reach mid game.",
       "Side-lane space where (W), (R), and stacked (Q) force duels.",
     ],

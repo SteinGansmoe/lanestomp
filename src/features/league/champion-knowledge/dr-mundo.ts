@@ -17,16 +17,16 @@ export const drMundoCombatProfile = {
   id: "DrMundo",
   importantAbilityNotes: ["(Q) is his main lane tool and slows.", "Passive blocks the next immobilizing effect and drops a canister.", "(W) stores and recovers damage if timed well.", "(R) gives healing and movement speed."],
   lanePlan: {
-    avoids: ["Taking extended early trades before health scaling.", "Missing (Q) repeatedly and losing safe farm.", "Using (R) after the enemy has already disengaged."],
+    avoids: ["Taking extended early trades before health scaling.", "Missing (Q) repeatedly and losing CS access.", "Using (R) after the enemy has already disengaged."],
     idealLaneState: "A survivable top lane where Mundo farms with (Q), avoids forced all-ins, and reaches health-heavy item spikes.",
-    wants: ["Safe cleaver farm.", "Enemies wasting crowd control into passive.", "Long fights where health, (W), and (R) matter."],
+    wants: ["Cleaver last-hits.", "Enemies wasting crowd control into passive.", "Long fights where health, (W), and (R) matter."],
   },
   laneIdentity: {
     earlyGameAgency: "low",
     lanePressure: "low",
     preferredGameState: ["Low-interaction lanes that reach items.", "Side lanes where he can absorb pressure.", "Front-to-back fights where he soaks cooldowns."],
     scalingPriority: "high",
-    winLaneBy: ["Farming safely with (Q).", "Outlasting poke with health regeneration.", "Becoming too durable to remove later."],
+    winLaneBy: ["Securing CS with (Q).", "Outlasting poke with health regeneration.", "Becoming too durable to remove later."],
   },
   majorPowerSpikes: ["Level 6 (R).", "First health tank item.", "Mid-game durability scaling."],
   matchupPreferences: {
@@ -61,4 +61,3 @@ export const drMundoCombatProfile = {
   },
   punishWindows: ["When passive is down, crowd control is more reliable.", "If (Q) misses, he has little way to force trades.", "Before level 6 and health items, he is easier to pressure."],
 } satisfies LeagueChampionKnowledgeProfile;
-

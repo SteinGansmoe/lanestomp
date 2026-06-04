@@ -122,7 +122,7 @@ export const kassadinCombatProfile = {
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:
-    "Before level 6, trade minimally with (Q) and farm safely; after level 6, use short (R) trades only when mana and escape options are safe.",
+    "Before level 6, trade minimally with (Q) and secure CS without overextending; after level 6, use short (R) trades only when mana and escape options are safe.",
   punishProfile: {
     canPunish: [
       "Immobile targets after level 6.",

@@ -10,7 +10,7 @@ export const corkiCombatProfile = {
   },
   archetype: ["poke", "marksman mage", "scaling", "mobility"],
   primaryWinCondition: [
-    "Farm safely into item spikes, then use rockets and mixed damage poke to control mid-game fights.",
+    "Secure CS into item spikes, then use rockets and mixed damage poke to control mid-game fights.",
   ],
   dangerAbilities: ["(R) poke", "(W) reposition"],
   dangerProfile: {
@@ -43,12 +43,12 @@ export const corkiCombatProfile = {
     avoids: [
       "Using (W) forward without knowing enemy cooldowns.",
       "Taking extended early fights before items.",
-      "Letting wave pressure force him away from safe farm.",
+      "Letting wave pressure force him off CS.",
     ],
     idealLaneState:
-      "A stable mid lane where Corki farms safely, chips with (Q) and autos, then uses (R) poke after level 6.",
+      "A stable mid lane where Corki secures CS, chips with (Q) and autos, then uses (R) poke after level 6.",
     wants: [
-      "Safe farm toward item spikes.",
+      "CS access toward item spikes.",
       "Poke windows before objectives or recalls.",
       "Enemies low enough that rockets control their movement.",
     ],

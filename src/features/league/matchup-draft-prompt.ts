@@ -75,6 +75,25 @@ export type LeagueMatchupDraftPrompt = {
   userPrompt: string;
 };
 
+const leagueTerminologyRules = [
+  "League Terminology Rules:",
+  "- Use terms experienced League players use: free farm, CS, lane priority, wave control, crash wave, freeze, slow push, trade window, cooldown window, all-in, poke, spacing, punish, overextend, power spike, deny farm, and force off the wave.",
+  "- Avoid AI-sounding phrases such as calm farming phase, calm laning phase, comfortable lane, safe farming environment, peaceful lane, relaxed laning, farming safely, or farm safely.",
+  "- Replace deny a calm farming phase with deny free farm, punish CS attempts, force the opponent off the wave, or contest last hits.",
+  "- Replace control lane tempo with lane priority, wave control, crash timing, reset timing, or roam timer when that is the actual gameplay idea.",
+  "- Prefer exact lane actions over generic comfort language: crash the wave, hold a freeze, thin the wave, punish cooldowns, or step up when the opponent overextends.",
+].join("\n");
+
+const writingStyleRules = [
+  "Writing Style Rules:",
+  "- Write like a high-ELO League coach giving champion-select advice.",
+  "- Use authentic League terminology and avoid generic advice.",
+  "- Avoid vague statements; name the cooldown, wave state, range edge, CS timing, or position mistake that creates the play.",
+  "- Explain how to execute advice whenever possible: where to hold the wave, when to step forward, what to punish, or when to back off.",
+  "- Do not say apply pressure, control the lane, play safe, or scale for free unless the bullet explains the concrete action that makes it true.",
+  "- Keep bullets direct and practical, like advice from a player who understands the matchup.",
+].join("\n");
+
 // This builder is the provider-facing prompt contract for League draft generation.
 // Keep it independent from the OpenAI call so future provider swaps reuse the same quality bar.
 export function buildLeagueMatchupDraftPrompt({
@@ -116,6 +135,7 @@ export function buildLeagueMatchupDraftPrompt({
       "Every section must serve a distinct gameplay purpose and avoid repeating advice from another section.",
       "Keep the output fast to scan during champion select or loading screen.",
       "Use direct League player language with concrete matchup decisions.",
+      "Follow the dedicated League Terminology Rules and Writing Style Rules in the user prompt.",
       "Prefer correct, limited advice over filling every section with weak guesses.",
       "Never claim winrates, exact patch facts, item/stat changes, or matchup certainty unless supplied by admin notes.",
       "Do not invent ability timing, cooldown interactions, item recommendations, or lane dynamics.",
@@ -141,6 +161,10 @@ export function buildLeagueMatchupDraftPrompt({
       `Role: ${roleLabel}`,
       `Role-specific guidance:\n${roleGuidance}`,
       `Admin notes or source context: ${sourceNotes}`,
+      "",
+      leagueTerminologyRules,
+      "",
+      writingStyleRules,
       "",
       "Structured champion profiles:",
       `Player champion combat profile:\n${playerChampionContext}`,
@@ -213,9 +237,13 @@ export function buildLeagueMatchupDraftPrompt({
       `- Bad: ${enemyChampionName} is exposed when a key defensive cooldown is down.`,
       `- Better: When ${enemyChampionName}'s key defensive cooldown is down, ${playerChampionName} can step forward for a short trade or wave pressure.`,
       `- Bad: ${enemyChampionName} wants to farm safely and scale.`,
-      `- Better: Expect ${enemyChampionName} to avoid early trades; ${playerChampionName} should pressure the wave without giving a free all-in window.`,
+      `- Better: Expect ${enemyChampionName} to avoid early trades; ${playerChampionName} should punish CS attempts and deny free farm without giving a free all-in window.`,
       `- Bad: ${playerChampionName} wins by landing crowd control and snowballing through roams.`,
-      `- Better: ${playerChampionName}'s win condition is to deny ${enemyChampionName} a calm scaling lane by using verified cooldown or wave windows.`,
+      `- Better: ${playerChampionName}'s win condition is to deny ${enemyChampionName} free farm by using verified cooldown windows or wave states.`,
+      `- Bad: ${playerChampionName} controls lane tempo early.`,
+      `- Better: Use ${playerChampionName}'s range or cooldown advantage to build lane priority, punish CS attempts, and crash the wave before ${enemyChampionName} can contest.`,
+      "- Bad: Apply pressure.",
+      "- Better: Hold the wave near your side and punish every CS attempt with auto attacks or verified abilities.",
       "",
       "Section requirements:",
       `overview: Use 1-2 bullets from ${playerChampionName}'s point of view only; state the matchup identity and the main thing ${playerChampionName} must manage.`,
@@ -242,6 +270,8 @@ export function buildLeagueMatchupDraftPrompt({
       "- Do not say play safe unless you explain what cooldown, wave state, or enemy spike requires caution.",
       "- Do not say look for trades unless you explain what enemy cooldown, resource state, or positioning mistake creates the trade.",
       "- Do not say scale into late game unless you explain how the player survives lane and what later condition improves.",
+      "- Do not say calm farming phase, calm laning phase, comfortable lane, safe farming environment, peaceful lane, relaxed laning, farming safely, or farm safely.",
+      "- Do not say control lane tempo unless lane priority, wave control, crash timing, reset timing, or roam timer would be more precise.",
       `- Do not write any bullet that is mainly useful for a ${enemyChampionName} player.`,
       "- Do not recommend Morellonomicon just because the enemy has minor healing.",
       "- Do not recommend AD items to AP champions, including Hexdrinker for a mage.",
@@ -268,6 +298,8 @@ export function buildLeagueMatchupDraftPrompt({
       "- Did mapped abilities use only (Q), (W), (E), or (R)?",
       "- Did the draft avoid ability names and repeated champion-owned ability phrases?",
       "- Is this advice actually true for this role?",
+      "- Does the wording sound like a high-ELO League coach rather than generic AI advice?",
+      "- Did the draft use authentic League terms and avoid the banned comfort/farming phrases?",
       "- Is each power_spikes bullet a real power spike?",
       "- Is each named item realistic for this champion?",
       "- Can a player use this in champion select within 15-20 seconds?",

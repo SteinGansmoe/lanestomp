@@ -46,7 +46,7 @@ export const jaxCombatProfile = {
       "Fighting early wave states where the enemy can kite him after (Q).",
     ],
     idealLaneState:
-      "A scaling top lane where Jax can farm safely, use (E) to deny key trades, and later force long side-lane duels.",
+      "A scaling top lane where Jax can secure CS, use (E) to deny key trades, and later force long side-lane duels.",
     wants: [
       "Enemy auto attacks committed into (E).",
       "Item spikes before repeated side-lane fights.",

@@ -10,7 +10,7 @@ export const ryzeCombatProfile = {
   },
   archetype: ["scaling mage", "battle mage", "waveclear", "roam"],
   primaryWinCondition: [
-    "Scale through safe farming, use spell rotations for sustained damage, and convert wave control into map movement.",
+    "Scale through reliable CS access, use spell rotations for sustained damage, and convert wave control into map movement.",
   ],
   dangerAbilities: ["(W) root", "(E) spread", "(Q) empowered damage"],
   dangerProfile: {
@@ -48,9 +48,9 @@ export const ryzeCombatProfile = {
     idealLaneState:
       "A controlled lane where Ryze can farm, manage mana, and use waveclear to create safe movement windows.",
     wants: [
-      "Safe scaling farm.",
+      "CS access toward scaling breakpoints.",
       "Short windows to apply (E) and (Q) without being outranged.",
-      "Map plays after pushing with (R) or lane tempo.",
+      "Map plays after pushing with (R) or lane priority.",
     ],
   },
   laneIdentity: {
@@ -75,7 +75,7 @@ export const ryzeCombatProfile = {
   matchupPreferences: {
     strongInto: [
       "Short-range champions he can root and kite.",
-      "Lanes that allow safe farming.",
+      "Lanes where he can secure CS and scale.",
       "Games where waveclear and rotations are valuable.",
     ],
     weakInto: [

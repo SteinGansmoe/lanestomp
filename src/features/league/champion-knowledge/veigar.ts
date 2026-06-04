@@ -15,11 +15,11 @@ export const veigarCombatProfile = {
       dangerousWhen: [
         "(E) is available and can trap or zone the enemy into burst.",
         "He reaches level 6 and can threaten execute-style burst after poke or cage.",
-        "He is allowed to farm stacks safely without lane pressure.",
+        "He is allowed to stack (Q) without lane pressure.",
       ],
       mustRespect: [
         "(E) changes the lane from poke pressure into forced summoner or lethal threat.",
-        "His scaling makes a calm lane increasingly favorable for Veigar.",
+        "His scaling makes free farm increasingly favorable for Veigar.",
         "Veigar must respect most champion matchups at least before level 6 as he is quite weak early game.",
       ],
     },
@@ -44,9 +44,9 @@ export const veigarCombatProfile = {
         "Letting mobile enemies bait cage and re-engage before it returns.",
       ],
       idealLaneState:
-        "A safe, controlled lane where Veigar can farm (Q) stacks near safety and use (E) to stop commits.",
+        "A controlled lane where Veigar can secure (Q) stacks near safety and use (E) to stop commits.",
       wants: [
-        "Quiet early waves where he can farm stacks.",
+        "Early waves where he can secure stacks without being forced off the wave.",
         "Enemy movement through predictable choke points or minion paths for (E).",
         "Time to reach level 6 and first mage item without losing too much health or tempo.",
       ],
@@ -57,7 +57,7 @@ export const veigarCombatProfile = {
       scalingPriority: "very_high",
       lanePressure: "low",
       preferredGameState: [
-        "Quiet early waves where he can farm (Q) stacks safely.",
+        "Early waves where he can secure (Q) stacks without being forced off the wave.",
         "A controlled lane near safety while (E) is available.",
         "Time to reach level 6 and item spikes without losing too much tempo.",
       ],
@@ -79,7 +79,7 @@ export const veigarCombatProfile = {
         "Champions that cannot get close to him easily to all-in or punish him after cage.",
       ],
       weakInto: [
-        "Champions who can pressure early waves and deny calm stacking.",
+        "Champions who can pressure early waves and deny free stacking.",
         "Mobile champions that can bait (E) and punish while it is down.",
         "Champions with high waveclear as Veigar is not the best at farming waves under turret early game.",
         "Champions that can make themselves untargetable or dodge his skillshots easily.",
@@ -124,7 +124,7 @@ export const veigarCombatProfile = {
     primaryRoles: ["mid"],
     secondaryRoles: ["adc", "support"],
     primaryTradingPattern:
-      "Farm stacks safely, punish movement with (E), then burst trapped targets.",
+      "Secure stacks, punish movement with (E), then burst trapped targets.",
     punishProfile: {
       canPunish: [
         "Enemies who dash or walk predictably into (E) range.",
@@ -152,7 +152,7 @@ export const veigarCombatProfile = {
         "The target is low enough that cage pressure threatens (R).",
       ],
       primaryPattern:
-        "Farm stacks safely, use (E) to stop commits or punish predictable movement, then burst only when the target is trapped or already low.",
+        "Secure stacks, use (E) to stop commits or punish predictable movement, then burst only when the target is trapped or already low.",
     },
     punishWindows: [
   "If Veigar is caught without (E).",

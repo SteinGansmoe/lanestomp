@@ -18,8 +18,8 @@ export const kayleCombatProfile = {
   importantAbilityNotes: ["(Q) slows and reduces resistances.", "(W) heals and speeds allies.", "(E) empowers attacks and executes low-health targets.", "(R) grants temporary invulnerability and later area damage."],
   lanePlan: {
     avoids: ["Taking early extended trades.", "Giving up too much health before scaling thresholds.", "Using (R) too late after lethal damage has already landed."],
-    idealLaneState: "A defensive top lane where Kayle farms safely, catches waves near her side, and reaches level breakpoints without giving kills.",
-    wants: ["Safe farm under low pressure.", "Time to reach range and item thresholds.", "Front-to-back fights after scaling."],
+    idealLaneState: "A defensive top lane where Kayle catches waves near her side, secures CS, and reaches level breakpoints without giving kills.",
+    wants: ["CS access under low pressure.", "Time to reach range and item thresholds.", "Front-to-back fights after scaling."],
   },
   laneIdentity: {
     earlyGameAgency: "low",

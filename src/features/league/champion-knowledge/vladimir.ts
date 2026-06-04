@@ -49,7 +49,7 @@ export const vladimirCombatProfile = {
       "A survivable lane where Vladimir can farm, use (Q) sustain, and avoid losing too much tempo before AP spikes.",
     wants: [
       "Short (Q) trades and sustain windows.",
-      "Calm scaling lanes without forced early all-ins.",
+      "Stable waves that let him secure CS without forced early all-ins.",
       "Grouped fights once (R) and items are ready.",
     ],
   },
@@ -122,7 +122,7 @@ export const vladimirCombatProfile = {
   primaryRoles: ["mid"],
   secondaryRoles: ["top"],
   primaryTradingPattern:
-    "Farm safely, take short (Q) trades around empowered (Q), and save (W) for meaningful enemy commits.",
+    "Secure CS, take short (Q) trades around empowered (Q), and save (W) for meaningful enemy commits.",
   punishProfile: {
     canPunish: [
       "Enemies who trade into empowered (Q).",

@@ -63,7 +63,7 @@ export const ahriCombatProfile = {
       ],
       winLaneBy: [
         "Building pressure through repeated short trades and (Q) return damage.",
-        "Denying calm scaling lanes by contesting exposed farming windows.",
+        "Denying free farm by contesting exposed CS windows.",
         "Using earlier tempo to impact the map before opponents reach stronger scaling spikes.",
       ],
     },

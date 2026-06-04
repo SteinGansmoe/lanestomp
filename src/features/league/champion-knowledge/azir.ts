@@ -46,7 +46,7 @@ export const azirCombatProfile = {
       "Letting assassins force trades before soldiers are placed.",
     ],
     idealLaneState:
-      "A controlled mid wave where Azir can farm safely, poke through soldiers, and preserve (E) or (R) against all-ins.",
+      "A controlled mid wave where Azir has CS access, can poke through soldiers, and preserves (E) or (R) against all-ins.",
     wants: [
       "Stable waves that let him farm toward item spikes.",
       "Enemy movement through soldier zones.",
@@ -63,7 +63,7 @@ export const azirCombatProfile = {
     ],
     scalingPriority: "very_high",
     winLaneBy: [
-      "Maintaining safe farm while chipping with soldiers.",
+      "Maintaining CS access while chipping with soldiers.",
       "Preventing all-ins with disciplined (E) and (R) usage.",
       "Outscaling and controlling fights with soldier positioning.",
     ],
@@ -91,7 +91,7 @@ export const azirCombatProfile = {
         laneGoal: "scale",
         scalingProfile: "late",
         preferredGameLength: "long",
-        winMethod: ["soldier DPS", "safe scaling", "teamfight control"],
+        winMethod: ["soldier DPS", "scaling through CS access", "teamfight control"],
       },
       powerSpikes: {
       major: [

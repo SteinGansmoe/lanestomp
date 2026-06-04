@@ -5,7 +5,7 @@ export const jayceCombatProfile = {
   masteryDifficulty: "high",
   abilities: { Q: "To the Skies! / Shock Blast", W: "Lightning Field / Hyper Charge", E: "Thundering Blow / Acceleration Gate", R: "Mercury Cannon / Mercury Hammer" },
   archetype: ["poke", "lane bully", "form-swap skirmisher", "siege"],
-  primaryWinCondition: ["Use ranged pressure and empowered (Q) poke to create health leads, then convert form-swap burst into lane control or side-lane tempo."],
+  primaryWinCondition: ["Use ranged pressure and empowered (Q) poke to create health leads, then convert form-swap burst into lane priority or side-lane pressure."],
   dangerAbilities: ["Cannon (Q) through (E)", "Hammer (Q) engage", "Hammer (E) knockback"],
   dangerProfile: {
     dangerousWhen: ["Cannon (Q) is empowered through (E).", "He has range advantage and can deny melee last-hits.", "Hammer form can finish a low-health target after poke."],
@@ -17,9 +17,9 @@ export const jayceCombatProfile = {
   id: "Jayce",
   importantAbilityNotes: ["Cannon (Q) plus (E) is his signature poke.", "Hammer (Q) is a gap close.", "Hammer (E) knocks enemies away.", "(R) swaps forms and resets his combat pattern."],
   lanePlan: {
-    avoids: ["Wasting mana on missed poke.", "Hammer jumping into stronger extended duelists.", "Letting scaling champions farm calmly after he wins early push."],
+    avoids: ["Wasting mana on missed poke.", "Hammer jumping into stronger extended duelists.", "Letting scaling champions secure free farm after he wins early push."],
     idealLaneState: "A pressured top lane where Jayce can control range, land empowered poke, and crash waves before enemies can force long fights.",
-    wants: ["Ranged harass before melee champions can engage.", "Poke landed before committing hammer form.", "Tempo leads from wave pressure and resets."],
+    wants: ["Ranged harass before melee champions can engage.", "Poke landed before committing hammer form.", "Lane priority from wave pressure and resets."],
   },
   laneIdentity: {
     earlyGameAgency: "high",
@@ -52,13 +52,12 @@ export const jayceCombatProfile = {
   shields: [],
   softCrowdControl: [],
   stealthOrInvisibility: null,
-  strategicIdentity: { laneGoal: "snowball", preferredGameLength: "medium", scalingProfile: "early", winMethod: ["lane pressure", "poke siege", "tempo leads"] },
+  strategicIdentity: { laneGoal: "snowball", preferredGameLength: "medium", scalingProfile: "early", winMethod: ["lane pressure", "poke siege", "lane priority"] },
   sustain: [],
   trading: {
     badTradeConditions: ["Mana is low.", "Empowered (Q) misses.", "Hammer form commits into a stronger long duel."],
     goodTradeConditions: ["He has ranged spacing.", "Poke has already landed.", "The enemy's engage tool is down."],
-    primaryPattern: "Poke first, keep lane tempo high, and use melee form as a finisher or disengage tool rather than blind engage.",
+    primaryPattern: "Poke first, build lane priority, and use melee form as a finisher or disengage tool rather than blind engage.",
   },
   punishWindows: ["After hammer (Q) commits, he has limited escape.", "Missed empowered (Q) reduces pressure.", "If early lane is even, his snowball pressure is weaker."],
 } satisfies LeagueChampionKnowledgeProfile;
-
