@@ -42,7 +42,7 @@ export const aurelionSolCombatProfile = {
       earlyGameAgency: "low",
       scalingPriority: "very_high",
       lanePressure: "medium",
-      preferredGameState: [""],
+      preferredGameState: ["Lane that allows him to farm up safely and reach his mid-late game power spikes.", "Late game teamfights and skirmishes where he can use his roaming and AoE damage to have a big impact."],
       winLaneBy: [""],
     },
     majorPowerSpikes: [
@@ -89,7 +89,7 @@ export const aurelionSolCombatProfile = {
       ],
     },
     primaryRoles: ["mid"],
-    secondaryRoles: ["support", "top"],
+    secondaryRoles: ["top"],
     primaryTradingPattern:
       "(E) into (Q) for poke and waveclear",
     punishProfile: {

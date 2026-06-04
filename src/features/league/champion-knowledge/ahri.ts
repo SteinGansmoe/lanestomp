@@ -9,24 +9,28 @@ export const ahriCombatProfile = {
       R: "Spirit Rush",
     },
     archetype: ["mobile mage", "pick", "roam", "playmaker"],
-    debugNote: "(E) does have a delay, but it is not a skillshot.",
-    primaryWinCondition: ["Land (E) to pick off targets and snowball leads."],
+    debugNote: "",
+    primaryWinCondition: ["Land (E) to pick off targets and snowball leads.", "Clear waves and look for playmaking opportunities with (R) mobility.", "Poke with (Q) and (W) to create pressure and look for (E) angles."],
     dangerAbilities: ["(E)"],
     dangerProfile: {
       dangerousWhen: [
         "(E) is available and the enemy has stepped into punish range.",
         "(R) is available to extend a pick or escape after committing.",
         "The wave is stable enough for Ahri to threaten a roam or river move.",
+        "She has strong waveclear and can punish enemy last hitting with (Q).",
+        "Very easy for her to proc electrocute with (W) in early trades, so short trades can be dangerous if she has it available.",
       ],
       mustRespect: [
         "She is much easier to punish before level 6 or while (R) is down.",
         "Missing (E) removes her strongest punish and peel threat.",
+        "She can be vulnerable to all-ins if she has just used (Q) or (W) and has no defensive options left.",
       ],
     },
     commonWeaknesses: [
       "Pre 6 or while ult is on cooldown, she is vulnerable.",
       "Skillshot reliant.",
       "Waveclear is weaker before Lost Chapter.",
+      "Long range champions can abuse her if she has to commit forward to farm or trade.",
     ],
     damageType: "magic",
     hardCrowdControl: ["(E)"],
@@ -140,14 +144,15 @@ export const ahriCombatProfile = {
     sustain: ["Passive healing from minion or champion takedown stacks."],
     trading: {
       badTradeConditions: [
-        "If minions block (E) options.",
+        "If minions block (E).",
         "(R) is unavailable and the enemy can force an extended all-in.",
         "The wave is too large to step forward safely.",
       ],
       goodTradeConditions: [
         "The enemy has used mobility or a key defensive cooldown.",
-        "Ahri can land (Q) return damage without taking an extended trade.",
+        "Ahri can land (Q) return damage without risking taking damage.",
         "(E) is being held for the enemy's commit instead of thrown blindly.",
+        "Can set up ganks with (E) or (R) mobility.",
       ],
       primaryPattern:
         "Use (Q) and (W) for short trades, hold (E) for the enemy commit or exposed movement, then disengage unless (R) creates a clean extension.",

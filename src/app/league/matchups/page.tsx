@@ -27,7 +27,7 @@ export default async function LeagueMatchupsPage() {
           <BackButton href="/" label="Back to LaneStomp" />
           <Link
             className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
-            href="/games/league-of-legends/champions"
+            href="/champions"
           >
             Champion data
           </Link>

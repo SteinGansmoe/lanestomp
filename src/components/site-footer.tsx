@@ -13,7 +13,7 @@ import {
 const navigationLinks = [
   { href: "/", label: "Home" },
   { href: "/league/matchups", label: "Matchups" },
-  { href: "/games/league-of-legends/champions", label: "Champions" },
+  { href: "/champions", label: "Champions" },
   { href: "#", isComingSoon: true, label: "Counter Picks" },
   { href: "#", isComingSoon: true, label: "Patch Notes" },
 ];

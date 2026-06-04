@@ -100,7 +100,7 @@ function ChampionDataError({ message }: { message: string }) {
           </p>
           <Link
             className="mt-4 inline-flex rounded-md border border-amber-200/20 bg-amber-200/10 px-3 py-2 text-sm font-medium text-amber-50 transition hover:bg-amber-200/15"
-            href="/games/league-of-legends/champions"
+            href="/champions"
           >
             View champion data
           </Link>

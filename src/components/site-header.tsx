@@ -21,7 +21,7 @@ const navItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/league/matchups", icon: Swords, label: "Matchups" },
   {
-    href: "/games/league-of-legends/champions",
+    href: "/champions",
     icon: Shield,
     label: "Champions",
   },

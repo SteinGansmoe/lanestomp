@@ -80,7 +80,7 @@ export default async function LeagueMatchupPage({
           ) : null}
           <Link
             className="ml-auto inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
-            href="/games/league-of-legends/champions"
+            href="/champions"
           >
             Champion data
           </Link>
@@ -113,7 +113,7 @@ export default async function LeagueMatchupPage({
             </p>
             <Link
               className="mt-5 inline-flex items-center gap-2 rounded-md border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/15"
-              href="/games/league-of-legends/champions"
+              href="/champions"
             >
               View champion data
             </Link>
@@ -244,7 +244,7 @@ function UnavailableMatchupState({
               </Link>
               <Link
                 className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white"
-                href="/games/league-of-legends/champions"
+                href="/champions"
               >
                 Champion data
               </Link>
