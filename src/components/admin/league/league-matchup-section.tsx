@@ -5,6 +5,7 @@ import {
   CheckSquare,
   ChevronDown,
   Clock3,
+  Copy,
   ListChecks,
   Pause,
   Pencil,
@@ -388,6 +389,12 @@ export function AdminLeagueMatchupsSection({
         matchups={matchups}
         onActiveChange={setIsBulkQueueActive}
         onGenerateQueueItem={onGenerateQueueItem}
+        onRefresh={onRefresh}
+      />
+
+      <LeagueMatchupGapChecker
+        champions={champions}
+        matchups={matchups}
         onRefresh={onRefresh}
       />
 
@@ -2182,6 +2189,263 @@ function QueueStat({
   );
 }
 
+function LeagueMatchupGapChecker({
+  champions,
+  matchups,
+  onRefresh,
+}: {
+  champions: AdminLeagueChampion[];
+  matchups: AdminLeagueMatchup[];
+  onRefresh: () => Promise<boolean>;
+}) {
+  const [role, setRole] = useState<AdminLeagueMatchup["role"]>("mid");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
+  const roleChampions = useMemo(
+    () =>
+      sortChampionsForRole(
+        champions.filter((champion) => isChampionInRole(champion, role)),
+        role
+      ),
+    [champions, role]
+  );
+  const analysis = useMemo(
+    () => getRoleMatchupGapAnalysis(roleChampions, matchups, role),
+    [matchups, role, roleChampions]
+  );
+  const roleLabel = getRoleLabel(role);
+  const hasMissingMatchups = analysis.missingMatchups.length > 0;
+  const missingPreview = analysis.missingMatchups.slice(0, 80);
+
+  async function refreshMatchups() {
+    setCopyStatus(null);
+    setIsRefreshing(true);
+    const didRefresh = await onRefresh();
+    setIsRefreshing(false);
+
+    setCopyStatus(
+      didRefresh
+        ? {
+            text: "Matchup rows refreshed before gap check.",
+            type: "success",
+          }
+        : {
+            text: "Could not refresh matchup rows. Showing the last loaded admin data.",
+            type: "error",
+          }
+    );
+  }
+
+  async function copyMissingMatchups(format: "json" | "text") {
+    const output =
+      format === "json"
+        ? JSON.stringify(
+            analysis.missingMatchups.map((matchup) => ({
+              sourceChampionId: matchup.sourceChampionId,
+              sourceChampionName: matchup.sourceChampionName,
+              targetChampionId: matchup.targetChampionId,
+              targetChampionName: matchup.targetChampionName,
+              role: matchup.role,
+              existingMatchupId: matchup.existingMatchupId,
+              hasExistingRow: matchup.hasExistingRow,
+            })),
+            null,
+            2
+          )
+        : analysis.missingMatchups
+            .map(
+              (matchup) =>
+                `${matchup.sourceChampionName} (${matchup.sourceChampionId}) vs ${matchup.targetChampionName} (${matchup.targetChampionId}) [${matchup.role}]${
+                  matchup.hasExistingRow
+                    ? ` existing row #${matchup.existingMatchupId}`
+                    : " no row"
+                }`
+            )
+            .join("\n");
+
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopyStatus({
+        text:
+          format === "json"
+            ? "Missing matchup JSON copied."
+            : "Missing matchup text copied.",
+        type: "success",
+      });
+    } catch {
+      setCopyStatus({
+        text: "Could not copy missing matchups to the clipboard.",
+        type: "error",
+      });
+    }
+  }
+
+  return (
+    <Card className="border-emerald-300/15 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="font-mono text-xl">
+              {roleLabel} lane matchup gap checker
+            </CardTitle>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+              Compare the generator role pool against reviewed matchup rows without
+              creating, updating, or generating anything.
+            </p>
+          </div>
+          <span className="rounded-md border border-emerald-300/20 bg-emerald-400/10 px-2 py-1 text-xs text-emerald-100">
+            Read-only admin tool
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <label className="grid gap-2 text-sm text-zinc-300">
+              Lane
+              <select
+                className={fieldClassName}
+                onChange={(event) =>
+                  setRole(event.target.value as AdminLeagueMatchup["role"])
+                }
+                value={role}
+              >
+                {leagueRoles.map((leagueRole) => (
+                  <option
+                    className={selectOptionClassName}
+                    key={leagueRole}
+                    value={leagueRole}
+                  >
+                    {getRoleLabel(leagueRole)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <p className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300">
+              {roleChampions.length} {roleLabel} champion
+              {roleChampions.length === 1 ? "" : "s"} are included using the same
+              role tagging logic as the bulk generation queue. Directional pairs
+              are counted separately and self-matchups are excluded.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={isRefreshing}
+                onClick={refreshMatchups}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                {isRefreshing ? "Refreshing..." : "Refresh rows"}
+              </Button>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={!hasMissingMatchups}
+                onClick={() => copyMissingMatchups("json")}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Copy className="size-3.5" aria-hidden="true" />
+                Copy JSON
+              </Button>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={!hasMissingMatchups}
+                onClick={() => copyMissingMatchups("text")}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Copy className="size-3.5" aria-hidden="true" />
+                Copy text
+              </Button>
+            </div>
+
+            {copyStatus ? (
+              <p
+                className={cn(
+                  "rounded-md border p-3 text-sm",
+                  copyStatus.type === "error"
+                    ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                )}
+              >
+                {copyStatus.text}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-emerald-300/15 bg-emerald-400/[0.06] p-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <QueueStat label="Expected" value={analysis.expectedCount} />
+              <QueueStat label="Available" value={analysis.availableCount} />
+              <QueueStat label="Existing rows" value={analysis.existingRowCount} />
+              <QueueStat label="Missing" value={analysis.missingCount} />
+            </div>
+
+            <p className="text-xs leading-5 text-zinc-400">
+              Available means reviewed and visible in public coverage. Existing
+              rows includes draft or unreviewed rows, which can explain why the
+              generator sees a role as complete while public coverage still has
+              gaps.
+            </p>
+
+            {hasMissingMatchups ? (
+              <div className="rounded-md border border-white/10 bg-black/15 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-white">
+                    Missing {roleLabel} matchups
+                  </p>
+                  <span className="text-xs text-zinc-500">
+                    Showing {missingPreview.length} of{" "}
+                    {analysis.missingMatchups.length}
+                  </span>
+                </div>
+                <ol className="mt-3 max-h-80 space-y-2 overflow-auto pr-1 text-sm">
+                  {missingPreview.map((matchup) => (
+                    <li
+                      className="rounded-md border border-white/10 bg-black/20 px-3 py-2"
+                      key={matchup.key}
+                    >
+                      <p className="font-medium text-zinc-100">
+                        {matchup.sourceChampionName} vs {matchup.targetChampionName}
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-zinc-500">
+                        {matchup.sourceChampionId} / {matchup.targetChampionId} /{" "}
+                        {matchup.role}
+                      </p>
+                      {matchup.hasExistingRow ? (
+                        <p className="mt-1 text-xs text-amber-100">
+                          Existing unreviewed row #{matchup.existingMatchupId}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-rose-100">
+                          No matchup row found
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : (
+              <p className="rounded-md border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+                No missing reviewed {roleLabel} directional matchups found.
+              </p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function CombatProfileReadinessNotice({
   readiness,
   role,
@@ -3485,6 +3749,99 @@ function buildLaneQueueItems(
   }
 
   return items;
+}
+
+function getRoleMatchupGapAnalysis(
+  roleChampions: AdminLeagueChampion[],
+  matchups: AdminLeagueMatchup[],
+  role: AdminLeagueMatchup["role"]
+) {
+  const existingRowsByKey = new Map(
+    matchups
+      .filter((matchup) => matchup.role === role)
+      .map((matchup) => [
+        getDirectionalMatchupKey(
+          matchup.champion_a_id,
+          matchup.champion_b_id,
+          matchup.role
+        ),
+        matchup,
+      ])
+  );
+  const availableKeys = new Set(
+    matchups
+      .filter(
+        (matchup) =>
+          matchup.role === role && matchup.generation_status === "reviewed"
+      )
+      .map((matchup) =>
+        getDirectionalMatchupKey(
+          matchup.champion_a_id,
+          matchup.champion_b_id,
+          matchup.role
+        )
+      )
+  );
+  const missingMatchups: {
+    existingMatchupId: number | null;
+    hasExistingRow: boolean;
+    key: string;
+    role: AdminLeagueMatchup["role"];
+    sourceChampionId: string;
+    sourceChampionName: string;
+    targetChampionId: string;
+    targetChampionName: string;
+  }[] = [];
+  let expectedCount = 0;
+
+  for (const sourceChampion of roleChampions) {
+    for (const targetChampion of roleChampions) {
+      if (sourceChampion.id === targetChampion.id) {
+        continue;
+      }
+
+      expectedCount += 1;
+
+      const key = getDirectionalMatchupKey(
+        sourceChampion.id,
+        targetChampion.id,
+        role
+      );
+
+      if (availableKeys.has(key)) {
+        continue;
+      }
+
+      const existingRow = existingRowsByKey.get(key);
+
+      missingMatchups.push({
+        existingMatchupId: existingRow?.id ?? null,
+        hasExistingRow: Boolean(existingRow),
+        key,
+        role,
+        sourceChampionId: sourceChampion.id,
+        sourceChampionName: sourceChampion.name,
+        targetChampionId: targetChampion.id,
+        targetChampionName: targetChampion.name,
+      });
+    }
+  }
+
+  return {
+    availableCount: availableKeys.size,
+    existingRowCount: existingRowsByKey.size,
+    expectedCount,
+    missingCount: missingMatchups.length,
+    missingMatchups,
+  };
+}
+
+function getDirectionalMatchupKey(
+  sourceChampionId: string,
+  targetChampionId: string,
+  role: AdminLeagueMatchup["role"]
+) {
+  return `${sourceChampionId}:${targetChampionId}:${role}`;
 }
 
 function getFreshQueuePlanItem(

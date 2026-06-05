@@ -37,6 +37,7 @@ export type GenerateLeagueMatchupDraftContentResult =
       providerWarning?: string;
     }
   | {
+      allowFallback?: boolean;
       error: string;
       ok: false;
     };
@@ -50,6 +51,7 @@ export type GenerateLeagueMatchupDraftSectionContentResult =
       providerWarning?: string;
     }
   | {
+      allowFallback?: boolean;
       error: string;
       ok: false;
     };
@@ -63,8 +65,14 @@ export async function generateLeagueMatchupDraftContent(
   const profileWarning = getMissingChampionProfileWarning(input);
 
   if (!openaiApiKey) {
+    const placeholderResult = generateValidatedPlaceholderDraft(input);
+
+    if (!placeholderResult.ok) {
+      return placeholderResult;
+    }
+
     return {
-      draft: generateDraftWithPlaceholderProvider(input),
+      draft: placeholderResult.draft,
       ok: true,
       profileWarning,
       provider: "placeholder",
@@ -80,8 +88,21 @@ export async function generateLeagueMatchupDraftContent(
     };
   }
 
+  if (openaiResult.allowFallback === false) {
+    return {
+      error: openaiResult.error,
+      ok: false,
+    };
+  }
+
+  const placeholderResult = generateValidatedPlaceholderDraft(input);
+
+  if (!placeholderResult.ok) {
+    return placeholderResult;
+  }
+
   return {
-    draft: generateDraftWithPlaceholderProvider(input),
+    draft: placeholderResult.draft,
     ok: true,
     profileWarning,
     provider: "placeholder",
@@ -95,8 +116,14 @@ export async function generateLeagueMatchupDraftSectionContent(
   const profileWarning = getMissingChampionProfileWarning(input);
 
   if (!openaiApiKey) {
+    const placeholderResult = generateValidatedPlaceholderSection(input);
+
+    if (!placeholderResult.ok) {
+      return placeholderResult;
+    }
+
     return {
-      content: generateDraftWithPlaceholderProvider(input)[input.sectionKey],
+      content: placeholderResult.content,
       ok: true,
       profileWarning,
       provider: "placeholder",
@@ -112,8 +139,21 @@ export async function generateLeagueMatchupDraftSectionContent(
     };
   }
 
+  if (openaiResult.allowFallback === false) {
+    return {
+      error: openaiResult.error,
+      ok: false,
+    };
+  }
+
+  const placeholderResult = generateValidatedPlaceholderSection(input);
+
+  if (!placeholderResult.ok) {
+    return placeholderResult;
+  }
+
   return {
-    content: generateDraftWithPlaceholderProvider(input)[input.sectionKey],
+    content: placeholderResult.content,
     ok: true,
     profileWarning,
     provider: "placeholder",
@@ -139,6 +179,72 @@ function getMissingChampionProfileWarning({
   return `Missing combat profile for ${missingProfiles.join(
     " and "
   )}; generated draft should be reviewed as lower confidence.`;
+}
+
+function generateValidatedPlaceholderDraft(
+  input: GenerateLeagueMatchupDraftContentInput
+):
+  | {
+      draft: MatchupDraftSections;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  const draft = generateDraftWithPlaceholderProvider(input);
+  const promptLeakage = findPromptLeakageInDraft(draft);
+
+  if (promptLeakage.length > 0) {
+    logPromptLeakageRejection({
+      input,
+      provider: "placeholder",
+      rejectedSections: promptLeakage,
+    });
+
+    return {
+      error: formatPromptLeakageError(promptLeakage),
+      ok: false,
+    };
+  }
+
+  return {
+    draft,
+    ok: true,
+  };
+}
+
+function generateValidatedPlaceholderSection(
+  input: GenerateLeagueMatchupDraftSectionContentInput
+):
+  | {
+      content: string;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  const content = generateDraftWithPlaceholderProvider(input)[input.sectionKey];
+  const promptLeakage = findPromptLeakageInSection(input.sectionKey, content);
+
+  if (promptLeakage) {
+    logPromptLeakageRejection({
+      input,
+      provider: "placeholder",
+      rejectedSections: [promptLeakage],
+    });
+
+    return {
+      error: formatPromptLeakageError([promptLeakage]),
+      ok: false,
+    };
+  }
+
+  return {
+    content,
+    ok: true,
+  };
 }
 
 async function generateDraftWithOpenAIProvider({
@@ -173,19 +279,45 @@ async function generateDraftWithOpenAIProvider({
 
   if (!draft) {
     return {
+      allowFallback: true,
       error: "AI provider returned draft content in an unexpected format.",
       ok: false,
     };
   }
 
+  const normalizedDraft = normalizeDraftAbilityReferences({
+    draft,
+    enemyChampionName: championBName,
+    enemyChampionProfile: championBProfile,
+    playerChampionName: championAName,
+    playerChampionProfile: championAProfile,
+  });
+  const promptLeakage = findPromptLeakageInDraft(normalizedDraft);
+
+  if (promptLeakage.length > 0) {
+    logPromptLeakageRejection({
+      input: {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+      },
+      provider: "openai",
+      rejectedSections: promptLeakage,
+    });
+
+    return {
+      allowFallback: false,
+      error: formatPromptLeakageError(promptLeakage),
+      ok: false,
+    };
+  }
+
   return {
-    draft: normalizeDraftAbilityReferences({
-      draft,
-      enemyChampionName: championBName,
-      enemyChampionProfile: championBProfile,
-      playerChampionName: championAName,
-      playerChampionProfile: championAProfile,
-    }),
+    draft: normalizedDraft,
     ok: true,
     provider: "openai",
   };
@@ -225,23 +357,50 @@ async function generateDraftSectionWithOpenAIProvider({
 
   if (!section) {
     return {
+      allowFallback: true,
       error: "AI provider returned draft card content in an unexpected format.",
       ok: false,
     };
   }
 
-  return {
-    content: normalizeSectionAbilityReferences(
-      section,
-      {
-        championName: championAName,
-        profile: championAProfile,
+  const normalizedSection = normalizeSectionAbilityReferences(
+    section,
+    {
+      championName: championAName,
+      profile: championAProfile,
+    },
+    {
+      championName: championBName,
+      profile: championBProfile,
+    }
+  );
+  const promptLeakage = findPromptLeakageInSection(sectionKey, normalizedSection);
+
+  if (promptLeakage) {
+    logPromptLeakageRejection({
+      input: {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+        sectionKey,
       },
-      {
-        championName: championBName,
-        profile: championBProfile,
-      }
-    ),
+      provider: "openai",
+      rejectedSections: [promptLeakage],
+    });
+
+    return {
+      allowFallback: false,
+      error: formatPromptLeakageError([promptLeakage]),
+      ok: false,
+    };
+  }
+
+  return {
+    content: normalizedSection,
     ok: true,
     provider: "openai",
   };
@@ -261,6 +420,7 @@ async function requestOpenAIDraft({
       outputText: string;
     }
   | {
+      allowFallback?: boolean;
       error: string;
       ok: false;
     }
@@ -301,6 +461,7 @@ async function requestOpenAIDraft({
     });
   } catch {
     return {
+      allowFallback: true,
       error: "AI provider could not be reached.",
       ok: false,
     };
@@ -310,6 +471,7 @@ async function requestOpenAIDraft({
     const errorBody = await readOpenAIError(response);
 
     return {
+      allowFallback: true,
       error: `AI provider failed: ${errorBody}`,
       ok: false,
     };
@@ -321,6 +483,7 @@ async function requestOpenAIDraft({
     responseBody = (await response.json()) as OpenAIResponseBody;
   } catch {
     return {
+      allowFallback: true,
       error: "AI provider returned an unreadable response.",
       ok: false,
     };
@@ -328,6 +491,7 @@ async function requestOpenAIDraft({
 
   if (responseBody.error?.message) {
     return {
+      allowFallback: true,
       error: `AI provider failed: ${responseBody.error.message}`,
       ok: false,
     };
@@ -337,6 +501,7 @@ async function requestOpenAIDraft({
 
   if (!outputText) {
     return {
+      allowFallback: true,
       error: "AI provider returned no draft content.",
       ok: false,
     };
@@ -353,8 +518,6 @@ function generateDraftWithPlaceholderProvider({
   championBName: enemyChampionName,
   role,
 }: GenerateLeagueMatchupDraftContentInput): MatchupDraftSections {
-  const roleLabel = role === "adc" ? "ADC" : role;
-
   if (role === "jungle") {
     return {
       danger_windows: [
@@ -368,14 +531,14 @@ function generateDraftWithPlaceholderProvider({
         "- Cross-map camps or gank opposite side instead of flipping a bad Scuttle fight.",
       ].join("\n"),
       overview: [
-        `- Review the non-obvious ${roleLabel} matchup identity before publishing.`,
-        `- Explain whether ${playerChampionName} should invade, full clear, contest river, trade objectives, or deny ${enemyChampionName}'s scaling window.`,
-        "- Keep broad notes out of this section unless they add real jungle matchup context.",
+        `- Identify whether ${playerChampionName} should invade, full clear, contest river, trade objectives, or deny ${enemyChampionName}'s scaling window.`,
+        "- Play early pathing around lane priority before flipping Scuttle, invade, dragon, or Void Grubs fights.",
+        `- Deny ${enemyChampionName}'s setup by tracking camps and trading sides when direct fights are bad.`,
       ].join("\n"),
       power_spikes: [
-        "- List only real level, ultimate, first-item, objective, or scaling breakpoints.",
-        `- Slow down only when ${enemyChampionName} reaches a verified jungle fight or objective spike.`,
-        `- Push harder only when ${playerChampionName}'s own clear, duel, gank, or objective breakpoint is verified.`,
+        `- Slow the game down when ${enemyChampionName} reaches a real level, ultimate, item, objective, or dueling breakpoint.`,
+        `- Push tempo when ${playerChampionName}'s clear speed, dueling, gank, or objective setup becomes stronger.`,
+        "- Re-check river fights after first recall, level 6, and first major item because the matchup can flip.",
       ].join("\n"),
       trading_pattern: [
         `- Build ${playerChampionName}'s jungle plan around first clear, river control, and whether the first Scuttle is contestable.`,
@@ -397,22 +560,22 @@ function generateDraftWithPlaceholderProvider({
       "- Treat jungle fog and missing summoners as forced caution.",
     ].join("\n"),
     early_game: [
-      "- Keep the wave in a lane state that allows short trades.",
+      "- Hold the wave in a lane state that allows short trades.",
       `- Let ${playerChampionName} establish safe spacing before forcing pressure.`,
       "- Preserve health before the first meaningful level breakpoint.",
     ].join("\n"),
     overview: [
-      `- Review the non-obvious ${roleLabel} matchup identity before publishing.`,
-      `- Include defensive adaptation against ${enemyChampionName} here only if it changes the lane plan.`,
-      "- Keep broad notes out of this section unless they add real matchup context.",
+      `- Identify whether ${playerChampionName} should pressure lane, deny free farm, or wait for a safer cooldown window into ${enemyChampionName}.`,
+      `- Adapt spacing and wave state around ${enemyChampionName}'s main threat instead of giving a free all-in.`,
+      `- Turn ${playerChampionName}'s best lane pattern into CS denial, priority, roam timing, or objective access.`,
     ].join("\n"),
     power_spikes: [
-      "- List only real level, ultimate, first-item, or major cooldown breakpoints.",
-      `- Slow down only when ${enemyChampionName} reaches a verified spike.`,
-      `- Push harder only when ${playerChampionName}'s own breakpoint is verified.`,
+      `- Respect ${enemyChampionName}'s real level, ultimate, first-item, or major cooldown breakpoint before forcing trades.`,
+      `- Push harder when ${playerChampionName}'s own level, item, or cooldown breakpoint creates a better trade window.`,
+      "- Reassess trades after recalls and level 6 because the lane threat can flip quickly.",
     ].join("\n"),
     trading_pattern: [
-      `- Keep ${playerChampionName}'s trades short until the matchup pattern is confirmed.`,
+      `- Trade in short windows until ${playerChampionName}'s matchup pattern is clear.`,
       `- Disengage before ${enemyChampionName}'s main follow-up lands.`,
       "- Extend only after the opponent misses their main answer.",
     ].join("\n"),
@@ -508,6 +671,157 @@ function normalizeDraftSection(section: string) {
     .filter(Boolean)
     .slice(0, 3)
     .join("\n");
+}
+
+const promptLeakagePatterns = [
+  {
+    label: "review",
+    pattern: /\breview(?:ed|ing)?\b/i,
+  },
+  {
+    label: "list only",
+    pattern: /\blist only\b/i,
+  },
+  {
+    label: "keep",
+    pattern: /\bkeep\b/i,
+  },
+  {
+    label: "before publishing",
+    pattern: /\bbefore publishing\b/i,
+  },
+  {
+    label: "verified",
+    pattern: /\bverified\b/i,
+  },
+  {
+    label: "output",
+    pattern: /\boutput\b/i,
+  },
+  {
+    label: "instruction",
+    pattern: /\binstructions?\b/i,
+  },
+  {
+    label: "json",
+    pattern: /\bjson\b/i,
+  },
+  {
+    label: "schema",
+    pattern: /\bschema\b/i,
+  },
+  {
+    label: "section",
+    pattern: /\bsections?\b/i,
+  },
+  {
+    label: "bullet",
+    pattern: /\bbullets?\b/i,
+  },
+  {
+    label: "admin",
+    pattern: /\badmins?\b/i,
+  },
+  {
+    label: "publishing",
+    pattern: /\bpublishing\b/i,
+  },
+  {
+    label: "return",
+    pattern: /\breturn\b/i,
+  },
+  {
+    label: "rewrite",
+    pattern: /\brewrite\b/i,
+  },
+  {
+    label: "source profile",
+    pattern: /\bsource profile\b/i,
+  },
+  {
+    label: "supplied profile",
+    pattern: /\bsupplied profile\b/i,
+  },
+] as const;
+
+type PromptLeakageSectionRejection = {
+  phrases: string[];
+  sample: string;
+  sectionKey: MatchupDraftSectionKey;
+};
+
+function findPromptLeakageInDraft(draft: MatchupDraftSections) {
+  return matchupDraftSectionKeys
+    .map((sectionKey) => findPromptLeakageInSection(sectionKey, draft[sectionKey]))
+    .filter((rejection): rejection is PromptLeakageSectionRejection =>
+      Boolean(rejection)
+    );
+}
+
+function findPromptLeakageInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string
+): PromptLeakageSectionRejection | null {
+  const phrases = promptLeakagePatterns
+    .filter(({ pattern }) => pattern.test(content))
+    .map(({ label }) => label);
+
+  if (phrases.length === 0) {
+    return null;
+  }
+
+  return {
+    phrases,
+    sample: getPromptLeakageSample(content, phrases),
+    sectionKey,
+  };
+}
+
+function getPromptLeakageSample(content: string, phrases: string[]) {
+  const matchingLine =
+    content
+      .split("\n")
+      .find((line) =>
+        promptLeakagePatterns.some(
+          ({ label, pattern }) => phrases.includes(label) && pattern.test(line)
+        )
+      ) ?? content;
+
+  return matchingLine.trim().slice(0, 180);
+}
+
+function formatPromptLeakageError(
+  rejectedSections: PromptLeakageSectionRejection[]
+) {
+  const sectionList = rejectedSections
+    .map(({ phrases, sectionKey }) => `${sectionKey} (${phrases.join(", ")})`)
+    .join("; ");
+
+  return `Generated matchup draft was rejected because it contained prompt-like language: ${sectionList}. Regenerate the draft.`;
+}
+
+function logPromptLeakageRejection({
+  input,
+  provider,
+  rejectedSections,
+}: {
+  input:
+    | GenerateLeagueMatchupDraftContentInput
+    | GenerateLeagueMatchupDraftSectionContentInput;
+  provider: LeagueMatchupDraftProvider;
+  rejectedSections: PromptLeakageSectionRejection[];
+}) {
+  console.warn("Rejected League matchup draft prompt leakage", {
+    enemyChampion: input.championBName,
+    playerChampion: input.championAName,
+    provider,
+    rejectedSections: rejectedSections.map(({ phrases, sample, sectionKey }) => ({
+      phrases,
+      sample,
+      sectionKey,
+    })),
+    role: input.role,
+  });
 }
 
 function normalizeDraftAbilityReferences({
