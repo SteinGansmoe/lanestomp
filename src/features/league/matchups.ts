@@ -7,7 +7,7 @@ import { leagueRoles, type LeagueRole } from "./roles";
 export type LeagueMatchup = {
   champion_a_id: string;
   champion_b_id: string;
-  generation_status: "draft" | "reviewed";
+  generation_status: "draft" | "failed" | "reviewed";
   role: LeagueRole;
   overview: string | null;
   early_game: string | null;

@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { AdminLeagueMatchup } from "@/src/components/admin/types";
 import {
@@ -13,6 +13,10 @@ import {
   type MatchupDraftSections,
 } from "@/src/features/league/matchup-draft-prompt";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
+import {
+  scanMatchupDraftForFallbackContent,
+  type MatchupFallbackContaminationResult,
+} from "@/src/features/league/matchup-fallback-contamination";
 
 type GenerateDraftInput = {
   accessToken: string;
@@ -64,6 +68,8 @@ type DeleteDraftResult =
       ok: false;
     };
 
+type GenerationSource = "ai" | "failed" | "fallback" | "skipped";
+
 type MatchupRow = {
   admin_notes: string | null;
   champion_a_id: string;
@@ -71,6 +77,7 @@ type MatchupRow = {
   confidence_level: string | null;
   danger_windows: string | null;
   early_game: string | null;
+  generation_status: AdminLeagueMatchup["generation_status"];
   overview: string | null;
   power_spikes: string | null;
   role: AdminLeagueMatchup["role"];
@@ -109,6 +116,7 @@ export async function generateLeagueMatchupDraft({
   accessToken,
   matchupId,
 }: GenerateDraftInput): Promise<GenerateDraftResult> {
+  const attemptStartedAt = Date.now();
   const authResult = await getAuthorizedSupabaseClient(
     accessToken,
     "generate matchup drafts"
@@ -122,7 +130,7 @@ export async function generateLeagueMatchupDraft({
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
     .select(
-      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, overview, power_spikes, role, trading_pattern, win_conditions"
+      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, generation_status, overview, power_spikes, role, trading_pattern, win_conditions"
     )
     .eq("id", matchupId)
     .maybeSingle<MatchupRow>();
@@ -172,12 +180,72 @@ export async function generateLeagueMatchupDraft({
     existingSections: getDraftFromMatchupRow(matchup),
     role: matchup.role,
   });
+  const attemptContext = {
+    championAName,
+    championBName,
+    matchupId,
+    role: matchup.role,
+    sectionKey: undefined,
+    startedAt: attemptStartedAt,
+  };
 
   if (!providerResult.ok) {
+    const error = providerResult.error;
+    await recordGenerationFailureNote({
+      baseAdminNotes: cleanedAdminNotes.notes,
+      championAName,
+      championBName,
+      error,
+      generatedAt: new Date().toISOString(),
+      generationStatus: matchup.generation_status,
+      matchupId,
+      role: matchup.role,
+      source: "failed",
+      supabase,
+    });
+    logGenerationAttempt({
+      ...attemptContext,
+      error,
+      provider: "openai",
+      source: "failed",
+      success: false,
+    });
+
     return providerResult;
   }
 
   const { draft, provider } = providerResult;
+  const contamination = scanMatchupDraftForFallbackContent(draft);
+
+  if (contamination.hasFallbackContent) {
+    const error = getFallbackContaminationError(contamination);
+
+    await recordGenerationFailureNote({
+      baseAdminNotes: cleanedAdminNotes.notes,
+      championAName,
+      championBName,
+      error,
+      generatedAt: new Date().toISOString(),
+      generationStatus: matchup.generation_status,
+      matchupId,
+      role: matchup.role,
+      source: "failed",
+      supabase,
+    });
+    logGenerationAttempt({
+      ...attemptContext,
+      error,
+      provider,
+      source: "failed",
+      success: false,
+    });
+
+    return {
+      error,
+      ok: false,
+    };
+  }
+
   const generatedAt = new Date().toISOString();
   const metadata = getGenerationMetadata({
     baseAdminNotes: cleanedAdminNotes.notes,
@@ -219,11 +287,28 @@ export async function generateLeagueMatchupDraft({
     .maybeSingle<SavedMatchupDraftRow>();
 
   if (updateError || !savedMatchup) {
+    const error = updateError?.message ?? "Generated draft could not be saved.";
+
+    logGenerationAttempt({
+      ...attemptContext,
+      error,
+      provider,
+      source: "failed",
+      success: false,
+    });
+
     return {
-      error: updateError?.message ?? "Generated draft could not be saved.",
+      error,
       ok: false,
     };
   }
+
+  logGenerationAttempt({
+    ...attemptContext,
+    provider,
+    source: "ai",
+    success: true,
+  });
 
   return {
     draft: getDraftFromSavedMatchup(savedMatchup),
@@ -240,6 +325,7 @@ export async function generateLeagueMatchupDraftSection({
   matchupId,
   sectionKey,
 }: GenerateDraftSectionInput): Promise<GenerateDraftSectionResult> {
+  const attemptStartedAt = Date.now();
   const authResult = await getAuthorizedSupabaseClient(
     accessToken,
     "generate matchup draft cards"
@@ -253,7 +339,7 @@ export async function generateLeagueMatchupDraftSection({
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
     .select(
-      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, overview, power_spikes, role, trading_pattern, win_conditions"
+      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, generation_status, overview, power_spikes, role, trading_pattern, win_conditions"
     )
     .eq("id", matchupId)
     .maybeSingle<MatchupRow>();
@@ -300,9 +386,73 @@ export async function generateLeagueMatchupDraftSection({
     role: matchup.role,
     sectionKey,
   });
+  const attemptContext = {
+    championAName,
+    championBName,
+    matchupId,
+    role: matchup.role,
+    sectionKey,
+    startedAt: attemptStartedAt,
+  };
 
   if (!providerResult.ok) {
+    const error = providerResult.error;
+    await recordGenerationFailureNote({
+      baseAdminNotes: cleanedAdminNotes.notes,
+      championAName,
+      championBName,
+      error,
+      generatedAt: new Date().toISOString(),
+      generationStatus: matchup.generation_status,
+      matchupId,
+      role: matchup.role,
+      sectionKey,
+      source: "failed",
+      supabase,
+    });
+    logGenerationAttempt({
+      ...attemptContext,
+      error,
+      provider: "openai",
+      source: "failed",
+      success: false,
+    });
+
     return providerResult;
+  }
+
+  const contamination = scanMatchupDraftForFallbackContent({
+    [sectionKey]: providerResult.content,
+  });
+
+  if (contamination.hasFallbackContent) {
+    const error = getFallbackContaminationError(contamination);
+
+    await recordGenerationFailureNote({
+      baseAdminNotes: cleanedAdminNotes.notes,
+      championAName,
+      championBName,
+      error,
+      generatedAt: new Date().toISOString(),
+      generationStatus: matchup.generation_status,
+      matchupId,
+      role: matchup.role,
+      sectionKey,
+      source: "failed",
+      supabase,
+    });
+    logGenerationAttempt({
+      ...attemptContext,
+      error,
+      provider: providerResult.provider,
+      source: "failed",
+      success: false,
+    });
+
+    return {
+      error,
+      ok: false,
+    };
   }
 
   const generatedAt = new Date().toISOString();
@@ -342,11 +492,29 @@ export async function generateLeagueMatchupDraftSection({
     .maybeSingle<SavedMatchupDraftRow>();
 
   if (updateError || !savedMatchup) {
+    const error =
+      updateError?.message ?? "Generated draft card could not be saved.";
+
+    logGenerationAttempt({
+      ...attemptContext,
+      error,
+      provider: providerResult.provider,
+      source: "failed",
+      success: false,
+    });
+
     return {
-      error: updateError?.message ?? "Generated draft card could not be saved.",
+      error,
       ok: false,
     };
   }
+
+  logGenerationAttempt({
+    ...attemptContext,
+    provider: providerResult.provider,
+    source: "ai",
+    success: true,
+  });
 
   return {
     content: providerResult.content,
@@ -489,6 +657,73 @@ function appendGenerationNote(currentNotes: string | null, nextNote: string) {
   return trimmedNotes ? `${trimmedNotes}\n\n${nextNote}` : nextNote;
 }
 
+async function recordGenerationFailureNote({
+  baseAdminNotes,
+  championAName,
+  championBName,
+  error,
+  generatedAt,
+  generationStatus,
+  matchupId,
+  role,
+  sectionKey,
+  source,
+  supabase,
+}: {
+  baseAdminNotes: string | null;
+  championAName: string;
+  championBName: string;
+  error: string;
+  generatedAt: string;
+  generationStatus: AdminLeagueMatchup["generation_status"];
+  matchupId: number;
+  role: AdminLeagueMatchup["role"];
+  sectionKey?: MatchupDraftSectionKey;
+  source: Extract<GenerationSource, "failed">;
+  supabase: SupabaseClient;
+}) {
+  const adminNotes = appendGenerationNote(
+    baseAdminNotes,
+    getGenerationFailureNote({
+      championAName,
+      championBName,
+      error,
+      generatedAt,
+      role,
+      sectionKey,
+      source,
+    })
+  );
+  const nextGenerationStatus =
+    generationStatus === "reviewed" ? "reviewed" : "failed";
+
+  const { error: updateError } = await supabase
+    .from("league_matchups")
+    .update({
+      admin_notes: adminNotes,
+      generated_at: generatedAt,
+      generation_status: nextGenerationStatus,
+    })
+    .eq("id", matchupId);
+
+  if (updateError) {
+    console.warn("League matchup generation failure note could not be saved", {
+      error: updateError.message,
+      matchupId,
+      source,
+    });
+  }
+}
+
+function getFallbackContaminationError({
+  affectedSections,
+  phraseCount,
+}: MatchupFallbackContaminationResult) {
+  return `Generated draft was rejected before save because it matched fallback placeholder content in ${affectedSections.join(
+    ", "
+  )} (${phraseCount} phrase${phraseCount === 1 ? "" : "s"}). Existing matchup content was preserved.`;
+}
+
 function getGenerationMetadata({
   baseAdminNotes,
   currentConfidenceLevel,
@@ -574,8 +809,46 @@ function removeSystemGenerationNotes(currentNotes: string | null) {
 function isSystemGenerationNote(note: string) {
   return (
     note.startsWith("AI draft generated ") ||
-    note.startsWith("Placeholder draft generated ")
+    note.startsWith("Placeholder draft generated ") ||
+    note.startsWith("Generation failed ")
   );
+}
+
+function logGenerationAttempt({
+  championAName,
+  championBName,
+  error,
+  matchupId,
+  provider,
+  role,
+  sectionKey,
+  source,
+  startedAt,
+  success,
+}: {
+  championAName: string;
+  championBName: string;
+  error?: string;
+  matchupId: number;
+  provider: LeagueMatchupDraftProvider | "openai";
+  role: AdminLeagueMatchup["role"];
+  sectionKey?: MatchupDraftSectionKey;
+  source: GenerationSource;
+  startedAt: number;
+  success: boolean;
+}) {
+  console.info("League matchup generation attempt", {
+    championAName,
+    championBName,
+    durationMs: Date.now() - startedAt,
+    error: error ?? null,
+    matchupId,
+    provider,
+    role,
+    sectionKey: sectionKey ?? null,
+    source,
+    success,
+  });
 }
 
 function logGenerationMetadata({
@@ -615,12 +888,34 @@ function getGenerationNote(
   const profileNote = profileWarning ? ` ${profileWarning}` : "";
 
   if (provider === "openai") {
-    return `AI draft generated ${generatedAt}.${profileNote} Review and edit before publishing.`;
+    return `AI draft generated ${generatedAt}. Source: ai.${profileNote} Review and edit before publishing.`;
   }
 
   if (providerWarning) {
-    return `Placeholder draft generated ${generatedAt} after AI provider failure: ${providerWarning}.${profileNote} Review and edit before publishing.`;
+    return `Placeholder draft generated ${generatedAt}. Source: fallback. AI provider failure: ${providerWarning}.${profileNote} Review and edit before publishing.`;
   }
 
-  return `Placeholder draft generated ${generatedAt} because OPENAI_API_KEY is not configured.${profileNote} Review and edit before publishing.`;
+  return `Placeholder draft generated ${generatedAt}. Source: fallback. OPENAI_API_KEY is not configured.${profileNote} Review and edit before publishing.`;
+}
+
+function getGenerationFailureNote({
+  championAName,
+  championBName,
+  error,
+  generatedAt,
+  role,
+  sectionKey,
+  source,
+}: {
+  championAName: string;
+  championBName: string;
+  error: string;
+  generatedAt: string;
+  role: AdminLeagueMatchup["role"];
+  sectionKey?: MatchupDraftSectionKey;
+  source: Extract<GenerationSource, "failed">;
+}) {
+  const sectionNote = sectionKey ? ` Section: ${sectionKey}.` : "";
+
+  return `Generation failed ${generatedAt}. Source: ${source}. Role: ${role}. Champion A: ${championAName}. Champion B: ${championBName}.${sectionNote} Error: ${error}`;
 }

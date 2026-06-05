@@ -48,6 +48,7 @@ import {
   LeagueMatchupForm,
 } from "./league-matchup-form";
 import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
+import { scanMatchupDraftForFallbackContent } from "@/src/features/league/matchup-fallback-contamination";
 
 type LeagueMatchupRoleFilter = AdminLeagueMatchup["role"] | "all";
 type LeagueMatchupFeedbackStatusFilter = AdminLeagueMatchupFeedback["status"] | "all";
@@ -602,6 +603,9 @@ export function AdminLeagueMatchupsSection({
                   <option className={selectOptionClassName} value="draft">
                     Draft
                   </option>
+                  <option className={selectOptionClassName} value="failed">
+                    Failed Matchups
+                  </option>
                   <option className={selectOptionClassName} value="reviewed">
                     Reviewed
                   </option>
@@ -1061,6 +1065,9 @@ export function AdminLeagueMatchupsSection({
                 const isGenerating = generatingMatchupId === matchup.id;
                 const isDeletingDraft = deletingDraftMatchupId === matchup.id;
                 const hasDraftContent = hasMatchupDraftContent(matchup);
+                const failureReason = getGenerationFailureReason(
+                  matchup.admin_notes
+                );
 
                 return (
                   <li
@@ -1096,6 +1103,17 @@ export function AdminLeagueMatchupsSection({
                             {matchup.confidence_level}
                           </span>
                         ) : null}
+                        {failureReason ? (
+                          <span className="max-w-sm rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-right text-xs text-rose-100">
+                            {failureReason}
+                          </span>
+                        ) : null}
+                        {matchup.generation_status === "failed" &&
+                        matchup.generated_at ? (
+                          <span className="rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-xs text-rose-100">
+                            Failed {formatFeedbackDate(matchup.generated_at)}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -1120,6 +1138,8 @@ export function AdminLeagueMatchupsSection({
                         )}
                         {isGenerating
                           ? "Generating..."
+                          : matchup.generation_status === "failed"
+                            ? "Retry generation"
                           : hasDraftContent
                             ? "Regenerate draft"
                             : "Generate draft"}
@@ -3803,6 +3823,30 @@ function getDefaultCollapsedLaneGroups(roleFilter: LeagueMatchupRoleFilter) {
 
 function getMatchupContentState(matchup: AdminLeagueMatchup) {
   const hasContent = hasMatchupDraftContent(matchup);
+  const fallbackScan = scanMatchupDraftForFallbackContent(
+    getMatchupDraftContent(matchup)
+  );
+
+  if (matchup.generation_status === "failed") {
+    return {
+      className: "border-rose-300/25 bg-rose-500/10 text-rose-100",
+      label: "Generation failed",
+    };
+  }
+
+  if (fallbackScan.hasFallbackContent) {
+    return {
+      className: "border-amber-300/25 bg-amber-400/10 text-amber-100",
+      label: "Placeholder draft detected",
+    };
+  }
+
+  if (hasGenerationFailureNote(matchup.admin_notes)) {
+    return {
+      className: "border-rose-300/25 bg-rose-500/10 text-rose-100",
+      label: "Generation failed",
+    };
+  }
 
   if (!hasContent) {
     return {
@@ -3822,6 +3866,32 @@ function getMatchupContentState(matchup: AdminLeagueMatchup) {
     className: "border-violet-300/20 bg-violet-500/10 text-violet-100",
     label: "Draft / generated",
   };
+}
+
+function getMatchupDraftContent(matchup: AdminLeagueMatchup) {
+  return {
+    danger_windows: matchup.danger_windows,
+    early_game: matchup.early_game,
+    overview: matchup.overview,
+    power_spikes: matchup.power_spikes,
+    trading_pattern: matchup.trading_pattern,
+    win_conditions: matchup.win_conditions,
+  };
+}
+
+function hasGenerationFailureNote(adminNotes: string | null) {
+  return /\bGeneration failed\b/i.test(adminNotes ?? "");
+}
+
+function getGenerationFailureReason(adminNotes: string | null) {
+  const match = adminNotes?.match(/\bGeneration failed\b[\s\S]*?\bError:\s*([^\n]+)/i);
+  const reason = match?.[1]?.trim();
+
+  if (!reason) {
+    return null;
+  }
+
+  return reason.length > 180 ? `${reason.slice(0, 177)}...` : reason;
 }
 
 function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {

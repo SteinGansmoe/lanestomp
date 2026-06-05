@@ -58,6 +58,7 @@ export type GenerateLeagueMatchupDraftSectionContentResult =
 
 const openaiApiKey = process.env.OPENAI_API_KEY;
 const openaiMatchupModel = "gpt-4.1-mini";
+const openaiMaxGenerationAttempts = 2;
 
 export async function generateLeagueMatchupDraftContent(
   input: GenerateLeagueMatchupDraftContentInput
@@ -65,48 +66,46 @@ export async function generateLeagueMatchupDraftContent(
   const profileWarning = getMissingChampionProfileWarning(input);
 
   if (!openaiApiKey) {
-    const placeholderResult = generateValidatedPlaceholderDraft(input);
-
-    if (!placeholderResult.ok) {
-      return placeholderResult;
-    }
-
     return {
-      draft: placeholderResult.draft,
-      ok: true,
-      profileWarning,
-      provider: "placeholder",
-    };
-  }
-
-  const openaiResult = await generateDraftWithOpenAIProvider(input);
-
-  if (openaiResult.ok) {
-    return {
-      ...openaiResult,
-      profileWarning,
-    };
-  }
-
-  if (openaiResult.allowFallback === false) {
-    return {
-      error: openaiResult.error,
+      error:
+        "AI provider is not configured. OPENAI_API_KEY is required before matchup drafts can be generated.",
       ok: false,
     };
   }
 
-  const placeholderResult = generateValidatedPlaceholderDraft(input);
+  let openaiResult: GenerateLeagueMatchupDraftContentResult | null = null;
 
-  if (!placeholderResult.ok) {
-    return placeholderResult;
+  for (let attempt = 1; attempt <= openaiMaxGenerationAttempts; attempt += 1) {
+    openaiResult = await generateDraftWithOpenAIProvider(input);
+
+    if (openaiResult.ok) {
+      logOpenAIRetrySuccess({
+        attempt,
+        championAName: input.championAName,
+        championBName: input.championBName,
+        role: input.role,
+      });
+
+      return {
+        ...openaiResult,
+        profileWarning,
+      };
+    }
+
+    logOpenAIRetryFailure({
+      attempt,
+      championAName: input.championAName,
+      championBName: input.championBName,
+      error: openaiResult.error,
+      role: input.role,
+    });
   }
 
   return {
-    draft: placeholderResult.draft,
-    ok: true,
-    profileWarning,
-    provider: "placeholder",
-    providerWarning: openaiResult.error,
+    error: formatOpenAIAttemptFailure(
+      openaiResult?.error ?? "AI provider did not return a result."
+    ),
+    ok: false,
   };
 }
 
@@ -116,49 +115,106 @@ export async function generateLeagueMatchupDraftSectionContent(
   const profileWarning = getMissingChampionProfileWarning(input);
 
   if (!openaiApiKey) {
-    const placeholderResult = generateValidatedPlaceholderSection(input);
-
-    if (!placeholderResult.ok) {
-      return placeholderResult;
-    }
-
     return {
-      content: placeholderResult.content,
-      ok: true,
-      profileWarning,
-      provider: "placeholder",
-    };
-  }
-
-  const openaiResult = await generateDraftSectionWithOpenAIProvider(input);
-
-  if (openaiResult.ok) {
-    return {
-      ...openaiResult,
-      profileWarning,
-    };
-  }
-
-  if (openaiResult.allowFallback === false) {
-    return {
-      error: openaiResult.error,
+      error:
+        "AI provider is not configured. OPENAI_API_KEY is required before matchup draft cards can be generated.",
       ok: false,
     };
   }
 
-  const placeholderResult = generateValidatedPlaceholderSection(input);
+  let openaiResult: GenerateLeagueMatchupDraftSectionContentResult | null = null;
 
-  if (!placeholderResult.ok) {
-    return placeholderResult;
+  for (let attempt = 1; attempt <= openaiMaxGenerationAttempts; attempt += 1) {
+    openaiResult = await generateDraftSectionWithOpenAIProvider(input);
+
+    if (openaiResult.ok) {
+      logOpenAIRetrySuccess({
+        attempt,
+        championAName: input.championAName,
+        championBName: input.championBName,
+        role: input.role,
+        sectionKey: input.sectionKey,
+      });
+
+      return {
+        ...openaiResult,
+        profileWarning,
+      };
+    }
+
+    logOpenAIRetryFailure({
+      attempt,
+      championAName: input.championAName,
+      championBName: input.championBName,
+      error: openaiResult.error,
+      role: input.role,
+      sectionKey: input.sectionKey,
+    });
   }
 
   return {
-    content: placeholderResult.content,
-    ok: true,
-    profileWarning,
-    provider: "placeholder",
-    providerWarning: openaiResult.error,
+    error: formatOpenAIAttemptFailure(
+      openaiResult?.error ?? "AI provider did not return a result."
+    ),
+    ok: false,
   };
+}
+
+function formatOpenAIAttemptFailure(error: string) {
+  return `AI generation failed after ${openaiMaxGenerationAttempts} attempts. Last error: ${error}`;
+}
+
+function logOpenAIRetryFailure({
+  attempt,
+  championAName,
+  championBName,
+  error,
+  role,
+  sectionKey,
+}: {
+  attempt: number;
+  championAName: string;
+  championBName: string;
+  error: string;
+  role: LeagueRole;
+  sectionKey?: MatchupDraftSectionKey;
+}) {
+  console.warn("League matchup generation attempt failed", {
+    attempt,
+    championAName,
+    championBName,
+    error,
+    nextAttempt:
+      attempt < openaiMaxGenerationAttempts ? attempt + 1 : null,
+    role,
+    sectionKey: sectionKey ?? null,
+  });
+}
+
+function logOpenAIRetrySuccess({
+  attempt,
+  championAName,
+  championBName,
+  role,
+  sectionKey,
+}: {
+  attempt: number;
+  championAName: string;
+  championBName: string;
+  role: LeagueRole;
+  sectionKey?: MatchupDraftSectionKey;
+}) {
+  if (attempt === 1) {
+    return;
+  }
+
+  console.info("League matchup generation retry succeeded", {
+    attempt,
+    championAName,
+    championBName,
+    role,
+    sectionKey: sectionKey ?? null,
+  });
 }
 
 function getMissingChampionProfileWarning({
@@ -179,72 +235,6 @@ function getMissingChampionProfileWarning({
   return `Missing combat profile for ${missingProfiles.join(
     " and "
   )}; generated draft should be reviewed as lower confidence.`;
-}
-
-function generateValidatedPlaceholderDraft(
-  input: GenerateLeagueMatchupDraftContentInput
-):
-  | {
-      draft: MatchupDraftSections;
-      ok: true;
-    }
-  | {
-      error: string;
-      ok: false;
-    } {
-  const draft = generateDraftWithPlaceholderProvider(input);
-  const promptLeakage = findPromptLeakageInDraft(draft);
-
-  if (promptLeakage.length > 0) {
-    logPromptLeakageRejection({
-      input,
-      provider: "placeholder",
-      rejectedSections: promptLeakage,
-    });
-
-    return {
-      error: formatPromptLeakageError(promptLeakage),
-      ok: false,
-    };
-  }
-
-  return {
-    draft,
-    ok: true,
-  };
-}
-
-function generateValidatedPlaceholderSection(
-  input: GenerateLeagueMatchupDraftSectionContentInput
-):
-  | {
-      content: string;
-      ok: true;
-    }
-  | {
-      error: string;
-      ok: false;
-    } {
-  const content = generateDraftWithPlaceholderProvider(input)[input.sectionKey];
-  const promptLeakage = findPromptLeakageInSection(input.sectionKey, content);
-
-  if (promptLeakage) {
-    logPromptLeakageRejection({
-      input,
-      provider: "placeholder",
-      rejectedSections: [promptLeakage],
-    });
-
-    return {
-      error: formatPromptLeakageError([promptLeakage]),
-      ok: false,
-    };
-  }
-
-  return {
-    content,
-    ok: true,
-  };
 }
 
 async function generateDraftWithOpenAIProvider({
@@ -314,6 +304,25 @@ async function generateDraftWithOpenAIProvider({
       error: formatPromptLeakageError(promptLeakage),
       ok: false,
     };
+  }
+
+  const promptLanguageWarnings =
+    findPromptLanguageWarningsInDraft(normalizedDraft);
+
+  if (promptLanguageWarnings.length > 0) {
+    logPromptLanguageWarnings({
+      input: {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+      },
+      provider: "openai",
+      warnings: promptLanguageWarnings,
+    });
   }
 
   return {
@@ -397,6 +406,28 @@ async function generateDraftSectionWithOpenAIProvider({
       error: formatPromptLeakageError([promptLeakage]),
       ok: false,
     };
+  }
+
+  const promptLanguageWarning = findPromptLanguageWarningsInSection(
+    sectionKey,
+    normalizedSection
+  );
+
+  if (promptLanguageWarning) {
+    logPromptLanguageWarnings({
+      input: {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+        sectionKey,
+      },
+      provider: "openai",
+      warnings: [promptLanguageWarning],
+    });
   }
 
   return {
@@ -513,80 +544,6 @@ async function requestOpenAIDraft({
   };
 }
 
-function generateDraftWithPlaceholderProvider({
-  championAName: playerChampionName,
-  championBName: enemyChampionName,
-  role,
-}: GenerateLeagueMatchupDraftContentInput): MatchupDraftSections {
-  if (role === "jungle") {
-    return {
-      danger_windows: [
-        `- ${enemyChampionName}'s strongest invade, river, or objective timing makes blind fog checks dangerous.`,
-        `- Avoid isolated jungle fights after ${playerChampionName} spends mobility, Smite, or defensive cooldowns.`,
-        "- Missing lane priority around Scuttle, dragon, Void Grubs, or Herald turns river contests into forced caution windows.",
-      ].join("\n"),
-      early_game: [
-        "- The first clear should path toward lanes that can move before the enemy jungler's level 3 threat arrives.",
-        `- Path ${playerChampionName} toward the first river move only when nearby lanes can collapse first.`,
-        "- Cross-map camps or gank opposite side instead of flipping a bad Scuttle fight.",
-      ].join("\n"),
-      overview: [
-        `- ${playerChampionName} needs a controlled jungle plan that weighs invade, full-clear, river, and objective trades against ${enemyChampionName}'s scaling window.`,
-        "- Play early pathing around lane priority before flipping Scuttle, invade, dragon, or Void Grubs fights.",
-        `- Deny ${enemyChampionName}'s setup by tracking camps and trading sides when direct fights are bad.`,
-      ].join("\n"),
-      power_spikes: [
-        `- Slow the game down when ${enemyChampionName} reaches a real level, ultimate, item, objective, or dueling breakpoint.`,
-        `- Push tempo when ${playerChampionName}'s clear speed, dueling, gank, or objective setup becomes stronger.`,
-        "- Re-check river fights after first recall, level 6, and first major item because the matchup can flip.",
-      ].join("\n"),
-      trading_pattern: [
-        `- ${playerChampionName}'s first clear should set up river control only when the first Scuttle is actually contestable.`,
-        `- Invade ${enemyChampionName} only when nearby lanes can move or the enemy jungler is tracked on the opposite side.`,
-        "- Tempo leads matter most when they become Void Grubs, dragon, Herald, counter-jungle camps, or scaling denial.",
-      ].join("\n"),
-      win_conditions: [
-        `- Turn ${playerChampionName}'s jungle tempo into objective access and repeatable gank pressure.`,
-        `- Deny ${enemyChampionName} the clears, objective setups, or scaling windows that let them play on their terms.`,
-        "- If you have a numbers disadvantage, trade the tempo window into top-side camps, Void Grubs, Herald, or vision instead of flipping the dragon fight.",
-      ].join("\n"),
-    };
-  }
-
-  return {
-    danger_windows: [
-      `- ${enemyChampionName} can threaten lethal when engage or burst tools are ready.`,
-      `- Avoid all-in windows after ${playerChampionName} spends mobility or defensive crowd control.`,
-      "- Jungle fog and missing summoners make extended lane pressure much riskier.",
-    ].join("\n"),
-    early_game: [
-      "- Hold the wave in a lane state that allows short trades.",
-      `- Let ${playerChampionName} establish safe spacing before forcing pressure.`,
-      "- Preserve health before the first meaningful level breakpoint.",
-    ].join("\n"),
-    overview: [
-      `- ${playerChampionName}'s lane plan depends on whether pressure, free-farm denial, or a safer cooldown window matters most into ${enemyChampionName}.`,
-      `- Adapt spacing and wave state around ${enemyChampionName}'s main threat instead of giving a free all-in.`,
-      `- Turn ${playerChampionName}'s best lane pattern into CS denial, priority, roam timing, or objective access.`,
-    ].join("\n"),
-    power_spikes: [
-      `- ${enemyChampionName}'s real level, ultimate, first-item, or major cooldown breakpoint can flip forced trades.`,
-      `- Push harder when ${playerChampionName}'s own level, item, or cooldown breakpoint creates a better trade window.`,
-      "- Reassess trades after recalls and level 6 because the lane threat can flip quickly.",
-    ].join("\n"),
-    trading_pattern: [
-      `- Trade in short windows until ${playerChampionName}'s matchup pattern is clear.`,
-      `- Disengage before ${enemyChampionName}'s main follow-up lands.`,
-      "- Extend only after the opponent misses their main answer.",
-    ].join("\n"),
-    win_conditions: [
-      `- Turn ${playerChampionName}'s stable lane into objective access.`,
-      "- Safe pressure should become roam windows, vision control, or teamfight setup before the opponent stabilizes.",
-      `- Deny ${enemyChampionName} the fights that start on their terms.`,
-    ].join("\n"),
-  };
-}
-
 async function readOpenAIError(response: Response) {
   const fallbackMessage = `${response.status} ${response.statusText}`.trim();
 
@@ -673,38 +630,43 @@ function normalizeDraftSection(section: string) {
     .join("\n");
 }
 
-const promptLeakagePatterns = [
+type PromptLeakagePattern = {
+  label: string;
+  pattern: RegExp;
+  sectionKeys?: readonly MatchupDraftSectionKey[];
+};
+
+const promptLeakagePatterns: readonly PromptLeakagePattern[] = [
   {
-    label: "instruction-style bullet opening",
-    pattern:
-      /(^|\n)-\s*(identify|build|choose|respect|treat|review|explain|list|keep|convert)\b/i,
+    label: "review prompt opening",
+    pattern: /(^|\n)-\s*review\b/i,
   },
   {
-    label: "review",
-    pattern: /\breview(?:ed|ing)?\b/i,
+    label: "analyze prompt opening",
+    pattern: /(^|\n)-\s*analy[sz]e\b/i,
   },
   {
-    label: "list only",
+    label: "re-check prompt opening",
+    pattern: /(^|\n)-\s*re-?check\b/i,
+  },
+  {
+    label: "list-only fallback wording",
     pattern: /\blist only\b/i,
   },
   {
-    label: "keep",
-    pattern: /\bkeep\b/i,
+    label: "keep broad notes fallback wording",
+    pattern: /\bkeep broad notes\b/i,
   },
   {
-    label: "before publishing",
+    label: "before publishing prompt wording",
     pattern: /\bbefore publishing\b/i,
   },
   {
-    label: "verified",
-    pattern: /\bverified\b/i,
+    label: "generated matchup prompt wording",
+    pattern: /\bgenerated (?:matchup|draft|card)\b/i,
   },
   {
-    label: "output",
-    pattern: /\boutput\b/i,
-  },
-  {
-    label: "instruction",
+    label: "instruction prompt wording",
     pattern: /\binstructions?\b/i,
   },
   {
@@ -716,48 +678,73 @@ const promptLeakagePatterns = [
     pattern: /\bschema\b/i,
   },
   {
-    label: "section",
-    pattern: /\bsections?\b/i,
+    label: "admin review prompt wording",
+    pattern: /\badmin(?:s|[-\s]+review)?\b/i,
   },
   {
-    label: "bullet",
-    pattern: /\bbullets?\b/i,
+    label: "the output should prompt wording",
+    pattern: /\bthe output should\b/i,
   },
   {
-    label: "admin",
-    pattern: /\badmins?\b/i,
+    label: "avoid generic prompt wording",
+    pattern: /\bavoid generic\b/i,
   },
   {
-    label: "publishing",
-    pattern: /\bpublishing\b/i,
+    label: "writer-facing do-not wording",
+    pattern:
+      /(^|\n)-\s*do not\s+(?:write|echo|return|include|use the phrases?|start|say)\b/i,
   },
   {
-    label: "return",
-    pattern: /\breturn\b/i,
+    label: "returned bullet/value prompt wording",
+    pattern: /\breturn(?:ed)? (?:bullet|value|json|section|output)\b/i,
   },
   {
-    label: "rewrite",
-    pattern: /\brewrite\b/i,
+    label: "prompt/source profile wording",
+    pattern: /\b(?:prompt|source profile|supplied profile)\b/i,
+  },
+];
+
+const promptLanguageWarningPatterns: readonly PromptLeakagePattern[] = [
+  {
+    label: "instruction-like bullet opening",
+    pattern:
+      /(^|\n)-\s*(identify|build|choose|respect|treat|explain|list|keep|convert)\b/i,
   },
   {
-    label: "source profile",
-    pattern: /\bsource profile\b/i,
-  },
-  {
-    label: "supplied profile",
-    pattern: /\bsupplied profile\b/i,
-  },
-  {
-    label: "generic cross-map trade",
+    label: "generic cross-map phrasing",
     pattern: /\bcross-map trades?\s+when\s+direct\s+river\s+fights\b/i,
   },
-] as const;
+  {
+    label: "soft power-spike process wording",
+    pattern:
+      /(^|\n)-\s*(re-?evaluate|reassess|monitor|watch for|remember to|consider)\b/i,
+    sectionKeys: ["power_spikes"],
+  },
+  {
+    label: "soft power-spike flip language",
+    pattern: /\b(matchup\s+can\s+flip|can\s+flip\s+quickly)\b/i,
+    sectionKeys: ["power_spikes"],
+  },
+  {
+    label: "soft power-spike recall timing",
+    pattern: /\b(first recall|after recalls?)\b/i,
+    sectionKeys: ["power_spikes"],
+  },
+  {
+    label: "soft generic power-spike placeholder",
+    pattern:
+      /\b(real level|slow the game down|push tempo when|level,\s*ultimate,\s*item)\b/i,
+    sectionKeys: ["power_spikes"],
+  },
+];
 
 type PromptLeakageSectionRejection = {
   phrases: string[];
   sample: string;
   sectionKey: MatchupDraftSectionKey;
 };
+
+type PromptLanguageSectionWarning = PromptLeakageSectionRejection;
 
 function findPromptLeakageInDraft(draft: MatchupDraftSections) {
   return matchupDraftSectionKeys
@@ -771,8 +758,41 @@ function findPromptLeakageInSection(
   sectionKey: MatchupDraftSectionKey,
   content: string
 ): PromptLeakageSectionRejection | null {
-  const phrases = promptLeakagePatterns
-    .filter(({ pattern }) => pattern.test(content))
+  return findPromptPatternMatch(sectionKey, content, promptLeakagePatterns);
+}
+
+function findPromptLanguageWarningsInDraft(draft: MatchupDraftSections) {
+  return matchupDraftSectionKeys
+    .map((sectionKey) =>
+      findPromptLanguageWarningsInSection(sectionKey, draft[sectionKey])
+    )
+    .filter((warning): warning is PromptLanguageSectionWarning =>
+      Boolean(warning)
+    );
+}
+
+function findPromptLanguageWarningsInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string
+): PromptLanguageSectionWarning | null {
+  return findPromptPatternMatch(
+    sectionKey,
+    content,
+    promptLanguageWarningPatterns
+  );
+}
+
+function findPromptPatternMatch(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+  patterns: readonly PromptLeakagePattern[]
+) {
+  const phrases = patterns
+    .filter(
+      ({ pattern, sectionKeys }) =>
+        (!sectionKeys || sectionKeys.includes(sectionKey)) &&
+        pattern.test(content)
+    )
     .map(({ label }) => label);
 
   if (phrases.length === 0) {
@@ -781,18 +801,26 @@ function findPromptLeakageInSection(
 
   return {
     phrases,
-    sample: getPromptLeakageSample(content, phrases),
+    sample: getPromptPatternSample(sectionKey, content, phrases, patterns),
     sectionKey,
   };
 }
 
-function getPromptLeakageSample(content: string, phrases: string[]) {
+function getPromptPatternSample(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+  phrases: string[],
+  patterns: readonly PromptLeakagePattern[]
+) {
   const matchingLine =
     content
       .split("\n")
       .find((line) =>
-        promptLeakagePatterns.some(
-          ({ label, pattern }) => phrases.includes(label) && pattern.test(line)
+        patterns.some(
+          ({ label, pattern, sectionKeys }) =>
+            phrases.includes(label) &&
+            (!sectionKeys || sectionKeys.includes(sectionKey)) &&
+            pattern.test(line)
         )
       ) ?? content;
 
@@ -830,6 +858,30 @@ function logPromptLeakageRejection({
       sectionKey,
     })),
     role: input.role,
+  });
+}
+
+function logPromptLanguageWarnings({
+  input,
+  provider,
+  warnings,
+}: {
+  input:
+    | GenerateLeagueMatchupDraftContentInput
+    | GenerateLeagueMatchupDraftSectionContentInput;
+  provider: LeagueMatchupDraftProvider;
+  warnings: PromptLanguageSectionWarning[];
+}) {
+  console.warn("League matchup draft prompt-language warning", {
+    enemyChampion: input.championBName,
+    playerChampion: input.championAName,
+    provider,
+    role: input.role,
+    warnings: warnings.map(({ phrases, sample, sectionKey }) => ({
+      phrases,
+      sample,
+      sectionKey,
+    })),
   });
 }
 

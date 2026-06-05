@@ -57,7 +57,7 @@ export type AdminLeagueMatchup = {
   difficulty_rating: number | null;
   early_game: string | null;
   generated_at: string | null;
-  generation_status: "draft" | "reviewed";
+  generation_status: "draft" | "failed" | "reviewed";
   id: number;
   overview: string | null;
   power_spikes: string | null;

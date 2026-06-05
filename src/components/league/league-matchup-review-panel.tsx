@@ -661,7 +661,15 @@ function getGuideBullets(value: string) {
 }
 
 function getStatusLabel(status: AdminMatchupRow["generation_status"]) {
-  return status === "reviewed" ? "Reviewed / published" : "Draft";
+  if (status === "reviewed") {
+    return "Reviewed / published";
+  }
+
+  if (status === "failed") {
+    return "Generation failed";
+  }
+
+  return "Draft";
 }
 
 function getSectionPlaceholder(
