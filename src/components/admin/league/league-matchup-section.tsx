@@ -3514,7 +3514,7 @@ function getQueueItemLabel(
   const championA = championsById.get(item.championAId)?.name ?? item.championAId;
   const championB = championsById.get(item.championBId)?.name ?? item.championBId;
 
-  return `${championA} vs ${championB}`;
+  return `${championA} vs ${championB} (${getRoleLabel(item.role)})`;
 }
 
 function getQueueStats(queueState: LeagueMatchupQueueState) {

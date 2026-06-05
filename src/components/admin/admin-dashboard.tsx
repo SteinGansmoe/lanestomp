@@ -98,6 +98,7 @@ const leagueMatchupDetailSelect = [
   "trading_pattern",
   "win_conditions",
 ].join(", ");
+const leagueMatchupRoleConflictTarget = "champion_a_id,champion_b_id,role";
 const leagueFeedbackSelect = [
   "id",
   "matchup_id",
@@ -1164,11 +1165,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     if (!matchupId) {
       const { data: createdMatchup, error: createError } = await supabase
         .from("league_matchups")
-        .insert({
-          champion_a_id: createLeagueMatchupForm.champion_a_id,
-          champion_b_id: createLeagueMatchupForm.champion_b_id,
-          role: createLeagueMatchupForm.role,
-        })
+        .upsert(
+          {
+            champion_a_id: createLeagueMatchupForm.champion_a_id,
+            champion_b_id: createLeagueMatchupForm.champion_b_id,
+            role: createLeagueMatchupForm.role,
+          },
+          { onConflict: leagueMatchupRoleConflictTarget }
+        )
         .select("id")
         .single<{ id: number }>();
 
@@ -1680,17 +1684,13 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     let profileWarningCount = 0;
 
     for (const [index, item] of items.entries()) {
-      const championA =
-        adminData.leagueChampions.find(
-          (champion) => champion.id === item.championAId
-        )?.name ?? item.championAId;
-      const championB =
-        adminData.leagueChampions.find(
-          (champion) => champion.id === item.championBId
-        )?.name ?? item.championBId;
+      const matchupLabel = getLeagueMatchupPlanLabel(
+        item,
+        adminData.leagueChampions
+      );
       setBatchLeagueMatchupProgress({
         current: index,
-        label: `Generating ${championA} vs ${championB}`,
+        label: `Generating ${matchupLabel}`,
         total: items.length,
       });
 
@@ -1699,11 +1699,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       if (!matchupId) {
         const { data: createdMatchup, error: createError } = await supabase
           .from("league_matchups")
-          .insert({
-            champion_a_id: item.championAId,
-            champion_b_id: item.championBId,
-            role: item.role,
-          })
+          .upsert(
+            {
+              champion_a_id: item.championAId,
+              champion_b_id: item.championBId,
+              role: item.role,
+            },
+            { onConflict: leagueMatchupRoleConflictTarget }
+          )
           .select("id")
           .single<{ id: number }>();
 
@@ -1711,7 +1714,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           setBatchLeagueMatchupStatus({
             error:
               createError?.message ??
-              `Could not create ${championA} vs ${championB}.`,
+              `Could not create ${matchupLabel}.`,
             isLoading: false,
             success: null,
           });
@@ -1745,7 +1748,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       }
       setBatchLeagueMatchupProgress({
         current: index + 1,
-        label: `Generated ${championA} vs ${championB}`,
+        label: `Generated ${matchupLabel}`,
         total: items.length,
       });
     }
@@ -1828,11 +1831,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     if (!matchupId) {
       const { data: createdMatchup, error: createError } = await supabase
         .from("league_matchups")
-        .insert({
-          champion_a_id: item.championAId,
-          champion_b_id: item.championBId,
-          role: item.role,
-        })
+        .upsert(
+          {
+            champion_a_id: item.championAId,
+            champion_b_id: item.championBId,
+            role: item.role,
+          },
+          { onConflict: leagueMatchupRoleConflictTarget }
+        )
         .select(leagueMatchupSelect)
         .single<AdminLeagueMatchup>();
 
@@ -2578,7 +2584,9 @@ function getLeagueMatchupPlanLabel(
 
   return `${
     championNamesById.get(item.championAId) ?? item.championAId
-  } vs ${championNamesById.get(item.championBId) ?? item.championBId}`;
+  } vs ${championNamesById.get(item.championBId) ?? item.championBId} (${getAdminLeagueRoleLabel(
+    item.role
+  )})`;
 }
 
 function getLeagueMatchupLabel(
@@ -2592,4 +2600,8 @@ function getLeagueMatchupLabel(
   return `${
     championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id
   } vs ${championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id}`;
+}
+
+function getAdminLeagueRoleLabel(role: AdminLeagueMatchup["role"]) {
+  return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
 }
