@@ -64,6 +64,7 @@ export function RegisterForm() {
         data: {
           username: nextUsername,
         },
+        emailRedirectTo: getAuthConfirmedRedirectUrl(),
       },
     });
 
@@ -182,4 +183,8 @@ export function RegisterForm() {
       </CardContent>
     </Card>
   );
+}
+
+function getAuthConfirmedRedirectUrl() {
+  return new URL("/auth/confirmed", window.location.origin).toString();
 }
