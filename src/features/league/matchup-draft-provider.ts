@@ -521,17 +521,17 @@ function generateDraftWithPlaceholderProvider({
   if (role === "jungle") {
     return {
       danger_windows: [
-        `- Respect ${enemyChampionName}'s strongest invade, river, or objective fight timing before walking into fog.`,
+        `- ${enemyChampionName}'s strongest invade, river, or objective timing makes blind fog checks dangerous.`,
         `- Avoid isolated jungle fights after ${playerChampionName} spends mobility, Smite, or defensive cooldowns.`,
-        "- Treat missing lane priority around Scuttle, dragon, Void Grubs, or Herald as a forced caution window.",
+        "- Missing lane priority around Scuttle, dragon, Void Grubs, or Herald turns river contests into forced caution windows.",
       ].join("\n"),
       early_game: [
-        "- Choose the first clear around lane priority and the enemy jungler's level 3 threat.",
+        "- The first clear should path toward lanes that can move before the enemy jungler's level 3 threat arrives.",
         `- Path ${playerChampionName} toward the first river move only when nearby lanes can collapse first.`,
         "- Cross-map camps or gank opposite side instead of flipping a bad Scuttle fight.",
       ].join("\n"),
       overview: [
-        `- Identify whether ${playerChampionName} should invade, full clear, contest river, trade objectives, or deny ${enemyChampionName}'s scaling window.`,
+        `- ${playerChampionName} needs a controlled jungle plan that weighs invade, full-clear, river, and objective trades against ${enemyChampionName}'s scaling window.`,
         "- Play early pathing around lane priority before flipping Scuttle, invade, dragon, or Void Grubs fights.",
         `- Deny ${enemyChampionName}'s setup by tracking camps and trading sides when direct fights are bad.`,
       ].join("\n"),
@@ -541,14 +541,14 @@ function generateDraftWithPlaceholderProvider({
         "- Re-check river fights after first recall, level 6, and first major item because the matchup can flip.",
       ].join("\n"),
       trading_pattern: [
-        `- Build ${playerChampionName}'s jungle plan around first clear, river control, and whether the first Scuttle is contestable.`,
+        `- ${playerChampionName}'s first clear should set up river control only when the first Scuttle is actually contestable.`,
         `- Invade ${enemyChampionName} only when nearby lanes can move or the enemy jungler is tracked on the opposite side.`,
-        "- Convert tempo leads into Void Grubs, dragon, Herald, counter-jungle camps, or scaling denial.",
+        "- Tempo leads matter most when they become Void Grubs, dragon, Herald, counter-jungle camps, or scaling denial.",
       ].join("\n"),
       win_conditions: [
         `- Turn ${playerChampionName}'s jungle tempo into objective access and repeatable gank pressure.`,
         `- Deny ${enemyChampionName} the clears, objective setups, or scaling windows that let them play on their terms.`,
-        "- Use cross-map trades when direct river fights are not favorable.",
+        "- If you have a numbers disadvantage, trade the tempo window into top-side camps, Void Grubs, Herald, or vision instead of flipping the dragon fight.",
       ].join("\n"),
     };
   }
@@ -557,7 +557,7 @@ function generateDraftWithPlaceholderProvider({
     danger_windows: [
       `- ${enemyChampionName} can threaten lethal when engage or burst tools are ready.`,
       `- Avoid all-in windows after ${playerChampionName} spends mobility or defensive crowd control.`,
-      "- Treat jungle fog and missing summoners as forced caution.",
+      "- Jungle fog and missing summoners make extended lane pressure much riskier.",
     ].join("\n"),
     early_game: [
       "- Hold the wave in a lane state that allows short trades.",
@@ -565,12 +565,12 @@ function generateDraftWithPlaceholderProvider({
       "- Preserve health before the first meaningful level breakpoint.",
     ].join("\n"),
     overview: [
-      `- Identify whether ${playerChampionName} should pressure lane, deny free farm, or wait for a safer cooldown window into ${enemyChampionName}.`,
+      `- ${playerChampionName}'s lane plan depends on whether pressure, free-farm denial, or a safer cooldown window matters most into ${enemyChampionName}.`,
       `- Adapt spacing and wave state around ${enemyChampionName}'s main threat instead of giving a free all-in.`,
       `- Turn ${playerChampionName}'s best lane pattern into CS denial, priority, roam timing, or objective access.`,
     ].join("\n"),
     power_spikes: [
-      `- Respect ${enemyChampionName}'s real level, ultimate, first-item, or major cooldown breakpoint before forcing trades.`,
+      `- ${enemyChampionName}'s real level, ultimate, first-item, or major cooldown breakpoint can flip forced trades.`,
       `- Push harder when ${playerChampionName}'s own level, item, or cooldown breakpoint creates a better trade window.`,
       "- Reassess trades after recalls and level 6 because the lane threat can flip quickly.",
     ].join("\n"),
@@ -581,7 +581,7 @@ function generateDraftWithPlaceholderProvider({
     ].join("\n"),
     win_conditions: [
       `- Turn ${playerChampionName}'s stable lane into objective access.`,
-      "- Convert safe pressure into roam windows or teamfight setup.",
+      "- Safe pressure should become roam windows, vision control, or teamfight setup before the opponent stabilizes.",
       `- Deny ${enemyChampionName} the fights that start on their terms.`,
     ].join("\n"),
   };
@@ -675,6 +675,11 @@ function normalizeDraftSection(section: string) {
 
 const promptLeakagePatterns = [
   {
+    label: "instruction-style bullet opening",
+    pattern:
+      /(^|\n)-\s*(identify|build|choose|respect|treat|review|explain|list|keep|convert)\b/i,
+  },
+  {
     label: "review",
     pattern: /\breview(?:ed|ing)?\b/i,
   },
@@ -742,6 +747,10 @@ const promptLeakagePatterns = [
     label: "supplied profile",
     pattern: /\bsupplied profile\b/i,
   },
+  {
+    label: "generic cross-map trade",
+    pattern: /\bcross-map trades?\s+when\s+direct\s+river\s+fights\b/i,
+  },
 ] as const;
 
 type PromptLeakageSectionRejection = {
@@ -797,7 +806,7 @@ function formatPromptLeakageError(
     .map(({ phrases, sectionKey }) => `${sectionKey} (${phrases.join(", ")})`)
     .join("; ");
 
-  return `Generated matchup draft was rejected because it contained prompt-like language: ${sectionList}. Regenerate the draft.`;
+  return `Generated matchup draft was rejected because it contained prompt-like or instruction-style language: ${sectionList}. Regenerate the draft.`;
 }
 
 function logPromptLeakageRejection({
