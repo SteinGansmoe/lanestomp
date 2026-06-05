@@ -92,15 +92,30 @@ type LeagueMatchupQueueState = {
 
 type ChampionMatchupGroup = {
   approvableDraftIds: number[];
+  championId: string;
   draftCount: number;
   id: string;
   items: AdminLeagueMatchup[];
   missingCount: number | null;
   reviewedCount: number;
+  role: AdminLeagueMatchup["role"];
   statusClassName: string;
   statusLabel: string;
   title: string;
   totalCount: number;
+};
+
+type ChampionRegenerationState = {
+  current: number;
+  groupId: string;
+  title: string;
+  total: number;
+};
+
+type ChampionRegenerationStatus = {
+  groupId: string;
+  text: string;
+  type: "error" | "success";
 };
 
 type LaneMatchupGroup = {
@@ -203,6 +218,11 @@ export function AdminLeagueMatchupsSection({
   const [sortMode, setSortMode] =
     useState<LeagueMatchupSortMode>("needs-review");
   const [isBulkQueueActive, setIsBulkQueueActive] = useState(false);
+  const [regeneratingChampionGroup, setRegeneratingChampionGroup] =
+    useState<ChampionRegenerationState | null>(null);
+  const [championRegenerationStatus, setChampionRegenerationStatus] =
+    useState<ChampionRegenerationStatus | null>(null);
+  const isChampionRegenerationActive = regeneratingChampionGroup !== null;
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
     [champions]
@@ -338,6 +358,89 @@ export function AdminLeagueMatchupsSection({
     updateFilter();
   }
 
+  async function regenerateChampionGroupDrafts(group: ChampionMatchupGroup) {
+    if (
+      editStatus.isLoading ||
+      generatingMatchupId !== null ||
+      deletingDraftMatchupId !== null ||
+      batchStatus.isLoading ||
+      isBulkQueueActive ||
+      isChampionRegenerationActive
+    ) {
+      return;
+    }
+
+    const items = matchups
+      .filter(
+        (matchup) =>
+          matchup.role === group.role && matchup.champion_a_id === group.championId
+      )
+      .map(getQueuePlanItemFromMatchup);
+
+    if (items.length === 0) {
+      setChampionRegenerationStatus({
+        groupId: group.id,
+        text: `No saved ${group.title} matchups found to regenerate.`,
+        type: "error",
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Regenerate all ${items.length} ${group.title} matchup draft${
+        items.length === 1 ? "" : "s"
+      }? This overwrites the generated cards and marks them as drafts.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    let failedCount = 0;
+    let warningCount = 0;
+
+    setChampionRegenerationStatus(null);
+    setRegeneratingChampionGroup({
+      current: 0,
+      groupId: group.id,
+      title: group.title,
+      total: items.length,
+    });
+
+    for (const [index, item] of items.entries()) {
+      setRegeneratingChampionGroup({
+        current: index + 1,
+        groupId: group.id,
+        title: group.title,
+        total: items.length,
+      });
+
+      const result = await onGenerateQueueItem(item);
+
+      if (!result.ok) {
+        failedCount += 1;
+      } else if (result.profileWarning) {
+        warningCount += 1;
+      }
+    }
+
+    setRegeneratingChampionGroup(null);
+    setChampionRegenerationStatus({
+      groupId: group.id,
+      text:
+        failedCount > 0
+          ? `Regenerated ${items.length - failedCount} of ${
+              items.length
+            } ${group.title} matchup draft${
+              items.length === 1 ? "" : "s"
+            }. ${failedCount} failed.`
+          : `Regenerated all ${items.length} ${group.title} matchup draft${
+              items.length === 1 ? "" : "s"
+            }.${warningCount > 0 ? ` ${warningCount} saved with warnings.` : ""}`,
+      type: failedCount > 0 ? "error" : "success",
+    });
+  }
+
   return (
     <>
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -385,7 +488,11 @@ export function AdminLeagueMatchupsSection({
 
       <LeagueMatchupBulkGenerationQueue
         champions={champions}
-        isDisabled={generatingMatchupId !== null || batchStatus.isLoading}
+        isDisabled={
+          generatingMatchupId !== null ||
+          batchStatus.isLoading ||
+          isChampionRegenerationActive
+        }
         matchups={matchups}
         onActiveChange={setIsBulkQueueActive}
         onGenerateQueueItem={onGenerateQueueItem}
@@ -791,13 +898,24 @@ export function AdminLeagueMatchupsSection({
                             {laneGroup.championGroups.map((group) => {
                 const isCollapsed = isChampionGroupCollapsed(group.id);
                 const contentId = `${championGroupStorageKey}-${group.id}`;
+                const isGroupRegenerating =
+                  regeneratingChampionGroup?.groupId === group.id;
                 const isApproveAllDisabled =
                   editStatus.isLoading ||
                   generatingMatchupId !== null ||
                   deletingDraftMatchupId !== null ||
                   batchStatus.isLoading ||
                   isBulkQueueActive ||
+                  isChampionRegenerationActive ||
                   group.approvableDraftIds.length === 0;
+                const isRegenerateAllDisabled =
+                  editStatus.isLoading ||
+                  generatingMatchupId !== null ||
+                  deletingDraftMatchupId !== null ||
+                  batchStatus.isLoading ||
+                  isBulkQueueActive ||
+                  isChampionRegenerationActive ||
+                  group.items.length === 0;
 
                 return (
                   <li
@@ -839,9 +957,46 @@ export function AdminLeagueMatchupsSection({
                             </span>
                           ) : null}
                         </div>
+                        {isGroupRegenerating ? (
+                          <p className="mt-2 text-xs text-violet-100">
+                            Regenerating {regeneratingChampionGroup.current}/
+                            {regeneratingChampionGroup.total} matchup drafts...
+                          </p>
+                        ) : championRegenerationStatus?.groupId === group.id ? (
+                          <p
+                            className={cn(
+                              "mt-2 text-xs",
+                              championRegenerationStatus.type === "success"
+                                ? "text-emerald-200"
+                                : "text-rose-200"
+                            )}
+                          >
+                            {championRegenerationStatus.text}
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
+                          disabled={isRegenerateAllDisabled}
+                          onClick={() => regenerateChampionGroupDrafts(group)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <RefreshCw
+                            className={cn(
+                              "size-3.5",
+                              isGroupRegenerating ? "animate-spin" : ""
+                            )}
+                            aria-hidden="true"
+                          />
+                          {isGroupRegenerating
+                            ? `Regenerating ${regeneratingChampionGroup.current}/${regeneratingChampionGroup.total}`
+                            : "Regenerate all"}
+                        </Button>
+
                         {group.approvableDraftIds.length > 0 ? (
                           <Button
                             className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
@@ -950,7 +1105,8 @@ export function AdminLeagueMatchupsSection({
                           generatingMatchupId !== null ||
                           deletingDraftMatchupId !== null ||
                           batchStatus.isLoading
-                          || isBulkQueueActive
+                          || isBulkQueueActive ||
+                          isChampionRegenerationActive
                         }
                         onClick={() => onGenerateDraft(matchup)}
                         size="sm"
@@ -974,7 +1130,8 @@ export function AdminLeagueMatchupsSection({
                           isGenerating ||
                           isDeletingDraft ||
                           batchStatus.isLoading
-                          || isBulkQueueActive
+                          || isBulkQueueActive ||
+                          isChampionRegenerationActive
                         }
                         onClick={() => onStartEdit(matchup)}
                         size="sm"
@@ -991,6 +1148,7 @@ export function AdminLeagueMatchupsSection({
                           isDeletingDraft ||
                           batchStatus.isLoading ||
                           isBulkQueueActive ||
+                          isChampionRegenerationActive ||
                           !hasDraftContent ||
                           matchup.generation_status === "reviewed"
                         }
@@ -1009,6 +1167,7 @@ export function AdminLeagueMatchupsSection({
                           deletingDraftMatchupId !== null ||
                           batchStatus.isLoading ||
                           isBulkQueueActive ||
+                          isChampionRegenerationActive ||
                           !hasDraftContent
                         }
                         onClick={() => onDeleteDraft(matchup)}
@@ -3488,11 +3647,13 @@ function getChampionMatchupGroupsForRole({
         approvableDraftIds: Array.from(
           filteredApprovableDraftIdsByChampion.get(championId) ?? []
         ),
+        championId,
         draftCount,
         id: `${role}:${championId}`,
         items,
         missingCount,
         reviewedCount,
+        role,
         statusClassName: status.className,
         statusLabel: status.label,
         title: champion?.name ?? championId,
@@ -3749,6 +3910,17 @@ function buildLaneQueueItems(
   }
 
   return items;
+}
+
+function getQueuePlanItemFromMatchup(
+  matchup: AdminLeagueMatchup
+): LeagueMatchupBatchPlanItem {
+  return {
+    championAId: matchup.champion_a_id,
+    championBId: matchup.champion_b_id,
+    existingMatchupId: matchup.id,
+    role: matchup.role,
+  };
 }
 
 function getRoleMatchupGapAnalysis(
