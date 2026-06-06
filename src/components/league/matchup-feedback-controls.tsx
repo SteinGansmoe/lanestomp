@@ -96,7 +96,7 @@ export function MatchupFeedbackControls({
   }
 
   return (
-    <div className="mt-4 border-t border-white/10 pt-3">
+    <div className="mt-3 border-t border-white/10 pt-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           className="h-8 border-emerald-300/20 bg-emerald-500/10 px-2 text-xs text-emerald-100 hover:bg-emerald-500/20"
@@ -126,7 +126,7 @@ export function MatchupFeedbackControls({
           variant="ghost"
         >
           <AlertTriangle className="size-3.5" aria-hidden="true" />
-          Report issue
+          Report
         </Button>
       </div>
 

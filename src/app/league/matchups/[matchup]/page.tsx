@@ -12,7 +12,6 @@ import { connection } from "next/server";
 import { BackButton } from "@/src/components/back-button";
 import { ChangeMatchupPanel } from "@/src/components/league/change-matchup-panel";
 import { LeagueMatchupReviewPanel } from "@/src/components/league/league-matchup-review-panel";
-import { SummonersRiftMinimap } from "@/src/components/league/summoners-rift-minimap";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import {
@@ -63,8 +62,12 @@ export default async function LeagueMatchupPage({
       : [null, null];
 
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
-      <section className="mx-auto flex max-w-7xl flex-col gap-5 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <main className="relative min-h-screen overflow-hidden bg-[#050b18] px-4 py-4 text-white sm:px-6 lg:px-8">
+      {championA && championB ? (
+        <MatchupPageTheme championA={championA} championB={championB} />
+      ) : null}
+
+      <section className="relative z-10 mx-auto flex max-w-7xl flex-col gap-3 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
         <SiteHeader />
 
         <div className="flex flex-wrap items-center gap-3">
@@ -87,7 +90,7 @@ export default async function LeagueMatchupPage({
         </div>
 
         {championsResult.error ? (
-          <Card className="border-amber-300/20 bg-amber-300/10 p-5 text-amber-100">
+          <Card className="border-amber-300/20 bg-[#10182b]/92 p-5 text-amber-100 shadow-xl shadow-black/20 backdrop-blur-md">
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
               <div>
@@ -104,7 +107,7 @@ export default async function LeagueMatchupPage({
             </div>
           </Card>
         ) : championsResult.champions.length === 0 ? (
-          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
+          <Card className="border-white/10 bg-[#10182b]/92 p-8 text-center text-zinc-300 shadow-xl shadow-black/20 backdrop-blur-md">
             <CardTitle className="font-mono text-xl">
               No champions imported yet
             </CardTitle>
@@ -128,7 +131,7 @@ export default async function LeagueMatchupPage({
             />
 
             {matchupResult?.error ? (
-              <Card className="border-amber-300/20 bg-amber-300/10 p-5 text-amber-100">
+              <Card className="border-amber-300/20 bg-[#10182b]/92 p-5 text-amber-100 shadow-xl shadow-black/20 backdrop-blur-md">
                 <div className="flex items-start gap-3">
                   <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                   <div>
@@ -176,7 +179,7 @@ export default async function LeagueMatchupPage({
             )}
           </>
         ) : (
-          <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
+          <Card className="border-white/10 bg-[#10182b]/92 p-8 text-center text-zinc-300 shadow-xl shadow-black/20 backdrop-blur-md">
             <CardTitle className="font-mono text-xl">
               Matchup not found
             </CardTitle>
@@ -196,6 +199,73 @@ export default async function LeagueMatchupPage({
   );
 }
 
+function MatchupPageTheme({
+  championA,
+  championB,
+}: {
+  championA: LeagueChampion;
+  championB: LeagueChampion;
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+      <div className="absolute inset-0 opacity-65">
+        <ThemedSplash champion={championA} side="left" />
+        <ThemedSplash champion={championB} side="right" />
+      </div>
+
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.18),rgba(5,11,24,0.82)_42%,rgba(5,11,24,0.82)_58%,rgba(5,11,24,0.18))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,11,24,0.18),rgba(5,11,24,0.58)_24rem,rgba(5,11,24,0.94)_52rem,#050b18_78rem)]" />
+      <div className="absolute inset-x-[-12%] top-28 h-80 bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.16),rgba(34,211,238,0.08)_34%,transparent_68%)] blur-2xl" />
+      <div className="absolute inset-x-[-10%] top-[22rem] h-[30rem] bg-[radial-gradient(ellipse_at_center,rgba(226,232,240,0.09),rgba(56,189,248,0.05)_32%,transparent_72%)] blur-3xl" />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(180deg,transparent,rgba(5,11,24,0.9)_42%,#050b18)]" />
+    </div>
+  );
+}
+
+function ThemedSplash({
+  champion,
+  side,
+}: {
+  champion: LeagueChampion;
+  side: "left" | "right";
+}) {
+  const objectPosition = getChampionSplashFocus(champion);
+  const fadeMask =
+    side === "left"
+      ? "linear-gradient(to right, black 0%, black 58%, rgba(0,0,0,0.55) 78%, transparent 100%)"
+      : "linear-gradient(to left, black 0%, black 58%, rgba(0,0,0,0.55) 78%, transparent 100%)";
+
+  return (
+    <div
+      className={`absolute top-0 h-[46rem] w-[58%] ${
+        side === "left" ? "left-0" : "right-0"
+      }`}
+      style={{
+        maskImage: fadeMask,
+        WebkitMaskImage: fadeMask,
+      }}
+    >
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="object-cover blur-[1px] saturate-125"
+        fill
+        priority={side === "left"}
+        sizes="(min-width: 1024px) 68vw, 100vw"
+        src={getChampionSplashUrl(champion)}
+        style={{ objectPosition }}
+      />
+      <div
+        className={`absolute inset-0 ${
+          side === "left"
+            ? "bg-gradient-to-r from-transparent via-[#050b18]/22 to-[#050b18]"
+            : "bg-gradient-to-l from-transparent via-[#050b18]/22 to-[#050b18]"
+        }`}
+      />
+    </div>
+  );
+}
+
 function UnavailableMatchupState({
   championA,
   championB,
@@ -212,7 +282,7 @@ function UnavailableMatchupState({
   const roleLabel = getRoleLabel(role);
 
   return (
-    <section className="overflow-hidden rounded-lg border border-cyan-300/15 bg-[#10182b]/90 shadow-xl shadow-black/20">
+    <section className="overflow-hidden rounded-lg border border-cyan-300/15 bg-[#10182b]/92 shadow-xl shadow-black/20 backdrop-blur-md">
       <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
         <div className="flex items-start gap-4">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
@@ -342,41 +412,52 @@ function MatchupHero({
   const roleLabel = getRoleLabel(role);
 
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-      <div className="grid lg:min-h-72 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)]">
-        <ChampionPanel champion={championA} label="You" side="left" />
-        <div className="relative z-10 flex min-h-56 items-center justify-center border-y border-white/10 bg-[#081120]/95 p-4 shadow-2xl shadow-black/30 lg:border-x lg:border-y-0">
-          <div className="w-full text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.18em] text-zinc-500">
-              {roleLabel} lane
-            </p>
-            <div className="mx-auto mt-4 grid max-w-44 grid-cols-[1fr_auto_1fr] items-center gap-2">
+    <section className="relative">
+      <div className="flex min-h-24 items-center justify-center px-4 py-3 sm:min-h-28">
+        <div className="w-full max-w-3xl text-center">
+          <div className="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-4">
+            <div className="flex min-w-0 items-center justify-end gap-3">
+              <span className="hidden truncate text-right font-mono text-xl font-semibold tracking-normal text-white sm:block lg:text-2xl">
+                {championA.name}
+              </span>
               <ChampionIcon champion={championA} />
-              <div className="flex size-10 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/20 font-mono text-xs font-semibold text-violet-100 shadow-lg shadow-violet-950/30">
+            </div>
+
+            <div className="grid gap-1">
+              <div className="flex size-9 items-center justify-center rounded-lg border border-violet-300/20 bg-violet-500/25 font-mono text-xs font-semibold text-violet-100 shadow-lg shadow-violet-950/25">
                 VS
               </div>
-              <ChampionIcon champion={championB} />
+              <span className="rounded-md border border-white/10 bg-black/25 px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-zinc-300">
+                {roleLabel}
+              </span>
             </div>
-            <h1 className="mt-4 font-mono text-2xl font-semibold leading-tight tracking-normal text-white">
-              {championA.name} vs {championB.name}
-            </h1>
-            {matchup ? (
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {matchup.difficulty_rating ? (
-                  <MatchupMetaPill label={`Difficulty ${matchup.difficulty_rating}/5`} />
-                ) : null}
-                {matchup.confidence_level ? (
-                  <MatchupMetaPill label={`Confidence ${matchup.confidence_level}`} />
-                ) : null}
-                {matchup.updated_at ? (
-                  <MatchupMetaPill label={`Updated ${formatMatchupDate(matchup.updated_at)}`} />
-                ) : null}
-              </div>
-            ) : null}
-            <SummonersRiftMinimap className="mt-5" role={role} />
+
+            <div className="flex min-w-0 items-center gap-3">
+              <ChampionIcon champion={championB} />
+              <span className="hidden truncate font-mono text-xl font-semibold tracking-normal text-white sm:block lg:text-2xl">
+                {championB.name}
+              </span>
+            </div>
           </div>
+
+          <h1 className="mt-3 font-mono text-2xl font-semibold leading-tight tracking-normal text-white sm:hidden">
+            {championA.name} vs {championB.name}
+          </h1>
+
+          {matchup ? (
+            <div className="mt-2.5 flex flex-wrap justify-center gap-2">
+              {matchup.difficulty_rating ? (
+                <MatchupMetaPill label={`Difficulty ${matchup.difficulty_rating}/5`} />
+              ) : null}
+              {matchup.confidence_level ? (
+                <MatchupMetaPill label={`Confidence ${matchup.confidence_level}`} />
+              ) : null}
+              {matchup.updated_at ? (
+                <MatchupMetaPill label={`Updated ${formatMatchupDate(matchup.updated_at)}`} />
+              ) : null}
+            </div>
+          ) : null}
         </div>
-        <ChampionPanel champion={championB} label="Opponent" side="right" />
       </div>
     </section>
   );
@@ -384,63 +465,19 @@ function MatchupHero({
 
 function MatchupMetaPill({ label }: { label: string }) {
   return (
-    <span className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-zinc-300">
+    <span className="rounded-md border border-white/10 bg-black/25 px-2.5 py-1 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-zinc-300 shadow-sm shadow-black/20">
       {label}
     </span>
   );
 }
 
-function ChampionPanel({
-  champion,
-  label,
-  side,
-}: {
-  champion: LeagueChampion;
-  label: "Opponent" | "You";
-  side: "left" | "right";
-}) {
-  return (
-    <div className="relative min-h-56 overflow-hidden p-5 transition duration-300 hover:brightness-110 sm:p-6 lg:min-h-72">
-      <Image
-        alt=""
-        aria-hidden="true"
-        className="object-cover"
-        fill
-        sizes="(min-width: 1024px) 40vw, 100vw"
-        src={getChampionSplashUrl(champion)}
-      />
-      <div
-        className={`absolute inset-0 ${
-          side === "left"
-            ? "bg-gradient-to-r from-[#10182b] via-[#10182b]/68 to-[#10182b]/18"
-            : "bg-gradient-to-l from-[#10182b] via-[#10182b]/68 to-[#10182b]/18"
-        }`}
-      />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#10182b] to-transparent" />
-      <div className="relative flex h-full min-h-44 flex-col justify-end">
-        <ChampionIcon champion={champion} />
-        <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-zinc-500">
-          {label}
-        </p>
-        <h2 className="mt-1 font-mono text-3xl font-semibold tracking-normal text-white">
-          {champion.name}
-        </h2>
-        <p className="mt-1 max-w-sm text-sm capitalize text-zinc-300">
-          {champion.title || "Champion"}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {champion.tags.map((tag) => (
-            <span
-              className="rounded-md border border-white/10 bg-white/10 px-2 py-1 text-xs text-zinc-200"
-              key={`${champion.id}-${tag}`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+const championSplashFocus: Partial<Record<string, string>> = {
+  Akshan: "center 24%",
+  AurelionSol: "center 18%",
+};
+
+function getChampionSplashFocus(champion: Pick<LeagueChampion, "id">) {
+  return championSplashFocus[champion.id] ?? "center 32%";
 }
 
 function TipStrip({
@@ -455,7 +492,7 @@ function TipStrip({
   updatedAt: string | null;
 }) {
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-cyan-300/10 bg-[#10182b]/80 p-4 text-sm text-zinc-400 shadow-lg shadow-black/10 sm:flex-row sm:items-center sm:justify-between">
+    <section className="flex flex-col gap-3 rounded-lg border border-cyan-300/10 bg-[#10182b]/78 p-4 text-sm text-zinc-400 shadow-lg shadow-black/10 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
           <Lightbulb className="size-4" aria-hidden="true" />
@@ -487,7 +524,7 @@ function ChampionIcon({ champion }: { champion: LeagueChampion }) {
     <Image
       alt=""
       aria-hidden="true"
-      className="size-14 rounded-lg border border-white/15 object-cover shadow-lg shadow-black/30"
+      className="size-12 rounded-lg border border-white/15 object-cover shadow-lg shadow-black/30 sm:size-14"
       height={56}
       src={champion.image_url}
       width={56}
