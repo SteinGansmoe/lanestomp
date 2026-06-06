@@ -135,6 +135,8 @@ const legacyMidMatchupQueueStorageKey =
   "lanestomp.admin.leagueMatchups.midBulkGenerationQueue";
 const matchupQueueStorageKeyPrefix =
   "lanestomp.admin.leagueMatchups.bulkGenerationQueue";
+const adcEstimatedMsPerMatchup = 8_000;
+const adcEstimatedTokensPerMatchup = 1_400;
 
 export function AdminLeagueMatchupsSection({
   champions,
@@ -486,6 +488,8 @@ export function AdminLeagueMatchupsSection({
           </CardContent>
         </Card>
       </div>
+
+      <AdcGenerationReadinessCheck champions={champions} matchups={matchups} />
 
       <LeagueMatchupBulkGenerationQueue
         champions={champions}
@@ -1668,6 +1672,102 @@ function LeagueMatchupFeedbackReview({
             No matchup feedback matches these filters yet.
           </p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AdcGenerationReadinessCheck({
+  champions,
+  matchups,
+}: {
+  champions: AdminLeagueChampion[];
+  matchups: AdminLeagueMatchup[];
+}) {
+  const adcChampions = useMemo(
+    () =>
+      sortChampionsForRole(
+        champions.filter((champion) => isChampionInRole(champion, "adc")),
+        "adc"
+      ),
+    [champions]
+  );
+  const readiness = useMemo(
+    () => getAdcGenerationReadiness(adcChampions, matchups),
+    [adcChampions, matchups]
+  );
+  const profileReadiness = useMemo(
+    () => getCombatProfileReadiness(adcChampions),
+    [adcChampions]
+  );
+
+  return (
+    <Card className="border-violet-300/15 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="font-mono text-xl">
+              ADC generation readiness
+            </CardTitle>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+              Recommended model: ADC vs ADC under neutral support conditions.
+              Support impact should be handled as conditional setup until support
+              modifiers exist.
+            </p>
+          </div>
+          <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-100">
+            Prepare only
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <QueueStat
+            label="ADC champions"
+            value={formatCompactNumber(readiness.championCount)}
+          />
+          <QueueStat
+            label="Expected matchups"
+            value={formatCompactNumber(readiness.expectedMatchupCount)}
+          />
+          <QueueStat
+            label="Missing rows"
+            value={formatCompactNumber(readiness.missingMatchupCount)}
+          />
+          <QueueStat
+            label="Full queue time"
+            value={formatDuration(readiness.fullGenerationTimeMs)}
+          />
+          <QueueStat
+            label="OpenAI usage"
+            value={`${formatCompactNumber(readiness.expectedOpenAiRequests)} req`}
+          />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+          <CombatProfileReadinessNotice
+            readiness={profileReadiness}
+            role="adc"
+            tone="default"
+          />
+
+          <div className="rounded-md border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-300">
+            <p className="font-medium text-white">Readiness estimate</p>
+            <p className="mt-1 leading-6">
+              Full ADC coverage would queue {readiness.expectedMatchupCount}{" "}
+              directional matchups. {readiness.existingMatchupCount} rows already
+              exist, so missing-only coverage would currently queue{" "}
+              {readiness.missingMatchupCount} and take about{" "}
+              {formatDuration(readiness.missingOnlyTimeMs)}.
+            </p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">
+              OpenAI estimate: {readiness.expectedOpenAiRequests} request
+              {readiness.expectedOpenAiRequests === 1 ? "" : "s"} for a full
+              pass, with retry risk up to {readiness.retryRiskRequests} attempts
+              and roughly {formatCompactNumber(readiness.estimatedTokens)} tokens.
+            </p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -4142,6 +4242,26 @@ function getQueueStats(queueState: LeagueMatchupQueueState) {
   };
 }
 
+function getAdcGenerationReadiness(
+  adcChampions: AdminLeagueChampion[],
+  matchups: AdminLeagueMatchup[]
+) {
+  const expectedMatchupCount = adcChampions.length * (adcChampions.length - 1);
+  const gapAnalysis = getRoleMatchupGapAnalysis(adcChampions, matchups, "adc");
+
+  return {
+    championCount: adcChampions.length,
+    estimatedTokens: expectedMatchupCount * adcEstimatedTokensPerMatchup,
+    expectedMatchupCount,
+    expectedOpenAiRequests: expectedMatchupCount,
+    existingMatchupCount: gapAnalysis.existingRowCount,
+    fullGenerationTimeMs: expectedMatchupCount * adcEstimatedMsPerMatchup,
+    missingMatchupCount: gapAnalysis.missingCount,
+    missingOnlyTimeMs: gapAnalysis.missingCount * adcEstimatedMsPerMatchup,
+    retryRiskRequests: expectedMatchupCount * 2,
+  };
+}
+
 function getCombatProfileReadiness(champions: AdminLeagueChampion[]) {
   const missingProfileCount = champions.filter(
     (champion) => !getChampionCombatProfile(champion.id)
@@ -4154,6 +4274,10 @@ function getCombatProfileReadiness(champions: AdminLeagueChampion[]) {
 }
 
 function formatDuration(durationMs: number) {
+  if (durationMs <= 0) {
+    return "0s";
+  }
+
   const totalSeconds = Math.max(Math.round(durationMs / 1_000), 1);
   const hours = Math.floor(totalSeconds / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
@@ -4168,6 +4292,14 @@ function formatDuration(durationMs: number) {
   }
 
   return `${seconds}s`;
+}
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("en", {
+    compactDisplay: "short",
+    maximumFractionDigits: value >= 1_000 ? 1 : 0,
+    notation: value >= 10_000 ? "compact" : "standard",
+  }).format(value);
 }
 
 function parseStoredQueueState(

@@ -125,6 +125,16 @@ const junglePlanRules = [
   "- Good Jungle Plan examples: Prioritize early dragon and objective control, then use vision to force Kha'Zix into team-based fights instead of isolated picks.",
 ].join("\n");
 
+const adcPromptRules = [
+  "ADC Matchup Rules:",
+  "- Treat ADC matchups as primary marksman-versus-marksman guidance under neutral support conditions.",
+  "- Assume neither ADC has a specific support advantage unless admin notes provide one.",
+  "- Focus on ADC agency: range advantage, wave access, CS pressure, poke windows, all-in threat, reset timing, item spikes, dragon setup, turret pressure, and teamfight role.",
+  "- Mention support dependency as a condition, not a named support matchup; use phrases such as only when your support can walk up, when support cooldowns are available, or if bot prio is secured.",
+  "- Avoid claiming exact 2v2 outcomes because support picks can flip lane pressure, all-in threat, and sustain.",
+  "- Avoid jungle-only language such as invade, camp tracking, jungle pathing, clear speed, Smite, Scuttle, Herald, Void Grubs, counter-jungle, or first clear unless the admin notes directly require it.",
+].join("\n");
+
 // This builder is the provider-facing prompt contract for League draft generation.
 // Keep it independent from the OpenAI call so future provider swaps reuse the same quality bar.
 export function buildLeagueMatchupDraftPrompt({
@@ -200,6 +210,7 @@ export function buildLeagueMatchupDraftPrompt({
       "",
       writingStyleRules,
       ...(role === "jungle" ? ["", junglePlanRules, ""] : [""]),
+      ...(role === "adc" ? ["", adcPromptRules, ""] : [""]),
       "Structured champion profiles:",
       `Player champion combat profile:\n${playerChampionContext}`,
       `Enemy champion combat profile:\n${enemyChampionContext}`,
@@ -233,6 +244,7 @@ export function buildLeagueMatchupDraftPrompt({
       "Use the structured champion profiles to decide damage type, crowd control, mobility, sustain, shields, stealth, jungle profile categories, role-appropriate patterns, lane identity, and real spikes.",
       "For jungle matchups, treat jungle_profile fields as higher priority than lanePlan, laneIdentity, trading, or lane-focused summary fields.",
       "For jungle matchups, compare early_game_pressure, clear_speed, objective_control, dueling, gank_threat, invade_resistance, scaling, pathing_notes, and matchup_focus before writing any section.",
+      "For ADC matchups, treat lanePlan, laneIdentity, trading, matchupPreferences, dangerProfile, punishProfile, powerSpikes, and strategicIdentity as the source of truth for ADC-versus-ADC guidance under neutral support conditions.",
       "For non-jungle matchups, treat lanePlan, laneIdentity, strategicIdentity, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields as higher priority than the older summary fields.",
       "Use strategicIdentity to infer high-level matchup identities such as snowball vs scale, roam vs scale, control vs roam, teamfight vs splitpush, or lane pressure vs scaling carry.",
       "Do not name a matchup identity unless it follows from the supplied strategicIdentity fields.",
@@ -245,6 +257,7 @@ export function buildLeagueMatchupDraftPrompt({
       `For jungle matchups, compare ${playerChampionName}'s jungle_profile against ${enemyChampionName}'s jungle_profile and explain what pathing, tempo, river, invade, objective, or scaling plan ${playerChampionName} should play toward.`,
       `For non-jungle matchups, compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
       `For non-jungle matchups, compare ${playerChampionName}'s laneIdentity against ${enemyChampionName}'s laneIdentity before writing overview, early_game, trading_pattern, or win_conditions.`,
+      `For ADC matchups, compare ${playerChampionName}'s range, wave access, poke, all-in risk, scaling curve, item spikes, and teamfight role against ${enemyChampionName}'s profile before writing any section.`,
       `Compare ${playerChampionName}'s strategicIdentity against ${enemyChampionName}'s strategicIdentity before writing overview or win_conditions.`,
       `For non-jungle matchups, compare ${playerChampionName}'s punishProfile.canPunish against ${enemyChampionName}'s dangerProfile.mustRespect and trading.badTradeConditions.`,
       `For non-jungle matchups, compare ${enemyChampionName}'s punishProfile.canPunish and dangerProfile.dangerousWhen against ${playerChampionName}'s trading.badTradeConditions.`,
@@ -256,6 +269,7 @@ export function buildLeagueMatchupDraftPrompt({
       "If a champion profile is missing, avoid specific ability claims for that champion unless supplied by admin notes.",
       "If either profile is missing, make the draft more conservative and lower-confidence instead of inventing details.",
       "For jungle matchups, use natural jungle terms such as full clear, three-camp, level 3 invade, counter-invade, scuttle contest, river fight, objective setup, cross-map, counter-jungle, tempo reset, tracking, gank angle, and scaling window.",
+      "For ADC matchups, use natural bot-lane terms such as range advantage, wave access, CS pressure, support cooldowns, bot prio, crash timing, reset, plates, dragon setup, all-in window, poke lane, and teamfight DPS.",
       "For non-jungle matchups, use natural League terms such as wave on your side, punish cooldowns, avoid all-in windows, short trades, spacing, roam timers, freeze, crash, slow push, and reset only when they fit the role and lane.",
       "Use the ability_map as the canonical ability name source for reasoning, not as the default display format.",
       "Apply short ability references consistently in overview, early_game, trading_pattern, power_spikes, danger_windows, and win_conditions.",
@@ -314,6 +328,7 @@ export function buildLeagueMatchupDraftPrompt({
       "trading_pattern: For jungle, each bullet must name a map action plus the condition that makes it correct.",
       "trading_pattern: For jungle, do not write cooldown-only advice such as engage when key cooldowns are down, use spacing to avoid engage, or force extended fights.",
       "trading_pattern: For jungle, do not use the phrases short trades, trading patterns, trade windows, use spacing, force extended fights, or engage when cooldowns are down; use Jungle Plan wording even though the JSON key remains trading_pattern.",
+      `trading_pattern: For ADC, explain how ${playerChampionName} should trade around range, wave state, support cooldown availability, CS timing, poke threat, and all-in windows under neutral support assumptions.`,
       `trading_pattern: For non-jungle roles, explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
       `trading_pattern: Never explain how ${enemyChampionName} should trade or skirmish; translate ${enemyChampionName}'s mistakes into ${playerChampionName} punish actions.`,
       `power_spikes: Cover ${playerChampionName}'s real spikes and ${enemyChampionName}'s real spikes that change ${playerChampionName}'s decisions.`,
@@ -330,6 +345,7 @@ export function buildLeagueMatchupDraftPrompt({
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
       `win_conditions: For jungle, explain concrete ways ${playerChampionName} can win through pathing, camp tempo, counter-jungling, objective control, gank timing, river fights, scaling denial, or executing strategicIdentity.winMethod.`,
       `win_conditions: For jungle, make objective trades specific: reference dragon, Herald, Void Grubs, tempo, lane priority, vision control, scaling windows, or champion strengths when they shape the decision.`,
+      `win_conditions: For ADC, explain how ${playerChampionName} wins through lane pressure, CS leads, plates, dragon setup, item spikes, teamfight positioning, or scaling into DPS windows.`,
       `win_conditions: For non-jungle roles, explain concrete ways ${playerChampionName} can win this matchup by using lane agency, denying scaling, reaching the preferred game state, or executing strategicIdentity.winMethod.`,
       `win_conditions: Never describe how ${enemyChampionName} wins; only explain how ${playerChampionName} increases their chance of winning.`,
       "",
@@ -341,6 +357,8 @@ export function buildLeagueMatchupDraftPrompt({
       "- Do not say control lane tempo unless lane priority, wave control, crash timing, reset timing, or roam timer would be more precise.",
       "- For jungle matchups, do not force wave control, last hitting, laning pressure, lane priority, or trading patterns unless lane state directly changes pathing, invade, gank, or objective decisions.",
       "- For jungle matchups, do not say short trades, trading patterns, trade windows, use spacing, force extended fights, or engage when cooldowns are down; say Jungle Plan concepts such as pathing, first clear, Scuttle conditions, invade timing, counter-gank timing, objective setup, river control, tempo management, or scaling denial.",
+      "- For ADC matchups, do not use jungle-only concepts such as invade, camp tracking, jungle pathing, clear speed, Smite, Scuttle, Herald, Void Grubs, counter-jungle, or first clear unless admin notes explicitly require it.",
+      "- For ADC matchups, do not name specific support champions or assume a support matchup unless admin notes explicitly provide that support context.",
       "- Do not start bullets with prompt or fallback wording such as Review, Analyze, List only, Keep broad notes, Re-check, Instruction, or Generated matchup.",
       "- Do not say use cross-map trades when direct river fights are not favorable; name the actual trade, side of the map, objective, camp, vision, or tempo window.",
       `- Do not write any bullet that is mainly useful for a ${enemyChampionName} player.`,
@@ -374,6 +392,9 @@ export function buildLeagueMatchupDraftPrompt({
       "- For jungle matchups, did it use pathing, tempo, objective, river, invade, counter-jungle, gank, and scaling concepts from jungle_profile?",
       "- For jungle matchups, does trading_pattern/Jungle Plan answer what this jungler should do on the map?",
       "- For jungle matchups, did trading_pattern/Jungle Plan avoid cooldown-only duel advice, lane spacing advice, and generic engage when cooldowns are down phrasing?",
+      "- For ADC matchups, does the draft read like neutral-support ADC guidance rather than full botlane or jungle guidance?",
+      "- For ADC matchups, did it focus on range, wave access, CS pressure, support cooldown conditions, all-in windows, scaling, item spikes, dragon setup, and teamfight DPS?",
+      "- For ADC matchups, did it avoid specific support-pick assumptions and jungle-only terminology?",
       "- Does the wording sound like a high-ELO League coach rather than generic AI advice?",
       "- Did the draft use authentic League terms and avoid the banned comfort/farming phrases?",
       "- Is each power_spikes bullet a real power spike?",
@@ -422,8 +443,11 @@ function getRolePromptGuidance(role: LeagueRole) {
 
   if (role === "adc") {
     return [
-      "Treat this as a Bot / ADC matchup.",
-      "Frame advice around lane pairing constraints, wave access, range, all-in or poke windows, support setup, reset timing, and scaling safety.",
+      "Treat this as an ADC-vs-ADC matchup, not a full botlane matchup.",
+      "Use the hybrid ADC model: primary champion comparison under neutral support conditions, with support influence described only as conditional setup.",
+      "Frame advice around range advantage, wave access, CS pressure, poke windows, all-in threat, support cooldown availability, reset timing, first item spikes, dragon setup, turret pressure, scaling safety, and teamfight DPS role.",
+      "Do not name specific support champions, support-counter lanes, or exact 2v2 outcomes unless admin notes provide that support context.",
+      "Avoid jungle-specific language such as invade, camp tracking, jungle pathing, clear speed, Smite, Scuttle, Herald, Void Grubs, counter-jungle, or first clear unless admin notes explicitly require it.",
     ].join("\n");
   }
 
