@@ -90,7 +90,8 @@ export const camilleCombatProfile = {
         timing: "First sheen-style item",
         reason: "Second (Q) damage becomes a reliable trade payoff",
         changesGameplay: "Camille can take sharper short trades and threaten side-lane pressure.",
-        playerAction: "Play around second (Q) timing and leave before the enemy forces a longer fight.",
+        playerAction:
+          "Play around second (Q) timing and leave before the enemy forces a longer fight.",
         enemyResponse: "Avoid isolated second-(Q) trades and punish (E) cooldown.",
       },
       {

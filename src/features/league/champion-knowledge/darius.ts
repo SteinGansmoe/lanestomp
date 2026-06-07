@@ -30,7 +30,7 @@ export const dariusCombatProfile = {
     "Low mobility outside summoners.",
     "Can be kited if (E) is baited or outranged.",
     "Short trades that exit before passive stacks deny his best pattern.",
-    "If enemy manages to stay close to Darius without getting hit by outer (Q), he will lack sustain"
+    "If enemy manages to stay close to Darius without getting hit by outer (Q), he will lack sustain",
   ],
   damageType: "physical",
   hardCrowdControl: ["(E) pull"],
@@ -95,14 +95,17 @@ export const dariusCombatProfile = {
         timing: "Level 6",
         reason: "(R) execute unlocks lethal and reset threat",
         changesGameplay: "Trades that were only winning before can become immediate kills.",
-        playerAction: "Stack passive before committing to (R) and use low-health windows decisively.",
+        playerAction:
+          "Stack passive before committing to (R) and use low-health windows decisively.",
         enemyResponse: "Avoid extended trades near execute range and disengage before five stacks.",
       },
       {
         timing: "First bruiser item",
         reason: "Durability and damage make long fights easier to force",
-        changesGameplay: "Darius can threaten longer chases and survive return burst more reliably.",
-        playerAction: "Use wave control to force enemies into pull range before starting the trade.",
+        changesGameplay:
+          "Darius can threaten longer chases and survive return burst more reliably.",
+        playerAction:
+          "Use wave control to force enemies into pull range before starting the trade.",
         enemyResponse: "Keep trades short and punish missed (E).",
       },
     ],
@@ -115,7 +118,6 @@ export const dariusCombatProfile = {
       "Melee champions who step into (E) range.",
       "Enemies who gets hit by outer (Q) frequently.",
       "Targets staying in trade after three or more passive stacks.",
-
     ],
     strugglesToPunish: [
       "Ranged champions with consistent spacing.",

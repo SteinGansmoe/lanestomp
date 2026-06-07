@@ -6,10 +6,7 @@ type SummonersRiftMinimapProps = {
   role: LeagueRole;
 };
 
-export function SummonersRiftMinimap({
-  className,
-  role,
-}: SummonersRiftMinimapProps) {
+export function SummonersRiftMinimap({ className, role }: SummonersRiftMinimapProps) {
   const isTop = role === "top";
   const isMid = role === "mid";
   const isJungle = role === "jungle";
@@ -29,7 +26,7 @@ export function SummonersRiftMinimap({
     <div
       className={cn(
         "relative mx-auto w-full max-w-[13.5rem] rounded-lg border border-cyan-300/15 bg-[#07101f] p-3 shadow-xl shadow-black/25",
-        className
+        className,
       )}
     >
       <div className="relative aspect-square overflow-hidden rounded-md border border-white/10 bg-[#081120]">
@@ -76,15 +73,7 @@ export function SummonersRiftMinimap({
             </linearGradient>
           </defs>
 
-          <rect
-            className="stroke-white/15"
-            fill="none"
-            height="94"
-            rx="8"
-            width="94"
-            x="3"
-            y="3"
-          />
+          <rect className="stroke-white/15" fill="none" height="94" rx="8" width="94" x="3" y="3" />
           <path
             d="M11 84 L11 29 C11 19 19 11 29 11 L86 11"
             fill="none"
@@ -146,18 +135,14 @@ export function SummonersRiftMinimap({
             <path
               d="M25 68 C28 52 36 40 48 32"
               fill="none"
-              stroke={
-                isJungle ? `url(#${junglePathGradientId})` : "#94a3b8"
-              }
+              stroke={isJungle ? `url(#${junglePathGradientId})` : "#94a3b8"}
               strokeLinecap="round"
               strokeWidth={isJungle ? 4.5 : 2}
             />
             <path
               d="M52 68 C63 59 70 48 75 32"
               fill="none"
-              stroke={
-                isJungle ? `url(#${junglePathGradientId})` : "#94a3b8"
-              }
+              stroke={isJungle ? `url(#${junglePathGradientId})` : "#94a3b8"}
               strokeLinecap="round"
               strokeWidth={isJungle ? 4.5 : 2}
             />
@@ -170,13 +155,7 @@ export function SummonersRiftMinimap({
               <circle
                 cx={marker.cx}
                 cy={marker.cy}
-                fill={
-                  isJungle
-                    ? marker.cy < 50
-                      ? redSideStroke
-                      : blueSideStroke
-                    : "#94a3b8"
-                }
+                fill={isJungle ? (marker.cy < 50 ? redSideStroke : blueSideStroke) : "#94a3b8"}
                 key={`${marker.cx}-${marker.cy}`}
                 r={isJungle ? 3.2 : 2}
               />
@@ -200,16 +179,8 @@ export function SummonersRiftMinimap({
 
           <circle cx="13" cy="87" fill="#67e8f9" opacity="0.85" r="3" />
           <circle cx="87" cy="13" fill={redSideStroke} opacity="0.85" r="3" />
-          <path
-            d="M12 87 L20 87 L12 79 Z"
-            fill="#67e8f9"
-            opacity="0.22"
-          />
-          <path
-            d="M88 13 L80 13 L88 21 Z"
-            fill={redSideStroke}
-            opacity="0.22"
-          />
+          <path d="M12 87 L20 87 L12 79 Z" fill="#67e8f9" opacity="0.22" />
+          <path d="M88 13 L80 13 L88 21 Z" fill={redSideStroke} opacity="0.22" />
         </svg>
       </div>
     </div>

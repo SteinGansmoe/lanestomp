@@ -67,24 +67,11 @@ export function ResourceForm({
 }) {
   const SubmitIcon = submitLabel.startsWith("Save") ? Save : Plus;
   const isCommunity = mode === "community";
-  const iconOptions =
-    isCommunity ?
-      ["discord", "forum", "reddit", "social", "video"]
-    : [
-        "builds",
-        "official",
-        "patch-notes",
-        "stats",
-        "tier-list",
-        "tools",
-        "trade",
-        "wiki",
-      ];
+  const iconOptions = isCommunity
+    ? ["discord", "forum", "reddit", "social", "video"]
+    : ["builds", "official", "patch-notes", "stats", "tier-list", "tools", "trade", "wiki"];
 
-  function updateField(
-    field: keyof ResourceFormState,
-    value: boolean | string
-  ) {
+  function updateField(field: keyof ResourceFormState, value: boolean | string) {
     onChange({
       ...form,
       [field]: value,
@@ -106,11 +93,7 @@ export function ResourceForm({
             Select game
           </option>
           {games.map((game) => (
-            <option
-              className={selectOptionClassName}
-              key={game.id}
-              value={game.id}
-            >
+            <option className={selectOptionClassName} key={game.id} value={game.id}>
               {game.name}
             </option>
           ))}
@@ -125,9 +108,7 @@ export function ResourceForm({
           className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
           disabled={status.isLoading || Boolean(onCancel)}
           onChange={(event) => updateField("id", event.target.value)}
-          placeholder={
-            isCommunity ? "diablo-4-official-forums" : "d4-maxroll-builds"
-          }
+          placeholder={isCommunity ? "diablo-4-official-forums" : "d4-maxroll-builds"}
           required
           value={form.id}
         />
@@ -152,9 +133,7 @@ export function ResourceForm({
             <Input
               className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
               disabled={status.isLoading}
-              onChange={(event) =>
-                updateField("group_title", event.target.value)
-              }
+              onChange={(event) => updateField("group_title", event.target.value)}
               placeholder="Build prep"
               required
               value={form.group_title}
@@ -170,18 +149,14 @@ export function ResourceForm({
             className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
             disabled={status.isLoading}
             onChange={(event) => updateField("label", event.target.value)}
-            placeholder={
-              isCommunity ? "Forum" : "Leveling and endgame build guides"
-            }
+            placeholder={isCommunity ? "Forum" : "Leveling and endgame build guides"}
             required
             value={form.label}
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="text-sm text-zinc-300">
-            {isCommunity ? "Icon" : "Category"}
-          </span>
+          <span className="text-sm text-zinc-300">{isCommunity ? "Icon" : "Category"}</span>
           <select
             className={fieldClassName}
             disabled={status.isLoading}
@@ -226,9 +201,7 @@ export function ResourceForm({
             checked={form.is_active}
             className="size-4 accent-violet-500"
             disabled={status.isLoading}
-            onChange={(event) =>
-              updateField("is_active", event.target.checked)
-            }
+            onChange={(event) => updateField("is_active", event.target.checked)}
             type="checkbox"
           />
           Active on game detail page

@@ -34,11 +34,18 @@ export const caitlynCombatProfile = {
   damageType: "physical",
   hardCrowdControl: ["(W) root"],
   id: "Caitlyn",
+  importantAbilityNotes: [
+    "Her auto range creates direct last-hit punishment when enemies walk up for melee, cannon, or low-health ranged minions.",
+    "(W) traps are strongest layered under support CC, along turret edges, and on retreat paths after a wave crash.",
+    "(Q) is easier to land when the enemy ADC is locked into CS or walking around trap zones.",
+    "(E) is her main safety tool; using it for poke opens a clear engage window.",
+  ],
   lanePlan: {
     avoids: [
       "Letting the wave sit near enemy tower without support vision.",
       "Using (E) casually before enemy engage tools are known.",
       "Taking long all-ins against ADCs with stronger sustained combat.",
+      "Dropping traps where they do not change enemy CS, retreat, or support-engage paths.",
     ],
     idealLaneState:
       "A pushed bot lane where Caitlyn uses range, traps, and support cover to deny CS and threaten plates.",
@@ -46,6 +53,8 @@ export const caitlynCombatProfile = {
       "Support can help contest wave control.",
       "Crash waves into turret for plate pressure.",
       "Short poke trades before enemy all-in support can engage.",
+      "Enemy ADCs forced to choose between last hitting and taking a range auto.",
+      "Trap lines that make turret CS or brush exits predictable.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const caitlynCombatProfile = {
       "Using range to punish CS attempts.",
       "Stacking waves into plate pressure.",
       "Holding (E) for enemy engage instead of trading it for poke.",
+      "Autoing during enemy last-hit animations before they can answer with equal range.",
+      "Placing traps where support CC, tower pressure, or minion pathing forces movement.",
     ],
   },
   majorPowerSpikes: [
@@ -88,22 +99,18 @@ export const caitlynCombatProfile = {
       {
         timing: "Level 1",
         reason: "High base range creates immediate CS pressure",
-        changesGameplay:
-          "Caitlyn can hit first and control the wave before many ADCs can answer.",
-        playerAction:
-          "Use range to punish CS attempts while keeping the wave controlled.",
+        changesGameplay: "Caitlyn can hit first and control the wave before many ADCs can answer.",
+        playerAction: "Use range to punish CS attempts while keeping the wave controlled.",
         enemyResponse:
           "Avoid bleeding health for every last hit before support cooldowns are ready.",
       },
       {
         timing: "First completed marksman item",
         reason: "Poke and tower pressure convert into stronger plate threats",
-        changesGameplay:
-          "Her wave crashes become more punishing around plates and dragon setup.",
+        changesGameplay: "Her wave crashes become more punishing around plates and dragon setup.",
         playerAction:
           "Crash with support cover and turn bot priority into plates or dragon vision.",
-        enemyResponse:
-          "Contest the push before she gets a clean trap line around turret.",
+        enemyResponse: "Contest the push before she gets a clean trap line around turret.",
       },
     ],
   },
@@ -116,6 +123,8 @@ export const caitlynCombatProfile = {
       "Short-range ADCs walking up for CS.",
       "Supports that miss engage and leave their ADC exposed.",
       "Enemies trapped under turret with limited movement space.",
+      "Enemy ADCs collecting cannon minions without support covering the forward step.",
+      "Bot lanes that surrender brush control and let her trap the lane exit.",
     ],
     strugglesToPunish: [
       "Hard engage when (E) is down.",
@@ -142,6 +151,8 @@ export const caitlynCombatProfile = {
       "The enemy ADC steps up for CS.",
       "Support cooldowns can protect her forward position.",
       "(W) zones the retreat path after a wave crash.",
+      "A large allied wave lets her auto safely while the enemy farms under pressure.",
+      "Enemy support engage is down, making range trades low-risk.",
     ],
     primaryPattern:
       "Win short range-based trades and turret pressure; avoid turning poke leads into extended all-ins.",

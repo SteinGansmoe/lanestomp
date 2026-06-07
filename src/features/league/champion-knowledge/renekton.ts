@@ -89,7 +89,8 @@ export const renektonCombatProfile = {
       {
         timing: "Level 3",
         reason: "Renekton has (Q), (W), and (E) for his full short-trade pattern",
-        changesGameplay: "He can dash in, stun, damage, and exit before many top laners can fully answer.",
+        changesGameplay:
+          "He can dash in, stun, damage, and exit before many top laners can fully answer.",
         playerAction: "Trade only with enough fury and a planned exit path.",
         enemyResponse: "Respect fury and punish when both (E) casts are spent.",
       },
@@ -97,7 +98,8 @@ export const renektonCombatProfile = {
         timing: "Level 6",
         reason: "(R) adds health and sustained all-in damage",
         changesGameplay: "Renekton can convert short-trade leads into full all-ins and dives.",
-        playerAction: "Use (R) to force a decisive fight when the enemy is already chipped or trapped.",
+        playerAction:
+          "Use (R) to force a decisive fight when the enemy is already chipped or trapped.",
         enemyResponse: "Avoid staying low under wave pressure after level 6.",
       },
     ],

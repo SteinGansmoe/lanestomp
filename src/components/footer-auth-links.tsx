@@ -51,14 +51,13 @@ export function FooterAuthLinks() {
 
     loadAuthLink();
 
-    const { data: listener } =
-      supabase?.auth.onAuthStateChange((_event, session) => {
-        void getAuthLinks(session?.user ?? null).then((nextAuthLinks) => {
-          if (isMounted) {
-            setAuthLinks(nextAuthLinks);
-          }
-        });
-      }) ?? { data: null };
+    const { data: listener } = supabase?.auth.onAuthStateChange((_event, session) => {
+      void getAuthLinks(session?.user ?? null).then((nextAuthLinks) => {
+        if (isMounted) {
+          setAuthLinks(nextAuthLinks);
+        }
+      });
+    }) ?? { data: null };
 
     return () => {
       isMounted = false;

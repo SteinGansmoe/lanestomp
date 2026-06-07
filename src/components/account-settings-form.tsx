@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, UserCircle } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import {
   checkUsernameAvailability,
@@ -75,9 +70,7 @@ export function AccountSettingsForm() {
         return;
       }
 
-      const { data, error: profileError } = await fetchUserProfile(
-        authData.user.id
-      );
+      const { data, error: profileError } = await fetchUserProfile(authData.user.id);
 
       if (!isMounted) {
         return;
@@ -123,10 +116,7 @@ export function AccountSettingsForm() {
     }
 
     if (nextUsername.toLowerCase() !== profile.username?.toLowerCase()) {
-      const availability = await checkUsernameAvailability(
-        nextUsername,
-        profile.id
-      );
+      const availability = await checkUsernameAvailability(nextUsername, profile.id);
 
       if (availability.error) {
         setError(availability.error);
@@ -150,7 +140,7 @@ export function AccountSettingsForm() {
       setError(
         updateError.message.includes("profiles_username_lower_unique")
           ? "That username is already taken."
-          : updateError.message
+          : updateError.message,
       );
       setIsSaving(false);
       return;
@@ -161,9 +151,7 @@ export function AccountSettingsForm() {
     setIsSaving(false);
 
     if (profileError || !data) {
-      setError(
-        profileError ?? "Username saved, but the profile could not refresh."
-      );
+      setError(profileError ?? "Username saved, but the profile could not refresh.");
       return;
     }
 
@@ -186,8 +174,7 @@ export function AccountSettingsForm() {
         </div>
         <CardTitle className="font-mono text-2xl">Account settings</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
-          Manage your LaneStomp identity. Your username is separate from any
-          Riot account details.
+          Manage your LaneStomp identity. Your username is separate from any Riot account details.
         </p>
       </CardHeader>
       <CardContent>

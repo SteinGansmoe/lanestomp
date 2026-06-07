@@ -44,17 +44,14 @@ export async function LeagueChampionsPage() {
                   Champion foundation
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">
-                  Cached champion metadata from Riot Data Dragon, prepared for
-                  matchup guides and champion pool workflows.
+                  Cached champion metadata from Riot Data Dragon, prepared for matchup guides and
+                  champion pool workflows.
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:min-w-80">
                 <StatBadge label="Champions" value={String(champions.length)} />
-                <StatBadge
-                  label="Data Dragon"
-                  value={dataVersion ?? "Not imported"}
-                />
+                <StatBadge label="Data Dragon" value={dataVersion ?? "Not imported"} />
               </div>
             </div>
           </div>
@@ -63,17 +60,13 @@ export async function LeagueChampionsPage() {
             {error ? (
               <Card className="border-amber-300/20 bg-amber-300/10 p-5 text-amber-100">
                 <div className="flex items-start gap-3">
-                  <ShieldAlert
-                    className="mt-0.5 size-5 shrink-0"
-                    aria-hidden="true"
-                  />
+                  <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                   <div>
                     <CardTitle className="font-mono text-lg">
                       Champion data is not ready yet
                     </CardTitle>
                     <p className="mt-2 text-sm leading-6 text-amber-100/80">
-                      Apply the latest migration and run the League champion
-                      import script.
+                      Apply the latest migration and run the League champion import script.
                     </p>
                     <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
                       {error}
@@ -97,9 +90,7 @@ export async function LeagueChampionsPage() {
                       width={64}
                     />
                     <div className="min-w-0">
-                      <h2 className="truncate font-medium text-zinc-100">
-                        {champion.name}
-                      </h2>
+                      <h2 className="truncate font-medium text-zinc-100">{champion.name}</h2>
                       <p className="truncate text-sm capitalize text-zinc-400">
                         {champion.title || "Champion"}
                       </p>
@@ -119,16 +110,10 @@ export async function LeagueChampionsPage() {
               </div>
             ) : (
               <Card className="border-white/10 bg-white/[0.035] p-8 text-center text-zinc-300">
-                <Database
-                  className="mx-auto mb-4 size-8 text-zinc-500"
-                  aria-hidden="true"
-                />
-                <CardTitle className="font-mono text-xl">
-                  No champions imported yet
-                </CardTitle>
+                <Database className="mx-auto mb-4 size-8 text-zinc-500" aria-hidden="true" />
+                <CardTitle className="font-mono text-xl">No champions imported yet</CardTitle>
                 <p className="mt-3 text-sm leading-6 text-zinc-400">
-                  Run the Data Dragon import script to populate this cached
-                  dataset.
+                  Run the Data Dragon import script to populate this cached dataset.
                 </p>
               </Card>
             )}

@@ -68,7 +68,11 @@ export const ornnCombatProfile = {
       "Using level 6 and teamfight engage to create map value.",
     ],
   },
-  majorPowerSpikes: ["Level 6 (R).", "First tank item.", "Upgrade/scaling stages later in the game."],
+  majorPowerSpikes: [
+    "Level 6 (R).",
+    "First tank item.",
+    "Upgrade/scaling stages later in the game.",
+  ],
   matchupPreferences: {
     strongInto: [
       "Lanes that cannot punish his scaling.",
@@ -89,15 +93,19 @@ export const ornnCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks long-range engage and gank setup",
-        changesGameplay: "Ornn can start fights or turn lane pressure without walking into melee range first.",
-        playerAction: "Use (R) when follow-up is ready or the enemy lacks space to dodge the second cast.",
-        enemyResponse: "Keep movement options for the second (R) cast and avoid fighting near terrain.",
+        changesGameplay:
+          "Ornn can start fights or turn lane pressure without walking into melee range first.",
+        playerAction:
+          "Use (R) when follow-up is ready or the enemy lacks space to dodge the second cast.",
+        enemyResponse:
+          "Keep movement options for the second (R) cast and avoid fighting near terrain.",
       },
       {
         timing: "First tank item",
         reason: "Durability makes neutralizing lane easier",
         changesGameplay: "Ornn can absorb more trades and focus on scaling toward teamfight value.",
-        playerAction: "Play for stable waves and controlled brittle trades rather than forced kills.",
+        playerAction:
+          "Play for stable waves and controlled brittle trades rather than forced kills.",
         enemyResponse: "Create pressure before he becomes too durable to move.",
       },
     ],

@@ -75,11 +75,7 @@ export const settCombatProfile = {
       "Tanks or bruisers that let grit stack.",
       "Enemies that cannot dodge centered (W).",
     ],
-    weakInto: [
-      "Ranged kiting.",
-      "Mobility that dodges (W).",
-      "Poke that avoids all-in range.",
-    ],
+    weakInto: ["Ranged kiting.", "Mobility that dodges (W).", "Poke that avoids all-in range."],
   },
   mobilityLevel: "low",
   name: "Sett",
@@ -90,14 +86,17 @@ export const settCombatProfile = {
         timing: "Level 6",
         reason: "(R) adds displacement and all-in setup",
         changesGameplay: "Sett can turn enemy positioning into a forced brawl or teamfight engage.",
-        playerAction: "Use (R) after the enemy commits or when the slam creates a guaranteed follow-up.",
+        playerAction:
+          "Use (R) after the enemy commits or when the slam creates a guaranteed follow-up.",
         enemyResponse: "Keep spacing so Sett cannot start a favorable slam angle.",
       },
       {
         timing: "First bruiser item",
         reason: "Sett becomes harder to burst and better at forcing brawls",
-        changesGameplay: "His close-range trades become more reliable and his (W) payoff is harder to ignore.",
-        playerAction: "Use wave pressure to make the enemy choose between losing farm or entering (E) range.",
+        changesGameplay:
+          "His close-range trades become more reliable and his (W) payoff is harder to ignore.",
+        playerAction:
+          "Use wave pressure to make the enemy choose between losing farm or entering (E) range.",
         enemyResponse: "Take short trades and sidestep the (W) center.",
       },
     ],

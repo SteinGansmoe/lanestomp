@@ -19,13 +19,7 @@ export function BackButton({
   ...props
 }: BackButtonProps) {
   return (
-    <Link
-      className={cn(
-        navigationPillClassName,
-        className
-      )}
-      {...props}
-    >
+    <Link className={cn(navigationPillClassName, className)} {...props}>
       <Icon className="size-4" aria-hidden="true" />
       {label}
     </Link>

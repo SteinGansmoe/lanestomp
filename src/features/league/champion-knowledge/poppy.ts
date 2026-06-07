@@ -3,34 +3,137 @@ import type { LeagueChampionKnowledgeProfile } from "./types";
 export const poppyCombatProfile = {
   profileQuality: "draft",
   masteryDifficulty: "medium",
-  abilities: { Q: "Hammer Shock", W: "Steadfast Presence", E: "Heroic Charge", R: "Keeper's Verdict" },
+  abilities: {
+    Q: "Hammer Shock",
+    W: "Steadfast Presence",
+    E: "Heroic Charge",
+    R: "Keeper's Verdict",
+  },
   archetype: ["tank", "anti-dash", "peel", "wall stun"],
-  primaryWinCondition: ["Deny dash-based champions with (W), punish wall positioning with (E), and use durable peel or (R) displacement to control fights."],
+  primaryWinCondition: [
+    "Deny dash-based champions with (W), punish wall positioning with (E), and use durable peel or (R) displacement to control fights.",
+  ],
   dangerAbilities: ["(W) dash stop", "(E) wall stun", "(R) knockaway"],
-  dangerProfile: { dangerousWhen: ["Enemies dash inside (W).", "A target stands near terrain for (E).", "(R) can remove frontliners or disengage a fight."], mustRespect: ["Her anti-dash field changes many engage patterns.", "Walls create kill pressure.", "She is strongest when enemies must come into her."] },
-  commonWeaknesses: ["Limited reach without terrain.", "Lower sustained damage.", "Can be poked before she gets engage angle."],
+  dangerProfile: {
+    dangerousWhen: [
+      "Enemies dash inside (W).",
+      "A target stands near terrain for (E).",
+      "(R) can remove frontliners or disengage a fight.",
+    ],
+    mustRespect: [
+      "Her anti-dash field changes many engage patterns.",
+      "Walls create kill pressure.",
+      "She is strongest when enemies must come into her.",
+    ],
+  },
+  commonWeaknesses: [
+    "Limited reach without terrain.",
+    "Lower sustained damage.",
+    "Can be poked before she gets engage angle.",
+  ],
   damageType: "physical",
   hardCrowdControl: ["(E) wall stun", "(R) knockup/knockaway"],
   id: "Poppy",
-  importantAbilityNotes: ["(W) stops dashes and grants resistances.", "(E) stuns if it hits terrain.", "(Q) damages and slows in an area.", "(R) can tap knockup or charge to knock enemies away."],
-  lanePlan: { avoids: ["Using (W) before the enemy dash.", "Fighting away from walls when she needs stun threat.", "Chasing ranged champions with no angle."], idealLaneState: "A top lane near terrain where Poppy can threaten (E) wall stuns and hold (W) to deny dash commits.", wants: ["Wall angles.", "Dash champions committing into (W).", "Short trades that end after (Q) and passive shield."] },
-  laneIdentity: { earlyGameAgency: "medium", lanePressure: "medium", preferredGameState: ["Anti-dash lanes.", "Front-line peel fights.", "Terrain skirmishes."], scalingPriority: "medium", winLaneBy: ["Blocking dashes with (W).", "Landing (E) into walls.", "Using tank durability to outlast short trades."] },
+  importantAbilityNotes: [
+    "(W) stops dashes and grants resistances.",
+    "(E) stuns if it hits terrain.",
+    "(Q) damages and slows in an area.",
+    "(R) can tap knockup or charge to knock enemies away.",
+  ],
+  lanePlan: {
+    avoids: [
+      "Using (W) before the enemy dash.",
+      "Fighting away from walls when she needs stun threat.",
+      "Chasing ranged champions with no angle.",
+    ],
+    idealLaneState:
+      "A top lane near terrain where Poppy can threaten (E) wall stuns and hold (W) to deny dash commits.",
+    wants: [
+      "Wall angles.",
+      "Dash champions committing into (W).",
+      "Short trades that end after (Q) and passive shield.",
+    ],
+  },
+  laneIdentity: {
+    earlyGameAgency: "medium",
+    lanePressure: "medium",
+    preferredGameState: ["Anti-dash lanes.", "Front-line peel fights.", "Terrain skirmishes."],
+    scalingPriority: "medium",
+    winLaneBy: [
+      "Blocking dashes with (W).",
+      "Landing (E) into walls.",
+      "Using tank durability to outlast short trades.",
+    ],
+  },
   majorPowerSpikes: ["Level 3 anti-dash pattern.", "Level 6 (R).", "First tank item."],
-  matchupPreferences: { strongInto: ["Dash-reliant fighters.", "Melee champions near terrain.", "Engage comps she can peel."], weakInto: ["Ranged poke.", "Low-dash champions that do not care about (W).", "Sustained damage that melts tanks."] },
+  matchupPreferences: {
+    strongInto: [
+      "Dash-reliant fighters.",
+      "Melee champions near terrain.",
+      "Engage comps she can peel.",
+    ],
+    weakInto: [
+      "Ranged poke.",
+      "Low-dash champions that do not care about (W).",
+      "Sustained damage that melts tanks.",
+    ],
+  },
   mobilityLevel: "low",
   name: "Poppy",
   offMetaRoles: [],
-  powerSpikes: { major: [{ timing: "Level 6", reason: "(R) gives disengage or fight removal", changesGameplay: "Poppy can deny dives or remove a target before objectives.", playerAction: "Use (R) to reset bad fights or isolate numbers advantage.", enemyResponse: "Bait (R) before committing key engage." }, { timing: "First tank item", reason: "Durability improves peel and wall-stun trades", changesGameplay: "She can stand longer in front-line control patterns.", playerAction: "Hold (W) for dashes and fight near walls.", enemyResponse: "Avoid terrain and use ranged pressure." }] },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "(R) gives disengage or fight removal",
+        changesGameplay: "Poppy can deny dives or remove a target before objectives.",
+        playerAction: "Use (R) to reset bad fights or isolate numbers advantage.",
+        enemyResponse: "Bait (R) before committing key engage.",
+      },
+      {
+        timing: "First tank item",
+        reason: "Durability improves peel and wall-stun trades",
+        changesGameplay: "She can stand longer in front-line control patterns.",
+        playerAction: "Hold (W) for dashes and fight near walls.",
+        enemyResponse: "Avoid terrain and use ranged pressure.",
+      },
+    ],
+  },
   primaryRoles: ["jungle", "top"],
-  primaryTradingPattern: "Hold (W) for real dashes, use passive and (Q) for short trades, and threaten (E) only when wall positioning makes it reliable.",
-  punishProfile: { canPunish: ["Dash commits.", "Enemies near walls.", "Divers entering her carries."], strugglesToPunish: ["Ranged poke.", "Champions that do not rely on dashes."] },
+  primaryTradingPattern:
+    "Hold (W) for real dashes, use passive and (Q) for short trades, and threaten (E) only when wall positioning makes it reliable.",
+  punishProfile: {
+    canPunish: ["Dash commits.", "Enemies near walls.", "Divers entering her carries."],
+    strugglesToPunish: ["Ranged poke.", "Champions that do not rely on dashes."],
+  },
   secondaryRoles: [],
   shields: ["Passive buckler shield"],
   softCrowdControl: ["(Q) slow"],
   stealthOrInvisibility: null,
-  strategicIdentity: { laneGoal: "control", preferredGameLength: "medium", scalingProfile: "mid", winMethod: ["anti-dash peel", "wall stuns", "front-line disruption"] },
+  strategicIdentity: {
+    laneGoal: "control",
+    preferredGameLength: "medium",
+    scalingProfile: "mid",
+    winMethod: ["anti-dash peel", "wall stuns", "front-line disruption"],
+  },
   sustain: [],
-  trading: { badTradeConditions: ["(W) is wasted.", "No wall angle exists.", "The enemy can poke outside her range."], goodTradeConditions: ["The enemy dash is predictable.", "Terrain is nearby.", "Passive shield is recoverable."], primaryPattern: "Trade around passive shield and terrain, then deny enemy mobility with (W) instead of using it early." },
-  punishWindows: ["After (W), dash champions can re-enter.", "Away from walls, (E) is much weaker.", "If (R) is down, her disengage threat is lower."],
+  trading: {
+    badTradeConditions: [
+      "(W) is wasted.",
+      "No wall angle exists.",
+      "The enemy can poke outside her range.",
+    ],
+    goodTradeConditions: [
+      "The enemy dash is predictable.",
+      "Terrain is nearby.",
+      "Passive shield is recoverable.",
+    ],
+    primaryPattern:
+      "Trade around passive shield and terrain, then deny enemy mobility with (W) instead of using it early.",
+  },
+  punishWindows: [
+    "After (W), dash champions can re-enter.",
+    "Away from walls, (E) is much weaker.",
+    "If (R) is down, her disengage threat is lower.",
+  ],
 } satisfies LeagueChampionKnowledgeProfile;
-

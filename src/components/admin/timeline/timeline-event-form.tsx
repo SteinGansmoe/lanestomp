@@ -2,20 +2,10 @@ import type { FormEvent } from "react";
 import { Plus, Save, X } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { fieldClassName, selectOptionClassName } from "../constants";
-import type {
-  AdminGame,
-  AdminSeason,
-  FormStatus,
-  TimelineEventFormState,
-} from "../types";
+import type { AdminGame, AdminSeason, FormStatus, TimelineEventFormState } from "../types";
 
 const timelineEventTypes = ["event", "patch", "season-start", "season-end"];
 
@@ -78,13 +68,11 @@ export function TimelineEventForm({
   submitLabel: string;
 }) {
   const SubmitIcon = submitLabel.startsWith("Save") ? Save : Plus;
-  const visibleSeasons =
-    form.game_id ? seasons.filter((season) => season.game_id === form.game_id) : seasons;
+  const visibleSeasons = form.game_id
+    ? seasons.filter((season) => season.game_id === form.game_id)
+    : seasons;
 
-  function updateField(
-    field: keyof TimelineEventFormState,
-    value: boolean | string
-  ) {
+  function updateField(field: keyof TimelineEventFormState, value: boolean | string) {
     onChange({
       ...form,
       [field]: value,
@@ -108,11 +96,7 @@ export function TimelineEventForm({
               Select game
             </option>
             {games.map((game) => (
-              <option
-                className={selectOptionClassName}
-                key={game.id}
-                value={game.id}
-              >
+              <option className={selectOptionClassName} key={game.id} value={game.id}>
                 {game.name}
               </option>
             ))}
@@ -131,11 +115,7 @@ export function TimelineEventForm({
               No season
             </option>
             {visibleSeasons.map((season) => (
-              <option
-                className={selectOptionClassName}
-                key={season.id}
-                value={season.id}
-              >
+              <option className={selectOptionClassName} key={season.id} value={season.id}>
                 {season.name}
               </option>
             ))}
@@ -177,11 +157,7 @@ export function TimelineEventForm({
             value={form.event_type}
           >
             {timelineEventTypes.map((eventType) => (
-              <option
-                className={selectOptionClassName}
-                key={eventType}
-                value={eventType}
-              >
+              <option className={selectOptionClassName} key={eventType} value={eventType}>
                 {eventType}
               </option>
             ))}

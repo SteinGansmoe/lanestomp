@@ -44,7 +44,7 @@ export function validateUsername(value: string) {
 
 export function getProfileDisplayName(
   user: Pick<User, "email"> | null,
-  profile?: Pick<UserProfile, "username"> | null
+  profile?: Pick<UserProfile, "username"> | null,
 ) {
   return profile?.username?.trim() || user?.email || "Signed in";
 }
@@ -66,10 +66,7 @@ export async function fetchUserProfile(userId: string) {
   };
 }
 
-export async function checkUsernameAvailability(
-  username: string,
-  currentUserId?: string
-) {
+export async function checkUsernameAvailability(username: string, currentUserId?: string) {
   if (!supabase) {
     return { isAvailable: false, error: "Supabase is not configured." };
   }

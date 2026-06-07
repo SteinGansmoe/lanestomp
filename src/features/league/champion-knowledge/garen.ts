@@ -89,8 +89,10 @@ export const garenCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) creates execute threat",
-        changesGameplay: "Any health lead becomes much more dangerous once Garen can finish with (R).",
-        playerAction: "Use short trades to set up execute range instead of forcing full-health fights.",
+        changesGameplay:
+          "Any health lead becomes much more dangerous once Garen can finish with (R).",
+        playerAction:
+          "Use short trades to set up execute range instead of forcing full-health fights.",
         enemyResponse: "Avoid staying in lane low after taking (Q) and (E) chip.",
       },
       {

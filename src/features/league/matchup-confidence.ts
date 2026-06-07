@@ -1,16 +1,9 @@
 import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge/types";
-import {
-  matchupDraftSectionKeys,
-  type MatchupDraftSections,
-} from "./matchup-draft-prompt";
+import { matchupDraftSectionKeys, type MatchupDraftSections } from "./matchup-draft-prompt";
 import { scanMatchupDraftForFallbackContent } from "./matchup-fallback-contamination";
 
 export type LeagueMatchupConfidenceLevel = "high" | "low" | "medium";
-export type LeagueMatchupConfidenceSource =
-  | "manual"
-  | "openai"
-  | "placeholder"
-  | "unknown";
+export type LeagueMatchupConfidenceSource = "manual" | "openai" | "placeholder" | "unknown";
 
 type LeagueMatchupConfidenceStatus = "draft" | "failed" | "reviewed";
 
@@ -43,10 +36,7 @@ export function calculateLeagueMatchupConfidence({
 }: CalculateLeagueMatchupConfidenceInput) {
   const reasons: string[] = [];
   let score: ConfidenceScore = confidenceScoreByLevel.high;
-  const capConfidence = (
-    level: Exclude<LeagueMatchupConfidenceLevel, "high">,
-    reason: string
-  ) => {
+  const capConfidence = (level: Exclude<LeagueMatchupConfidenceLevel, "high">, reason: string) => {
     score = Math.min(score, confidenceScoreByLevel[level]) as ConfidenceScore;
     reasons.push(reason);
   };
@@ -56,7 +46,7 @@ export function calculateLeagueMatchupConfidence({
   } else if (championAProfile.profileQuality !== "reviewed") {
     capConfidence(
       "medium",
-      `${championAName} champion profile quality = ${championAProfile.profileQuality}`
+      `${championAName} champion profile quality = ${championAProfile.profileQuality}`,
     );
   } else {
     reasons.push(`${championAName} champion profile quality = reviewed`);
@@ -67,7 +57,7 @@ export function calculateLeagueMatchupConfidence({
   } else if (championBProfile.profileQuality !== "reviewed") {
     capConfidence(
       "medium",
-      `${championBName} champion profile quality = ${championBProfile.profileQuality}`
+      `${championBName} champion profile quality = ${championBProfile.profileQuality}`,
     );
   } else {
     reasons.push(`${championBName} champion profile quality = reviewed`);
@@ -88,14 +78,11 @@ export function calculateLeagueMatchupConfidence({
   }
 
   const missingSections = matchupDraftSectionKeys.filter(
-    (sectionKey) => !draft[sectionKey]?.trim()
+    (sectionKey) => !draft[sectionKey]?.trim(),
   );
 
   if (missingSections.length > 0) {
-    capConfidence(
-      "low",
-      `content incomplete: ${missingSections.join(", ")}`
-    );
+    capConfidence("low", `content incomplete: ${missingSections.join(", ")}`);
   } else {
     reasons.push("content complete");
   }
@@ -103,10 +90,7 @@ export function calculateLeagueMatchupConfidence({
   const fallbackScan = scanMatchupDraftForFallbackContent(draft);
 
   if (fallbackScan.hasFallbackContent) {
-    capConfidence(
-      "low",
-      `fallback content detected: ${fallbackScan.affectedSections.join(", ")}`
-    );
+    capConfidence("low", `fallback content detected: ${fallbackScan.affectedSections.join(", ")}`);
   }
 
   return {
@@ -116,7 +100,7 @@ export function calculateLeagueMatchupConfidence({
 }
 
 export function getLeagueMatchupConfidenceSourceFromNotes(
-  adminNotes: string | null | undefined
+  adminNotes: string | null | undefined,
 ): LeagueMatchupConfidenceSource {
   const notes = adminNotes?.toLowerCase() ?? "";
 
@@ -135,9 +119,7 @@ export function getLeagueMatchupConfidenceSourceFromNotes(
   return "unknown";
 }
 
-function getConfidenceLevelFromScore(
-  score: ConfidenceScore
-): LeagueMatchupConfidenceLevel {
+function getConfidenceLevelFromScore(score: ConfidenceScore): LeagueMatchupConfidenceLevel {
   if (score === confidenceScoreByLevel.high) {
     return "high";
   }

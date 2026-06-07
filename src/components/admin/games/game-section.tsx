@@ -64,9 +64,7 @@ export function AdminGamesSection({
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
                 Select a game below to edit its details.
                 {editStatus.success ? (
-                  <p className="mt-3 text-emerald-200">
-                    {editStatus.success}
-                  </p>
+                  <p className="mt-3 text-emerald-200">{editStatus.success}</p>
                 ) : null}
               </div>
             )}
@@ -76,19 +74,14 @@ export function AdminGamesSection({
 
       <AdminListCard title="Games">
         {games.map((game) => (
-          <li
-            className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
-            key={game.id}
-          >
+          <li className="rounded-lg border border-white/10 bg-white/[0.03] p-4" key={game.id}>
             <p className="font-semibold text-white">{game.name}</p>
             <p className="mt-1 font-mono text-xs text-zinc-500">{game.slug}</p>
             {game.description ? (
               <p className="mt-3 text-sm text-zinc-400">{game.description}</p>
             ) : null}
             {game.icon_url ? (
-              <p className="mt-2 truncate font-mono text-xs text-zinc-500">
-                {game.icon_url}
-              </p>
+              <p className="mt-2 truncate font-mono text-xs text-zinc-500">{game.icon_url}</p>
             ) : null}
             <Button
               className="mt-4 border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"

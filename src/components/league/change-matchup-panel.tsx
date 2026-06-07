@@ -13,20 +13,11 @@ import {
 import Link from "next/link";
 import { ArrowLeftRight, ChevronDown, Search, Swords } from "lucide-react";
 
-import {
-  navigationPillClassName,
-} from "@/src/components/back-button";
-import {
-  isChampionInRole,
-  sortChampionsForRole,
-} from "@/src/features/league/champion-roles";
+import { navigationPillClassName } from "@/src/components/back-button";
+import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
 import type { LeagueChampion } from "@/src/features/league/champions";
 import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
-import {
-  getLeagueRoleLabel,
-  leagueRoles,
-  type LeagueRole,
-} from "@/src/features/league/roles";
+import { getLeagueRoleLabel, leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 
 type ChangeMatchupPanelProps = {
@@ -49,8 +40,7 @@ type OpenPicker = "champion" | "opponent" | null;
 type ChampionFilter = LeagueRole | "all";
 
 const championFilterStorageKey = "lanestomp-change-matchup-role-filter";
-const championFilterChangeEvent =
-  "lanestomp-change-matchup-role-filter-change";
+const championFilterChangeEvent = "lanestomp-change-matchup-role-filter-change";
 const roleFilterOptions = [
   {
     iconSrc: "/images/All_icon.png",
@@ -95,10 +85,7 @@ function getStoredChampionFilter(): ChampionFilter {
 
   const storedFilter = window.localStorage.getItem(championFilterStorageKey);
 
-  return (
-    roleFilterOptions.find((option) => option.value === storedFilter)?.value ??
-    "all"
-  );
+  return roleFilterOptions.find((option) => option.value === storedFilter)?.value ?? "all";
 }
 
 function subscribeToChampionFilter(callback: () => void) {
@@ -138,20 +125,16 @@ export function ChangeMatchupPanel({
   const championFilter = useSyncExternalStore<ChampionFilter>(
     subscribeToChampionFilter,
     getStoredChampionFilter,
-    () => "all"
+    () => "all",
   );
   const sortedChampions = useMemo(
     () => [...champions].sort((a, b) => a.name.localeCompare(b.name)),
-    [champions]
+    [champions],
   );
-  const championA =
-    champions.find((champion) => champion.id === championAId) ?? null;
-  const championB =
-    champions.find((champion) => champion.id === championBId) ?? null;
+  const championA = champions.find((champion) => champion.id === championAId) ?? null;
+  const championB = champions.find((champion) => champion.id === championBId) ?? null;
   const matchupHref =
-    championA && championB
-      ? getLeagueMatchupHref({ championA, championB, role })
-      : null;
+    championA && championB ? getLeagueMatchupHref({ championA, championB, role }) : null;
 
   useEffect(() => {
     onSelectionChange?.({ championAId, championBId, role });
@@ -199,10 +182,7 @@ export function ChangeMatchupPanel({
           type="button"
         >
           <ChevronDown
-            className={cn(
-              "size-4 transition-transform",
-              isExpanded && "rotate-180"
-            )}
+            className={cn("size-4 transition-transform", isExpanded && "rotate-180")}
             aria-hidden="true"
           />
           Change Matchup
@@ -216,33 +196,24 @@ export function ChangeMatchupPanel({
             : "order-last grid basis-full transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none",
           isExpanded
             ? "grid-rows-[1fr] overflow-visible opacity-100"
-            : "grid-rows-[0fr] overflow-hidden opacity-0"
+            : "grid-rows-[0fr] overflow-hidden opacity-0",
         )}
         id={panelId}
       >
-        <div
-          className={cn(
-            "min-h-0",
-            isExpanded ? "overflow-visible" : "overflow-hidden"
-          )}
-        >
+        <div className={cn("min-h-0", isExpanded ? "overflow-visible" : "overflow-hidden")}>
           <div
             className={cn(
               "rounded-xl border border-white/10 bg-[#10182b]/90 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5",
-              !isInline && "mt-3"
+              !isInline && "mt-3",
             )}
           >
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_12rem_auto] lg:items-end">
               <MatchupChampionPicker
                 disabledChampionId={championBId}
                 id={`${panelId}-champion`}
-                key={`${panelId}-champion-${
-                  openPicker === "champion" ? "open" : "closed"
-                }`}
+                key={`${panelId}-champion-${openPicker === "champion" ? "open" : "closed"}`}
                 label="Champion"
-                onOpenChange={() =>
-                  setOpenPicker(openPicker === "champion" ? null : "champion")
-                }
+                onOpenChange={() => setOpenPicker(openPicker === "champion" ? null : "champion")}
                 onChange={handleChampionAChange}
                 isOpen={openPicker === "champion"}
                 selectedChampionId={championAId}
@@ -264,13 +235,9 @@ export function ChangeMatchupPanel({
               <MatchupChampionPicker
                 disabledChampionId={championAId}
                 id={`${panelId}-opponent`}
-                key={`${panelId}-opponent-${
-                  openPicker === "opponent" ? "open" : "closed"
-                }`}
+                key={`${panelId}-opponent-${openPicker === "opponent" ? "open" : "closed"}`}
                 label="Opponent"
-                onOpenChange={() =>
-                  setOpenPicker(openPicker === "opponent" ? null : "opponent")
-                }
+                onOpenChange={() => setOpenPicker(openPicker === "opponent" ? null : "opponent")}
                 onChange={handleChampionBChange}
                 isOpen={openPicker === "opponent"}
                 selectedChampionId={championBId}
@@ -286,17 +253,11 @@ export function ChangeMatchupPanel({
                 <select
                   className={selectClassName}
                   name="role"
-                  onChange={(event) =>
-                    setRole(event.target.value as LeagueRole)
-                  }
+                  onChange={(event) => setRole(event.target.value as LeagueRole)}
                   value={role}
                 >
                   {leagueRoles.map((leagueRole) => (
-                    <option
-                      className={optionClassName}
-                      key={leagueRole}
-                      value={leagueRole}
-                    >
+                    <option className={optionClassName} key={leagueRole} value={leagueRole}>
                       {getLeagueRoleLabel(leagueRole)}
                     </option>
                   ))}
@@ -365,12 +326,9 @@ function MatchupChampionPicker({
   selectedChampionId: string;
 }) {
   const [query, setQuery] = useState("");
-  const [highlightedChampionId, setHighlightedChampionId] = useState<
-    string | null
-  >(null);
+  const [highlightedChampionId, setHighlightedChampionId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const selectedChampion =
-    champions.find((champion) => champion.id === selectedChampionId) ?? null;
+  const selectedChampion = champions.find((champion) => champion.id === selectedChampionId) ?? null;
   const filteredChampions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -379,7 +337,7 @@ function MatchupChampionPicker({
         [champion.name, champion.title, champion.tags.join(" ")]
           .join(" ")
           .toLowerCase()
-          .includes(normalizedQuery)
+          .includes(normalizedQuery),
       );
     }
 
@@ -387,25 +345,18 @@ function MatchupChampionPicker({
       championFilter === "all"
         ? champions
         : sortChampionsForRole(
-            champions.filter((champion) =>
-              isChampionInRole(champion, championFilter)
-            ),
-            championFilter
+            champions.filter((champion) => isChampionInRole(champion, championFilter)),
+            championFilter,
           );
 
     return roleFilteredChampions;
   }, [championFilter, champions, query]);
   const selectableChampions = useMemo(
-    () =>
-      filteredChampions.filter(
-        (champion) => champion.id !== disabledChampionId
-      ),
-    [disabledChampionId, filteredChampions]
+    () => filteredChampions.filter((champion) => champion.id !== disabledChampionId),
+    [disabledChampionId, filteredChampions],
   );
   const highlightedChampion =
-    selectableChampions.find(
-      (champion) => champion.id === highlightedChampionId
-    ) ??
+    selectableChampions.find((champion) => champion.id === highlightedChampionId) ??
     selectableChampions[0] ??
     null;
 
@@ -428,10 +379,8 @@ function MatchupChampionPicker({
     }
 
     const currentIndex = Math.max(
-      selectableChampions.findIndex(
-        (champion) => champion.id === highlightedChampion?.id
-      ),
-      0
+      selectableChampions.findIndex((champion) => champion.id === highlightedChampion?.id),
+      0,
     );
 
     if (event.key === "ArrowDown") {
@@ -444,8 +393,7 @@ function MatchupChampionPicker({
     if (event.key === "ArrowUp") {
       event.preventDefault();
       const nextIndex =
-        (currentIndex - 1 + selectableChampions.length) %
-        selectableChampions.length;
+        (currentIndex - 1 + selectableChampions.length) % selectableChampions.length;
       setHighlightedChampionId(selectableChampions[nextIndex].id);
       return;
     }
@@ -458,9 +406,7 @@ function MatchupChampionPicker({
 
     if (event.key === "End") {
       event.preventDefault();
-      setHighlightedChampionId(
-        selectableChampions[selectableChampions.length - 1].id
-      );
+      setHighlightedChampionId(selectableChampions[selectableChampions.length - 1].id);
       return;
     }
 
@@ -540,10 +486,7 @@ function MatchupChampionPicker({
             />
           </label>
 
-          <CompactRoleFilter
-            activeFilter={championFilter}
-            onChange={onChampionFilterChange}
-          />
+          <CompactRoleFilter activeFilter={championFilter} onChange={onChampionFilterChange} />
 
           <div
             aria-label={`${label} champion options`}
@@ -565,7 +508,7 @@ function MatchupChampionPicker({
                     isSelected && "border-cyan-300/80 ring-2 ring-cyan-300/30",
                     isHighlighted &&
                       "border-cyan-300/70 shadow-[0_0_18px_rgba(34,211,238,0.2)] ring-2 ring-cyan-300/35",
-                    isDisabled && "cursor-not-allowed opacity-25"
+                    isDisabled && "cursor-not-allowed opacity-25",
                   )}
                   disabled={isDisabled}
                   id={`${id}-option-${champion.id}`}
@@ -626,7 +569,7 @@ function CompactRoleFilter({
             className={cn(
               "group flex h-8 min-w-0 items-center justify-center rounded-md border border-white/10 bg-black/20 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
               isActive &&
-                "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] ring-1 ring-cyan-300/25"
+                "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] ring-1 ring-cyan-300/25",
             )}
             key={option.value}
             onClick={() => onChange(option.value)}
@@ -640,7 +583,7 @@ function CompactRoleFilter({
                 "size-5 object-contain transition",
                 isActive
                   ? "opacity-100 drop-shadow-[0_0_7px_rgba(125,211,252,0.55)]"
-                  : "opacity-45 group-hover:opacity-80"
+                  : "opacity-45 group-hover:opacity-80",
               )}
               height={20}
               src={option.iconSrc}

@@ -68,10 +68,7 @@ export const galioCombatProfile = {
       "Using (R) to protect allies or punish overcommits.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First durability or AP utility item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First durability or AP utility item."],
   matchupPreferences: {
     strongInto: [
       "Magic damage champions who must enter his CC range.",
@@ -87,30 +84,34 @@ export const galioCombatProfile = {
   mobilityLevel: "medium",
   name: "Galio",
   offMetaRoles: ["support"],
-      strategicIdentity: {
-        laneGoal: "roam",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["push and roam", "counter-engage", "teamfight setup"],
+  strategicIdentity: {
+    laneGoal: "roam",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["push and roam", "counter-engage", "teamfight setup"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 increases his map impact more than his solo kill threat",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 increases his map impact more than his solo kill threat",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First durability or AP utility item",
-          reason: "First durability or AP utility item",
-          changesGameplay: "Early durability makes his short trade and roam pattern safer",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Galio's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First durability or AP utility item",
+        reason: "First durability or AP utility item",
+        changesGameplay: "Early durability makes his short trade and roam pattern safer",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Galio's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: ["support"],
   primaryTradingPattern:

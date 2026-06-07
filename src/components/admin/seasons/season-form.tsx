@@ -84,11 +84,7 @@ export function SeasonForm({
             Select game
           </option>
           {games.map((game) => (
-            <option
-              className={selectOptionClassName}
-              key={game.id}
-              value={game.id}
-            >
+            <option className={selectOptionClassName} key={game.id} value={game.id}>
               {game.name}
             </option>
           ))}

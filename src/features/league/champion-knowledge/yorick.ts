@@ -3,33 +3,145 @@ import type { LeagueChampionKnowledgeProfile } from "./types";
 export const yorickCombatProfile = {
   profileQuality: "draft",
   masteryDifficulty: "medium",
-  abilities: { Q: "Last Rites", W: "Dark Procession", E: "Mourning Mist", R: "Eulogy of the Isles" },
+  abilities: {
+    Q: "Last Rites",
+    W: "Dark Procession",
+    E: "Mourning Mist",
+    R: "Eulogy of the Isles",
+  },
   archetype: ["splitpush", "summoner", "siege", "scaling side-laner"],
-  primaryWinCondition: ["Use graves, ghouls, and Maiden to create side-lane pressure, trap enemies with (W), and force teams to answer his splitpush."],
+  primaryWinCondition: [
+    "Use graves, ghouls, and Maiden to create side-lane pressure, trap enemies with (W), and force teams to answer his splitpush.",
+  ],
   dangerAbilities: ["(E) ghoul mark", "(W) cage", "(R) Maiden"],
-  dangerProfile: { dangerousWhen: ["Ghouls are ready and (E) marks the target.", "(W) traps champions without dashes or attacks to clear it.", "Maiden is alive and he can pressure towers."], mustRespect: ["His threat depends heavily on minion setup.", "Side-lane pressure can become objective pressure quickly.", "Ignoring Maiden gives him sustained push and duel power."] },
-  commonWeaknesses: ["Weak without graves or Maiden.", "Low mobility.", "Can struggle against champions that clear ghouls and cage easily."],
+  dangerProfile: {
+    dangerousWhen: [
+      "Ghouls are ready and (E) marks the target.",
+      "(W) traps champions without dashes or attacks to clear it.",
+      "Maiden is alive and he can pressure towers.",
+    ],
+    mustRespect: [
+      "His threat depends heavily on minion setup.",
+      "Side-lane pressure can become objective pressure quickly.",
+      "Ignoring Maiden gives him sustained push and duel power.",
+    ],
+  },
+  commonWeaknesses: [
+    "Weak without graves or Maiden.",
+    "Low mobility.",
+    "Can struggle against champions that clear ghouls and cage easily.",
+  ],
   damageType: "physical",
   hardCrowdControl: [],
   id: "Yorick",
-  importantAbilityNotes: ["(Q) creates graves and heals slightly.", "(W) creates a destructible wall cage.", "(E) marks targets for ghouls to leap.", "(R) summons Maiden for sustained side pressure."],
-  lanePlan: { avoids: ["Fighting with no graves or ghouls.", "Using (W) on enemies that can instantly escape.", "Losing Maiden before side pressure starts."], idealLaneState: "A side-lane-focused top lane where Yorick builds graves, lands (E), and uses Maiden to force tower pressure.", wants: ["Graves prepared before trades.", "Enemies marked by (E).", "Side-lane time with Maiden alive." ] },
-  laneIdentity: { earlyGameAgency: "low", lanePressure: "medium", preferredGameState: ["Prepared ghoul trades.", "Side-lane tower pressure.", "Splitpush states that force one or more answers."], scalingPriority: "high", winLaneBy: ["Landing (E) with ghouls ready.", "Trapping immobile targets with (W).", "Keeping Maiden alive for pressure."] },
-  majorPowerSpikes: ["Level 6 (R).", "First splitpush item.", "Side lane with Maiden and ghoul setup."],
-  matchupPreferences: { strongInto: ["Immobile champions caught by (W).", "Teams that cannot answer splitpush.", "Lanes that let him prepare graves."], weakInto: ["Mobile champions that dodge (E) and exit (W).", "Waveclear that kills ghouls.", "Early bullies before setup."] },
+  importantAbilityNotes: [
+    "(Q) creates graves and heals slightly.",
+    "(W) creates a destructible wall cage.",
+    "(E) marks targets for ghouls to leap.",
+    "(R) summons Maiden for sustained side pressure.",
+  ],
+  lanePlan: {
+    avoids: [
+      "Fighting with no graves or ghouls.",
+      "Using (W) on enemies that can instantly escape.",
+      "Losing Maiden before side pressure starts.",
+    ],
+    idealLaneState:
+      "A side-lane-focused top lane where Yorick builds graves, lands (E), and uses Maiden to force tower pressure.",
+    wants: [
+      "Graves prepared before trades.",
+      "Enemies marked by (E).",
+      "Side-lane time with Maiden alive.",
+    ],
+  },
+  laneIdentity: {
+    earlyGameAgency: "low",
+    lanePressure: "medium",
+    preferredGameState: [
+      "Prepared ghoul trades.",
+      "Side-lane tower pressure.",
+      "Splitpush states that force one or more answers.",
+    ],
+    scalingPriority: "high",
+    winLaneBy: [
+      "Landing (E) with ghouls ready.",
+      "Trapping immobile targets with (W).",
+      "Keeping Maiden alive for pressure.",
+    ],
+  },
+  majorPowerSpikes: [
+    "Level 6 (R).",
+    "First splitpush item.",
+    "Side lane with Maiden and ghoul setup.",
+  ],
+  matchupPreferences: {
+    strongInto: [
+      "Immobile champions caught by (W).",
+      "Teams that cannot answer splitpush.",
+      "Lanes that let him prepare graves.",
+    ],
+    weakInto: [
+      "Mobile champions that dodge (E) and exit (W).",
+      "Waveclear that kills ghouls.",
+      "Early bullies before setup.",
+    ],
+  },
   mobilityLevel: "low",
   name: "Yorick",
   offMetaRoles: [],
-  powerSpikes: { major: [{ timing: "Level 6", reason: "(R) summons Maiden for sustained pressure", changesGameplay: "Yorick's side-lane threat and duel power increase sharply.", playerAction: "Protect Maiden and use her to force waves and towers.", enemyResponse: "Kill Maiden before contesting the lane." }, { timing: "Prepared ghoul side lane", reason: "Ghouls plus (E) create heavy pressure", changesGameplay: "Enemies marked by (E) take sustained damage and lose wave control.", playerAction: "Set graves first, then mark targets and pressure towers.", enemyResponse: "Clear ghouls and avoid fighting inside his setup." }] },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "(R) summons Maiden for sustained pressure",
+        changesGameplay: "Yorick's side-lane threat and duel power increase sharply.",
+        playerAction: "Protect Maiden and use her to force waves and towers.",
+        enemyResponse: "Kill Maiden before contesting the lane.",
+      },
+      {
+        timing: "Prepared ghoul side lane",
+        reason: "Ghouls plus (E) create heavy pressure",
+        changesGameplay: "Enemies marked by (E) take sustained damage and lose wave control.",
+        playerAction: "Set graves first, then mark targets and pressure towers.",
+        enemyResponse: "Clear ghouls and avoid fighting inside his setup.",
+      },
+    ],
+  },
   primaryRoles: ["top"],
-  primaryTradingPattern: "Prepare graves, land (E) to send ghouls, then use (W) to trap targets while Maiden or minions convert the trade into tower pressure.",
-  punishProfile: { canPunish: ["Immobile targets in (W).", "Enemies marked by (E) with ghouls ready.", "Teams ignoring side waves."], strugglesToPunish: ["Mobile champions.", "Strong ghoul waveclear."] },
+  primaryTradingPattern:
+    "Prepare graves, land (E) to send ghouls, then use (W) to trap targets while Maiden or minions convert the trade into tower pressure.",
+  punishProfile: {
+    canPunish: [
+      "Immobile targets in (W).",
+      "Enemies marked by (E) with ghouls ready.",
+      "Teams ignoring side waves.",
+    ],
+    strugglesToPunish: ["Mobile champions.", "Strong ghoul waveclear."],
+  },
   secondaryRoles: [],
   shields: [],
   softCrowdControl: ["(E) slow"],
   stealthOrInvisibility: null,
-  strategicIdentity: { laneGoal: "splitpush", preferredGameLength: "long", scalingProfile: "late", winMethod: ["ghoul setup", "Maiden pressure", "tower-focused side lane"] },
+  strategicIdentity: {
+    laneGoal: "splitpush",
+    preferredGameLength: "long",
+    scalingProfile: "late",
+    winMethod: ["ghoul setup", "Maiden pressure", "tower-focused side lane"],
+  },
   sustain: ["(Q) healing"],
-  trading: { badTradeConditions: ["No graves are prepared.", "Maiden is dead.", "(E) misses."], goodTradeConditions: ["Ghouls are ready.", "(E) marks a target.", "(W) traps an immobile champion."], primaryPattern: "Set up minions before fighting; Yorick wins when the enemy fights his army, not when he trades alone." },
-  punishWindows: ["Without graves or Maiden, his threat is low.", "If (E) misses, ghouls do not pressure champions well.", "Mobile champions can escape (W) and punish his low mobility."],
+  trading: {
+    badTradeConditions: ["No graves are prepared.", "Maiden is dead.", "(E) misses."],
+    goodTradeConditions: [
+      "Ghouls are ready.",
+      "(E) marks a target.",
+      "(W) traps an immobile champion.",
+    ],
+    primaryPattern:
+      "Set up minions before fighting; Yorick wins when the enemy fights his army, not when he trades alone.",
+  },
+  punishWindows: [
+    "Without graves or Maiden, his threat is low.",
+    "If (E) misses, ghouls do not pressure champions well.",
+    "Mobile champions can escape (W) and punish his low mobility.",
+  ],
 } satisfies LeagueChampionKnowledgeProfile;

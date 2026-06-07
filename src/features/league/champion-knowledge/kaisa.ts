@@ -34,11 +34,18 @@ export const kaisaCombatProfile = {
   damageType: "mixed",
   hardCrowdControl: [],
   id: "Kaisa",
+  importantAbilityNotes: [
+    "(Q) is strongest when the target is isolated from minions; wave size directly changes her burst.",
+    "(W) adds plasma and can start (R) access, but missing it lowers her all-in threat.",
+    "(E) is either commit speed or defensive spacing; using it forward before enemy CC is spent is risky.",
+    "(R) follows plasma marks and gives a shield, so allied support CC can suddenly become Kai'Sa backline access.",
+  ],
   lanePlan: {
     avoids: [
       "Trading into longer-range ADCs without support setup.",
       "Using (E) forward when enemy engage is ready.",
       "Taking fair poke lanes before first item access.",
+      "Committing (Q) trades into large enemy waves where damage spreads across minions.",
     ],
     idealLaneState:
       "A stable bot lane where Kai'Sa preserves health, farms toward evolves, and all-ins only when support setup creates plasma access.",
@@ -46,6 +53,8 @@ export const kaisaCombatProfile = {
       "Safe access to first item spike.",
       "Support can start plasma stacks or force a target to stand still.",
       "Short all-in windows after enemy poke or disengage is down.",
+      "Small or thinned waves that let (Q) hit the enemy ADC instead of minions.",
+      "Support positioning that threatens CC before she has to enter short range.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const kaisaCombatProfile = {
       "Avoiding range-based poke losses.",
       "Committing only after support setup.",
       "Using item and evolve spikes to change all-in threat.",
+      "Thinning waves before trades so isolated (Q) damage actually lands.",
+      "Punishing ADCs who step away from their wave or support peel to last-hit.",
     ],
   },
   majorPowerSpikes: ["First completed item.", "Ability evolve thresholds.", "Level 6 (R)."],
@@ -86,20 +97,16 @@ export const kaisaCombatProfile = {
         reason: "Her damage and evolve path start changing trade access",
         changesGameplay:
           "Kai'Sa can threaten all-ins more reliably once her item threshold is reached.",
-        playerAction:
-          "Look for support setup into isolated damage rather than raw poke trades.",
-        enemyResponse:
-          "Keep wave distance and avoid giving her a clean committed target.",
+        playerAction: "Look for support setup into isolated damage rather than raw poke trades.",
+        enemyResponse: "Keep wave distance and avoid giving her a clean committed target.",
       },
       {
         timing: "Level 6",
         reason: "(R) gives long-range follow-up and repositioning",
-        changesGameplay:
-          "Any plasma mark can become a sudden commit if the target is isolated.",
+        changesGameplay: "Any plasma mark can become a sudden commit if the target is isolated.",
         playerAction:
           "Use (R) only when the follow-up target can actually be finished or escaped from.",
-        enemyResponse:
-          "Respect marked targets and hold disengage for her commit.",
+        enemyResponse: "Respect marked targets and hold disengage for her commit.",
       },
     ],
   },
@@ -112,6 +119,8 @@ export const kaisaCombatProfile = {
       "Isolated ADCs after support CC.",
       "Poke lanes that miss their disengage.",
       "Targets marked by (W) or allied setup.",
+      "Enemy ADCs separated from minions during cannon or ranged-minion CS.",
+      "Supports who use CC first and leave their ADC without peel against (R) follow-up.",
     ],
     strugglesToPunish: [
       "Long-range wave control without engage support.",
@@ -138,6 +147,8 @@ export const kaisaCombatProfile = {
       "Support CC starts plasma stacks.",
       "The enemy ADC is isolated from minions or peel.",
       "Enemy disengage or poke cooldowns are down.",
+      "The wave has been thinned enough that (Q) focuses the champion.",
+      "A plasma mark is already active and (R) can finish the commit safely.",
     ],
     primaryPattern:
       "Avoid fair poke trades, then use support setup and item spikes to turn short windows into committed all-ins.",

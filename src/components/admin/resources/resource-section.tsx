@@ -43,29 +43,25 @@ export function AdminResourcesSection({
   onStartEdit: (resource: AdminResource) => void;
   resources: AdminResource[];
 }) {
-  const resourceGroups = groupAdminItemsByGame(
-    resources,
-    games,
-    gameNamesById
-  );
+  const resourceGroups = groupAdminItemsByGame(resources, games, gameNamesById);
   const copy =
-    mode === "community" ?
-      {
-        createTitle: "Create community link",
-        editTitle: "Edit community link",
-        emptyMessage: "No community links found.",
-        listTitle: "Community links",
-        selectMessage: "Select a community link below to edit it.",
-        submitLabel: "Create community link",
-      }
-    : {
-        createTitle: "Create resource",
-        editTitle: "Edit resource",
-        emptyMessage: "No resources found.",
-        listTitle: "Resources",
-        selectMessage: "Select a resource below to edit it.",
-        submitLabel: "Create resource",
-      };
+    mode === "community"
+      ? {
+          createTitle: "Create community link",
+          editTitle: "Edit community link",
+          emptyMessage: "No community links found.",
+          listTitle: "Community links",
+          selectMessage: "Select a community link below to edit it.",
+          submitLabel: "Create community link",
+        }
+      : {
+          createTitle: "Create resource",
+          editTitle: "Edit resource",
+          emptyMessage: "No resources found.",
+          listTitle: "Resources",
+          selectMessage: "Select a resource below to edit it.",
+          submitLabel: "Create resource",
+        };
 
   return (
     <>
@@ -83,9 +79,7 @@ export function AdminResourcesSection({
 
         <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
           <CardHeader>
-            <CardTitle className="font-mono text-xl">
-              {copy.editTitle}
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">{copy.editTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             {editingResourceId ? (
@@ -123,13 +117,11 @@ export function AdminResourcesSection({
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-white">
-                        {resource.title}
-                      </p>
+                      <p className="font-semibold text-white">{resource.title}</p>
                       <p className="mt-1 text-sm text-zinc-400">
-                        {mode === "resources" ?
-                          `${resource.group_title ?? "Ungrouped"} / ${resource.icon}`
-                        : `${resource.label} / ${resource.icon}`}
+                        {mode === "resources"
+                          ? `${resource.group_title ?? "Ungrouped"} / ${resource.icon}`
+                          : `${resource.label} / ${resource.icon}`}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -147,9 +139,7 @@ export function AdminResourcesSection({
                       </span>
                     </div>
                   </div>
-                  <p className="mt-3 font-mono text-xs text-zinc-500">
-                    {resource.url}
-                  </p>
+                  <p className="mt-3 font-mono text-xs text-zinc-500">{resource.url}</p>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <Button
                       className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"

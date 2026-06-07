@@ -2,22 +2,13 @@ import type { FormEvent } from "react";
 import { AlertTriangle, CheckCircle2, Plus, Save, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
 import { leagueRoles } from "@/src/features/league/roles";
 import { fieldClassName, selectOptionClassName } from "../constants";
-import type {
-  AdminLeagueChampion,
-  FormStatus,
-  LeagueMatchupFormState,
-} from "../types";
+import type { AdminLeagueChampion, FormStatus, LeagueMatchupFormState } from "../types";
 
 const matchupTextFields = [
   { key: "overview", label: "Overview" },
@@ -44,9 +35,7 @@ export function LeagueMatchupGenerateFormCard({
   return (
     <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
       <CardHeader>
-        <CardTitle className="font-mono text-xl">
-          Generate League matchup draft
-        </CardTitle>
+        <CardTitle className="font-mono text-xl">Generate League matchup draft</CardTitle>
       </CardHeader>
       <CardContent>
         <LeagueMatchupGenerateForm
@@ -74,16 +63,12 @@ export function LeagueMatchupGenerateForm({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   status: FormStatus;
 }) {
-  const championA = champions.find(
-    (champion) => champion.id === form.champion_a_id
-  );
-  const championB = champions.find(
-    (champion) => champion.id === form.champion_b_id
-  );
+  const championA = champions.find((champion) => champion.id === form.champion_a_id);
+  const championB = champions.find((champion) => champion.id === form.champion_b_id);
 
   function updateField(
     field: keyof LeagueMatchupFormState,
-    value: LeagueMatchupFormState[keyof LeagueMatchupFormState]
+    value: LeagueMatchupFormState[keyof LeagueMatchupFormState],
   ) {
     onChange({
       ...form,
@@ -116,10 +101,7 @@ export function LeagueMatchupGenerateForm({
           className={fieldClassName}
           disabled={status.isLoading}
           onChange={(event) =>
-            updateField(
-              "role",
-              event.target.value as LeagueMatchupFormState["role"]
-            )
+            updateField("role", event.target.value as LeagueMatchupFormState["role"])
           }
           required
           value={form.role}
@@ -182,7 +164,7 @@ export function LeagueMatchupForm({
 
   function updateField(
     field: keyof LeagueMatchupFormState,
-    value: LeagueMatchupFormState[keyof LeagueMatchupFormState]
+    value: LeagueMatchupFormState[keyof LeagueMatchupFormState],
   ) {
     onChange({
       ...form,
@@ -216,10 +198,7 @@ export function LeagueMatchupForm({
             className={fieldClassName}
             disabled={status.isLoading}
             onChange={(event) =>
-              updateField(
-                "role",
-                event.target.value as LeagueMatchupFormState["role"]
-              )
+              updateField("role", event.target.value as LeagueMatchupFormState["role"])
             }
             required
             value={form.role}
@@ -239,9 +218,7 @@ export function LeagueMatchupForm({
             disabled={status.isLoading}
             max={5}
             min={1}
-            onChange={(event) =>
-              updateField("difficulty_rating", event.target.value)
-            }
+            onChange={(event) => updateField("difficulty_rating", event.target.value)}
             placeholder="1-5"
             type="number"
             value={form.difficulty_rating}
@@ -253,9 +230,7 @@ export function LeagueMatchupForm({
           <Input
             className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
             disabled={status.isLoading}
-            onChange={(event) =>
-              updateField("confidence_level", event.target.value)
-            }
+            onChange={(event) => updateField("confidence_level", event.target.value)}
             placeholder="Draft, tested, high"
             value={form.confidence_level}
           />
@@ -358,11 +333,7 @@ function ChampionSelect({
           Select champion
         </option>
         {champions.map((champion) => (
-          <option
-            className={selectOptionClassName}
-            key={champion.id}
-            value={champion.id}
-          >
+          <option className={selectOptionClassName} key={champion.id} value={champion.id}>
             {champion.name} - {champion.title || "Champion"}
           </option>
         ))}
@@ -383,9 +354,7 @@ function ProfileReadiness({
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-      <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
-        {label}
-      </p>
+      <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">{label}</p>
       {champion ? (
         <p
           className={`mt-2 flex items-center gap-2 text-sm ${

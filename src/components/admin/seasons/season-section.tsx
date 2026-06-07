@@ -101,13 +101,10 @@ export function AdminSeasonsSection({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-white">{season.name}</p>
-                      <p className="mt-1 font-mono text-xs text-zinc-500">
-                        {season.slug}
-                      </p>
+                      <p className="mt-1 font-mono text-xs text-zinc-500">{season.slug}</p>
                     </div>
                     <p className="font-mono text-xs text-zinc-500">
-                      {formatDate(season.starts_at)} -{" "}
-                      {formatDate(season.ends_at)}
+                      {formatDate(season.starts_at)} - {formatDate(season.ends_at)}
                     </p>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-3">

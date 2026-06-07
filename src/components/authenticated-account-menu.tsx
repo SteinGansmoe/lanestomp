@@ -3,22 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  ChevronDown,
-  LogOut,
-  Settings,
-  ShieldCheck,
-  UserCircle,
-} from "lucide-react";
+import { ChevronDown, LogOut, Settings, ShieldCheck, UserCircle } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/src/components/ui/button";
 import { isAdminUser } from "@/src/lib/admin";
-import {
-  fetchUserProfile,
-  getProfileDisplayName,
-  type UserProfile,
-} from "@/src/lib/profile";
+import { fetchUserProfile, getProfileDisplayName, type UserProfile } from "@/src/lib/profile";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
 
@@ -75,11 +65,10 @@ export function AuthenticatedAccountMenu({
     void loadUser();
     window.addEventListener("lanestomp-profile-updated", loadUser);
 
-    const { data: listener } =
-      supabase?.auth.onAuthStateChange((_event, session) => {
-        setIsMenuOpen(false);
-        void applyUser(session?.user ?? null);
-      }) ?? { data: null };
+    const { data: listener } = supabase?.auth.onAuthStateChange((_event, session) => {
+      setIsMenuOpen(false);
+      void applyUser(session?.user ?? null);
+    }) ?? { data: null };
 
     return () => {
       isMounted = false;
@@ -156,7 +145,7 @@ export function AuthenticatedAccountMenu({
         <ChevronDown
           className={cn(
             "size-4 shrink-0 text-zinc-400 transition-transform",
-            isMenuOpen ? "rotate-180" : ""
+            isMenuOpen ? "rotate-180" : "",
           )}
           aria-hidden="true"
         />
@@ -166,9 +155,7 @@ export function AuthenticatedAccountMenu({
         <div
           className={cn(
             "z-50 w-full overflow-hidden rounded-lg border border-white/10 bg-[#10182b] p-1 text-sm text-zinc-100 shadow-2xl shadow-black/30",
-            menuPlacement === "inline"
-              ? "mt-2"
-              : "absolute bottom-14 left-0 right-0"
+            menuPlacement === "inline" ? "mt-2" : "absolute bottom-14 left-0 right-0",
           )}
           role="menu"
         >

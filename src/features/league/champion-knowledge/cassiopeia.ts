@@ -68,10 +68,7 @@ export const cassiopeiaCombatProfile = {
       "Out-damaging opponents in sustained fights.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First mana/AP item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First mana/AP item."],
   matchupPreferences: {
     strongInto: [
       "Champions who need to dash into her (W) zone.",
@@ -87,30 +84,34 @@ export const cassiopeiaCombatProfile = {
   mobilityLevel: "low",
   name: "Cassiopeia",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "scale",
-        scalingProfile: "late",
-        preferredGameLength: "long",
-        winMethod: ["extended fights", "anti-dash zones", "sustained DPS"],
+  strategicIdentity: {
+    laneGoal: "scale",
+    scalingProfile: "late",
+    preferredGameLength: "long",
+    winMethod: ["extended fights", "anti-dash zones", "sustained DPS"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 makes direct commits much riskier into her",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 makes direct commits much riskier into her",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First mana/AP item",
-          reason: "First mana/AP item",
-          changesGameplay: "Mana and AP items improve her ability to sustain long trades",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Cassiopeia's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First mana/AP item",
+        reason: "First mana/AP item",
+        changesGameplay: "Mana and AP items improve her ability to sustain long trades",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Cassiopeia's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

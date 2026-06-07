@@ -58,9 +58,7 @@ export function LegalPageShell({
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-violet-500/15 text-violet-200 ring-1 ring-white/10">
                   <BookOpen className="size-5" aria-hidden="true" />
                 </div>
-                <h2 className="font-mono text-lg font-semibold text-white">
-                  {section.title}
-                </h2>
+                <h2 className="font-mono text-lg font-semibold text-white">{section.title}</h2>
               </div>
               <div className="space-y-3 px-4 py-4 text-sm leading-6 text-zinc-300 sm:px-5">
                 {section.body}

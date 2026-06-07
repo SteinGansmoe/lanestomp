@@ -13,9 +13,7 @@ export default async function Home() {
 
   const { champions, error } = await getLeagueChampions();
   const { coverage } =
-    champions.length > 0
-      ? await getLeagueMatchupCoverageSummary(champions)
-      : { coverage: null };
+    champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
@@ -36,16 +34,13 @@ export default async function Home() {
                   Master matchups, sharpen champion pools, and climb with confidence.
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300 sm:text-base">
-                  Pick your champion, choose the enemy laner, and jump into
-                  concise matchup notes built for champ select, loading screen,
-                  and second monitor checks.
+                  Pick your champion, choose the enemy laner, and jump into concise matchup notes
+                  built for champ select, loading screen, and second monitor checks.
                 </p>
               </div>
 
               <div className="grid gap-3 rounded-lg border border-white/10 bg-black/20 p-4 text-sm text-zinc-300 shadow-xl shadow-black/15 sm:min-w-72">
-                <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
-                  Focus
-                </p>
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">Focus</p>
                 <p className="flex items-center gap-2">
                   <Sparkles className="size-4 text-cyan-200" aria-hidden="true" />
                   Fast champion recognition
@@ -69,9 +64,7 @@ export default async function Home() {
           <MatchupSelector champions={champions} matchupCoverage={coverage} />
         ) : (
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
-            <CardTitle className="font-mono text-xl">
-              Champion data is not imported yet
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">Champion data is not imported yet</CardTitle>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Import League champion data to enable the matchup picker.
             </p>
@@ -88,12 +81,10 @@ function ChampionDataError({ message }: { message: string }) {
       <div className="flex items-start gap-3">
         <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
         <div>
-          <CardTitle className="font-mono text-lg">
-            Champion data is not ready yet
-          </CardTitle>
+          <CardTitle className="font-mono text-lg">Champion data is not ready yet</CardTitle>
           <p className="mt-2 text-sm leading-6 text-amber-100/80">
-            Apply the latest champion migration and run the Data Dragon import
-            before building matchups.
+            Apply the latest champion migration and run the Data Dragon import before building
+            matchups.
           </p>
           <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
             {message}

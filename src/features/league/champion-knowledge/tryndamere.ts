@@ -99,13 +99,12 @@ export const tryndamereCombatProfile = {
       },
       {
         timing: "Two-item side-lane spike",
-        reason: "Critical damage and mobility uptime make his splitpush threat much harder to answer",
+        reason:
+          "Critical damage and mobility uptime make his splitpush threat much harder to answer",
         changesGameplay:
           "He can pressure towers and threaten extended duels against many isolated defenders.",
-        playerAction:
-          "Pull pressure to side lane and force enemies to answer before grouping.",
-        enemyResponse:
-          "Avoid isolated long fights and coordinate crowd control around his (R).",
+        playerAction: "Pull pressure to side lane and force enemies to answer before grouping.",
+        enemyResponse: "Avoid isolated long fights and coordinate crowd control around his (R).",
       },
     ],
     minor: [
@@ -116,8 +115,7 @@ export const tryndamereCombatProfile = {
           "Short trades become less predictable because critical strikes and (Q) recovery matter more.",
         playerAction:
           "Trade when Fury is high and reset with (Q) only when recovery is more valuable than pressure.",
-        enemyResponse:
-          "Deny Fury buildup or trade immediately after he spends it on (Q).",
+        enemyResponse: "Deny Fury buildup or trade immediately after he spends it on (Q).",
       },
     ],
   },

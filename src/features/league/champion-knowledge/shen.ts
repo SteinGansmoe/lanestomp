@@ -90,8 +90,7 @@ export const shenCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks global shield and teleport impact",
-        changesGameplay:
-          "Shen can turn fights across the map even when top lane is stable.",
+        changesGameplay: "Shen can turn fights across the map even when top lane is stable.",
         playerAction:
           "Prepare the wave before using (R), then convert the numbers advantage into an objective, kill, or saved carry.",
         enemyResponse:
@@ -104,20 +103,17 @@ export const shenCombatProfile = {
           "Shen can absorb more return damage when forcing (E) and empowered (Q) trades.",
         playerAction:
           "Play more confidently around short trades and controlled front-line engages.",
-        enemyResponse:
-          "Avoid giving free taunt angles and punish his lower wave clear.",
+        enemyResponse: "Avoid giving free taunt angles and punish his lower wave clear.",
       },
     ],
     minor: [
       {
         timing: "Level 3",
         reason: "Basic kit gives empowered attacks, attack block, and taunt",
-        changesGameplay:
-          "Shen can set up a complete short trade if (E) lands.",
+        changesGameplay: "Shen can set up a complete short trade if (E) lands.",
         playerAction:
           "Look for short taunt trades when the wave does not expose you to a long chase.",
-        enemyResponse:
-          "Bait (E) before committing to a longer fight.",
+        enemyResponse: "Bait (E) before committing to a longer fight.",
       },
     ],
   },

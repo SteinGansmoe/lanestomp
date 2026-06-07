@@ -59,25 +59,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-<Script
-  src="https://www.googletagmanager.com/gtag/js?id=G-J36C3YD0FN"
-  strategy="afterInteractive"
-/>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-J36C3YD0FN"
+          strategy="afterInteractive"
+        />
 
-<Script id="google-analytics" strategy="afterInteractive">
-  {`
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
     gtag('config', 'G-J36C3YD0FN');
   `}
-</Script>
+        </Script>
         {children}
         <SiteFooter />
       </body>

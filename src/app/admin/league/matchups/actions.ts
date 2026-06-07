@@ -120,10 +120,7 @@ export async function generateLeagueMatchupDraft({
   matchupId,
 }: GenerateDraftInput): Promise<GenerateDraftResult> {
   const attemptStartedAt = Date.now();
-  const authResult = await getAuthorizedSupabaseClient(
-    accessToken,
-    "generate matchup drafts"
-  );
+  const authResult = await getAuthorizedSupabaseClient(accessToken, "generate matchup drafts");
 
   if (!authResult.ok) {
     return authResult;
@@ -133,7 +130,7 @@ export async function generateLeagueMatchupDraft({
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
     .select(
-      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, generation_status, overview, power_spikes, role, trading_pattern, win_conditions"
+      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, generation_status, overview, power_spikes, role, trading_pattern, win_conditions",
     )
     .eq("id", matchupId)
     .maybeSingle<MatchupRow>();
@@ -158,21 +155,12 @@ export async function generateLeagueMatchupDraft({
   }
 
   const championNamesById = new Map(
-    ((champions ?? []) as ChampionRow[]).map((champion) => [
-      champion.id,
-      champion.name,
-    ])
+    ((champions ?? []) as ChampionRow[]).map((champion) => [champion.id, champion.name]),
   );
-  const championAName =
-    championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
-  const championBName =
-    championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
-  const championAProfile = getChampionCombatProfile(
-    matchup.champion_a_id
-  );
-  const championBProfile = getChampionCombatProfile(
-    matchup.champion_b_id
-  );
+  const championAName = championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
+  const championBName = championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
+  const championAProfile = getChampionCombatProfile(matchup.champion_a_id);
+  const championBProfile = getChampionCombatProfile(matchup.champion_b_id);
   const cleanedAdminNotes = removeSystemGenerationNotes(matchup.admin_notes);
   const providerResult = await generateLeagueMatchupDraftContent({
     adminNotes: cleanedAdminNotes.notes,
@@ -339,10 +327,7 @@ export async function generateLeagueMatchupDraftSection({
   sectionKey,
 }: GenerateDraftSectionInput): Promise<GenerateDraftSectionResult> {
   const attemptStartedAt = Date.now();
-  const authResult = await getAuthorizedSupabaseClient(
-    accessToken,
-    "generate matchup draft cards"
-  );
+  const authResult = await getAuthorizedSupabaseClient(accessToken, "generate matchup draft cards");
 
   if (!authResult.ok) {
     return authResult;
@@ -352,7 +337,7 @@ export async function generateLeagueMatchupDraftSection({
   const { data: matchup, error: matchupError } = await supabase
     .from("league_matchups")
     .select(
-      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, generation_status, overview, power_spikes, role, trading_pattern, win_conditions"
+      "admin_notes, champion_a_id, champion_b_id, confidence_level, danger_windows, early_game, generation_status, overview, power_spikes, role, trading_pattern, win_conditions",
     )
     .eq("id", matchupId)
     .maybeSingle<MatchupRow>();
@@ -377,15 +362,10 @@ export async function generateLeagueMatchupDraftSection({
   }
 
   const championNamesById = new Map(
-    ((champions ?? []) as ChampionRow[]).map((champion) => [
-      champion.id,
-      champion.name,
-    ])
+    ((champions ?? []) as ChampionRow[]).map((champion) => [champion.id, champion.name]),
   );
-  const championAName =
-    championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
-  const championBName =
-    championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
+  const championAName = championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id;
+  const championBName = championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id;
   const championAProfile = getChampionCombatProfile(matchup.champion_a_id);
   const championBProfile = getChampionCombatProfile(matchup.champion_b_id);
   const cleanedAdminNotes = removeSystemGenerationNotes(matchup.admin_notes);
@@ -519,8 +499,7 @@ export async function generateLeagueMatchupDraftSection({
     .maybeSingle<SavedMatchupDraftRow>();
 
   if (updateError || !savedMatchup) {
-    const error =
-      updateError?.message ?? "Generated draft card could not be saved.";
+    const error = updateError?.message ?? "Generated draft card could not be saved.";
 
     logGenerationAttempt({
       ...attemptContext,
@@ -558,10 +537,7 @@ export async function deleteLeagueMatchupDraft({
   accessToken,
   matchupId,
 }: DeleteDraftInput): Promise<DeleteDraftResult> {
-  const authResult = await getAuthorizedSupabaseClient(
-    accessToken,
-    "delete matchup drafts"
-  );
+  const authResult = await getAuthorizedSupabaseClient(accessToken, "delete matchup drafts");
 
   if (!authResult.ok) {
     return authResult;
@@ -600,10 +576,7 @@ export async function deleteLeagueMatchupDraft({
   };
 }
 
-async function getAuthorizedSupabaseClient(
-  accessToken: string,
-  actionLabel: string
-) {
+async function getAuthorizedSupabaseClient(accessToken: string, actionLabel: string) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return {
       error: "Supabase is not configured.",
@@ -626,9 +599,7 @@ async function getAuthorizedSupabaseClient(
     },
   });
 
-  const { data: userData, error: userError } = await supabase.auth.getUser(
-    accessToken
-  );
+  const { data: userData, error: userError } = await supabase.auth.getUser(accessToken);
   const user = userData.user;
 
   if (userError || !user) {
@@ -655,9 +626,7 @@ async function getAuthorizedSupabaseClient(
   };
 }
 
-function getDraftFromSavedMatchup(
-  matchup: SavedMatchupDraftRow
-): MatchupDraftSections {
+function getDraftFromSavedMatchup(matchup: SavedMatchupDraftRow): MatchupDraftSections {
   return {
     danger_windows: matchup.danger_windows,
     early_game: matchup.early_game,
@@ -720,10 +689,9 @@ async function recordGenerationFailureNote({
       role,
       sectionKey,
       source,
-    })
+    }),
   );
-  const nextGenerationStatus =
-    generationStatus === "reviewed" ? "reviewed" : "failed";
+  const nextGenerationStatus = generationStatus === "reviewed" ? "reviewed" : "failed";
 
   const { error: updateError } = await supabase
     .from("league_matchups")
@@ -748,7 +716,7 @@ function getFallbackContaminationError({
   phraseCount,
 }: MatchupFallbackContaminationResult) {
   return `Generated draft was rejected before save because it matched fallback placeholder content in ${affectedSections.join(
-    ", "
+    ", ",
   )} (${phraseCount} phrase${phraseCount === 1 ? "" : "s"}). Existing matchup content was preserved.`;
 }
 
@@ -771,7 +739,7 @@ function getGenerationMetadata({
 }) {
   const adminNotes = appendGenerationNote(
     baseAdminNotes,
-    getGenerationNote(provider, generatedAt, providerWarning, profileWarning)
+    getGenerationNote(provider, generatedAt, providerWarning, profileWarning),
   );
 
   return {
@@ -893,7 +861,7 @@ function getGenerationNote(
   provider: LeagueMatchupDraftProvider,
   generatedAt: string,
   providerWarning?: string,
-  profileWarning?: string
+  profileWarning?: string,
 ) {
   const profileNote = profileWarning ? ` ${profileWarning}` : "";
 

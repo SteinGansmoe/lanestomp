@@ -4,14 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import {
-  Home,
-  Menu,
-  Search,
-  Shield,
-  Swords,
-  X,
-} from "lucide-react";
+import { Home, Menu, Search, Shield, Swords, X } from "lucide-react";
 
 import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
 import { Button } from "@/src/components/ui/button";
@@ -78,10 +71,7 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
 
         {isMenuOpen ? (
           <div className="mt-4 rounded-xl border border-white/10 bg-[#10182b] p-3 shadow-xl shadow-black/20">
-            <NavigationLinks
-              onNavigate={() => setIsMenuOpen(false)}
-              pathname={pathname}
-            />
+            <NavigationLinks onNavigate={() => setIsMenuOpen(false)} pathname={pathname} />
             <AuthenticatedAccountMenu
               className="mt-4 border-t border-white/10 pt-4"
               menuPlacement="inline"
@@ -180,21 +170,11 @@ function NavigationLinks({
         );
 
         return item.href === "#" ? (
-          <a
-            className={itemClassName}
-            href="#"
-            key={item.label}
-            onClick={onNavigate}
-          >
+          <a className={itemClassName} href="#" key={item.label} onClick={onNavigate}>
             {content}
           </a>
         ) : (
-          <Link
-            className={itemClassName}
-            href={item.href}
-            key={item.label}
-            onClick={onNavigate}
-          >
+          <Link className={itemClassName} href={item.href} key={item.label} onClick={onNavigate}>
             {content}
           </Link>
         );

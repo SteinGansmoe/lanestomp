@@ -139,16 +139,15 @@ export function LeagueMatchupReviewPanel({
   role,
 }: LeagueMatchupReviewPanelProps) {
   const [adminMatchup, setAdminMatchup] = useState<AdminMatchupRow | null>(null);
-  const [form, setForm] = useState<ReviewFormState>(() =>
-    getReviewFormState(initialMatchup)
-  );
+  const [form, setForm] = useState<ReviewFormState>(() => getReviewFormState(initialMatchup));
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [regeneratingSectionKey, setRegeneratingSectionKey] =
-    useState<MatchupSectionKey | null>(null);
-  const [sectionErrors, setSectionErrors] = useState<
-    Partial<Record<MatchupSectionKey, string>>
-  >({});
+  const [regeneratingSectionKey, setRegeneratingSectionKey] = useState<MatchupSectionKey | null>(
+    null,
+  );
+  const [sectionErrors, setSectionErrors] = useState<Partial<Record<MatchupSectionKey, string>>>(
+    {},
+  );
   const [status, setStatus] = useState<ReviewStatus>({
     error: null,
     isLoading: false,
@@ -163,11 +162,11 @@ export function LeagueMatchupReviewPanel({
         body: getMatchupSectionBody(
           displayMatchup,
           section.key,
-          getSectionPlaceholder(section.key, role, section.placeholder)
+          getSectionPlaceholder(section.key, role, section.placeholder),
         ),
         title: getMatchupDraftSectionLabel(section.key, role),
       })),
-    [displayMatchup, role]
+    [displayMatchup, role],
   );
 
   useEffect(() => {
@@ -216,7 +215,7 @@ export function LeagueMatchupReviewPanel({
             "reviewed_at",
             "reviewed_by",
             "updated_at",
-          ].join(", ")
+          ].join(", "),
         )
         .eq("champion_a_id", championAId)
         .eq("champion_b_id", championBId)
@@ -273,10 +272,7 @@ export function LeagueMatchupReviewPanel({
     setStatus({ error: null, isLoading: true, success: null });
 
     const payload = Object.fromEntries(
-      matchupSectionDefinitions.map((section) => [
-        section.key,
-        form[section.key].trim() || null,
-      ])
+      matchupSectionDefinitions.map((section) => [section.key, form[section.key].trim() || null]),
     ) as Record<MatchupSectionKey, string | null>;
     const confidence = calculateConfidenceForReviewPanelMatchup({
       ...adminMatchup,
@@ -290,7 +286,7 @@ export function LeagueMatchupReviewPanel({
       })
       .eq("id", adminMatchup.id)
       .select(
-        "id, admin_notes, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+        "id, admin_notes, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at",
       )
       .single<AdminMatchupRow>();
 
@@ -352,7 +348,7 @@ export function LeagueMatchupReviewPanel({
       })
       .eq("id", adminMatchup.id)
       .select(
-        "id, admin_notes, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+        "id, admin_notes, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at",
       )
       .single<AdminMatchupRow>();
 
@@ -383,8 +379,7 @@ export function LeagueMatchupReviewPanel({
     setSectionErrors((current) => ({ ...current, [sectionKey]: undefined }));
     setStatus({ error: null, isLoading: false, success: null });
 
-    const { data: sessionData, error: sessionError } =
-      await supabase.auth.getSession();
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
     if (sessionError || !accessToken) {
@@ -436,9 +431,7 @@ export function LeagueMatchupReviewPanel({
                 <ShieldCheck className="size-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="font-mono text-sm font-semibold text-white">
-                  Admin review
-                </p>
+                <p className="font-mono text-sm font-semibold text-white">Admin review</p>
                 <p className="text-xs text-zinc-400">
                   {adminMatchup
                     ? `${getStatusLabel(adminMatchup.generation_status)} guidance shown in the public layout.`
@@ -474,9 +467,7 @@ export function LeagueMatchupReviewPanel({
                 <>
                   <Button
                     className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
-                    disabled={
-                      !adminMatchup || status.isLoading || isRegeneratingSection
-                    }
+                    disabled={!adminMatchup || status.isLoading || isRegeneratingSection}
                     onClick={startEditing}
                     type="button"
                     variant="ghost"
@@ -523,9 +514,9 @@ export function LeagueMatchupReviewPanel({
           <MatchupGuideCard
             canRegenerate={Boolean(
               isAdmin &&
-                adminMatchup &&
-                !isEditing &&
-                (!isRegeneratingSection || regeneratingSectionKey === section.key)
+              adminMatchup &&
+              !isEditing &&
+              (!isRegeneratingSection || regeneratingSectionKey === section.key),
             )}
             formValue={form[section.key]}
             isEditing={isEditing}
@@ -542,9 +533,7 @@ export function LeagueMatchupReviewPanel({
                   }
                 : null
             }
-            onChange={(value) =>
-              setForm((current) => ({ ...current, [section.key]: value }))
-            }
+            onChange={(value) => setForm((current) => ({ ...current, [section.key]: value }))}
             onRegenerate={() => regenerateSection(section.key)}
             regenerateError={sectionErrors[section.key] ?? null}
             section={section}
@@ -591,7 +580,7 @@ function MatchupGuideCard({
         <div className="flex items-center gap-2.5">
           <span
             className={`flex size-8 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
-              section.accent
+              section.accent,
             )}`}
           >
             <Icon className="size-4" aria-hidden="true" />
@@ -637,7 +626,7 @@ function MatchupGuideCard({
             <li className="flex gap-2" key={`${line}-${index}`}>
               <span
                 className={`mt-2 size-1.5 shrink-0 rounded-full ${getSectionDotClass(
-                  section.accent
+                  section.accent,
                 )}`}
               />
               <span>{line}</span>
@@ -646,19 +635,14 @@ function MatchupGuideCard({
         </ul>
       )}
 
-      {!isEditing && feedbackContext ? (
-        <MatchupFeedbackControls {...feedbackContext} />
-      ) : null}
+      {!isEditing && feedbackContext ? <MatchupFeedbackControls {...feedbackContext} /> : null}
     </article>
   );
 }
 
 function getReviewFormState(matchup: LeagueMatchup | null): ReviewFormState {
   return Object.fromEntries(
-    matchupSectionDefinitions.map((section) => [
-      section.key,
-      matchup?.[section.key] ?? "",
-    ])
+    matchupSectionDefinitions.map((section) => [section.key, matchup?.[section.key] ?? ""]),
   ) as ReviewFormState;
 }
 
@@ -669,9 +653,7 @@ function calculateConfidenceForReviewPanelMatchup(matchup: AdminMatchupRow) {
     championBName: matchup.champion_b_id,
     championBProfile: getChampionCombatProfile(matchup.champion_b_id),
     draft: getReviewFormState(matchup),
-    generationSource: getLeagueMatchupConfidenceSourceFromNotes(
-      matchup.admin_notes
-    ),
+    generationSource: getLeagueMatchupConfidenceSourceFromNotes(matchup.admin_notes),
     generationStatus: matchup.generation_status,
   });
 }
@@ -679,7 +661,7 @@ function calculateConfidenceForReviewPanelMatchup(matchup: AdminMatchupRow) {
 function getMatchupSectionBody(
   matchup: LeagueMatchup | null,
   key: MatchupSectionKey,
-  placeholder: string
+  placeholder: string,
 ) {
   const value = matchup?.[key];
 
@@ -715,11 +697,7 @@ function getStatusLabel(status: AdminMatchupRow["generation_status"]) {
   return "Draft";
 }
 
-function getSectionPlaceholder(
-  sectionKey: MatchupSectionKey,
-  role: LeagueRole,
-  fallback: string
-) {
+function getSectionPlaceholder(sectionKey: MatchupSectionKey, role: LeagueRole, fallback: string) {
   if (role !== "jungle" || sectionKey !== "trading_pattern") {
     return fallback;
   }
@@ -731,9 +709,7 @@ function getSectionTitle(sectionKey: MatchupSectionKey, role: LeagueRole) {
   return getMatchupDraftSectionLabel(sectionKey, role);
 }
 
-function getSectionDotClass(
-  accent: (typeof matchupSectionDefinitions)[number]["accent"]
-) {
+function getSectionDotClass(accent: (typeof matchupSectionDefinitions)[number]["accent"]) {
   switch (accent) {
     case "amber":
       return "bg-amber-300/80";
@@ -750,9 +726,7 @@ function getSectionDotClass(
   }
 }
 
-function getSectionIconClass(
-  accent: (typeof matchupSectionDefinitions)[number]["accent"]
-) {
+function getSectionIconClass(accent: (typeof matchupSectionDefinitions)[number]["accent"]) {
   switch (accent) {
     case "amber":
       return "border-amber-300/20 bg-amber-400/10 text-amber-200";

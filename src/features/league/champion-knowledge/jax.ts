@@ -90,7 +90,8 @@ export const jaxCombatProfile = {
         timing: "Level 6",
         reason: "(R) improves durability and sustained damage",
         changesGameplay: "Jax can contest longer fights with more confidence.",
-        playerAction: "Use level 6 to take extended trades only when (E) is available or enemy cooldowns are down.",
+        playerAction:
+          "Use level 6 to take extended trades only when (E) is available or enemy cooldowns are down.",
         enemyResponse: "Punish him before he stacks damage or after (E) is used.",
       },
       {

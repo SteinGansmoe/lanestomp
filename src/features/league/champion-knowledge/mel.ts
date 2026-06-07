@@ -68,10 +68,7 @@ export const melCombatProfile = {
       "Using (R) only when marks and health thresholds make it valuable.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed mage item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed mage item."],
   matchupPreferences: {
     strongInto: [
       "Projectile-reliant mages she can punish with (W).",
@@ -87,30 +84,34 @@ export const melCombatProfile = {
   mobilityLevel: "low",
   name: "Mel",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "control",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["poke control", "projectile denial", "teamfight follow-up"],
+  strategicIdentity: {
+    laneGoal: "control",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["poke control", "projectile denial", "teamfight follow-up"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "(W) timing can decide trades more than raw damage",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "(W) timing can decide trades more than raw damage",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed mage item",
-          reason: "First completed mage item",
-          changesGameplay: "(R) is strongest after she has already marked and chipped targets",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Mel's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed mage item",
+        reason: "First completed mage item",
+        changesGameplay: "(R) is strongest after she has already marked and chipped targets",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Mel's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

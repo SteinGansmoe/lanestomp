@@ -50,12 +50,8 @@ function AdminProductArea({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="font-mono text-2xl font-semibold text-white">
-          {title}
-        </h2>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-400">
-          {description}
-        </p>
+        <h2 className="font-mono text-2xl font-semibold text-white">{title}</h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-zinc-400">{description}</p>
       </div>
       {children}
     </section>
@@ -86,17 +82,10 @@ export function AdminOverview({
   return (
     <div className="space-y-10">
       <div className="grid gap-4 md:grid-cols-4">
-        <AdminStatCard
-          label="League matchups"
-          tone="primary"
-          value={leagueMatchupsCount}
-        />
+        <AdminStatCard label="League matchups" tone="primary" value={leagueMatchupsCount} />
         <AdminStatCard label="Champions" value={leagueChampionsCount} />
         <AdminStatCard label="Draft matchups" value={leagueDraftMatchupsCount} />
-        <AdminStatCard
-          label="Reviewed matchups"
-          value={leagueReviewedMatchupsCount}
-        />
+        <AdminStatCard label="Reviewed matchups" value={leagueReviewedMatchupsCount} />
       </div>
 
       <AdminProductArea

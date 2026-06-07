@@ -68,10 +68,7 @@ export const naafiriCombatProfile = {
       "Snowballing picks through (R) chase windows.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed lethality item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed lethality item."],
   matchupPreferences: {
     strongInto: [
       "Immobile squishy champions who can be chipped by (Q).",
@@ -87,30 +84,34 @@ export const naafiriCombatProfile = {
   mobilityLevel: "high",
   name: "Naafiri",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "snowball",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["target access", "roam pressure", "burst all-ins"],
+  strategicIdentity: {
+    laneGoal: "snowball",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["target access", "roam pressure", "burst all-ins"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 increases her chase and all-in reliability",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 increases her chase and all-in reliability",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed lethality item",
-          reason: "First completed lethality item",
-          changesGameplay: "Lethality spikes make (Q) poke and committed burst more threatening",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Naafiri's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed lethality item",
+        reason: "First completed lethality item",
+        changesGameplay: "Lethality spikes make (Q) poke and committed burst more threatening",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Naafiri's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

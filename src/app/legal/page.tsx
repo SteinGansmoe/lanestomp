@@ -15,10 +15,10 @@ const legalSections = [
     title: "Riot Games Disclaimer",
     body: (
       <p>
-        LaneStomp is not endorsed by Riot Games and does not reflect the views
-        or opinions of Riot Games or anyone officially involved in producing or
-        managing Riot Games properties. Riot Games and all associated properties
-        are trademarks or registered trademarks of Riot Games, Inc.
+        LaneStomp is not endorsed by Riot Games and does not reflect the views or opinions of Riot
+        Games or anyone officially involved in producing or managing Riot Games properties. Riot
+        Games and all associated properties are trademarks or registered trademarks of Riot Games,
+        Inc.
       </p>
     ),
   },
@@ -26,10 +26,9 @@ const legalSections = [
     title: "Trademark Acknowledgement",
     body: (
       <p>
-        League of Legends, Riot Games, champion names, icons, splash art, game
-        assets, marks, logos, and related properties belong to Riot Games, Inc.
-        LaneStomp uses these references only to identify game content and help
-        players learn matchups.
+        League of Legends, Riot Games, champion names, icons, splash art, game assets, marks, logos,
+        and related properties belong to Riot Games, Inc. LaneStomp uses these references only to
+        identify game content and help players learn matchups.
       </p>
     ),
   },
@@ -37,11 +36,10 @@ const legalSections = [
     title: "Data Dragon Asset Usage",
     body: (
       <p>
-        LaneStomp may use League of Legends champion data, champion images, role
-        icons, and related static assets made available through Riot Games Data
-        Dragon or related public resources. Those assets remain the property of
-        Riot Games and are used for informational and gameplay reference
-        purposes.
+        LaneStomp may use League of Legends champion data, champion images, role icons, and related
+        static assets made available through Riot Games Data Dragon or related public resources.
+        Those assets remain the property of Riot Games and are used for informational and gameplay
+        reference purposes.
       </p>
     ),
   },
@@ -49,10 +47,9 @@ const legalSections = [
     title: "Third-Party Content Notice",
     body: (
       <p>
-        LaneStomp may link to or reference third-party services, communities,
-        game resources, analytics providers, infrastructure providers, and AI
-        tooling. LaneStomp is not responsible for third-party content, policies,
-        availability, or changes outside its control.
+        LaneStomp may link to or reference third-party services, communities, game resources,
+        analytics providers, infrastructure providers, and AI tooling. LaneStomp is not responsible
+        for third-party content, policies, availability, or changes outside its control.
       </p>
     ),
   },
@@ -60,10 +57,9 @@ const legalSections = [
     title: "Generated Guidance Notice",
     body: (
       <p>
-        Some matchup drafts may be AI-assisted and then reviewed or edited by
-        admins. Generated or reviewed guidance is intended for learning support
-        and may become outdated as League of Legends changes. Players should use
-        their own judgment in game.
+        Some matchup drafts may be AI-assisted and then reviewed or edited by admins. Generated or
+        reviewed guidance is intended for learning support and may become outdated as League of
+        Legends changes. Players should use their own judgment in game.
       </p>
     ),
   },
@@ -71,10 +67,9 @@ const legalSections = [
     title: "General Legal Notices",
     body: (
       <p>
-        LaneStomp is an independent product created for League players. Nothing
-        on LaneStomp creates an endorsement, sponsorship, partnership, or agency
-        relationship with Riot Games or other third-party providers unless
-        explicitly stated in writing.
+        LaneStomp is an independent product created for League players. Nothing on LaneStomp creates
+        an endorsement, sponsorship, partnership, or agency relationship with Riot Games or other
+        third-party providers unless explicitly stated in writing.
       </p>
     ),
   },

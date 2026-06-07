@@ -2,13 +2,7 @@ import type { ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 
-export function AdminListCard({
-  children,
-  title,
-}: {
-  children: ReactNode;
-  title: string;
-}) {
+export function AdminListCard({ children, title }: { children: ReactNode; title: string }) {
   return (
     <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
       <CardHeader>

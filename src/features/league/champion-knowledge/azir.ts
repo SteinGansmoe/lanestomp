@@ -68,10 +68,7 @@ export const azirCombatProfile = {
       "Outscaling and controlling fights with soldier positioning.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed mage DPS item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed mage DPS item."],
   matchupPreferences: {
     strongInto: [
       "Short-range champions who must walk through soldiers.",
@@ -87,30 +84,34 @@ export const azirCombatProfile = {
   mobilityLevel: "medium",
   name: "Azir",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "scale",
-        scalingProfile: "late",
-        preferredGameLength: "long",
-        winMethod: ["soldier DPS", "scaling through CS access", "teamfight control"],
+  strategicIdentity: {
+    laneGoal: "scale",
+    scalingProfile: "late",
+    preferredGameLength: "long",
+    winMethod: ["soldier DPS", "scaling through CS access", "teamfight control"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 improves his safety and playmaking",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 improves his safety and playmaking",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed mage DPS item",
-          reason: "First completed mage DPS item",
-          changesGameplay: "Item spikes matter because soldier DPS needs time and stats",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Azir's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed mage DPS item",
+        reason: "First completed mage DPS item",
+        changesGameplay: "Item spikes matter because soldier DPS needs time and stats",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Azir's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

@@ -68,7 +68,11 @@ export const malphiteCombatProfile = {
       "Using (R) to create winning fights.",
     ],
   },
-  majorPowerSpikes: ["Level 6 (R).", "First armor item into physical lanes.", "Grouped mid-game fights."],
+  majorPowerSpikes: [
+    "Level 6 (R).",
+    "First armor item into physical lanes.",
+    "Grouped mid-game fights.",
+  ],
   matchupPreferences: {
     strongInto: [
       "Physical auto attackers.",
@@ -89,15 +93,18 @@ export const malphiteCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks long-range engage",
-        changesGameplay: "Malphite can threaten lethal gank setup or teamfight initiation even from a passive lane.",
-        playerAction: "Use (R) for guaranteed kill setup or objective fights rather than low-value poke follow-up.",
+        changesGameplay:
+          "Malphite can threaten lethal gank setup or teamfight initiation even from a passive lane.",
+        playerAction:
+          "Use (R) for guaranteed kill setup or objective fights rather than low-value poke follow-up.",
         enemyResponse: "Respect flash or fog angles once Malphite has (R).",
       },
       {
         timing: "First armor item",
         reason: "Physical lanes become much easier to blunt",
         changesGameplay: "Auto attackers and AD bruisers lose trade efficiency.",
-        playerAction: "Take safer trades into physical champions and preserve mana for meaningful windows.",
+        playerAction:
+          "Take safer trades into physical champions and preserve mana for meaningful windows.",
         enemyResponse: "Avoid extended physical trades and pressure before armor stacks.",
       },
     ],

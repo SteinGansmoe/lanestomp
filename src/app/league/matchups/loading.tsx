@@ -47,10 +47,7 @@ export default function Loading() {
 
           <div className="space-y-4">
             {Array.from({ length: 2 }).map((_, index) => (
-              <div
-                className="rounded-lg border border-white/10 bg-white/[0.03] p-5"
-                key={index}
-              >
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5" key={index}>
                 <div className="h-5 w-32 rounded bg-white/10" />
                 <div className="mt-4 space-y-2">
                   <div className="h-3 rounded bg-white/10" />

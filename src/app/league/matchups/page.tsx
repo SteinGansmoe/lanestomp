@@ -14,9 +14,7 @@ export default async function LeagueMatchupsPage() {
 
   const { champions, error } = await getLeagueChampions();
   const { coverage } =
-    champions.length > 0
-      ? await getLeagueMatchupCoverageSummary(champions)
-      : { coverage: null };
+    champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
 
   return (
     <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
@@ -40,9 +38,9 @@ export default async function LeagueMatchupsPage() {
                 <Swords className="size-6" aria-hidden="true" />
               </div>
               <div>
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                LaneStomp
-              </p>
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+                  LaneStomp
+                </p>
                 <h1 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
                   Pick your lane opponent
                 </h1>
@@ -59,11 +57,10 @@ export default async function LeagueMatchupsPage() {
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
               <div>
-                <CardTitle className="font-mono text-lg">
-                  Champion data is not ready yet
-                </CardTitle>
+                <CardTitle className="font-mono text-lg">Champion data is not ready yet</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-amber-100/80">
-                  Apply the latest champion migration and run the Data Dragon import before building matchups.
+                  Apply the latest champion migration and run the Data Dragon import before building
+                  matchups.
                 </p>
                 <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
                   {error}
@@ -75,9 +72,7 @@ export default async function LeagueMatchupsPage() {
           <MatchupSelector champions={champions} matchupCoverage={coverage} />
         ) : (
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
-            <CardTitle className="font-mono text-xl">
-              No champions imported yet
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">No champions imported yet</CardTitle>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Run the League champion import script to populate the selector.
             </p>

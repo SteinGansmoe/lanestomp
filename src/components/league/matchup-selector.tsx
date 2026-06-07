@@ -1,19 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import {
-  ArrowLeftRight,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ArrowLeftRight, Plus, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { ChangeMatchupPanel } from "@/src/components/league/change-matchup-panel";
-import {
-  type LeagueChampion,
-} from "@/src/features/league/champions";
+import { type LeagueChampion } from "@/src/features/league/champions";
 import type { LeagueMatchupCoverageSummary } from "@/src/features/league/matchups";
 import {
   getChampionRoles,
@@ -75,23 +69,15 @@ const roleFilterOptions = [
   value: ChampionFilter;
 }>;
 
-export function MatchupSelector({
-  champions,
-  initialRole,
-  matchupCoverage,
-}: MatchupSelectorProps) {
+export function MatchupSelector({ champions, initialRole, matchupCoverage }: MatchupSelectorProps) {
   const [championAId, setChampionAId] = useState<string | null>(null);
   const [championBId, setChampionBId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<LeagueRole>(initialRole ?? "mid");
-  const [activeFilter, setActiveFilter] = useState<ChampionFilter>(
-    initialRole ?? "all"
-  );
+  const [activeFilter, setActiveFilter] = useState<ChampionFilter>(initialRole ?? "all");
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
-  const championA =
-    champions.find((champion) => champion.id === championAId) ?? null;
-  const championB =
-    champions.find((champion) => champion.id === championBId) ?? null;
+  const championA = champions.find((champion) => champion.id === championAId) ?? null;
+  const championB = champions.find((champion) => champion.id === championBId) ?? null;
   const filteredChampions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -100,7 +86,7 @@ export function MatchupSelector({
         [champion.name, champion.title, champion.tags.join(" ")]
           .join(" ")
           .toLowerCase()
-          .includes(normalizedQuery)
+          .includes(normalizedQuery),
       );
     }
 
@@ -109,14 +95,11 @@ export function MatchupSelector({
     }
 
     return sortChampionsForRole(
-      champions.filter((champion) =>
-        isChampionInRole(champion, activeFilter, { includeOffMeta })
-      ),
-      activeFilter
+      champions.filter((champion) => isChampionInRole(champion, activeFilter, { includeOffMeta })),
+      activeFilter,
     );
   }, [activeFilter, champions, includeOffMeta, query]);
-  const visibleCoverage =
-    matchupCoverage?.[activeFilter] ?? matchupCoverage?.all ?? null;
+  const visibleCoverage = matchupCoverage?.[activeFilter] ?? matchupCoverage?.all ?? null;
 
   function handleChampionPick(champion: LeagueChampion) {
     if (!championAId || (championAId && championBId)) {
@@ -144,17 +127,13 @@ export function MatchupSelector({
   }
 
   const handleMatchupControlsChange = useCallback(
-    (selection: {
-      championAId: string;
-      championBId: string;
-      role: LeagueRole;
-    }) => {
+    (selection: { championAId: string; championBId: string; role: LeagueRole }) => {
       setChampionAId(selection.championAId || null);
       setChampionBId(selection.championBId || null);
       setRole(selection.role);
       setActiveFilter(selection.role);
     },
-    []
+    [],
   );
 
   return (
@@ -181,11 +160,7 @@ export function MatchupSelector({
               <>
                 <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
                   <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
-                    <SelectionSlot
-                      champion={championA}
-                      label="Your champion"
-                      tone="cyan"
-                    />
+                    <SelectionSlot champion={championA} label="Your champion" tone="cyan" />
                     <button
                       aria-label="Swap selected champions"
                       className="hidden size-11 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:flex"
@@ -195,26 +170,15 @@ export function MatchupSelector({
                     >
                       <ArrowLeftRight className="size-5" aria-hidden="true" />
                     </button>
-                    <SelectionSlot
-                      champion={championB}
-                      label="Opponent"
-                      tone="violet"
-                    />
+                    <SelectionSlot champion={championB} label="Opponent" tone="violet" />
                   </div>
 
-                  <Button
-                    className="h-11 bg-white/10 px-4 text-zinc-400"
-                    disabled
-                    type="button"
-                  >
+                  <Button className="h-11 bg-white/10 px-4 text-zinc-400" disabled type="button">
                     Select two champions
                   </Button>
                 </div>
 
-                <RoleIconSelector
-                  activeFilter={activeFilter}
-                  onChange={handleFilterChange}
-                />
+                <RoleIconSelector activeFilter={activeFilter} onChange={handleFilterChange} />
               </>
             )}
           </div>
@@ -240,9 +204,7 @@ export function MatchupSelector({
                 />
               </label>
 
-              {visibleCoverage ? (
-                <MatchupCoverageIndicator coverage={visibleCoverage} />
-              ) : null}
+              {visibleCoverage ? <MatchupCoverageIndicator coverage={visibleCoverage} /> : null}
             </div>
 
             {!championAId ? (
@@ -292,12 +254,9 @@ export function MatchupSelector({
               type="checkbox"
             />
             <span>
-              <span className="block font-medium text-zinc-100">
-                Include off-meta
-              </span>
+              <span className="block font-medium text-zinc-100">Include off-meta</span>
               <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                Adds flexible picks to role filters. Search always includes
-                every champion.
+                Adds flexible picks to role filters. Search always includes every champion.
               </span>
             </span>
           </label>
@@ -305,9 +264,7 @@ export function MatchupSelector({
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
               Current pool
             </p>
-            <p className="mt-2 text-3xl font-semibold text-white">
-              {filteredChampions.length}
-            </p>
+            <p className="mt-2 text-3xl font-semibold text-white">{filteredChampions.length}</p>
             <p className="mt-1 text-xs text-zinc-500">
               {query.trim()
                 ? "Search results"
@@ -334,11 +291,7 @@ function RoleIconSelector({
       <p className="mb-2 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500">
         Role
       </p>
-      <div
-        aria-label="Role filter"
-        className="grid max-w-3xl grid-cols-6 gap-2"
-        role="radiogroup"
-      >
+      <div aria-label="Role filter" className="grid max-w-3xl grid-cols-6 gap-2" role="radiogroup">
         {roleFilterOptions.map((option) => {
           const isActive = activeFilter === option.value;
 
@@ -349,7 +302,7 @@ function RoleIconSelector({
               className={cn(
                 "group flex h-12 min-w-0 items-center justify-center rounded-md border border-white/10 bg-black/20 px-2 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
                 isActive &&
-                  "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_22px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/25"
+                  "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_22px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/25",
               )}
               key={option.value}
               onClick={() => onChange(option.value)}
@@ -362,7 +315,7 @@ function RoleIconSelector({
                   "size-7 object-contain transition",
                   isActive
                     ? "opacity-100 drop-shadow-[0_0_8px_rgba(125,211,252,0.55)]"
-                    : "opacity-45 group-hover:opacity-80"
+                    : "opacity-45 group-hover:opacity-80",
                 )}
                 height={28}
                 aria-hidden="true"
@@ -377,15 +330,11 @@ function RoleIconSelector({
   );
 }
 
-function MatchupCoverageIndicator({
-  coverage,
-}: {
-  coverage: LeagueMatchupCoverageSummary["all"];
-}) {
+function MatchupCoverageIndicator({ coverage }: { coverage: LeagueMatchupCoverageSummary["all"] }) {
   const helperText =
     "We're actively expanding the matchup database and adding new guides every day.";
   const label = `🚀 ${formatMatchupCount(
-    coverage.generatedCount
+    coverage.generatedCount,
   )} / ${formatMatchupCount(coverage.totalCount)} matchups available`;
 
   return (
@@ -398,8 +347,8 @@ function MatchupCoverageIndicator({
         🚀
       </span>
       <span className="whitespace-nowrap font-medium">
-        {formatMatchupCount(coverage.generatedCount)} /{" "}
-        {formatMatchupCount(coverage.totalCount)} matchups available
+        {formatMatchupCount(coverage.generatedCount)} / {formatMatchupCount(coverage.totalCount)}{" "}
+        matchups available
       </span>
       <span className="sr-only">{helperText}</span>
     </div>
@@ -426,7 +375,7 @@ function ChampionButton({
       className={cn(
         "group relative aspect-square min-w-0 overflow-hidden rounded-md border border-white/10 bg-white/[0.035] shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-cyan-300/35 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
         isChampionA && "border-cyan-300/80 ring-2 ring-cyan-300/30",
-        isChampionB && "border-violet-300/80 ring-2 ring-violet-300/30"
+        isChampionB && "border-violet-300/80 ring-2 ring-violet-300/30",
       )}
       onClick={onClick}
       title={`${champion.name}${championRoles.length ? ` - ${championRoles.map(getRoleLabel).join(", ")}` : ""}`}
@@ -448,9 +397,7 @@ function ChampionButton({
         <span
           className={cn(
             "absolute right-1 top-1 rounded px-1.5 py-0.5 font-mono text-[0.6rem] font-semibold uppercase",
-            isChampionA
-              ? "bg-cyan-300 text-cyan-950"
-              : "bg-violet-300 text-violet-950"
+            isChampionA ? "bg-cyan-300 text-cyan-950" : "bg-violet-300 text-violet-950",
           )}
         >
           {isChampionA ? "You" : "VS"}
@@ -476,7 +423,7 @@ function SelectionSlot({
           "relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border",
           tone === "cyan"
             ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-100"
-            : "border-violet-300/30 bg-violet-400/10 text-violet-100"
+            : "border-violet-300/30 bg-violet-400/10 text-violet-100",
         )}
       >
         {champion ? (
@@ -496,7 +443,7 @@ function SelectionSlot({
         <p
           className={cn(
             "font-mono text-[0.65rem] uppercase tracking-[0.16em]",
-            tone === "cyan" ? "text-cyan-200" : "text-violet-200"
+            tone === "cyan" ? "text-cyan-200" : "text-violet-200",
           )}
         >
           {label}
@@ -512,9 +459,7 @@ function SelectionSlot({
 function InfoPanel() {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
-      <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
-        Flow
-      </p>
+      <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">Flow</p>
       <ol className="mt-3 space-y-3 text-sm text-zinc-400">
         {["Pick your champion", "Pick the opponent", "Choose role", "Open guide"].map(
           (step, index) => (
@@ -524,7 +469,7 @@ function InfoPanel() {
               </span>
               <span>{step}</span>
             </li>
-          )
+          ),
         )}
       </ol>
     </div>

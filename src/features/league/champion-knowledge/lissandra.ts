@@ -68,10 +68,7 @@ export const lissandraCombatProfile = {
       "Creating engage angles from fog or flank positions.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed AP or utility item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed AP or utility item."],
   matchupPreferences: {
     strongInto: [
       "Assassins and divers that must enter her (W) and (R) range.",
@@ -87,30 +84,34 @@ export const lissandraCombatProfile = {
   mobilityLevel: "medium",
   name: "Lissandra",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "teamfight",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["reliable engage", "pick setup", "carry lockdown"],
+  strategicIdentity: {
+    laneGoal: "teamfight",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["reliable engage", "pick setup", "carry lockdown"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 is her biggest lane threat increase",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 is her biggest lane threat increase",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed AP or utility item",
-          reason: "First completed AP or utility item",
-          changesGameplay: "Her power is often in reliability and setup rather than raw damage",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Lissandra's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed AP or utility item",
+        reason: "First completed AP or utility item",
+        changesGameplay: "Her power is often in reliability and setup rather than raw damage",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Lissandra's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

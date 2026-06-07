@@ -3,34 +3,146 @@ import type { LeagueChampionKnowledgeProfile } from "./types";
 export const kennenCombatProfile = {
   profileQuality: "draft",
   masteryDifficulty: "high",
-  abilities: { Q: "Thundering Shuriken", W: "Electrical Surge", E: "Lightning Rush", R: "Slicing Maelstrom" },
+  abilities: {
+    Q: "Thundering Shuriken",
+    W: "Electrical Surge",
+    E: "Lightning Rush",
+    R: "Slicing Maelstrom",
+  },
   archetype: ["ranged lane bully", "AP teamfighter", "flank engage", "stun setup"],
-  primaryWinCondition: ["Use ranged poke to control lane, stack marks for stuns, and convert (R) flank or flash windows into teamfight wins."],
+  primaryWinCondition: [
+    "Use ranged poke to control lane, stack marks for stuns, and convert (R) flank or flash windows into teamfight wins.",
+  ],
   dangerAbilities: ["(R) area stun", "(E) engage or escape", "Mark stun passive"],
-  dangerProfile: { dangerousWhen: ["Multiple marks are stacked.", "(R) is available with a flank angle.", "He can kite melee champions with range and (E)."], mustRespect: ["His teamfight value is much higher than many lane bullies.", "Mark stacks make extended trades risky.", "(R) changes objective fight spacing."] },
-  commonWeaknesses: ["Fragile if caught after (E).", "Can be outscaled in side-lane duels.", "Needs good flank access for maximum teamfight value."],
+  dangerProfile: {
+    dangerousWhen: [
+      "Multiple marks are stacked.",
+      "(R) is available with a flank angle.",
+      "He can kite melee champions with range and (E).",
+    ],
+    mustRespect: [
+      "His teamfight value is much higher than many lane bullies.",
+      "Mark stacks make extended trades risky.",
+      "(R) changes objective fight spacing.",
+    ],
+  },
+  commonWeaknesses: [
+    "Fragile if caught after (E).",
+    "Can be outscaled in side-lane duels.",
+    "Needs good flank access for maximum teamfight value.",
+  ],
   damageType: "magic",
   hardCrowdControl: ["Passive mark stun", "(R) repeated mark stuns"],
   id: "Kennen",
-  importantAbilityNotes: ["Abilities apply marks that stun at three stacks.", "(E) gives mobility and helps apply marks.", "(R) is a large area teamfight spell.", "(W) adds mark pressure after autos or marked targets."],
-  lanePlan: { avoids: ["Using (E) forward without vision.", "Letting bruisers force long trades after cooldowns.", "Grouping with no flank or (R) angle."], idealLaneState: "A ranged top lane where Kennen chips melee champions, keeps (E) for safety, and preserves health for level 6 or objective fights.", wants: ["Melee targets entering poke range.", "Stacked marks before all-ins.", "Flank angles for (R)."] },
-  laneIdentity: { earlyGameAgency: "high", lanePressure: "high", preferredGameState: ["Ranged poke lanes.", "Objective fights with flank access.", "Short trades before melee champions can extend."], scalingPriority: "medium", winLaneBy: ["Poking with range.", "Stunning through mark stacks.", "Turning level 6 into kill or teamfight threat."] },
+  importantAbilityNotes: [
+    "Abilities apply marks that stun at three stacks.",
+    "(E) gives mobility and helps apply marks.",
+    "(R) is a large area teamfight spell.",
+    "(W) adds mark pressure after autos or marked targets.",
+  ],
+  lanePlan: {
+    avoids: [
+      "Using (E) forward without vision.",
+      "Letting bruisers force long trades after cooldowns.",
+      "Grouping with no flank or (R) angle.",
+    ],
+    idealLaneState:
+      "A ranged top lane where Kennen chips melee champions, keeps (E) for safety, and preserves health for level 6 or objective fights.",
+    wants: [
+      "Melee targets entering poke range.",
+      "Stacked marks before all-ins.",
+      "Flank angles for (R).",
+    ],
+  },
+  laneIdentity: {
+    earlyGameAgency: "high",
+    lanePressure: "high",
+    preferredGameState: [
+      "Ranged poke lanes.",
+      "Objective fights with flank access.",
+      "Short trades before melee champions can extend.",
+    ],
+    scalingPriority: "medium",
+    winLaneBy: [
+      "Poking with range.",
+      "Stunning through mark stacks.",
+      "Turning level 6 into kill or teamfight threat.",
+    ],
+  },
   majorPowerSpikes: ["Level 6 (R).", "First AP item.", "Flash plus (R) teamfight windows."],
-  matchupPreferences: { strongInto: ["Melee champions he can kite.", "Grouped teams vulnerable to (R).", "Lanes with limited sustain."], weakInto: ["Long-range poke.", "Durable side-lane duelists.", "Champions that force (E) before fights."] },
+  matchupPreferences: {
+    strongInto: [
+      "Melee champions he can kite.",
+      "Grouped teams vulnerable to (R).",
+      "Lanes with limited sustain.",
+    ],
+    weakInto: [
+      "Long-range poke.",
+      "Durable side-lane duelists.",
+      "Champions that force (E) before fights.",
+    ],
+  },
   mobilityLevel: "medium",
   name: "Kennen",
   offMetaRoles: [],
-  powerSpikes: { major: [{ timing: "Level 6", reason: "(R) unlocks major area stun threat", changesGameplay: "Kennen can threaten all-ins and objective fights instead of only lane poke.", playerAction: "Preserve health and look for flank or flash angles.", enemyResponse: "Track (R) and avoid grouping in choke points." }, { timing: "Flash plus (R)", reason: "Reliable teamfight delivery", changesGameplay: "Backline positioning becomes much more dangerous.", playerAction: "Hold resources for decisive fights rather than low-value lane trades.", enemyResponse: "Respect fog and spread before objectives." }] },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "(R) unlocks major area stun threat",
+        changesGameplay:
+          "Kennen can threaten all-ins and objective fights instead of only lane poke.",
+        playerAction: "Preserve health and look for flank or flash angles.",
+        enemyResponse: "Track (R) and avoid grouping in choke points.",
+      },
+      {
+        timing: "Flash plus (R)",
+        reason: "Reliable teamfight delivery",
+        changesGameplay: "Backline positioning becomes much more dangerous.",
+        playerAction: "Hold resources for decisive fights rather than low-value lane trades.",
+        enemyResponse: "Respect fog and spread before objectives.",
+      },
+    ],
+  },
   primaryRoles: ["top"],
-  primaryTradingPattern: "Use range and marks for short poke trades, keep (E) as safety, and commit hard only when (R) or stun stacks can decide the fight.",
-  punishProfile: { canPunish: ["Melee last-hits.", "Grouped enemies during (R).", "Targets with two marks already applied."], strugglesToPunish: ["Sustain lanes.", "Champions that punish (E) cooldown."] },
+  primaryTradingPattern:
+    "Use range and marks for short poke trades, keep (E) as safety, and commit hard only when (R) or stun stacks can decide the fight.",
+  punishProfile: {
+    canPunish: [
+      "Melee last-hits.",
+      "Grouped enemies during (R).",
+      "Targets with two marks already applied.",
+    ],
+    strugglesToPunish: ["Sustain lanes.", "Champions that punish (E) cooldown."],
+  },
   secondaryRoles: [],
   shields: [],
   softCrowdControl: [],
   stealthOrInvisibility: null,
-  strategicIdentity: { laneGoal: "teamfight", preferredGameLength: "medium", scalingProfile: "mid", winMethod: ["ranged lane pressure", "flank engage", "area stun teamfights"] },
+  strategicIdentity: {
+    laneGoal: "teamfight",
+    preferredGameLength: "medium",
+    scalingProfile: "mid",
+    winMethod: ["ranged lane pressure", "flank engage", "area stun teamfights"],
+  },
   sustain: [],
-  trading: { badTradeConditions: ["(E) is down.", "The enemy can extend after his poke.", "(R) is unavailable for committed fights."], goodTradeConditions: ["The enemy is marked.", "Melee opponents must last-hit.", "(R) has a good flank angle."], primaryPattern: "Chip with range, build mark pressure, and avoid extended trades unless stun or (R) is ready." },
-  punishWindows: ["After (E), Kennen is easier to gank or all-in.", "When (R) is down, his teamfight threat drops.", "If he cannot flank, front-to-back impact is lower."],
+  trading: {
+    badTradeConditions: [
+      "(E) is down.",
+      "The enemy can extend after his poke.",
+      "(R) is unavailable for committed fights.",
+    ],
+    goodTradeConditions: [
+      "The enemy is marked.",
+      "Melee opponents must last-hit.",
+      "(R) has a good flank angle.",
+    ],
+    primaryPattern:
+      "Chip with range, build mark pressure, and avoid extended trades unless stun or (R) is ready.",
+  },
+  punishWindows: [
+    "After (E), Kennen is easier to gank or all-in.",
+    "When (R) is down, his teamfight threat drops.",
+    "If he cannot flank, front-to-back impact is lower.",
+  ],
 } satisfies LeagueChampionKnowledgeProfile;
-

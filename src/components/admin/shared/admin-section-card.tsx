@@ -28,23 +28,19 @@ export function AdminSectionCard({
     <Card
       className={cn(
         "border-white/10 p-5 text-white shadow-xl shadow-black/15",
-        muted ? "bg-[#0d1424]/80" : "bg-[#10182b]/90"
+        muted ? "bg-[#0d1424]/80" : "bg-[#10182b]/90",
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
           {eyebrow ? (
-            <p className="mb-2 text-xs font-semibold uppercase text-cyan-200/70">
-              {eyebrow}
-            </p>
+            <p className="mb-2 text-xs font-semibold uppercase text-cyan-200/70">{eyebrow}</p>
           ) : null}
           <p className="font-mono text-xl font-semibold">{label}</p>
           <p className="mt-2 text-sm leading-6 text-zinc-400">{summary}</p>
         </div>
         <div className="text-right">
-          <p className="font-mono text-3xl font-semibold text-violet-100">
-            {count}
-          </p>
+          <p className="font-mono text-3xl font-semibold text-violet-100">{count}</p>
           {tag ? <p className="mt-1 text-xs text-zinc-500">{tag}</p> : null}
         </div>
       </div>

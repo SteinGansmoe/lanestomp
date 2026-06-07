@@ -5,31 +5,131 @@ export const pantheonCombatProfile = {
   masteryDifficulty: "medium",
   abilities: { Q: "Comet Spear", W: "Shield Vault", E: "Aegis Assault", R: "Grand Starfall" },
   archetype: ["early lane bully", "point-and-click stun", "roam", "burst fighter"],
-  primaryWinCondition: ["Use early empowered trades and (W) stun to create lane control, then turn level 6 into map pressure before scaling falls off."],
+  primaryWinCondition: [
+    "Use early empowered trades and (W) stun to create lane control, then turn level 6 into map pressure before scaling falls off.",
+  ],
   dangerAbilities: ["(W) stun", "Empowered (Q)", "(E) damage block"],
-  dangerProfile: { dangerousWhen: ["Passive is stacked for empowered abilities.", "(W) can start a guaranteed trade.", "(E) blocks the enemy's main return damage."], mustRespect: ["His early levels are strong.", "Point-and-click (W) makes spacing errors costly.", "(R) creates cross-map pressure after level 6."] },
-  commonWeaknesses: ["Scaling is weaker than true carries.", "Predictable engage pattern.", "Punishable after (W) or (E) is spent."],
+  dangerProfile: {
+    dangerousWhen: [
+      "Passive is stacked for empowered abilities.",
+      "(W) can start a guaranteed trade.",
+      "(E) blocks the enemy's main return damage.",
+    ],
+    mustRespect: [
+      "His early levels are strong.",
+      "Point-and-click (W) makes spacing errors costly.",
+      "(R) creates cross-map pressure after level 6.",
+    ],
+  },
+  commonWeaknesses: [
+    "Scaling is weaker than true carries.",
+    "Predictable engage pattern.",
+    "Punishable after (W) or (E) is spent.",
+  ],
   damageType: "physical",
   hardCrowdControl: ["(W) stun"],
   id: "Pantheon",
-  importantAbilityNotes: ["Passive empowers abilities after stacks.", "(Q) is poke or execute-style damage.", "(W) is point-and-click stun.", "(E) blocks damage from one direction.", "(R) is semi-global engage."],
-  lanePlan: { avoids: ["Letting scaling lanes farm freely after early levels.", "Using (W) into bad wave states.", "Spending (E) before the enemy's main damage."], idealLaneState: "An aggressive top lane where Pantheon can threaten empowered (Q), force (W) trades, and crash waves for roam or reset windows.", wants: ["Early health leads.", "Empowered ability timing.", "Roam windows after level 6."] },
-  laneIdentity: { earlyGameAgency: "high", lanePressure: "high", preferredGameState: ["Early snowball lanes.", "Short burst trades.", "Map plays with (R)."], scalingPriority: "low", winLaneBy: ["Using empowered trades.", "Stunning with (W).", "Blocking retaliation with (E)."] },
-  majorPowerSpikes: ["Level 2-3 empowered trade pattern.", "Level 6 (R) map pressure.", "First lethality or fighter item."],
-  matchupPreferences: { strongInto: ["Squishy or low mobility champions.", "Lanes vulnerable to point-and-click stun.", "Matchups decided before late scaling."], weakInto: ["Durable tanks that survive burst.", "Scaling duelists.", "Champions that punish after (E)."] },
+  importantAbilityNotes: [
+    "Passive empowers abilities after stacks.",
+    "(Q) is poke or execute-style damage.",
+    "(W) is point-and-click stun.",
+    "(E) blocks damage from one direction.",
+    "(R) is semi-global engage.",
+  ],
+  lanePlan: {
+    avoids: [
+      "Letting scaling lanes farm freely after early levels.",
+      "Using (W) into bad wave states.",
+      "Spending (E) before the enemy's main damage.",
+    ],
+    idealLaneState:
+      "An aggressive top lane where Pantheon can threaten empowered (Q), force (W) trades, and crash waves for roam or reset windows.",
+    wants: ["Early health leads.", "Empowered ability timing.", "Roam windows after level 6."],
+  },
+  laneIdentity: {
+    earlyGameAgency: "high",
+    lanePressure: "high",
+    preferredGameState: ["Early snowball lanes.", "Short burst trades.", "Map plays with (R)."],
+    scalingPriority: "low",
+    winLaneBy: ["Using empowered trades.", "Stunning with (W).", "Blocking retaliation with (E)."],
+  },
+  majorPowerSpikes: [
+    "Level 2-3 empowered trade pattern.",
+    "Level 6 (R) map pressure.",
+    "First lethality or fighter item.",
+  ],
+  matchupPreferences: {
+    strongInto: [
+      "Squishy or low mobility champions.",
+      "Lanes vulnerable to point-and-click stun.",
+      "Matchups decided before late scaling.",
+    ],
+    weakInto: [
+      "Durable tanks that survive burst.",
+      "Scaling duelists.",
+      "Champions that punish after (E).",
+    ],
+  },
   mobilityLevel: "medium",
   name: "Pantheon",
   offMetaRoles: [],
-  powerSpikes: { major: [{ timing: "Level 2-3", reason: "Empowered (Q), (W), and (E) create strong early trades", changesGameplay: "Pantheon can force lane before many champions stabilize.", playerAction: "Use empowered windows to build health leads and wave control.", enemyResponse: "Respect early stun and punish once empowered tools are spent." }, { timing: "Level 6", reason: "(R) unlocks map pressure", changesGameplay: "Pantheon can impact other lanes instead of only trading top.", playerAction: "Crash waves before roaming with (R).", enemyResponse: "Punish his top wave when he leaves." }] },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 2-3",
+        reason: "Empowered (Q), (W), and (E) create strong early trades",
+        changesGameplay: "Pantheon can force lane before many champions stabilize.",
+        playerAction: "Use empowered windows to build health leads and wave control.",
+        enemyResponse: "Respect early stun and punish once empowered tools are spent.",
+      },
+      {
+        timing: "Level 6",
+        reason: "(R) unlocks map pressure",
+        changesGameplay: "Pantheon can impact other lanes instead of only trading top.",
+        playerAction: "Crash waves before roaming with (R).",
+        enemyResponse: "Punish his top wave when he leaves.",
+      },
+    ],
+  },
   primaryRoles: ["top"],
-  primaryTradingPattern: "Stack passive, stun with (W), use empowered (Q) for burst, and block the enemy's best answer with (E) before disengaging.",
-  punishProfile: { canPunish: ["Targets in (W) range.", "Early scaling champions.", "Enemies whose main damage is blocked by (E)."], strugglesToPunish: ["High durability tanks.", "Champions that outlast his short rotation."] },
+  primaryTradingPattern:
+    "Stack passive, stun with (W), use empowered (Q) for burst, and block the enemy's best answer with (E) before disengaging.",
+  punishProfile: {
+    canPunish: [
+      "Targets in (W) range.",
+      "Early scaling champions.",
+      "Enemies whose main damage is blocked by (E).",
+    ],
+    strugglesToPunish: ["High durability tanks.", "Champions that outlast his short rotation."],
+  },
   secondaryRoles: [],
   shields: [],
   softCrowdControl: [],
   stealthOrInvisibility: null,
-  strategicIdentity: { laneGoal: "snowball", preferredGameLength: "short", scalingProfile: "early", winMethod: ["early burst trades", "point-and-click stun", "global pressure"] },
+  strategicIdentity: {
+    laneGoal: "snowball",
+    preferredGameLength: "short",
+    scalingProfile: "early",
+    winMethod: ["early burst trades", "point-and-click stun", "global pressure"],
+  },
   sustain: [],
-  trading: { badTradeConditions: ["Passive is not stacked.", "(E) is down into burst.", "The enemy can survive the first rotation and extend."], goodTradeConditions: ["Empowered ability is ready.", "(W) can start a clean trade.", "The wave supports a crash or roam after winning trade."], primaryPattern: "Use empowered short trades to win early and convert lane pressure into map pressure before scaling falls behind." },
-  punishWindows: ["After (W), his engage is predictable.", "When (E) is down, return damage sticks.", "If he fails to snowball early, scaling matchups improve against him."],
+  trading: {
+    badTradeConditions: [
+      "Passive is not stacked.",
+      "(E) is down into burst.",
+      "The enemy can survive the first rotation and extend.",
+    ],
+    goodTradeConditions: [
+      "Empowered ability is ready.",
+      "(W) can start a clean trade.",
+      "The wave supports a crash or roam after winning trade.",
+    ],
+    primaryPattern:
+      "Use empowered short trades to win early and convert lane pressure into map pressure before scaling falls behind.",
+  },
+  punishWindows: [
+    "After (W), his engage is predictable.",
+    "When (E) is down, return damage sticks.",
+    "If he fails to snowball early, scaling matchups improve against him.",
+  ],
 } satisfies LeagueChampionKnowledgeProfile;

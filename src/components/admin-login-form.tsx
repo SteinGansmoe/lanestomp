@@ -85,9 +85,7 @@ export function AdminLoginForm() {
           <LockKeyhole className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Login</CardTitle>
-        <p className="text-sm leading-6 text-zinc-400">
-          Sign in with your LaneStomp account.
-        </p>
+        <p className="text-sm leading-6 text-zinc-400">Sign in with your LaneStomp account.</p>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -130,11 +128,7 @@ export function AdminLoginForm() {
             disabled={isCheckingSession || isSubmitting}
             type="submit"
           >
-            {isCheckingSession
-              ? "Checking session..."
-              : isSubmitting
-                ? "Signing in..."
-                : "Sign in"}
+            {isCheckingSession ? "Checking session..." : isSubmitting ? "Signing in..." : "Sign in"}
           </Button>
         </form>
 

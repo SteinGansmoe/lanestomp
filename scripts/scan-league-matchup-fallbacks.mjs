@@ -17,10 +17,16 @@ const fallbackPatterns = [
   ["old list-only placeholder", /\blist only real level\b/i],
   ["old verified spike placeholder", /\bverified (?:jungle fight|spike|cooldown|ability)/i],
   ["old re-check power spike placeholder", /\bre-?check river fights after first recall\b/i],
-  ["old generic cross-map placeholder", /\buse cross-map trades when direct river fights are not favorable\b/i],
+  [
+    "old generic cross-map placeholder",
+    /\buse cross-map trades when direct river fights are not favorable\b/i,
+  ],
   ["current jungle overview placeholder", /\bneeds a controlled jungle plan that weighs invade\b/i],
   ["current jungle pathing placeholder", /\bplay early pathing around lane priority\b/i],
-  ["current jungle tracking placeholder", /\bsetup by tracking camps and trading sides when direct fights are bad\b/i],
+  [
+    "current jungle tracking placeholder",
+    /\bsetup by tracking camps and trading sides when direct fights are bad\b/i,
+  ],
   [
     "current jungle scuttle placeholder",
     /\bfirst clear should set up river control only when the first scuttle is actually contestable\b/i,
@@ -47,8 +53,14 @@ const fallbackPatterns = [
     "current jungle cross-map placeholder",
     /\bcross-map camps or gank opposite side instead of flipping a bad scuttle fight\b/i,
   ],
-  ["current jungle level 6 placeholder", /\blevel 6 usually adds enough threat to make isolated river\b/i],
-  ["current jungle first item placeholder", /\bfirst completed item improves clear tempo and durability\b/i],
+  [
+    "current jungle level 6 placeholder",
+    /\blevel 6 usually adds enough threat to make isolated river\b/i,
+  ],
+  [
+    "current jungle first item placeholder",
+    /\bfirst completed item improves clear tempo and durability\b/i,
+  ],
   [
     "current jungle two-item placeholder",
     /\btwo completed items make .+ more reliable in front-to-back objective fights\b/i,
@@ -65,7 +77,10 @@ const fallbackPatterns = [
     "current dragon fight placeholder",
     /\bif you have a numbers disadvantage, trade the tempo window into top-side camps\b/i,
   ],
-  ["current lane overview placeholder", /\blane plan depends on whether pressure, free-farm denial\b/i],
+  [
+    "current lane overview placeholder",
+    /\blane plan depends on whether pressure, free-farm denial\b/i,
+  ],
   [
     "current lane danger placeholder",
     /\bjungle fog and missing summoners make extended lane pressure much riskier\b/i,
@@ -88,7 +103,7 @@ const supabaseKey =
 
 if (!supabaseUrl || !supabaseKey) {
   console.error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    "Missing NEXT_PUBLIC_SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.",
   );
   process.exit(1);
 }
@@ -102,7 +117,7 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 const { data: matchups, error: matchupsError } = await supabase
   .from("league_matchups")
   .select(
-    "id, role, champion_a_id, champion_b_id, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, updated_at, admin_notes"
+    "id, role, champion_a_id, champion_b_id, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, updated_at, admin_notes",
   );
 
 if (matchupsError) {
@@ -111,12 +126,7 @@ if (matchupsError) {
 }
 
 const championIds = Array.from(
-  new Set(
-    (matchups ?? []).flatMap((matchup) => [
-      matchup.champion_a_id,
-      matchup.champion_b_id,
-    ])
-  )
+  new Set((matchups ?? []).flatMap((matchup) => [matchup.champion_a_id, matchup.champion_b_id])),
 );
 const { data: champions, error: championsError } = await supabase
   .from("league_champions")
@@ -129,7 +139,7 @@ if (championsError) {
 }
 
 const championNamesById = new Map(
-  (champions ?? []).map((champion) => [champion.id, champion.name])
+  (champions ?? []).map((champion) => [champion.id, champion.name]),
 );
 const contaminated = (matchups ?? [])
   .map((matchup) => {
@@ -142,10 +152,8 @@ const contaminated = (matchups ?? [])
     return {
       admin_notes: matchup.admin_notes ?? "",
       affected_sections: Array.from(new Set(matches.map((match) => match.section))),
-      champion_a:
-        championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id,
-      champion_b:
-        championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id,
+      champion_a: championNamesById.get(matchup.champion_a_id) ?? matchup.champion_a_id,
+      champion_b: championNamesById.get(matchup.champion_b_id) ?? matchup.champion_b_id,
       fallback_phrase_count: matches.length,
       id: matchup.id,
       matches,
@@ -163,8 +171,8 @@ console.log(
       rows: contaminated,
     },
     null,
-    2
-  )
+    2,
+  ),
 );
 
 function scanMatchup(matchup) {

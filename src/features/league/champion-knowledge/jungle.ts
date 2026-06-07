@@ -11,9 +11,7 @@ type JungleCombatProfileSeed = {
   hardCrowdControl?: string[];
   id: string;
   jungleProfile: NonNullable<LeagueChampionKnowledgeProfile["jungleProfile"]>;
-  masteryDifficulty: NonNullable<
-    LeagueChampionKnowledgeProfile["masteryDifficulty"]
-  >;
+  masteryDifficulty: NonNullable<LeagueChampionKnowledgeProfile["masteryDifficulty"]>;
   mobilityLevel: NonNullable<LeagueChampionKnowledgeProfile["mobilityLevel"]>;
   name: string;
   primaryWinCondition: string;
@@ -22,7 +20,7 @@ type JungleCombatProfileSeed = {
 
 function jungleCategory(
   rating: LeagueChampionJungleProfileLevel,
-  notes: string[]
+  notes: string[],
 ): LeagueChampionJungleProfileCategory {
   return { notes, rating };
 }
@@ -141,8 +139,7 @@ export const leeSinCombatProfile = {
           "Lee Sin can contest river and punish weaker first clears before they reset.",
         playerAction:
           "Path toward the enemy jungler when nearby lanes can move and force a river or camp fight.",
-        enemyResponse:
-          "Avoid isolated river fights and ward entrances before first scuttle.",
+        enemyResponse: "Avoid isolated river fights and ward entrances before first scuttle.",
       },
       {
         timing: "Level 6",
@@ -151,8 +148,7 @@ export const leeSinCombatProfile = {
           "Ganks and objective fights become much more punishing if Lee Sin reaches the backline angle.",
         playerAction:
           "Use (R) to isolate a priority target or deny the enemy jungler's objective access.",
-        enemyResponse:
-          "Respect kick angles and avoid standing between Lee Sin and his team.",
+        enemyResponse: "Respect kick angles and avoid standing between Lee Sin and his team.",
       },
     ],
   },
@@ -258,22 +254,17 @@ export const xinZhaoCombatProfile = {
       {
         timing: "Level 3",
         reason: "Full basic kit gives access, damage, and knockup",
-        changesGameplay:
-          "Xin Zhao can force direct river fights into most weaker early junglers.",
-        playerAction:
-          "Path to contest scuttle or invade when nearby lanes can move first.",
-        enemyResponse:
-          "Avoid extended 1v1s and trade camps cross-map when lanes cannot help.",
+        changesGameplay: "Xin Zhao can force direct river fights into most weaker early junglers.",
+        playerAction: "Path to contest scuttle or invade when nearby lanes can move first.",
+        enemyResponse: "Avoid extended 1v1s and trade camps cross-map when lanes cannot help.",
       },
       {
         timing: "Level 6",
         reason: "(R) gives zone control and survivability",
         changesGameplay:
           "Objective fights become easier to force because Xin Zhao can block ranged follow-up.",
-        playerAction:
-          "Use (R) to isolate the enemy jungler or protect your objective setup.",
-        enemyResponse:
-          "Kite out (R) duration and avoid committing carries into his circle.",
+        playerAction: "Use (R) to isolate the enemy jungler or protect your objective setup.",
+        enemyResponse: "Kite out (R) duration and avoid committing carries into his circle.",
       },
     ],
   },
@@ -379,22 +370,16 @@ export const jarvanIvCombatProfile = {
       {
         timing: "Level 2-3",
         reason: "(E)+(Q) gank access",
-        changesGameplay:
-          "Jarvan IV can pressure lanes before many junglers finish a full clear.",
-        playerAction:
-          "Path to an overextended lane or lane with setup and force flash early.",
-        enemyResponse:
-          "Ward early river entrances and avoid pushing without tracking his start.",
+        changesGameplay: "Jarvan IV can pressure lanes before many junglers finish a full clear.",
+        playerAction: "Path to an overextended lane or lane with setup and force flash early.",
+        enemyResponse: "Ward early river entrances and avoid pushing without tracking his start.",
       },
       {
         timing: "Level 6",
         reason: "(R) adds lockdown for ganks and objective fights",
-        changesGameplay:
-          "Immobile targets and enemy junglers become much easier to trap.",
-        playerAction:
-          "Use (R) to lock the enemy jungler out of smite range or secure a dive.",
-        enemyResponse:
-          "Hold mobility for (R) and avoid objective pits without vision.",
+        changesGameplay: "Immobile targets and enemy junglers become much easier to trap.",
+        playerAction: "Use (R) to lock the enemy jungler out of smite range or secure a dive.",
+        enemyResponse: "Hold mobility for (R) and avoid objective pits without vision.",
       },
     ],
   },
@@ -500,22 +485,18 @@ export const khazixCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks stealth and first evolution",
-        changesGameplay:
-          "Kha'Zix can choose stronger pick, duel, or mobility patterns.",
+        changesGameplay: "Kha'Zix can choose stronger pick, duel, or mobility patterns.",
         playerAction:
           "Play through fog and look for isolated jungle or river targets before objectives.",
-        enemyResponse:
-          "Group around vision and deny isolated paths into the river.",
+        enemyResponse: "Group around vision and deny isolated paths into the river.",
       },
       {
         timing: "First damage item",
         reason: "Isolation burst becomes much more lethal",
-        changesGameplay:
-          "Separated targets can die before help arrives.",
+        changesGameplay: "Separated targets can die before help arrives.",
         playerAction:
           "Invade with vision support and punish enemy camps when lanes cannot collapse.",
-        enemyResponse:
-          "Avoid checking jungle entrances alone and collapse as a group.",
+        enemyResponse: "Avoid checking jungle entrances alone and collapse as a group.",
       },
     ],
   },
@@ -623,20 +604,15 @@ export const nunuCombatProfile = {
         reason: "(Q) plus Smite gives strong secure power",
         changesGameplay:
           "Nunu can force early objectives if lanes have priority or the enemy jungler shows away.",
-        playerAction:
-          "Convert successful ganks into immediate dragon or Herald starts.",
-        enemyResponse:
-          "Ward objectives early and contest before Nunu starts them for free.",
+        playerAction: "Convert successful ganks into immediate dragon or Herald starts.",
+        enemyResponse: "Ward objectives early and contest before Nunu starts them for free.",
       },
       {
         timing: "Level 6",
         reason: "(R) adds zone control and burst follow-up",
-        changesGameplay:
-          "Ganks and objective fights punish enemies stuck in his CC chain.",
-        playerAction:
-          "Layer (R) after (W) or ally CC instead of channeling in open space.",
-        enemyResponse:
-          "Save interrupts or disengage before the full channel lands.",
+        changesGameplay: "Ganks and objective fights punish enemies stuck in his CC chain.",
+        playerAction: "Layer (R) after (W) or ally CC instead of channeling in open space.",
+        enemyResponse: "Save interrupts or disengage before the full channel lands.",
       },
     ],
   },
@@ -744,20 +720,16 @@ export const sejuaniCombatProfile = {
         reason: "(R) gives long-range engage",
         changesGameplay:
           "Sejuani can start ganks and objective fights without needing to walk into melee first.",
-        playerAction:
-          "Use (R) around objective timers or on lanes with follow-up damage.",
-        enemyResponse:
-          "Respect fog angles and avoid grouping in narrow objective entrances.",
+        playerAction: "Use (R) around objective timers or on lanes with follow-up damage.",
+        enemyResponse: "Respect fog angles and avoid grouping in narrow objective entrances.",
       },
       {
         timing: "First tank item",
         reason: "Durability lets her front line objective fights",
-        changesGameplay:
-          "She can absorb more cooldowns while setting up CC chains.",
+        changesGameplay: "She can absorb more cooldowns while setting up CC chains.",
         playerAction:
           "Control river entrances and force fights where allies can hit stunned targets.",
-        enemyResponse:
-          "Avoid hitting the tank first if her carries are free to follow up.",
+        enemyResponse: "Avoid hitting the tank first if her carries are free to follow up.",
       },
     ],
   },
@@ -863,22 +835,16 @@ export const viegoCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) adds execute and reset mobility",
-        changesGameplay:
-          "Viego can finish low targets and reposition through takedowns.",
-        playerAction:
-          "Look for skirmishes where one low target can start a reset chain.",
-        enemyResponse:
-          "Deny the first takedown and avoid fighting while split in river.",
+        changesGameplay: "Viego can finish low targets and reposition through takedowns.",
+        playerAction: "Look for skirmishes where one low target can start a reset chain.",
+        enemyResponse: "Deny the first takedown and avoid fighting while split in river.",
       },
       {
         timing: "First fighter item",
         reason: "Sustained dueling and reset cleanup become stronger",
-        changesGameplay:
-          "Viego can contest longer fights without relying only on teammates.",
-        playerAction:
-          "Fight around lanes that can move and use resets to convert into objectives.",
-        enemyResponse:
-          "Burst or disengage before he gets repeated autos and possession value.",
+        changesGameplay: "Viego can contest longer fights without relying only on teammates.",
+        playerAction: "Fight around lanes that can move and use resets to convert into objectives.",
+        enemyResponse: "Burst or disengage before he gets repeated autos and possession value.",
       },
     ],
   },
@@ -985,22 +951,16 @@ export const belvethCombatProfile = {
       {
         timing: "First item",
         reason: "Sustained damage and dueling improve sharply",
-        changesGameplay:
-          "Bel'Veth can contest longer fights instead of only farming around them.",
-        playerAction:
-          "Use item timing to fight around objectives or invade with lane support.",
-        enemyResponse:
-          "Punish her before the item or force fights where CC interrupts her uptime.",
+        changesGameplay: "Bel'Veth can contest longer fights instead of only farming around them.",
+        playerAction: "Use item timing to fight around objectives or invade with lane support.",
+        enemyResponse: "Punish her before the item or force fights where CC interrupts her uptime.",
       },
       {
         timing: "Herald, Baron, or void objective takedown",
         reason: "(R) true form creates map pressure",
-        changesGameplay:
-          "Objective wins can quickly turn into tower pressure and jungle control.",
-        playerAction:
-          "Convert objective wins into camps, towers, and deep vision immediately.",
-        enemyResponse:
-          "Contest setup early and avoid giving free Herald or Baron conversions.",
+        changesGameplay: "Objective wins can quickly turn into tower pressure and jungle control.",
+        playerAction: "Convert objective wins into camps, towers, and deep vision immediately.",
+        enemyResponse: "Contest setup early and avoid giving free Herald or Baron conversions.",
       },
     ],
   },
@@ -1106,22 +1066,17 @@ export const karthusCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) adds global damage",
-        changesGameplay:
-          "Karthus can influence fights and finish kills without leaving his path.",
-        playerAction:
-          "Keep farming tempo and use (R) after enemies commit or drop low.",
-        enemyResponse:
-          "Track his level 6 and avoid extended low-health fights across the map.",
+        changesGameplay: "Karthus can influence fights and finish kills without leaving his path.",
+        playerAction: "Keep farming tempo and use (R) after enemies commit or drop low.",
+        enemyResponse: "Track his level 6 and avoid extended low-health fights across the map.",
       },
       {
         timing: "First AP item",
         reason: "Clear speed and global damage become more punishing",
-        changesGameplay:
-          "His farming lead converts into stronger objective and teamfight damage.",
+        changesGameplay: "His farming lead converts into stronger objective and teamfight damage.",
         playerAction:
           "Use item tempo to cycle camps, arrive to objectives first, and avoid blind face-checks.",
-        enemyResponse:
-          "Invade before the item or force fights before he sets up vision.",
+        enemyResponse: "Invade before the item or force fights before he sets up vision.",
       },
     ],
   },
@@ -1227,22 +1182,16 @@ export const masterYiCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks chase and reset threat",
-        changesGameplay:
-          "Master Yi can clean up low-health fights if CC is unavailable.",
-        playerAction:
-          "Enter after key crowd control is used and chase reset targets with (R).",
-        enemyResponse:
-          "Hold CC for Yi and avoid giving the first reset.",
+        changesGameplay: "Master Yi can clean up low-health fights if CC is unavailable.",
+        playerAction: "Enter after key crowd control is used and chase reset targets with (R).",
+        enemyResponse: "Hold CC for Yi and avoid giving the first reset.",
       },
       {
         timing: "First item",
         reason: "Sustained damage and objective speed improve",
-        changesGameplay:
-          "He can farm faster and punish messy skirmishes more reliably.",
-        playerAction:
-          "Keep camp tempo high and only join fights with reset potential.",
-        enemyResponse:
-          "Force him before item completion or collapse with reliable CC.",
+        changesGameplay: "He can farm faster and punish messy skirmishes more reliably.",
+        playerAction: "Keep camp tempo high and only join fights with reset potential.",
+        enemyResponse: "Force him before item completion or collapse with reliable CC.",
       },
     ],
   },
@@ -1532,9 +1481,7 @@ const remainingJungleProfileSeeds = [
       dueling: jungleCategory("low", [
         "Early forced duels are weak before camouflage and AP items.",
       ]),
-      earlyGamePressure: jungleCategory("low", [
-        "Pre-6 pressure is limited and mostly defensive.",
-      ]),
+      earlyGamePressure: jungleCategory("low", ["Pre-6 pressure is limited and mostly defensive."]),
       gankThreat: jungleCategory("high", [
         "Post-6 camouflage creates constant flank and pick pressure.",
       ]),
@@ -2026,9 +1973,7 @@ const remainingJungleProfileSeeds = [
     hardCrowdControl: [],
     id: "Nidalee",
     jungleProfile: {
-      clearSpeed: jungleCategory("high", [
-        "Fast, technical clears can create early tempo leads.",
-      ]),
+      clearSpeed: jungleCategory("high", ["Fast, technical clears can create early tempo leads."]),
       dueling: jungleCategory("high", [
         "Strong early if spear hits and she can use cougar execute damage.",
       ]),
@@ -2079,9 +2024,7 @@ const remainingJungleProfileSeeds = [
       clearSpeed: jungleCategory("high", [
         "Efficient full clears help him reach level 6 on schedule.",
       ]),
-      dueling: jungleCategory("high", [
-        "Strong sustained duelist when (W) blocks a key spell.",
-      ]),
+      dueling: jungleCategory("high", ["Strong sustained duelist when (W) blocks a key spell."]),
       earlyGamePressure: jungleCategory("medium", [
         "Can fight early, but his map threat spikes heavily at level 6.",
       ]),
@@ -2326,9 +2269,7 @@ const remainingJungleProfileSeeds = [
     hardCrowdControl: ["(W) fear"],
     id: "Shaco",
     jungleProfile: {
-      clearSpeed: jungleCategory("high", [
-        "Box setup can create fast and healthy early clears.",
-      ]),
+      clearSpeed: jungleCategory("high", ["Box setup can create fast and healthy early clears."]),
       dueling: jungleCategory("medium", [
         "Wins through deception, boxes, and ambushes rather than honest front fights.",
       ]),
@@ -2403,9 +2344,7 @@ const remainingJungleProfileSeeds = [
         "Full clear on tempo and track enemy ganks for cross-map objective trades.",
         "Sequence toward dragon when bot and mid priority are available.",
       ],
-      scaling: jungleCategory("high", [
-        "Item and form scaling can take over mid-game fights.",
-      ]),
+      scaling: jungleCategory("high", ["Item and form scaling can take over mid-game fights."]),
     },
     masteryDifficulty: "low",
     mobilityLevel: "medium",
@@ -2822,8 +2761,5 @@ const remainingJungleProfileSeeds = [
 ] satisfies readonly JungleCombatProfileSeed[];
 
 export const remainingJungleCombatProfiles = Object.fromEntries(
-  remainingJungleProfileSeeds.map((profile) => [
-    profile.id,
-    createJungleCombatProfile(profile),
-  ])
+  remainingJungleProfileSeeds.map((profile) => [profile.id, createJungleCombatProfile(profile)]),
 ) as Record<string, LeagueChampionKnowledgeProfile>;

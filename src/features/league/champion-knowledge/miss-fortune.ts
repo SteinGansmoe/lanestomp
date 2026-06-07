@@ -34,11 +34,18 @@ export const missFortuneCombatProfile = {
   damageType: "physical",
   hardCrowdControl: [],
   id: "MissFortune",
+  importantAbilityNotes: [
+    "(Q) bounce is the core lane punish; low-health minions and enemy positioning behind the wave decide its value.",
+    "(W) movement speed lets her take short poke windows, but damage removes the passive speed and makes engage more dangerous.",
+    "(E) slows enemies for safer (Q) angles, support follow-up, or (R) channel setup.",
+    "(R) needs CC, terrain, or committed enemies; raw channels are much easier to dodge or interrupt.",
+  ],
   lanePlan: {
     avoids: [
       "Standing in engage range without support peel.",
       "Using (R) without CC, choke control, or enemy commitment.",
       "Letting minion waves remove (Q) bounce threat.",
+      "Standing still for (R) while enemy interrupt or engage cooldowns are unspent.",
     ],
     idealLaneState:
       "A pressured bot lane where Miss Fortune uses (Q) bounce and support setup to force health leads before dragon fights.",
@@ -46,6 +53,8 @@ export const missFortuneCombatProfile = {
       "Support can lock targets inside (R).",
       "Wave states with clean (Q) bounce angles.",
       "Dragon fights where enemy movement is restricted.",
+      "Low-health caster or melee minions that threaten bounce damage onto the enemy ADC.",
+      "Support positioned to punish enemies slowed by (E) or chunked by (Q).",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const missFortuneCombatProfile = {
       "Landing (Q) bounce poke.",
       "Using wave pressure to control dragon setup.",
       "Pairing (R) with allied CC.",
+      "Punishing enemy ADCs who stand behind low-health minions for last hits.",
+      "Using (E) to make bounce, support CC, or (R) follow-up harder to dodge.",
     ],
   },
   majorPowerSpikes: ["Level 6 (R).", "First completed damage item.", "Objective choke setup."],
@@ -86,18 +97,15 @@ export const missFortuneCombatProfile = {
         reason: "(R) creates major grouped fight threat",
         changesGameplay:
           "Miss Fortune can turn support CC or dragon choke control into a fight-winning channel.",
-        playerAction:
-          "Hold (R) for CC, terrain, or committed enemies instead of forcing it raw.",
-        enemyResponse:
-          "Save interrupts or spread before fighting in narrow spaces.",
+        playerAction: "Hold (R) for CC, terrain, or committed enemies instead of forcing it raw.",
+        enemyResponse: "Save interrupts or spread before fighting in narrow spaces.",
       },
       {
         timing: "First completed damage item",
         reason: "Lane poke and ultimate burst become harder to ignore",
         changesGameplay:
           "Her health leads convert more easily into recalls, plates, or dragon control.",
-        playerAction:
-          "Use (Q) bounce pressure to force the enemy ADC off CS before objectives.",
+        playerAction: "Use (Q) bounce pressure to force the enemy ADC off CS before objectives.",
         enemyResponse:
           "Avoid standing behind low minions and force fights when (R) is unavailable.",
       },
@@ -112,6 +120,8 @@ export const missFortuneCombatProfile = {
       "ADCs standing behind low minions.",
       "Grouped enemies locked by support CC.",
       "Objective fights through narrow entrances.",
+      "Enemy ADCs trying to last-hit through a low-health minion line.",
+      "Bot lanes that use mobility or cleanse before her support locks (R) targets.",
     ],
     strugglesToPunish: [
       "Mobile ADCs that sidestep her channel.",
@@ -139,7 +149,8 @@ export const missFortuneCombatProfile = {
       "Support CC can hold enemies inside (R).",
       "Dragon or turret terrain limits enemy movement.",
       "Use (E) slow to keep enemies in (R) or prevent disengage.",
-      "Use (E) slow to create safer (Q) bounce angles or punish enemy movement."
+      "Use (E) slow to create safer (Q) bounce angles or punish enemy movement.",
+      "Enemy ADC is positioned behind a low-health minion and cannot answer the bounce without losing CS.",
     ],
     primaryPattern:
       "Win lane through bounce poke and wave pressure, then convert CC setup into decisive (R) damage.",

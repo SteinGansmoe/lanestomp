@@ -34,11 +34,18 @@ export const varusCombatProfile = {
   damageType: "mixed",
   hardCrowdControl: ["(R) root"],
   id: "Varus",
+  importantAbilityNotes: [
+    "(Q) poke is strongest when he has time and space to charge outside engage range.",
+    "(W) blight stacks reward weaving autos before detonating with (Q) or (E), changing short trades into burst windows.",
+    "(E) slows, applies grievous wounds, and can punish ADCs locked into CS or sustain-based trades.",
+    "(R) is both pick setup and self-peel, so missing it opens a major engage window.",
+  ],
   lanePlan: {
     avoids: [
       "Charging (Q) in range of hard engage.",
       "Fighting without (R) when enemy all-in is stronger.",
       "Letting mobile ADCs force through poke before it lands.",
+      "Charging (Q) while his support is too far back to stop engage.",
     ],
     idealLaneState:
       "A controlled bot lane where Varus uses wave access and poke to threaten CS, then holds (R) for support follow-up or disengage.",
@@ -46,6 +53,8 @@ export const varusCombatProfile = {
       "Support can protect his poke setup or follow (R).",
       "Wave control before dragon setup.",
       "Enemy ADC forced to choose between CS and taking poke.",
+      "Thin or controlled waves where charged (Q) can threaten the enemy ADC instead of only minions.",
+      "Support positioning that lets him auto for blight stacks before detonating safely.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const varusCombatProfile = {
       "Landing poke before trades start.",
       "Using (R) to punish immobile targets.",
       "Converting lane push into dragon control.",
+      "Punishing last-hit commitments with charged (Q) or (E) slow.",
+      "Stacking blight in short trades, then detonating when the enemy cannot extend.",
     ],
   },
   majorPowerSpikes: ["Level 6 (R).", "First completed damage item.", "Objective poke setup."],
@@ -84,22 +95,17 @@ export const varusCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) adds pick threat and self-peel",
-        changesGameplay:
-          "Varus can punish immobile ADCs or stop engage before it reaches him.",
-        playerAction:
-          "Hold (R) for a real catch or the enemy's committed engage.",
-        enemyResponse:
-          "Bait (R) before forcing all-ins into his lane.",
+        changesGameplay: "Varus can punish immobile ADCs or stop engage before it reaches him.",
+        playerAction: "Hold (R) for a real catch or the enemy's committed engage.",
+        enemyResponse: "Bait (R) before forcing all-ins into his lane.",
       },
       {
         timing: "First completed damage item",
         reason: "Poke or on-hit pattern becomes more threatening",
         changesGameplay:
           "His lane pressure starts converting into objective control more reliably.",
-        playerAction:
-          "Use item timing to pressure waves before dragon or turret setup.",
-        enemyResponse:
-          "Force engage before repeated poke creates a health deficit.",
+        playerAction: "Use item timing to pressure waves before dragon or turret setup.",
+        enemyResponse: "Force engage before repeated poke creates a health deficit.",
       },
     ],
   },
@@ -112,6 +118,8 @@ export const varusCombatProfile = {
       "Immobile ADCs in (R) range.",
       "Enemies walking through predictable objective entrances.",
       "Bot lanes that cannot engage before poke lands.",
+      "ADC players locked into cannon or ranged-minion CS while he charges (Q).",
+      "Sustain lanes standing inside (E) while trying to recover from poke.",
     ],
     strugglesToPunish: [
       "Hard engage after (R) is down.",
@@ -138,6 +146,8 @@ export const varusCombatProfile = {
       "The wave gives clear (Q) angles.",
       "Support can follow (R).",
       "Enemies must walk into poke before dragon setup.",
+      "The enemy ADC is slowed by (E) or rooted by support setup before charged (Q).",
+      "He has already applied blight stacks and can detonate them without entering all-in range.",
     ],
     primaryPattern:
       "Win through poke and pick threat before fights start; avoid raw all-ins when engage is still available.",

@@ -68,10 +68,7 @@ export function SiteFooter() {
           <p className="mt-5 max-w-72 text-sm leading-6 text-zinc-400">
             Learn matchups. Improve champion pools. Climb smarter.
           </p>
-          <div
-            className="mt-6 flex flex-wrap gap-3"
-            aria-label="LaneStomp social links"
-          >
+          <div className="mt-6 flex flex-wrap gap-3" aria-label="LaneStomp social links">
             {socialLinks.map((item) => {
               const Icon = item.icon;
 
@@ -97,10 +94,7 @@ export function SiteFooter() {
       <div className="border-t border-white/10 bg-black/10">
         <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
           <div className="flex items-start gap-3 text-sm leading-6 text-zinc-500">
-            <BookOpen
-              className="mt-0.5 size-4 shrink-0 text-violet-300/70"
-              aria-hidden="true"
-            />
+            <BookOpen className="mt-0.5 size-4 shrink-0 text-violet-300/70" aria-hidden="true" />
             <p className="max-w-5xl">{riotDisclaimer}</p>
           </div>
         </div>
@@ -109,9 +103,7 @@ export function SiteFooter() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-4 text-sm text-zinc-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
           <p>&copy; 2026 LaneStomp. All rights reserved.</p>
-          <p className="text-zinc-500">
-            Built by Stein for League players.
-          </p>
+          <p className="text-zinc-500">Built by Stein for League players.</p>
         </div>
       </div>
     </footer>
@@ -129,9 +121,7 @@ function FooterLinkColumn({
 }) {
   return (
     <section className="min-w-0">
-      <h2 className="font-mono text-sm font-bold uppercase text-violet-300">
-        {title}
-      </h2>
+      <h2 className="font-mono text-sm font-bold uppercase text-violet-300">{title}</h2>
       <nav className="mt-5 space-y-3" aria-label={title}>
         {links.map((item) => (
           <Link

@@ -68,10 +68,7 @@ export const taliyahCombatProfile = {
       "Turning mid push into map pressure instead of forcing risky lane all-ins.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R) for map plays.",
-    "First completed mage item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R) for map plays.", "First completed mage item."],
   matchupPreferences: {
     strongInto: [
       "Dash-reliant champions who must enter (E) threat to trade.",
@@ -87,39 +84,47 @@ export const taliyahCombatProfile = {
   mobilityLevel: "medium",
   name: "Taliyah",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "roam",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["wave control into roams", "anti-dash punishment", "map pressure"],
+  strategicIdentity: {
+    laneGoal: "roam",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["wave control into roams", "anti-dash punishment", "map pressure"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R) for map plays",
+        changesGameplay: "Level 6 increases map pressure more than direct lane burst",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R) for map plays",
-          changesGameplay: "Level 6 increases map pressure more than direct lane burst",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed mage item",
-          reason: "First completed mage item",
-          changesGameplay: "First mage item improves wave control and poke reliability",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Taliyah's first item threshold is completed.",
-        },
-      ],
-      minor: [
-        {
-          timing: "Level 3",
-          reason: "Level 3 gives her the (Q)-(W)-(E) pattern needed to punish commits, but her major spikes are map and item timings",
-          changesGameplay: "Taliyah can punish predictable commits with (W) and (E), but her main spikes are map access and item reliability.",
-          playerAction: "Hold (W) and (E) for enemy movement or dash commits instead of forcing low-confidence level 3 trades.",
-          enemyResponse: "Avoid telegraphed engages into (W) and (E), then punish her if those tools are spent on the wave.",
-        },
-      ],
-    },
+      {
+        timing: "First completed mage item",
+        reason: "First completed mage item",
+        changesGameplay: "First mage item improves wave control and poke reliability",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Taliyah's first item threshold is completed.",
+      },
+    ],
+    minor: [
+      {
+        timing: "Level 3",
+        reason:
+          "Level 3 gives her the (Q)-(W)-(E) pattern needed to punish commits, but her major spikes are map and item timings",
+        changesGameplay:
+          "Taliyah can punish predictable commits with (W) and (E), but her main spikes are map access and item reliability.",
+        playerAction:
+          "Hold (W) and (E) for enemy movement or dash commits instead of forcing low-confidence level 3 trades.",
+        enemyResponse:
+          "Avoid telegraphed engages into (W) and (E), then punish her if those tools are spent on the wave.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: ["jungle"],
   primaryTradingPattern:

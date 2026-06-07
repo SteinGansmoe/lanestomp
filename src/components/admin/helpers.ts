@@ -9,7 +9,7 @@ export type AdminGameItemGroup<TItem> = {
 export function groupAdminItemsByGame<TItem extends { game_id: string }>(
   items: TItem[],
   games: AdminGame[],
-  gameNamesById: Map<string, string>
+  gameNamesById: Map<string, string>,
 ): Array<AdminGameItemGroup<TItem>> {
   const itemsByGameId = new Map<string, TItem[]>();
 
@@ -41,55 +41,42 @@ export function groupAdminItemsByGame<TItem extends { game_id: string }>(
 }
 
 export function isMissingGameResourcesTableError(
-  error: { code?: string; message?: string } | null
+  error: { code?: string; message?: string } | null,
 ) {
   return (
     error?.code === "PGRST205" ||
     Boolean(
       error?.message?.includes("game_resources.section") ||
-        (error?.message?.includes("column") &&
-          error.message.includes("section"))
+      (error?.message?.includes("column") && error.message.includes("section")),
     ) ||
-    Boolean(
-      error?.message?.includes("game_resources") &&
-        error.message.includes("schema cache")
-    )
+    Boolean(error?.message?.includes("game_resources") && error.message.includes("schema cache"))
   );
 }
 
 export function isMissingTimelineEventsTableError(
-  error: { code?: string; message?: string } | null
+  error: { code?: string; message?: string } | null,
 ) {
   return (
     error?.code === "PGRST205" ||
-    Boolean(
-      error?.message?.includes("timeline_events") &&
-        error.message.includes("schema cache")
-    )
+    Boolean(error?.message?.includes("timeline_events") && error.message.includes("schema cache"))
   );
 }
 
 export function isMissingLeagueMatchupsTableError(
-  error: { code?: string; message?: string } | null
+  error: { code?: string; message?: string } | null,
 ) {
   return (
     error?.code === "PGRST205" ||
-    Boolean(
-      error?.message?.includes("league_matchups") &&
-        error.message.includes("schema cache")
-    )
+    Boolean(error?.message?.includes("league_matchups") && error.message.includes("schema cache"))
   );
 }
 
 export function isMissingLeagueFeedbackTableError(
-  error: { code?: string; message?: string } | null
+  error: { code?: string; message?: string } | null,
 ) {
   return (
     error?.code === "PGRST205" ||
-    Boolean(
-      error?.message?.includes("matchup_feedback") &&
-        error.message.includes("schema cache")
-    )
+    Boolean(error?.message?.includes("matchup_feedback") && error.message.includes("schema cache"))
   );
 }
 

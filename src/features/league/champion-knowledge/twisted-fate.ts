@@ -68,10 +68,7 @@ export const twistedFateCombatProfile = {
       "Turning level 6 into numbers advantage.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed AP or utility item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed AP or utility item."],
   matchupPreferences: {
     strongInto: [
       "Immobile targets vulnerable to point-and-click stun.",
@@ -87,30 +84,34 @@ export const twistedFateCombatProfile = {
   mobilityLevel: "medium",
   name: "Twisted Fate",
   offMetaRoles: ["adc", "support"],
-      strategicIdentity: {
-        laneGoal: "roam",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["global picks", "side-lane pressure", "map tempo"],
+  strategicIdentity: {
+    laneGoal: "roam",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["global picks", "side-lane pressure", "map tempo"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 is his largest map pressure spike",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 is his largest map pressure spike",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed AP or utility item",
-          reason: "First completed AP or utility item",
-          changesGameplay: "Gold Card threat is reliable but requires him to be in range",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Twisted Fate's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed AP or utility item",
+        reason: "First completed AP or utility item",
+        changesGameplay: "Gold Card threat is reliable but requires him to be in range",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Twisted Fate's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

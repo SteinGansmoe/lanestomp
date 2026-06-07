@@ -3,12 +3,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { cn } from "@/src/lib/utils";
 
 type AdminGroupedListGroup = {
@@ -96,7 +91,7 @@ export function AdminGroupedListCard({
                   <div
                     className={cn(
                       "flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors",
-                      isCollapsed ? "" : "border-b border-white/10"
+                      isCollapsed ? "" : "border-b border-white/10",
                     )}
                   >
                     <div>
@@ -109,9 +104,7 @@ export function AdminGroupedListCard({
                     <button
                       aria-controls={contentId}
                       aria-expanded={!isCollapsed}
-                      aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${
-                        group.title
-                      }`}
+                      aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${group.title}`}
                       className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
                       onClick={() => toggleGroup(group.id)}
                       type="button"
@@ -119,7 +112,7 @@ export function AdminGroupedListCard({
                       <ChevronDown
                         className={cn(
                           "size-4 transition-transform duration-200",
-                          isCollapsed ? "-rotate-90" : "rotate-0"
+                          isCollapsed ? "-rotate-90" : "rotate-0",
                         )}
                         aria-hidden="true"
                       />
@@ -132,7 +125,7 @@ export function AdminGroupedListCard({
                       "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
                       isCollapsed
                         ? "pointer-events-none grid-rows-[0fr] opacity-0"
-                        : "grid-rows-[1fr] opacity-100"
+                        : "grid-rows-[1fr] opacity-100",
                     )}
                     id={contentId}
                     inert={isCollapsed ? true : undefined}

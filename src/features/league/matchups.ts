@@ -92,7 +92,7 @@ export async function getLeagueMatchup({
         "confidence_level",
         "id",
         "updated_at",
-      ].join(", ")
+      ].join(", "),
     )
     .eq("champion_a_id", championAId)
     .eq("champion_b_id", championBId)
@@ -117,9 +117,7 @@ export async function getLeagueMatchupCoverage({
   champions,
   role,
 }: GetLeagueMatchupCoverageInput): Promise<LeagueMatchupCoverageResult> {
-  const roleChampions = champions.filter((champion) =>
-    isChampionInRole(champion, role)
-  );
+  const roleChampions = champions.filter((champion) => isChampionInRole(champion, role));
   const totalCount = roleChampions.length * Math.max(roleChampions.length - 1, 0);
   const emptyCoverage = {
     generatedCount: 0,
@@ -155,8 +153,7 @@ export async function getLeagueMatchupCoverage({
   return {
     coverage: {
       generatedCount,
-      percentComplete:
-        totalCount > 0 ? Math.round((generatedCount / totalCount) * 100) : 0,
+      percentComplete: totalCount > 0 ? Math.round((generatedCount / totalCount) * 100) : 0,
       roleChampionCount: roleChampions.length,
       totalCount,
     },
@@ -165,7 +162,7 @@ export async function getLeagueMatchupCoverage({
 }
 
 export async function getLeagueMatchupCoverageSummary(
-  champions: LeagueChampion[]
+  champions: LeagueChampion[],
 ): Promise<LeagueMatchupCoverageSummaryResult> {
   const emptyCoverageByRole = getEmptyCoverageSummary(champions);
 
@@ -191,7 +188,7 @@ export async function getLeagueMatchupCoverageSummary(
         error,
         role,
       };
-    })
+    }),
   );
   const firstError = roleCounts.find((result) => result.error)?.error;
 
@@ -220,19 +217,14 @@ export async function getLeagueMatchupCoverageSummary(
 
   const totalGeneratedCount = leagueRoles.reduce(
     (sum, role) => sum + coverage[role].generatedCount,
-    0
+    0,
   );
-  const totalPossibleCount = leagueRoles.reduce(
-    (sum, role) => sum + coverage[role].totalCount,
-    0
-  );
+  const totalPossibleCount = leagueRoles.reduce((sum, role) => sum + coverage[role].totalCount, 0);
 
   coverage.all = {
     generatedCount: totalGeneratedCount,
     percentComplete:
-      totalPossibleCount > 0
-        ? Math.round((totalGeneratedCount / totalPossibleCount) * 100)
-        : 0,
+      totalPossibleCount > 0 ? Math.round((totalGeneratedCount / totalPossibleCount) * 100) : 0,
     roleChampionCount: champions.length,
     totalCount: totalPossibleCount,
   };
@@ -243,15 +235,10 @@ export async function getLeagueMatchupCoverageSummary(
   };
 }
 
-function getEmptyCoverageSummary(
-  champions: LeagueChampion[]
-): LeagueMatchupCoverageSummary {
+function getEmptyCoverageSummary(champions: LeagueChampion[]): LeagueMatchupCoverageSummary {
   const roleCoverageEntries = leagueRoles.map((role) => {
-    const roleChampions = champions.filter((champion) =>
-      isChampionInRole(champion, role)
-    );
-    const totalCount =
-      roleChampions.length * Math.max(roleChampions.length - 1, 0);
+    const roleChampions = champions.filter((champion) => isChampionInRole(champion, role));
+    const totalCount = roleChampions.length * Math.max(roleChampions.length - 1, 0);
 
     return [
       role,
@@ -267,10 +254,7 @@ function getEmptyCoverageSummary(
     LeagueRole,
     LeagueMatchupCoverage
   >;
-  const totalCount = leagueRoles.reduce(
-    (sum, role) => sum + roleCoverage[role].totalCount,
-    0
-  );
+  const totalCount = leagueRoles.reduce((sum, role) => sum + roleCoverage[role].totalCount, 0);
 
   return {
     ...roleCoverage,

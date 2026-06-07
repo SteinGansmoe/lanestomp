@@ -68,10 +68,7 @@ export const neekoCombatProfile = {
       "Turning level 6 threat into picks or forced spacing.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed AP burst item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed AP burst item."],
   matchupPreferences: {
     strongInto: [
       "Champions who must farm behind minion lines.",
@@ -87,30 +84,34 @@ export const neekoCombatProfile = {
   mobilityLevel: "medium",
   name: "Neeko",
   offMetaRoles: ["support"],
-      strategicIdentity: {
-        laneGoal: "teamfight",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["pick setup", "flank engages", "teamfight burst"],
+  strategicIdentity: {
+    laneGoal: "teamfight",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["pick setup", "flank engages", "teamfight burst"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 creates strong all-in and teamfight threat",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 creates strong all-in and teamfight threat",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed AP burst item",
-          reason: "First completed AP burst item",
-          changesGameplay: "Her best moments often come from fog, disguise, or minion-enhanced (E)",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Neeko's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed AP burst item",
+        reason: "First completed AP burst item",
+        changesGameplay: "Her best moments often come from fog, disguise, or minion-enhanced (E)",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Neeko's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: ["support"],
   primaryTradingPattern:

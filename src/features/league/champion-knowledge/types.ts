@@ -1,34 +1,13 @@
 import type { LeagueRole } from "../roles";
 
 export type LeagueChampionAbilityKey = "E" | "Q" | "R" | "W";
-export type LeagueChampionAbilityMap = Record<
-  LeagueChampionAbilityKey,
-  string
->;
+export type LeagueChampionAbilityMap = Record<LeagueChampionAbilityKey, string>;
 export type LeagueChampionDamageType = "magic" | "physical" | "mixed";
-export type LeagueChampionMobilityLevel =
-  | "high"
-  | "low"
-  | "medium"
-  | "none"
-  | "very_high";
+export type LeagueChampionMobilityLevel = "high" | "low" | "medium" | "none" | "very_high";
 export type LeagueChampionProfileQuality = "draft" | "reviewed";
-export type LeagueChampionMasteryDifficulty =
-  | "high"
-  | "low"
-  | "medium"
-  | "very_high";
-export type LeagueChampionLaneIdentityLevel =
-  | "high"
-  | "low"
-  | "medium"
-  | "very_high";
-export type LeagueChampionJungleProfileLevel =
-  | "high"
-  | "low"
-  | "medium"
-  | "very_high"
-  | "very_low";
+export type LeagueChampionMasteryDifficulty = "high" | "low" | "medium" | "very_high";
+export type LeagueChampionLaneIdentityLevel = "high" | "low" | "medium" | "very_high";
+export type LeagueChampionJungleProfileLevel = "high" | "low" | "medium" | "very_high" | "very_low";
 
 export type LeagueChampionLanePlan = {
   avoids: string[];

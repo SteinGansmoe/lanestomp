@@ -7,11 +7,7 @@ import { UserPlus } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
-import {
-  checkUsernameAvailability,
-  normalizeUsername,
-  validateUsername,
-} from "@/src/lib/profile";
+import { checkUsernameAvailability, normalizeUsername, validateUsername } from "@/src/lib/profile";
 import { supabase } from "@/src/lib/supabase";
 
 export function RegisterForm() {
@@ -74,7 +70,7 @@ export function RegisterForm() {
       setError(
         signUpError.message.includes("profiles_username_lower_unique")
           ? "That username is already taken."
-          : signUpError.message
+          : signUpError.message,
       );
       return;
     }
@@ -84,7 +80,7 @@ export function RegisterForm() {
     setSuccess(
       data.session
         ? "Account created. You are signed in with a standard user account."
-        : "Account created. Check your email to confirm your account before signing in."
+        : "Account created. Check your email to confirm your account before signing in.",
     );
   }
 
@@ -96,8 +92,7 @@ export function RegisterForm() {
         </div>
         <CardTitle className="font-mono text-2xl">Create account</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
-          Register a LaneStomp account for future League tools and saved
-          preferences.
+          Register a LaneStomp account for future League tools and saved preferences.
         </p>
       </CardHeader>
       <CardContent>
@@ -173,10 +168,7 @@ export function RegisterForm() {
 
         <p className="mt-5 text-center text-sm text-zinc-400">
           Already have an account?{" "}
-          <Link
-            className="font-medium text-violet-200 transition hover:text-white"
-            href="/login"
-          >
+          <Link className="font-medium text-violet-200 transition hover:text-white" href="/login">
             Sign in
           </Link>
         </p>

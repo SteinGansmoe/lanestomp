@@ -91,7 +91,8 @@ export const rivenCombatProfile = {
         reason: "(R) increases damage and adds execute threat",
         changesGameplay: "Riven can turn prior chip damage into a full lethal combo.",
         playerAction: "Set up the all-in by baiting key cooldowns before activating (R).",
-        enemyResponse: "Hold crowd control or disengage for her committed combo, not her first dash.",
+        enemyResponse:
+          "Hold crowd control or disengage for her committed combo, not her first dash.",
       },
       {
         timing: "First haste/damage item",

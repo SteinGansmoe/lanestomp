@@ -2,12 +2,7 @@ import type { FormEvent } from "react";
 import { Pencil, Pin, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { formatDate, groupAdminItemsByGame } from "../helpers";
 import { AdminGroupedListCard } from "../shared/admin-grouped-list-card";
 import type {
@@ -17,10 +12,7 @@ import type {
   FormStatus,
   TimelineEventFormState,
 } from "../types";
-import {
-  TimelineEventForm,
-  TimelineEventFormCard,
-} from "./timeline-event-form";
+import { TimelineEventForm, TimelineEventFormCard } from "./timeline-event-form";
 
 export function AdminTimelineSection({
   createForm,
@@ -57,14 +49,8 @@ export function AdminTimelineSection({
   seasons: AdminSeason[];
   timelineEvents: AdminTimelineEvent[];
 }) {
-  const seasonNamesById = new Map(
-    seasons.map((season) => [season.id, season.name] as const)
-  );
-  const eventGroups = groupAdminItemsByGame(
-    timelineEvents,
-    games,
-    gameNamesById
-  );
+  const seasonNamesById = new Map(seasons.map((season) => [season.id, season.name] as const));
+  const eventGroups = groupAdminItemsByGame(timelineEvents, games, gameNamesById);
 
   return (
     <>
@@ -100,9 +86,7 @@ export function AdminTimelineSection({
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
                 Select a timeline event below to edit it.
                 {editStatus.success ? (
-                  <p className="mt-3 text-emerald-200">
-                    {editStatus.success}
-                  </p>
+                  <p className="mt-3 text-emerald-200">{editStatus.success}</p>
                 ) : null}
               </div>
             )}
@@ -123,9 +107,7 @@ export function AdminTimelineSection({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-white">
-                          {event.title}
-                        </p>
+                        <p className="font-semibold text-white">{event.title}</p>
                         {event.is_pinned ? (
                           <span className="inline-flex items-center gap-1 rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-100">
                             <Pin className="size-3" aria-hidden="true" />
@@ -135,9 +117,9 @@ export function AdminTimelineSection({
                       </div>
                       <p className="mt-1 text-sm text-zinc-400">
                         {event.event_type}
-                        {event.season_id ?
-                          ` / ${seasonNamesById.get(event.season_id) ?? event.season_id}`
-                        : ""}
+                        {event.season_id
+                          ? ` / ${seasonNamesById.get(event.season_id) ?? event.season_id}`
+                          : ""}
                       </p>
                     </div>
                     <p className="font-mono text-xs text-zinc-500">
@@ -145,9 +127,7 @@ export function AdminTimelineSection({
                     </p>
                   </div>
                   {event.description ? (
-                    <p className="mt-3 text-sm leading-5 text-zinc-400">
-                      {event.description}
-                    </p>
+                    <p className="mt-3 text-sm leading-5 text-zinc-400">{event.description}</p>
                   ) : null}
                   <div className="mt-4 flex flex-wrap gap-3">
                     <Button

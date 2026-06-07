@@ -22,19 +22,13 @@ export default function Loading() {
 
         <div className="flex gap-2 overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/90 p-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              className="h-10 min-w-28 rounded-md bg-white/[0.04]"
-              key={index}
-            />
+            <div className="h-10 min-w-28 rounded-md bg-white/[0.04]" key={index} />
           ))}
         </div>
 
         <section className="grid gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              className="h-28 rounded-lg border border-white/10 bg-[#10182b]/90"
-              key={index}
-            />
+            <div className="h-28 rounded-lg border border-white/10 bg-[#10182b]/90" key={index} />
           ))}
         </section>
 
@@ -45,10 +39,7 @@ export default function Loading() {
           </div>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                className="h-40 rounded-lg border border-white/10 bg-[#10182b]/90"
-                key={index}
-              />
+              <div className="h-40 rounded-lg border border-white/10 bg-[#10182b]/90" key={index} />
             ))}
           </div>
         </section>

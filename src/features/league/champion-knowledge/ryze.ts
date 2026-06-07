@@ -68,10 +68,7 @@ export const ryzeCombatProfile = {
       "Scaling into sustained spell rotations.",
     ],
   },
-  majorPowerSpikes: [
-    "First mana/AP item.",
-    "Level 6 (R) for map plays.",
-  ],
+  majorPowerSpikes: ["First mana/AP item.", "Level 6 (R) for map plays."],
   matchupPreferences: {
     strongInto: [
       "Short-range champions he can root and kite.",
@@ -87,30 +84,35 @@ export const ryzeCombatProfile = {
   mobilityLevel: "medium",
   name: "Ryze",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "scale",
-        scalingProfile: "late",
-        preferredGameLength: "long",
-        winMethod: ["item scaling", "side lane pressure", "map movement"],
+  strategicIdentity: {
+    laneGoal: "scale",
+    scalingProfile: "late",
+    preferredGameLength: "long",
+    winMethod: ["item scaling", "side lane pressure", "map movement"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "First mana/AP item",
+        reason: "First mana/AP item",
+        changesGameplay:
+          "Item and mana scaling are more important to combat threat than level 6 damage",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Ryze's first item threshold is completed.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "First mana/AP item",
-          reason: "First mana/AP item",
-          changesGameplay: "Item and mana scaling are more important to combat threat than level 6 damage",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Ryze's first item threshold is completed.",
-        },
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R) for map plays",
-          changesGameplay: "(R) changes map options rather than direct duel power",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-      ],
-    },
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R) for map plays",
+        changesGameplay: "(R) changes map options rather than direct duel power",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: ["top"],
   primaryTradingPattern:

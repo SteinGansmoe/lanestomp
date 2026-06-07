@@ -34,11 +34,18 @@ export const asheCombatProfile = {
   damageType: "physical",
   hardCrowdControl: ["(R) stun"],
   id: "Ashe",
+  importantAbilityNotes: [
+    "(W) is strongest when enemy ADC movement is restricted by the wave or they must step up for CS.",
+    "Passive slows turn one auto during a last-hit window into repeated follow-up autos if Ashe can keep spacing.",
+    "(E) does not win trades directly, but it protects push or dragon setup by checking jungle pathing.",
+    "(R) changes support-positioning rules because long-range arrow can start a fight before the enemy bot lane is ready.",
+  ],
   lanePlan: {
     avoids: [
       "Standing in engage range without (R) or support peel.",
       "Taking pure DPS races against late-game carries.",
       "Using (R) when allies cannot follow the pick.",
+      "Letting the enemy ADC last-hit freely when her auto slow can tag them during the animation lock.",
     ],
     idealLaneState:
       "A controlled bot lane where Ashe uses (W), autos, and support follow-up to keep enemies slowed and punish oversteps.",
@@ -46,6 +53,8 @@ export const asheCombatProfile = {
       "Support can follow (R) or slow-based trades.",
       "Wave control that lets her poke without being all-in'd.",
       "Dragon setups where vision and (R) threaten picks.",
+      "Enemy ADCs forced to last-hit melee or cannon minions inside her auto range.",
+      "A support positioned beside or slightly ahead of her so slow chains become real chase windows.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const asheCombatProfile = {
       "Poking with (W) and autos.",
       "Using slows to deny enemy disengage.",
       "Converting (R) into support or jungle follow-up.",
+      "Punishing CS lock-in windows with auto slow into a second hit or (W).",
+      "Keeping the wave just outside enemy tower so slow pressure matters without overextending.",
     ],
   },
   majorPowerSpikes: ["Level 6 (R).", "First completed marksman item.", "Two-item utility DPS."],
@@ -84,22 +95,17 @@ export const asheCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks long-range pick and engage threat",
-        changesGameplay:
-          "Ashe can punish ADCs who step up without respecting support follow-up.",
-        playerAction:
-          "Use (R) when allies can convert the stun into damage or objective control.",
-        enemyResponse:
-          "Respect arrow angles and avoid standing away from peel.",
+        changesGameplay: "Ashe can punish ADCs who step up without respecting support follow-up.",
+        playerAction: "Use (R) when allies can convert the stun into damage or objective control.",
+        enemyResponse: "Respect arrow angles and avoid standing away from peel.",
       },
       {
         timing: "First completed marksman item",
         reason: "Her sustained slow pressure and DPS become more reliable",
-        changesGameplay:
-          "She can kite longer trades better if the enemy cannot hard engage.",
+        changesGameplay: "She can kite longer trades better if the enemy cannot hard engage.",
         playerAction:
           "Take extended trades only when slows and support peel keep the enemy at range.",
-        enemyResponse:
-          "Force fast engage before she stacks slows and spacing advantage.",
+        enemyResponse: "Force fast engage before she stacks slows and spacing advantage.",
       },
     ],
   },
@@ -112,6 +118,8 @@ export const asheCombatProfile = {
       "Immobile ADCs stepping up without cleanse or peel.",
       "Short-range carries trying to walk through slows.",
       "Objective setups where (R) can start a pick.",
+      "Enemy last hits on exposed melee or cannon minions.",
+      "Bot lanes whose support stands too far back to break Ashe's slow chain.",
     ],
     strugglesToPunish: [
       "Hard engage that bypasses her slows.",
@@ -138,6 +146,8 @@ export const asheCombatProfile = {
       "She can apply slows before the enemy reaches her.",
       "Support follow-up is ready for (R).",
       "The enemy ADC lacks mobility or cleanse for the pick.",
+      "The enemy ADC must step up for a last hit and cannot immediately return damage from equal range.",
+      "The wave is stable enough that Ashe can chase one extra auto without walking into support engage.",
     ],
     primaryPattern:
       "Control trades with slows and range, then use (R) or support setup to turn poke into a real catch.",

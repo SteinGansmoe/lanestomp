@@ -10,10 +10,7 @@ export function formatSeasonDate(date: string) {
 
 export function getRemainingTime(endDate: string, now = new Date()) {
   const end = new Date(`${endDate}T23:59:59`).getTime();
-  const diffInMinutes = Math.max(
-    0,
-    Math.floor((end - now.getTime()) / (1000 * 60))
-  );
+  const diffInMinutes = Math.max(0, Math.floor((end - now.getTime()) / (1000 * 60)));
   const days = Math.floor(diffInMinutes / (60 * 24));
   const hours = Math.floor((diffInMinutes % (60 * 24)) / 60);
   const minutes = diffInMinutes % 60;
@@ -31,11 +28,7 @@ export function getRemainingTime(endDate: string, now = new Date()) {
   return `${days}d ${hours}h ${minutes}m`;
 }
 
-export function getSeasonProgress(
-  startDate: string,
-  endDate: string,
-  now = new Date()
-) {
+export function getSeasonProgress(startDate: string, endDate: string, now = new Date()) {
   const start = new Date(`${startDate}T00:00:00`).getTime();
   const end = new Date(`${endDate}T23:59:59`).getTime();
   const nowTime = now.getTime();

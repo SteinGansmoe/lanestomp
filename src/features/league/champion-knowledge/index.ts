@@ -15,6 +15,7 @@ import { fizzCombatProfile } from "./fizz";
 import { galioCombatProfile } from "./galio";
 import { hweiCombatProfile } from "./hwei";
 import { ireliaCombatProfile } from "./irelia";
+import { jhinCombatProfile } from "./jhin";
 import { jinxCombatProfile } from "./jinx";
 import { kaisaCombatProfile } from "./kaisa";
 import { kassadinCombatProfile } from "./kassadin";
@@ -151,6 +152,7 @@ export { fizzCombatProfile } from "./fizz";
 export { galioCombatProfile } from "./galio";
 export { hweiCombatProfile } from "./hwei";
 export { ireliaCombatProfile } from "./irelia";
+export { jhinCombatProfile } from "./jhin";
 export { jinxCombatProfile } from "./jinx";
 export { kaisaCombatProfile } from "./kaisa";
 export { kassadinCombatProfile } from "./kassadin";
@@ -296,6 +298,7 @@ export const leagueChampionKnowledgeProfiles = {
   Galio: galioCombatProfile,
   Hwei: hweiCombatProfile,
   Irelia: ireliaCombatProfile,
+  Jhin: jhinCombatProfile,
   Jinx: jinxCombatProfile,
   Kaisa: kaisaCombatProfile,
   Kassadin: kassadinCombatProfile,

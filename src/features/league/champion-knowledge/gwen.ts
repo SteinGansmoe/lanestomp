@@ -94,18 +94,15 @@ export const gwenCombatProfile = {
           "Gwen can turn extended trades into kills if she keeps landing needles and stays in range.",
         playerAction:
           "Use (R) after setting up the fight with stacked (Q) or enemy cooldowns spent.",
-        enemyResponse:
-          "Disengage before the recasts and avoid fighting inside (W).",
+        enemyResponse: "Disengage before the recasts and avoid fighting inside (W).",
       },
       {
         timing: "Two-item scaling skirmish spike",
         reason: "AP damage and durability make extended fights much stronger",
         changesGameplay:
           "Neutral side-lane trades can become Gwen-favored if she keeps the fight going.",
-        playerAction:
-          "Pressure side lane and join fights where (W) can deny outside damage.",
-        enemyResponse:
-          "Force short trades before she stacks (Q) or wait out (W).",
+        playerAction: "Pressure side lane and join fights where (W) can deny outside damage.",
+        enemyResponse: "Force short trades before she stacks (Q) or wait out (W).",
       },
     ],
   },

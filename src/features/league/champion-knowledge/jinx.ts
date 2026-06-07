@@ -34,11 +34,18 @@ export const jinxCombatProfile = {
   damageType: "physical",
   hardCrowdControl: ["(E) root"],
   id: "Jinx",
+  importantAbilityNotes: [
+    "(Q) rockets give safer CS and poke access, while minigun is for committed DPS when she is protected.",
+    "(W) punishes predictable movement after the enemy ADC starts a last-hit or walks through a narrow wave gap.",
+    "(E) is best used on enemy engage paths or under support CC, not as random poke.",
+    "Passive reset changes fight cleanup; before a takedown she is much easier to reach.",
+  ],
   lanePlan: {
     avoids: [
       "Taking unsupported early all-ins.",
       "Pushing past river without vision or support cover.",
       "Trading health before first item when she needs stable CS.",
+      "Using rockets so heavily that she loses mana before important wave or dragon contests.",
     ],
     idealLaneState:
       "A controlled bot lane where Jinx farms safely, uses rockets for wave access, and avoids engage until item spikes.",
@@ -46,6 +53,8 @@ export const jinxCombatProfile = {
       "Safe access to first item spike.",
       "Support can protect her through early all-in windows.",
       "Wave states where rockets can contest CS without overextending.",
+      "Enemy ADCs grouped with the wave so rocket splash can tag them during CS.",
+      "A slow push toward her side where she can farm without exposing her no-dash weakness.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const jinxCombatProfile = {
       "Preserving health while farming.",
       "Using rockets to contest wave access from range.",
       "Converting first takedown into reset pressure.",
+      "Punishing clustered CS attempts with rocket splash instead of walking into short range.",
+      "Holding (E) for support-engage paths so enemies cannot freely force through the wave.",
     ],
   },
   majorPowerSpikes: ["First completed item.", "Two-item DPS spike.", "Level 6 (R)."],
@@ -84,22 +95,17 @@ export const jinxCombatProfile = {
       {
         timing: "First completed item",
         reason: "Her DPS becomes reliable enough to contest longer trades",
-        changesGameplay:
-          "Jinx can start matching wave pressure instead of only preserving health.",
+        changesGameplay: "Jinx can start matching wave pressure instead of only preserving health.",
         playerAction:
           "Use item strength to hold wave access while still respecting engage cooldowns.",
-        enemyResponse:
-          "Punish her before she stacks items and gets reliable peel.",
+        enemyResponse: "Punish her before she stacks items and gets reliable peel.",
       },
       {
         timing: "Two items",
         reason: "Rocket range and sustained DPS become real teamfight threats",
-        changesGameplay:
-          "Front-to-back fights become much more dangerous once she can free-hit.",
-        playerAction:
-          "Group around objectives where peel and one reset can start the fight chain.",
-        enemyResponse:
-          "Force her summoners before grouped fights or deny the first reset.",
+        changesGameplay: "Front-to-back fights become much more dangerous once she can free-hit.",
+        playerAction: "Group around objectives where peel and one reset can start the fight chain.",
+        enemyResponse: "Force her summoners before grouped fights or deny the first reset.",
       },
     ],
   },
@@ -112,6 +118,8 @@ export const jinxCombatProfile = {
       "Teams that fail to finish fights before her reset.",
       "Short-range ADCs after she reaches item range pressure.",
       "Engage paths that walk through (E).",
+      "Enemy ADCs standing near low-health caster minions where rocket splash connects.",
+      "Supports that commit through a predictable choke and can be trapped by (E).",
     ],
     strugglesToPunish: [
       "Early all-in pressure.",
@@ -138,6 +146,8 @@ export const jinxCombatProfile = {
       "Rockets can hit without exposing her.",
       "Enemy engage cooldowns are unavailable.",
       "Support peel or CC can stop the enemy commit.",
+      "Enemy ADC and minion wave are close enough for rocket splash to punish last hits.",
+      "The wave is moving toward Jinx, giving her space to kite after using rockets.",
     ],
     primaryPattern:
       "Preserve health and CS early, then use rocket range and resets to win longer fights after items.",

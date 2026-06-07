@@ -2,11 +2,7 @@ import type { LeagueChampion } from "./champions";
 import { getChampionCombatProfile } from "./champion-knowledge";
 import type { LeagueRole } from "./roles";
 
-export type LeagueChampionRoleTier =
-  | "off-meta"
-  | "primary"
-  | "secondary"
-  | "unlisted";
+export type LeagueChampionRoleTier = "off-meta" | "primary" | "secondary" | "unlisted";
 
 type ChampionRoleFilterOptions = {
   includeOffMeta?: boolean;
@@ -218,16 +214,13 @@ for (const [role, championIds] of Object.entries(championRolesByRole) as Array<
   [LeagueRole, readonly string[]]
 >) {
   for (const championId of championIds) {
-    championRolesById.set(championId, [
-      ...(championRolesById.get(championId) ?? []),
-      role,
-    ]);
+    championRolesById.set(championId, [...(championRolesById.get(championId) ?? []), role]);
   }
 }
 
 export function getChampionRoleTier(
   champion: Pick<LeagueChampion, "id">,
-  role: LeagueRole
+  role: LeagueRole,
 ): LeagueChampionRoleTier {
   const profile = getChampionCombatProfile(champion.id);
 
@@ -247,9 +240,7 @@ export function getChampionRoleTier(
     return "unlisted";
   }
 
-  return championRolesById.get(champion.id)?.includes(role)
-    ? "primary"
-    : "unlisted";
+  return championRolesById.get(champion.id)?.includes(role) ? "primary" : "unlisted";
 }
 
 export function getChampionRoles(champion: Pick<LeagueChampion, "id">) {
@@ -269,20 +260,16 @@ export function getChampionRoles(champion: Pick<LeagueChampion, "id">) {
 export function isChampionInRole(
   champion: Pick<LeagueChampion, "id">,
   role: LeagueRole,
-  { includeOffMeta = false }: ChampionRoleFilterOptions = {}
+  { includeOffMeta = false }: ChampionRoleFilterOptions = {},
 ) {
   const tier = getChampionRoleTier(champion, role);
 
-  return (
-    tier === "primary" ||
-    tier === "secondary" ||
-    (includeOffMeta && tier === "off-meta")
-  );
+  return tier === "primary" || tier === "secondary" || (includeOffMeta && tier === "off-meta");
 }
 
 export function sortChampionsForRole<TChampion extends Pick<LeagueChampion, "id" | "name">>(
   champions: readonly TChampion[],
-  role: LeagueRole
+  role: LeagueRole,
 ) {
   return [...champions].sort((championA, championB) => {
     const roleDifference =

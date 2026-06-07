@@ -21,10 +21,7 @@ export default function Loading() {
           <div className="mt-4 h-4 w-full max-w-2xl rounded bg-white/5" />
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                className="h-20 rounded-lg border border-white/10 bg-white/[0.04]"
-                key={index}
-              />
+              <div className="h-20 rounded-lg border border-white/10 bg-white/[0.04]" key={index} />
             ))}
           </div>
         </section>

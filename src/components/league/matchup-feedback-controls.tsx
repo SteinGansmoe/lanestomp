@@ -89,9 +89,7 @@ export function MatchupFeedbackControls({
       error: null,
       isLoading: false,
       success:
-        feedbackType === "report_issue"
-          ? "Issue reported for admin review."
-          : "Feedback saved.",
+        feedbackType === "report_issue" ? "Issue reported for admin review." : "Feedback saved.",
     });
   }
 
@@ -167,9 +165,7 @@ export function MatchupFeedbackControls({
         </div>
       ) : null}
 
-      {status.error ? (
-        <p className="mt-2 text-xs leading-5 text-rose-200">{status.error}</p>
-      ) : null}
+      {status.error ? <p className="mt-2 text-xs leading-5 text-rose-200">{status.error}</p> : null}
       {status.success ? (
         <p className="mt-2 text-xs leading-5 text-emerald-200">{status.success}</p>
       ) : null}

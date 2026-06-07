@@ -1,12 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Crosshair,
-  Hourglass,
-  Lightbulb,
-  ShieldAlert,
-  Sparkles,
-} from "lucide-react";
+import { Crosshair, Hourglass, Lightbulb, ShieldAlert, Sparkles } from "lucide-react";
 import { connection } from "next/server";
 
 import { BackButton } from "@/src/components/back-button";
@@ -33,10 +27,7 @@ type LeagueMatchupPageProps = {
   searchParams: Promise<{ role?: string | string[] }>;
 };
 
-export default async function LeagueMatchupPage({
-  params,
-  searchParams,
-}: LeagueMatchupPageProps) {
+export default async function LeagueMatchupPage({ params, searchParams }: LeagueMatchupPageProps) {
   await connection();
 
   const [{ matchup }, query, championsResult] = await Promise.all([
@@ -94,11 +85,10 @@ export default async function LeagueMatchupPage({
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
               <div>
-                <CardTitle className="font-mono text-lg">
-                  Champion data is not ready yet
-                </CardTitle>
+                <CardTitle className="font-mono text-lg">Champion data is not ready yet</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-amber-100/80">
-                  Apply the latest champion migration and run the Data Dragon import before opening matchups.
+                  Apply the latest champion migration and run the Data Dragon import before opening
+                  matchups.
                 </p>
                 <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
                   {championsResult.error}
@@ -108,9 +98,7 @@ export default async function LeagueMatchupPage({
           </Card>
         ) : championsResult.champions.length === 0 ? (
           <Card className="border-white/10 bg-[#10182b]/92 p-8 text-center text-zinc-300 shadow-xl shadow-black/20 backdrop-blur-md">
-            <CardTitle className="font-mono text-xl">
-              No champions imported yet
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">No champions imported yet</CardTitle>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Run the League champion import script to populate matchup routes.
             </p>
@@ -139,8 +127,8 @@ export default async function LeagueMatchupPage({
                       Live matchup data is not ready yet
                     </CardTitle>
                     <p className="mt-2 text-sm leading-6 text-amber-100/80">
-                      Showing the generation progress state until the structured
-                      matchup table is available.
+                      Showing the generation progress state until the structured matchup table is
+                      available.
                     </p>
                     <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
                       {matchupResult.error}
@@ -180,9 +168,7 @@ export default async function LeagueMatchupPage({
           </>
         ) : (
           <Card className="border-white/10 bg-[#10182b]/92 p-8 text-center text-zinc-300 shadow-xl shadow-black/20 backdrop-blur-md">
-            <CardTitle className="font-mono text-xl">
-              Matchup not found
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">Matchup not found</CardTitle>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Pick two champions from the selector to create a matchup route.
             </p>
@@ -222,13 +208,7 @@ function MatchupPageTheme({
   );
 }
 
-function ThemedSplash({
-  champion,
-  side,
-}: {
-  champion: LeagueChampion;
-  side: "left" | "right";
-}) {
+function ThemedSplash({ champion, side }: { champion: LeagueChampion; side: "left" | "right" }) {
   const objectPosition = getChampionSplashFocus(champion);
   const fadeMask =
     side === "left"
@@ -237,9 +217,7 @@ function ThemedSplash({
 
   return (
     <div
-      className={`absolute top-0 h-[46rem] w-[58%] ${
-        side === "left" ? "left-0" : "right-0"
-      }`}
+      className={`absolute top-0 h-[46rem] w-[58%] ${side === "left" ? "left-0" : "right-0"}`}
       style={{
         maskImage: fadeMask,
         WebkitMaskImage: fadeMask,
@@ -296,10 +274,9 @@ function UnavailableMatchupState({
               This guide is not available yet
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
-              LaneStomp is currently generating thousands of matchup guides.
-              This {roleLabel} lane matchup for {championA.name} vs{" "}
-              {championB.name} is not available yet, but new matchups are being
-              added continuously.
+              LaneStomp is currently generating thousands of matchup guides. This {roleLabel} lane
+              matchup for {championA.name} vs {championB.name} is not available yet, but new
+              matchups are being added continuously.
             </p>
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Check back later, or choose another matchup while coverage expands.
@@ -351,9 +328,7 @@ function CoverageProgressCard({
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-violet-200">
             Current {roleLabel} Lane progress
           </p>
-          <p className="mt-1 text-xs text-zinc-500">
-            Publicly available guides
-          </p>
+          <p className="mt-1 text-xs text-zinc-500">Publicly available guides</p>
         </div>
       </div>
 
@@ -378,14 +353,12 @@ function CoverageProgressCard({
             />
           </div>
           <p className="mt-3 text-xs leading-5 text-zinc-500">
-            Based on {coverage.roleChampionCount} champions currently classified
-            for this lane.
+            Based on {coverage.roleChampionCount} champions currently classified for this lane.
           </p>
         </>
       ) : (
         <p className="mt-5 text-sm leading-6 text-zinc-400">
-          Coverage totals are temporarily unavailable, but matchup generation is
-          still in progress.
+          Coverage totals are temporarily unavailable, but matchup generation is still in progress.
         </p>
       )}
 
@@ -498,15 +471,13 @@ function TipStrip({
           <Lightbulb className="size-4" aria-hidden="true" />
         </span>
         <p className="leading-6">
-          <span className="font-medium text-cyan-100">Tip:</span> For{" "}
-          {championA.name} vs {championB.name}, read overview, trading pattern,
-          and danger windows first for a fast {getRoleLabel(role)} lane check.
+          <span className="font-medium text-cyan-100">Tip:</span> For {championA.name} vs{" "}
+          {championB.name}, read overview, trading pattern, and danger windows first for a fast{" "}
+          {getRoleLabel(role)} lane check.
         </p>
       </div>
       <div className="flex flex-wrap gap-2 sm:justify-end">
-        {updatedAt ? (
-          <MatchupMetaPill label={`Updated ${formatMatchupDate(updatedAt)}`} />
-        ) : null}
+        {updatedAt ? <MatchupMetaPill label={`Updated ${formatMatchupDate(updatedAt)}`} /> : null}
         <Link
           className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white"
           href={`/league/matchups?role=${role}`}
@@ -536,12 +507,8 @@ function parseMatchup(matchup: string, champions: LeagueChampion[]) {
   const [championASlug, championBSlug] = matchup.split("-vs-");
 
   return {
-    championA: championASlug
-      ? findChampionBySlug(champions, championASlug)
-      : null,
-    championB: championBSlug
-      ? findChampionBySlug(champions, championBSlug)
-      : null,
+    championA: championASlug ? findChampionBySlug(champions, championASlug) : null,
+    championB: championBSlug ? findChampionBySlug(champions, championBSlug) : null,
   };
 }
 

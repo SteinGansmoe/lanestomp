@@ -71,7 +71,11 @@ export const nasusCombatProfile = {
       "Using (W) and (R) to punish enemies who overstay in side lane.",
     ],
   },
-  majorPowerSpikes: ["Level 6 (R).", "First defensive or sheen-style item.", "High (Q) stack side-lane threshold."],
+  majorPowerSpikes: [
+    "Level 6 (R).",
+    "First defensive or sheen-style item.",
+    "High (Q) stack side-lane threshold.",
+  ],
   matchupPreferences: {
     strongInto: [
       "Low-pressure lanes that cannot deny farm.",
@@ -96,14 +100,12 @@ export const nasusCombatProfile = {
           "Nasus can survive longer trades and punish opponents who stay in range for repeated (Q) casts.",
         playerAction:
           "Use (R) to hold ground in extended fights only when the enemy cannot kite the full duration.",
-        enemyResponse:
-          "Disengage the (R) window and punish his low mobility before it returns.",
+        enemyResponse: "Disengage the (R) window and punish his low mobility before it returns.",
       },
       {
         timing: "High (Q) stack side-lane threshold",
         reason: "Stacked (Q) turns him into a major one-on-one threat",
-        changesGameplay:
-          "Side-lane defenders must respect (W) into repeated (Q) damage.",
+        changesGameplay: "Side-lane defenders must respect (W) into repeated (Q) damage.",
         playerAction:
           "Pressure side lane and force enemies to answer once stacks and durability make duels favorable.",
         enemyResponse:

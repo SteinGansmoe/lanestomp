@@ -94,30 +94,24 @@ export const volibearCombatProfile = {
           "Tower positions become less safe because Volibear can force committed fights under turret.",
         playerAction:
           "Use health leads and wave crashes to threaten dives or force enemies off the wave.",
-        enemyResponse:
-          "Avoid defending low-health waves alone when Volibear has (R).",
+        enemyResponse: "Avoid defending low-health waves alone when Volibear has (R).",
       },
       {
         timing: "First bruiser or tank item",
         reason: "Durability makes repeated (W) trades more reliable",
         changesGameplay:
           "He can stay in fights long enough to reach second (W) and absorb return damage.",
-        playerAction:
-          "Pressure trades and skirmishes while tracking enemy disengage.",
-        enemyResponse:
-          "Keep trades short and punish him when (Q) or (E) misses.",
+        playerAction: "Pressure trades and skirmishes while tracking enemy disengage.",
+        enemyResponse: "Keep trades short and punish him when (Q) or (E) misses.",
       },
     ],
     minor: [
       {
         timing: "Level 3",
         reason: "Full basic ability pattern gives stun, repeat damage, shield, and slow",
-        changesGameplay:
-          "Volibear can threaten a complete brawl if the enemy is inside (Q) range.",
-        playerAction:
-          "Look for controlled trades where (E) and second (W) can connect.",
-        enemyResponse:
-          "Do not give him a straight-line path into melee range.",
+        changesGameplay: "Volibear can threaten a complete brawl if the enemy is inside (Q) range.",
+        playerAction: "Look for controlled trades where (E) and second (W) can connect.",
+        enemyResponse: "Do not give him a straight-line path into melee range.",
       },
     ],
   },

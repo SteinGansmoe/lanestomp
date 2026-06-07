@@ -1,7 +1,4 @@
-import {
-  getChampionSlug,
-  type LeagueChampion,
-} from "@/src/features/league/champions";
+import { getChampionSlug, type LeagueChampion } from "@/src/features/league/champions";
 import type { LeagueRole } from "@/src/features/league/roles";
 
 type MatchupRouteChampion = Pick<LeagueChampion, "id" | "name">;

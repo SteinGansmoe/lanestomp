@@ -88,37 +88,46 @@ export const katarinaCombatProfile = {
   mobilityLevel: "very_high",
   name: "Katarina",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "snowball",
-        scalingProfile: "mid",
-        preferredGameLength: "short",
-        winMethod: ["roam resets", "skirmish cleanup", "snowball fights"],
+  strategicIdentity: {
+    laneGoal: "snowball",
+    scalingProfile: "mid",
+    preferredGameLength: "short",
+    winMethod: ["roam resets", "skirmish cleanup", "snowball fights"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 3",
+        reason:
+          "Level 3 unlocks (Q)-(W)-(E) dagger setup with mobility for her first real burst trade",
+        changesGameplay: "Level 6 adds major all-in threat if crowd control is unavailable",
+        playerAction:
+          "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
+        enemyResponse:
+          "Respect the early combo unlock and avoid giving Katarina the wave or spacing needed to start it cleanly.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 3",
-          reason: "Level 3 unlocks (Q)-(W)-(E) dagger setup with mobility for her first real burst trade",
-          changesGameplay: "Level 6 adds major all-in threat if crowd control is unavailable",
-          playerAction: "Use the unlocked combo only when cooldowns, minions, and spacing make the trade hard to punish.",
-          enemyResponse: "Respect the early combo unlock and avoid giving Katarina the wave or spacing needed to start it cleanly.",
-        },
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Her strongest spikes often come from skirmish kills and item acceleration",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed burst item",
-          reason: "First completed burst item",
-          changesGameplay: "Katarina's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Katarina's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay:
+          "Her strongest spikes often come from skirmish kills and item acceleration",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
+      },
+      {
+        timing: "First completed burst item",
+        reason: "First completed burst item",
+        changesGameplay:
+          "Katarina's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Katarina's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: [],
   primaryTradingPattern:

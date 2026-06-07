@@ -8,32 +8,27 @@ const defaultLocale = "en_US";
 loadEnvFile(".env.local");
 
 const args = process.argv.slice(2);
-const isDryRun =
-  args.includes("--dry-run") || process.env.npm_config_dry_run === "true";
+const isDryRun = args.includes("--dry-run") || process.env.npm_config_dry_run === "true";
 const locale = getArgValue("--locale") ?? process.env.RIOT_DDRAGON_LOCALE ?? defaultLocale;
-const requestedVersion =
-  getArgValue("--version") ?? process.env.RIOT_DDRAGON_VERSION ?? null;
+const requestedVersion = getArgValue("--version") ?? process.env.RIOT_DDRAGON_VERSION ?? null;
 
 const version = requestedVersion ?? (await getLatestDataDragonVersion());
 const championPayload = await fetchJson(
-  `${dataDragonBaseUrl}/cdn/${version}/data/${locale}/champion.json`
+  `${dataDragonBaseUrl}/cdn/${version}/data/${locale}/champion.json`,
 );
 const rows = toChampionRows(championPayload, version);
 
 if (isDryRun) {
-  console.log(
-    `Fetched ${rows.length} League champions from Data Dragon ${version} (${locale}).`
-  );
+  console.log(`Fetched ${rows.length} League champions from Data Dragon ${version} (${locale}).`);
   process.exit(0);
 }
 
-const supabaseUrl =
-  process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
   throw new Error(
-    "Missing Supabase import credentials. Set NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL, plus SUPABASE_SERVICE_ROLE_KEY."
+    "Missing Supabase import credentials. Set NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL, plus SUPABASE_SERVICE_ROLE_KEY.",
   );
 }
 
@@ -52,7 +47,7 @@ if (error) {
 }
 
 console.log(
-  `Imported ${rows.length} League champions into Supabase from Data Dragon ${version} (${locale}).`
+  `Imported ${rows.length} League champions into Supabase from Data Dragon ${version} (${locale}).`,
 );
 
 function getArgValue(name) {

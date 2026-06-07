@@ -68,10 +68,7 @@ export const ziggsCombatProfile = {
       "Turning lane pressure into turret damage.",
     ],
   },
-  majorPowerSpikes: [
-    "Level 6 (R).",
-    "First completed mage poke item.",
-  ],
+  majorPowerSpikes: ["Level 6 (R).", "First completed mage poke item."],
   matchupPreferences: {
     strongInto: [
       "Short-range champions who must walk through poke.",
@@ -87,30 +84,34 @@ export const ziggsCombatProfile = {
   mobilityLevel: "low",
   name: "Ziggs",
   offMetaRoles: [],
-      strategicIdentity: {
-        laneGoal: "control",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["wave control", "siege pressure", "objective control"],
+  strategicIdentity: {
+    laneGoal: "control",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["wave control", "siege pressure", "objective control"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 adds cross-map and objective fight damage",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 adds cross-map and objective fight damage",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed mage poke item",
-          reason: "First completed mage poke item",
-          changesGameplay: "(W) cooldown is important because it is both safety and turret pressure",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Ziggs's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed mage poke item",
+        reason: "First completed mage poke item",
+        changesGameplay: "(W) cooldown is important because it is both safety and turret pressure",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Ziggs's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: ["adc"],
   primaryTradingPattern:

@@ -94,8 +94,7 @@ export const ireliaCombatProfile = {
       {
         timing: "Level 2",
         reason: "(Q) and (E) together unlock early stun into reset threat",
-        changesGameplay:
-          "Minion wave state can become as important as champion spacing.",
+        changesGameplay: "Minion wave state can become as important as champion spacing.",
         playerAction:
           "Use the early combo only when cooldowns, minions, and spacing make the trade hard to punish.",
         enemyResponse:
@@ -108,8 +107,7 @@ export const ireliaCombatProfile = {
           "Irelia gains stronger stickiness and can force longer all-ins around marked targets.",
         playerAction:
           "Use (R) for verified all-ins or skirmishes where reset paths and passive stacks are ready.",
-        enemyResponse:
-          "Hold key defensive tools for the commit and punish after (R) is spent.",
+        enemyResponse: "Hold key defensive tools for the commit and punish after (R) is spent.",
       },
       {
         timing: "First completed fighter item",

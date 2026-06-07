@@ -88,37 +88,44 @@ export const corkiCombatProfile = {
   mobilityLevel: "medium",
   name: "Corki",
   offMetaRoles: ["adc"],
-      strategicIdentity: {
-        laneGoal: "scale",
-        scalingProfile: "mid",
-        preferredGameLength: "medium",
-        winMethod: ["poke pressure", "item scaling", "objective siege"],
+  strategicIdentity: {
+    laneGoal: "scale",
+    scalingProfile: "mid",
+    preferredGameLength: "medium",
+    winMethod: ["poke pressure", "item scaling", "objective siege"],
+  },
+  powerSpikes: {
+    major: [
+      {
+        timing: "Level 6",
+        reason: "Level 6 (R)",
+        changesGameplay: "Level 6 changes his lane from mostly short trades into repeat poke",
+        playerAction:
+          "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
+        enemyResponse:
+          "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
       },
-      powerSpikes: {
-      major: [
-        {
-          timing: "Level 6",
-          reason: "Level 6 (R)",
-          changesGameplay: "Level 6 changes his lane from mostly short trades into repeat poke",
-          playerAction: "Track (R) availability and use the window for verified all-ins, picks, roams, or defensive resets rather than forcing blind.",
-          enemyResponse: "Respect (R) window, hold key defensive tools for the commit, and punish after (R) is spent.",
-        },
-        {
-          timing: "First completed damage item",
-          reason: "First completed damage item",
-          changesGameplay: "Items matter heavily because his threat depends on sustained poke damage",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Corki's first item threshold is completed.",
-        },
-        {
-          timing: "Mid-game item progression",
-          reason: "Mid-game item spikes for stronger poke",
-          changesGameplay: "Corki's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
-          playerAction: "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
-          enemyResponse: "Do not treat pre-item trades as still safe once Corki's first item threshold is completed.",
-        },
-      ],
-    },
+      {
+        timing: "First completed damage item",
+        reason: "First completed damage item",
+        changesGameplay: "Items matter heavily because his threat depends on sustained poke damage",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Corki's first item threshold is completed.",
+      },
+      {
+        timing: "Mid-game item progression",
+        reason: "Mid-game item spikes for stronger poke",
+        changesGameplay:
+          "Corki's damage, wave control, or trade reliability improves enough that earlier neutral trades can become losing trades.",
+        playerAction:
+          "After the item, pressure waves and trades more confidently while still tracking the enemy's main answer.",
+        enemyResponse:
+          "Do not treat pre-item trades as still safe once Corki's first item threshold is completed.",
+      },
+    ],
+  },
   primaryRoles: ["mid"],
   secondaryRoles: ["adc"],
   primaryTradingPattern:

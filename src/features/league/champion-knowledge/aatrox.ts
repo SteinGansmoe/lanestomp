@@ -89,15 +89,19 @@ export const aatroxCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) unlocks chase, healing amplification, and reset threat",
-        changesGameplay: "Close extended fights become much harder to judge because his sustain and movement spike.",
-        playerAction: "Use (R) only when there is space to keep fighting or force a decisive all-in.",
+        changesGameplay:
+          "Close extended fights become much harder to judge because his sustain and movement spike.",
+        playerAction:
+          "Use (R) only when there is space to keep fighting or force a decisive all-in.",
         enemyResponse: "Disengage the first (R) window or burst him before healing can take over.",
       },
       {
         timing: "First fighter item",
         reason: "Damage, haste, and durability make repeated (Q) trades more reliable",
-        changesGameplay: "Neutral trades can become winning trades if Aatrox lands two or more sweet spots.",
-        playerAction: "Pressure the wave and threaten longer trades while tracking enemy disengage.",
+        changesGameplay:
+          "Neutral trades can become winning trades if Aatrox lands two or more sweet spots.",
+        playerAction:
+          "Pressure the wave and threaten longer trades while tracking enemy disengage.",
         enemyResponse: "Punish missed (Q) casts and avoid giving him sustained combat time.",
       },
     ],

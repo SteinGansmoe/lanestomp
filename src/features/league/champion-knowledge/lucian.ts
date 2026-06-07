@@ -34,11 +34,18 @@ export const lucianCombatProfile = {
   damageType: "physical",
   hardCrowdControl: [],
   id: "Lucian",
+  importantAbilityNotes: [
+    "(Q) can punish enemies through minions, especially when they stand behind low-health CS.",
+    "Passive double shots make each spell a short burst-trade tool rather than just raw ability damage.",
+    "(E) is his trade entry, dodge, and escape; forward (E) must be tied to a real support or cooldown advantage.",
+    "(R) can finish pushed-out targets, but it is easier to sidestep if used without prior setup.",
+  ],
   lanePlan: {
     avoids: [
       "Letting long-range ADCs farm without pressure.",
       "Using (E) forward before enemy engage or poke is spent.",
       "Taking passive lanes that let scalers reach items freely.",
+      "Trading into large waves where his short range forces him to absorb minion damage.",
     ],
     idealLaneState:
       "An aggressive bot lane where Lucian contests early waves, trades after support setup, and converts short burst windows into lane control.",
@@ -46,6 +53,8 @@ export const lucianCombatProfile = {
       "Support can enable short burst trades.",
       "Early wave control before scaling ADCs stabilize.",
       "All-in windows after enemy poke or disengage is down.",
+      "Enemy ADCs standing behind minions where (Q) can hit through the wave.",
+      "Small wave states that let him dash in, proc passive, and leave before sustained DPS answers.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const lucianCombatProfile = {
       "Trading around passive burst.",
       "Using (E) to dodge and reposition aggressively.",
       "Denying free scaling through early wave pressure.",
+      "Punishing last-hit paths with (Q) through the minion line.",
+      "Crashing or thinning waves before short-range all-ins so minion damage does not flip the trade.",
     ],
   },
   majorPowerSpikes: ["Level 2 lane threat.", "First completed marksman item.", "Level 6 (R)."],
@@ -84,22 +95,16 @@ export const lucianCombatProfile = {
       {
         timing: "Level 2",
         reason: "Early dash and passive burst can force lane control",
-        changesGameplay:
-          "Lucian can punish ADCs that concede the first waves too slowly.",
-        playerAction:
-          "Contest level 2 with support cover and trade before the enemy stabilizes.",
-        enemyResponse:
-          "Avoid early HP losses that let him snowball the wave.",
+        changesGameplay: "Lucian can punish ADCs that concede the first waves too slowly.",
+        playerAction: "Contest level 2 with support cover and trade before the enemy stabilizes.",
+        enemyResponse: "Avoid early HP losses that let him snowball the wave.",
       },
       {
         timing: "First completed marksman item",
         reason: "Burst trades become strong enough to threaten kills",
-        changesGameplay:
-          "Short trades can force recalls or dragon priority if he is ahead.",
-        playerAction:
-          "Use item timing to force short trades before range disadvantages matter.",
-        enemyResponse:
-          "Keep distance and punish (E) before accepting all-ins.",
+        changesGameplay: "Short trades can force recalls or dragon priority if he is ahead.",
+        playerAction: "Use item timing to force short trades before range disadvantages matter.",
+        enemyResponse: "Keep distance and punish (E) before accepting all-ins.",
       },
     ],
   },
@@ -112,11 +117,10 @@ export const lucianCombatProfile = {
       "Scaling ADCs before first item.",
       "Enemies that miss poke or disengage cooldowns.",
       "Passive lanes where support setup is available.",
+      "ADC players lining up behind low-health minions for CS.",
+      "Supports who stand too far back to punish his quick dash trade.",
     ],
-    strugglesToPunish: [
-      "Long-range ADCs with wave control.",
-      "Hard disengage after (E) is used.",
-    ],
+    strugglesToPunish: ["Long-range ADCs with wave control.", "Hard disengage after (E) is used."],
   },
   shields: [],
   softCrowdControl: [],
@@ -138,6 +142,8 @@ export const lucianCombatProfile = {
       "Support setup enables passive burst.",
       "Enemy disengage or poke cooldowns are down.",
       "He can trade quickly before sustained DPS ramps.",
+      "The enemy ADC is lined up for (Q) through minions.",
+      "The wave is small enough that his dash forward does not create a losing minion trade.",
     ],
     primaryPattern:
       "Win fast burst trades with support setup; avoid slow fights where range and scaling carries can free-hit.",

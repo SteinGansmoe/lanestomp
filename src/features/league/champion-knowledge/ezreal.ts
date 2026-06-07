@@ -34,11 +34,18 @@ export const ezrealCombatProfile = {
   damageType: "mixed",
   hardCrowdControl: [],
   id: "Ezreal",
+  importantAbilityNotes: [
+    "(Q) is both poke and farming access; minion cover heavily changes his lane pressure.",
+    "(E) safety is the main reason he can farm against engage lanes, but using it forward makes him punishable.",
+    "(W) into auto or (Q) rewards short windows when the enemy ADC cannot immediately all-in.",
+    "(R) can trim waves, finish low-health targets, or influence cross-map fights, but it does not replace lane DPS.",
+  ],
   lanePlan: {
     avoids: [
       "Using (E) aggressively without support cover.",
       "Letting stronger waveclear ADCs crash for free.",
       "Taking extended front-to-back fights before item spikes.",
+      "Standing in open angles where (Q) misses and the enemy can force auto trades.",
     ],
     idealLaneState:
       "A controlled bot lane where Ezreal farms safely, lands (Q) through openings, and saves (E) for engage.",
@@ -46,6 +53,8 @@ export const ezrealCombatProfile = {
       "Safe access to first item spike.",
       "Support can protect him while he contests wave access.",
       "Poke windows before dragon setup or recall timing.",
+      "Wave states where enemy minions do not fully block (Q) poke or last-hit access.",
+      "Enemy ADCs forced to step out from minion cover to last-hit.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,8 @@ export const ezrealCombatProfile = {
       "Landing (Q) without spending (E).",
       "Preserving health through enemy engage windows.",
       "Using item spikes to contest waves and objectives.",
+      "Punishing ADCs who leave minion cover for CS with (Q) or (W) follow-up.",
+      "Keeping enough wave distance that (E) answers engage instead of starting trades.",
     ],
   },
   majorPowerSpikes: ["First completed item.", "Two-item poke spike.", "Level 6 (R)."],
@@ -84,12 +95,9 @@ export const ezrealCombatProfile = {
       {
         timing: "First completed item",
         reason: "(Q) poke starts controlling wave and objective setup",
-        changesGameplay:
-          "Ezreal can contest space more confidently without entering auto range.",
-        playerAction:
-          "Use repeated (Q) hits to soften the lane before dragon or turret pressure.",
-        enemyResponse:
-          "Stand behind minions and punish him if (E) is used forward.",
+        changesGameplay: "Ezreal can contest space more confidently without entering auto range.",
+        playerAction: "Use repeated (Q) hits to soften the lane before dragon or turret pressure.",
+        enemyResponse: "Stand behind minions and punish him if (E) is used forward.",
       },
       {
         timing: "Two items",
@@ -98,8 +106,7 @@ export const ezrealCombatProfile = {
           "Objective standoffs become favorable if he lands repeated skillshots first.",
         playerAction:
           "Control fights before they start with poke rather than walking into pure DPS races.",
-        enemyResponse:
-          "Force decisive engage instead of letting him poke freely.",
+        enemyResponse: "Force decisive engage instead of letting him poke freely.",
       },
     ],
   },
@@ -112,6 +119,8 @@ export const ezrealCombatProfile = {
       "Engage attempts wasted into (E).",
       "ADC players standing away from minion cover.",
       "Slow setups where repeated (Q) hits land first.",
+      "Enemies who step sideways from the wave to secure ranged minions.",
+      "Bot lanes that cannot punish him after he farms safely with (Q).",
     ],
     strugglesToPunish: [
       "Waveclear lanes that block (Q).",
@@ -138,6 +147,8 @@ export const ezrealCombatProfile = {
       "He can land (Q) without entering engage range.",
       "Enemy support cooldowns are down.",
       "(E) is available to deny the return engage.",
+      "The enemy ADC is outside minion cover while last-hitting.",
+      "The wave is neutral or slow-pushing toward Ezreal, giving him room to kite back after poke.",
     ],
     primaryPattern:
       "Win through skillshot poke and safety; avoid fair standing DPS trades unless the enemy is already softened.",

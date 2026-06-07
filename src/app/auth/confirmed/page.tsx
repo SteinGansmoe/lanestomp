@@ -42,9 +42,8 @@ export default function AuthConfirmedPage() {
                 Your LaneStomp account is ready
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-300 sm:text-base">
-                Thanks for creating an account. Your email has been confirmed
-                and you can now start exploring matchup guides, counter picks,
-                and champion insights.
+                Thanks for creating an account. Your email has been confirmed and you can now start
+                exploring matchup guides, counter picks, and champion insights.
               </p>
             </div>
 

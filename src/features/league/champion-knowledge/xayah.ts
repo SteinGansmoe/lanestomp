@@ -84,22 +84,17 @@ export const xayahCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) gives self-peel and burst avoidance",
-        changesGameplay:
-          "Xayah can deny a committed engage and punish the chase with feathers.",
-        playerAction:
-          "Hold (R) for the enemy's real commit instead of using it for poke.",
-        enemyResponse:
-          "Bait (R) before investing the main engage tools.",
+        changesGameplay: "Xayah can deny a committed engage and punish the chase with feathers.",
+        playerAction: "Hold (R) for the enemy's real commit instead of using it for poke.",
+        enemyResponse: "Bait (R) before investing the main engage tools.",
       },
       {
         timing: "Two items",
         reason: "Sustained DPS and feather threat become reliable",
         changesGameplay:
           "She can take longer front-to-back fights if enemies must walk into her setup.",
-        playerAction:
-          "Fight around feather lines and punish overcommits with (E).",
-        enemyResponse:
-          "Avoid chasing in straight lines through her feathers.",
+        playerAction: "Fight around feather lines and punish overcommits with (E).",
+        enemyResponse: "Avoid chasing in straight lines through her feathers.",
       },
     ],
   },

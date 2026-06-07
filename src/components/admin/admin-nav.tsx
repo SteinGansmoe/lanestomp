@@ -86,9 +86,7 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
     >
       {adminNavGroups.map((group) => (
         <div className="space-y-2" key={group.label}>
-          <p className="px-1 text-xs font-semibold uppercase text-zinc-500">
-            {group.label}
-          </p>
+          <p className="px-1 text-xs font-semibold uppercase text-zinc-500">{group.label}</p>
           <div className="flex flex-wrap gap-2">
             {group.items.map((item) => {
               if (item.status === "planned") {
@@ -99,17 +97,14 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
                     key={`${group.label}-${item.label}`}
                   >
                     {item.label}
-                    <span className="text-[0.65rem] uppercase text-zinc-700">
-                      Future
-                    </span>
+                    <span className="text-[0.65rem] uppercase text-zinc-700">Future</span>
                   </span>
                 );
               }
 
               const isActive =
                 item.section === activeSection ||
-                (item.status === "inside" &&
-                  activeSection === "league-matchups");
+                (item.status === "inside" && activeSection === "league-matchups");
 
               return (
                 <Link
@@ -117,7 +112,7 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
                     "rounded-md border px-3 py-2 text-sm transition",
                     isActive
                       ? "border-violet-300/30 bg-violet-500/30 text-violet-100"
-                      : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
+                      : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white",
                   )}
                   href={item.href}
                   key={`${group.label}-${item.label}`}
@@ -125,9 +120,7 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
                 >
                   {item.label}
                   {item.status === "inside" ? (
-                    <span className="ml-2 text-[0.65rem] uppercase opacity-70">
-                      Inside
-                    </span>
+                    <span className="ml-2 text-[0.65rem] uppercase opacity-70">Inside</span>
                   ) : null}
                 </Link>
               );

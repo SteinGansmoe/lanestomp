@@ -17,17 +17,9 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { leagueRoles } from "@/src/features/league/roles";
-import {
-  isChampionInRole,
-  sortChampionsForRole,
-} from "@/src/features/league/champion-roles";
+import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import type {
   AdminLeagueChampion,
@@ -43,10 +35,7 @@ import type { MatchupDraftSectionKey } from "@/src/features/league/matchup-draft
 import { fieldClassName, selectOptionClassName } from "../constants";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
-import {
-  LeagueMatchupGenerateFormCard,
-  LeagueMatchupForm,
-} from "./league-matchup-form";
+import { LeagueMatchupGenerateFormCard, LeagueMatchupForm } from "./league-matchup-form";
 import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
 import { scanMatchupDraftForFallbackContent } from "@/src/features/league/matchup-fallback-contamination";
 
@@ -61,17 +50,8 @@ type LeagueMatchupSortMode =
   | "most-drafts"
   | "most-reviewed";
 type LeagueMatchupQueueMode = "missing-only" | "regenerate-all";
-type LeagueMatchupQueueStatus =
-  | "complete"
-  | "idle"
-  | "paused"
-  | "running"
-  | "stopped";
-type LeagueMatchupQueueItemStatus =
-  | "failed"
-  | "generated"
-  | "pending"
-  | "running";
+type LeagueMatchupQueueStatus = "complete" | "idle" | "paused" | "running" | "stopped";
+type LeagueMatchupQueueItemStatus = "failed" | "generated" | "pending" | "running";
 
 type LeagueMatchupQueueItem = LeagueMatchupBatchPlanItem & {
   completedAt: number | null;
@@ -129,12 +109,9 @@ type LaneMatchupGroup = {
   totalCount: number;
 };
 
-const championGroupStorageKey =
-  "lanestomp.admin.leagueMatchups.collapsedChampionGroups";
-const legacyMidMatchupQueueStorageKey =
-  "lanestomp.admin.leagueMatchups.midBulkGenerationQueue";
-const matchupQueueStorageKeyPrefix =
-  "lanestomp.admin.leagueMatchups.bulkGenerationQueue";
+const championGroupStorageKey = "lanestomp.admin.leagueMatchups.collapsedChampionGroups";
+const legacyMidMatchupQueueStorageKey = "lanestomp.admin.leagueMatchups.midBulkGenerationQueue";
+const matchupQueueStorageKeyPrefix = "lanestomp.admin.leagueMatchups.bulkGenerationQueue";
 const adcEstimatedMsPerMatchup = 8_000;
 const adcEstimatedTokensPerMatchup = 1_400;
 
@@ -186,40 +163,32 @@ export function AdminLeagueMatchupsSection({
   onEditSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onGenerateBatch: (items: LeagueMatchupBatchPlanItem[]) => void;
   onGenerateDraft: (matchup: AdminLeagueMatchup) => void;
-  onGenerateQueueItem: (
-    item: LeagueMatchupBatchPlanItem
-  ) => Promise<LeagueMatchupQueueItemResult>;
+  onGenerateQueueItem: (item: LeagueMatchupBatchPlanItem) => Promise<LeagueMatchupQueueItemResult>;
   onRefresh: () => Promise<boolean>;
   onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
-  onMarkReviewedForChampion: (
-    championName: string,
-    matchupIds: number[]
-  ) => void;
+  onMarkReviewedForChampion: (championName: string, matchupIds: number[]) => void;
   onUpdateFeedbackStatus: (
     feedback: AdminLeagueMatchupFeedback,
-    status: AdminLeagueMatchupFeedback["status"]
+    status: AdminLeagueMatchupFeedback["status"],
   ) => void;
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
 }) {
-  const [collapsedChampionGroups, setCollapsedChampionGroups] = useState<
-    Record<string, boolean>
-  >({});
-  const [collapsedLaneGroups, setCollapsedLaneGroups] = useState<
-    Record<string, boolean>
-  >(() => getDefaultCollapsedLaneGroups("all"));
+  const [collapsedChampionGroups, setCollapsedChampionGroups] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [collapsedLaneGroups, setCollapsedLaneGroups] = useState<Record<string, boolean>>(() =>
+    getDefaultCollapsedLaneGroups("all"),
+  );
   const [roleFilter, setRoleFilter] = useState<LeagueMatchupRoleFilter>("all");
-  const [statusFilter, setStatusFilter] =
-    useState<LeagueMatchupStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<LeagueMatchupStatusFilter>("all");
   const [confidenceFilter, setConfidenceFilter] = useState("all");
-  const [reviewedFilter, setReviewedFilter] =
-    useState<LeagueMatchupReviewedFilter>("all");
+  const [reviewedFilter, setReviewedFilter] = useState<LeagueMatchupReviewedFilter>("all");
   const [championAFilter, setChampionAFilter] = useState("all");
   const [championBFilter, setChampionBFilter] = useState("all");
   const [matchupSearchQuery, setMatchupSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortMode, setSortMode] =
-    useState<LeagueMatchupSortMode>("needs-review");
+  const [sortMode, setSortMode] = useState<LeagueMatchupSortMode>("needs-review");
   const [isBulkQueueActive, setIsBulkQueueActive] = useState(false);
   const [regeneratingChampionGroup, setRegeneratingChampionGroup] =
     useState<ChampionRegenerationState | null>(null);
@@ -228,7 +197,7 @@ export function AdminLeagueMatchupsSection({
   const isChampionRegenerationActive = regeneratingChampionGroup !== null;
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
-    [champions]
+    [champions],
   );
   const confidenceOptions = useMemo(
     () =>
@@ -236,10 +205,10 @@ export function AdminLeagueMatchupsSection({
         new Set(
           matchups
             .map((matchup) => matchup.confidence_level?.trim())
-            .filter((value): value is string => Boolean(value))
-        )
+            .filter((value): value is string => Boolean(value)),
+        ),
       ).sort((optionA, optionB) => optionA.localeCompare(optionB)),
-    [matchups]
+    [matchups],
   );
   const filteredMatchups = useMemo(
     () =>
@@ -264,16 +233,13 @@ export function AdminLeagueMatchupsSection({
       reviewedFilter,
       roleFilter,
       statusFilter,
-    ]
+    ],
   );
   const sortedFilteredMatchups = useMemo(
     () => sortLeagueMatchupsForAdminList(filteredMatchups, championsById, sortMode),
-    [championsById, filteredMatchups, sortMode]
+    [championsById, filteredMatchups, sortMode],
   );
-  const totalPages = Math.max(
-    Math.ceil(sortedFilteredMatchups.length / pageSize),
-    1
-  );
+  const totalPages = Math.max(Math.ceil(sortedFilteredMatchups.length / pageSize), 1);
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedMatchups = useMemo(() => {
     const startIndex = (safeCurrentPage - 1) * pageSize;
@@ -289,7 +255,7 @@ export function AdminLeagueMatchupsSection({
         roleFilter: "all",
         sortMode,
       }),
-    [champions, paginatedMatchups, sortMode]
+    [champions, paginatedMatchups, sortMode],
   );
 
   useEffect(() => {
@@ -330,10 +296,7 @@ export function AdminLeagueMatchupsSection({
         [groupId]: !isCollapsed,
       };
 
-      window.localStorage.setItem(
-        championGroupStorageKey,
-        JSON.stringify(nextGroups)
-      );
+      window.localStorage.setItem(championGroupStorageKey, JSON.stringify(nextGroups));
 
       return nextGroups;
     });
@@ -375,8 +338,7 @@ export function AdminLeagueMatchupsSection({
 
     const items = matchups
       .filter(
-        (matchup) =>
-          matchup.role === group.role && matchup.champion_a_id === group.championId
+        (matchup) => matchup.role === group.role && matchup.champion_a_id === group.championId,
       )
       .map(getQueuePlanItemFromMatchup);
 
@@ -392,7 +354,7 @@ export function AdminLeagueMatchupsSection({
     const confirmed = window.confirm(
       `Regenerate all ${items.length} ${group.title} matchup draft${
         items.length === 1 ? "" : "s"
-      }? This overwrites the generated cards and marks them as drafts.`
+      }? This overwrites the generated cards and marks them as drafts.`,
     );
 
     if (!confirmed) {
@@ -434,9 +396,7 @@ export function AdminLeagueMatchupsSection({
         failedCount > 0
           ? `Regenerated ${items.length - failedCount} of ${
               items.length
-            } ${group.title} matchup draft${
-              items.length === 1 ? "" : "s"
-            }. ${failedCount} failed.`
+            } ${group.title} matchup draft${items.length === 1 ? "" : "s"}. ${failedCount} failed.`
           : `Regenerated all ${items.length} ${group.title} matchup draft${
               items.length === 1 ? "" : "s"
             }.${warningCount > 0 ? ` ${warningCount} saved with warnings.` : ""}`,
@@ -457,9 +417,7 @@ export function AdminLeagueMatchupsSection({
 
         <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
           <CardHeader>
-            <CardTitle className="font-mono text-xl">
-              Edit League matchup
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">Edit League matchup</CardTitle>
           </CardHeader>
           <CardContent>
             {editingMatchupId ? (
@@ -494,9 +452,7 @@ export function AdminLeagueMatchupsSection({
       <LeagueMatchupBulkGenerationQueue
         champions={champions}
         isDisabled={
-          generatingMatchupId !== null ||
-          batchStatus.isLoading ||
-          isChampionRegenerationActive
+          generatingMatchupId !== null || batchStatus.isLoading || isChampionRegenerationActive
         }
         matchups={matchups}
         onActiveChange={setIsBulkQueueActive}
@@ -504,11 +460,7 @@ export function AdminLeagueMatchupsSection({
         onRefresh={onRefresh}
       />
 
-      <LeagueMatchupGapChecker
-        champions={champions}
-        matchups={matchups}
-        onRefresh={onRefresh}
-      />
+      <LeagueMatchupGapChecker champions={champions} matchups={matchups} onRefresh={onRefresh} />
 
       <LeagueMatchupBatchPlanner
         champions={champions}
@@ -532,12 +484,10 @@ export function AdminLeagueMatchupsSection({
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardTitle className="font-mono text-xl">
-                League matchups
-              </CardTitle>
+              <CardTitle className="font-mono text-xl">League matchups</CardTitle>
               <p className="mt-2 text-sm text-zinc-400">
-                Manage coverage by source champion. Each group shows Champion A
-                matchups for the selected lane filter.
+                Manage coverage by source champion. Each group shows Champion A matchups for the
+                selected lane filter.
               </p>
             </div>
             <div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -548,9 +498,7 @@ export function AdminLeagueMatchupsSection({
                 <input
                   className={`${fieldClassName} h-10`}
                   onChange={(event) =>
-                    updateMatchupListFilter(() =>
-                      setMatchupSearchQuery(event.target.value)
-                    )
+                    updateMatchupListFilter(() => setMatchupSearchQuery(event.target.value))
                   }
                   placeholder="Search champion names or ids..."
                   type="search"
@@ -565,9 +513,7 @@ export function AdminLeagueMatchupsSection({
                 <select
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
-                    updateRoleFilter(
-                      event.target.value as LeagueMatchupRoleFilter
-                    )
+                    updateRoleFilter(event.target.value as LeagueMatchupRoleFilter)
                   }
                   value={roleFilter}
                 >
@@ -575,11 +521,7 @@ export function AdminLeagueMatchupsSection({
                     All lanes
                   </option>
                   {leagueRoles.map((role) => (
-                    <option
-                      className={selectOptionClassName}
-                      key={role}
-                      value={role}
-                    >
+                    <option className={selectOptionClassName} key={role} value={role}>
                       {role === "adc" ? "ADC" : titleCase(role)}
                     </option>
                   ))}
@@ -594,9 +536,7 @@ export function AdminLeagueMatchupsSection({
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
                     updateMatchupListFilter(() =>
-                      setStatusFilter(
-                        event.target.value as LeagueMatchupStatusFilter
-                      )
+                      setStatusFilter(event.target.value as LeagueMatchupStatusFilter),
                     )
                   }
                   value={statusFilter}
@@ -624,9 +564,7 @@ export function AdminLeagueMatchupsSection({
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
                     updateMatchupListFilter(() =>
-                      setReviewedFilter(
-                        event.target.value as LeagueMatchupReviewedFilter
-                      )
+                      setReviewedFilter(event.target.value as LeagueMatchupReviewedFilter),
                     )
                   }
                   value={reviewedFilter}
@@ -650,9 +588,7 @@ export function AdminLeagueMatchupsSection({
                 <select
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
-                    updateMatchupListFilter(() =>
-                      setConfidenceFilter(event.target.value)
-                    )
+                    updateMatchupListFilter(() => setConfidenceFilter(event.target.value))
                   }
                   value={confidenceFilter}
                 >
@@ -663,11 +599,7 @@ export function AdminLeagueMatchupsSection({
                     No confidence
                   </option>
                   {confidenceOptions.map((confidence) => (
-                    <option
-                      className={selectOptionClassName}
-                      key={confidence}
-                      value={confidence}
-                    >
+                    <option className={selectOptionClassName} key={confidence} value={confidence}>
                       {confidence}
                     </option>
                   ))}
@@ -681,9 +613,7 @@ export function AdminLeagueMatchupsSection({
                 <select
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
-                    updateMatchupListFilter(() =>
-                      setChampionAFilter(event.target.value)
-                    )
+                    updateMatchupListFilter(() => setChampionAFilter(event.target.value))
                   }
                   value={championAFilter}
                 >
@@ -691,11 +621,7 @@ export function AdminLeagueMatchupsSection({
                     All Champion A
                   </option>
                   {champions.map((champion) => (
-                    <option
-                      className={selectOptionClassName}
-                      key={champion.id}
-                      value={champion.id}
-                    >
+                    <option className={selectOptionClassName} key={champion.id} value={champion.id}>
                       {champion.name}
                     </option>
                   ))}
@@ -709,9 +635,7 @@ export function AdminLeagueMatchupsSection({
                 <select
                   className={`${fieldClassName} h-10 min-w-40`}
                   onChange={(event) =>
-                    updateMatchupListFilter(() =>
-                      setChampionBFilter(event.target.value)
-                    )
+                    updateMatchupListFilter(() => setChampionBFilter(event.target.value))
                   }
                   value={championBFilter}
                 >
@@ -719,11 +643,7 @@ export function AdminLeagueMatchupsSection({
                     All Champion B
                   </option>
                   {champions.map((champion) => (
-                    <option
-                      className={selectOptionClassName}
-                      key={champion.id}
-                      value={champion.id}
-                    >
+                    <option className={selectOptionClassName} key={champion.id} value={champion.id}>
                       {champion.name}
                     </option>
                   ))}
@@ -738,7 +658,7 @@ export function AdminLeagueMatchupsSection({
                   className={`${fieldClassName} h-10 min-w-44`}
                   onChange={(event) =>
                     updateMatchupListFilter(() =>
-                      setSortMode(event.target.value as LeagueMatchupSortMode)
+                      setSortMode(event.target.value as LeagueMatchupSortMode),
                     )
                   }
                   value={sortMode}
@@ -774,11 +694,7 @@ export function AdminLeagueMatchupsSection({
                   value={pageSize}
                 >
                   {[25, 50, 100].map((size) => (
-                    <option
-                      className={selectOptionClassName}
-                      key={size}
-                      value={size}
-                    >
+                    <option className={selectOptionClassName} key={size} value={size}>
                       {size} rows
                     </option>
                   ))}
@@ -790,8 +706,8 @@ export function AdminLeagueMatchupsSection({
         <CardContent>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
             <p>
-              Showing {paginatedMatchups.length} of {sortedFilteredMatchups.length}{" "}
-              filtered matchup{sortedFilteredMatchups.length === 1 ? "" : "s"}.
+              Showing {paginatedMatchups.length} of {sortedFilteredMatchups.length} filtered matchup
+              {sortedFilteredMatchups.length === 1 ? "" : "s"}.
               {matchups.length !== sortedFilteredMatchups.length
                 ? ` ${matchups.length} total loaded.`
                 : ""}
@@ -813,9 +729,7 @@ export function AdminLeagueMatchupsSection({
               <Button
                 className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
                 disabled={safeCurrentPage >= totalPages}
-                onClick={() =>
-                  setCurrentPage((page) => Math.min(page + 1, totalPages))
-                }
+                onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -828,9 +742,7 @@ export function AdminLeagueMatchupsSection({
           {laneGroups.length > 0 ? (
             <ul className="space-y-4">
               {laneGroups.map((laneGroup) => {
-                const isLaneCollapsed = Boolean(
-                  collapsedLaneGroups[laneGroup.role]
-                );
+                const isLaneCollapsed = Boolean(collapsedLaneGroups[laneGroup.role]);
                 const laneContentId = `${championGroupStorageKey}-lane-${laneGroup.role}`;
 
                 return (
@@ -841,7 +753,7 @@ export function AdminLeagueMatchupsSection({
                     <div
                       className={cn(
                         "flex flex-wrap items-center justify-between gap-4 px-4 py-4 transition-colors",
-                        isLaneCollapsed ? "" : "border-b border-white/10"
+                        isLaneCollapsed ? "" : "border-b border-white/10",
                       )}
                     >
                       <div>
@@ -882,7 +794,7 @@ export function AdminLeagueMatchupsSection({
                         <ChevronDown
                           className={cn(
                             "size-4 transition-transform duration-200",
-                            isLaneCollapsed ? "-rotate-90" : "rotate-0"
+                            isLaneCollapsed ? "-rotate-90" : "rotate-0",
                           )}
                           aria-hidden="true"
                         />
@@ -895,7 +807,7 @@ export function AdminLeagueMatchupsSection({
                         "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
                         isLaneCollapsed
                           ? "pointer-events-none grid-rows-[0fr] opacity-0"
-                          : "grid-rows-[1fr] opacity-100"
+                          : "grid-rows-[1fr] opacity-100",
                       )}
                       id={laneContentId}
                       inert={isLaneCollapsed ? true : undefined}
@@ -904,321 +816,340 @@ export function AdminLeagueMatchupsSection({
                         {!isLaneCollapsed && laneGroup.championGroups.length > 0 ? (
                           <ul className="space-y-4 p-4">
                             {laneGroup.championGroups.map((group) => {
-                const isCollapsed = isChampionGroupCollapsed(group.id);
-                const contentId = `${championGroupStorageKey}-${group.id}`;
-                const isGroupRegenerating =
-                  regeneratingChampionGroup?.groupId === group.id;
-                const isApproveAllDisabled =
-                  editStatus.isLoading ||
-                  generatingMatchupId !== null ||
-                  deletingDraftMatchupId !== null ||
-                  batchStatus.isLoading ||
-                  isBulkQueueActive ||
-                  isChampionRegenerationActive ||
-                  group.approvableDraftIds.length === 0;
-                const isRegenerateAllDisabled =
-                  editStatus.isLoading ||
-                  generatingMatchupId !== null ||
-                  deletingDraftMatchupId !== null ||
-                  batchStatus.isLoading ||
-                  isBulkQueueActive ||
-                  isChampionRegenerationActive ||
-                  group.items.length === 0;
+                              const isCollapsed = isChampionGroupCollapsed(group.id);
+                              const contentId = `${championGroupStorageKey}-${group.id}`;
+                              const isGroupRegenerating =
+                                regeneratingChampionGroup?.groupId === group.id;
+                              const isApproveAllDisabled =
+                                editStatus.isLoading ||
+                                generatingMatchupId !== null ||
+                                deletingDraftMatchupId !== null ||
+                                batchStatus.isLoading ||
+                                isBulkQueueActive ||
+                                isChampionRegenerationActive ||
+                                group.approvableDraftIds.length === 0;
+                              const isRegenerateAllDisabled =
+                                editStatus.isLoading ||
+                                generatingMatchupId !== null ||
+                                deletingDraftMatchupId !== null ||
+                                batchStatus.isLoading ||
+                                isBulkQueueActive ||
+                                isChampionRegenerationActive ||
+                                group.items.length === 0;
 
-                return (
-                  <li
-                    className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.025]"
-                    key={group.id}
-                  >
-                    <div
-                      className={cn(
-                        "flex flex-wrap items-center justify-between gap-4 px-4 py-3 transition-colors",
-                        isCollapsed ? "" : "border-b border-white/10"
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-white">
-                            {group.title}
-                          </p>
-                          <span
-                            className={`rounded-md border px-2 py-1 text-xs ${group.statusClassName}`}
-                          >
-                            {group.statusLabel}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300">
-                            {group.totalCount} matchup
-                            {group.totalCount === 1 ? "" : "s"}
-                          </span>
-                          <span className="rounded-md border border-emerald-300/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">
-                            {group.reviewedCount} reviewed
-                          </span>
-                          <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-violet-100">
-                            {group.draftCount} draft
-                            {group.draftCount === 1 ? "" : "s"}
-                          </span>
-                          {group.missingCount !== null ? (
-                            <span className="rounded-md border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-amber-100">
-                              {group.missingCount} missing
-                            </span>
-                          ) : null}
-                        </div>
-                        {isGroupRegenerating ? (
-                          <p className="mt-2 text-xs text-violet-100">
-                            Regenerating {regeneratingChampionGroup.current}/
-                            {regeneratingChampionGroup.total} matchup drafts...
-                          </p>
-                        ) : championRegenerationStatus?.groupId === group.id ? (
-                          <p
-                            className={cn(
-                              "mt-2 text-xs",
-                              championRegenerationStatus.type === "success"
-                                ? "text-emerald-200"
-                                : "text-rose-200"
-                            )}
-                          >
-                            {championRegenerationStatus.text}
-                          </p>
-                        ) : null}
-                      </div>
+                              return (
+                                <li
+                                  className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.025]"
+                                  key={group.id}
+                                >
+                                  <div
+                                    className={cn(
+                                      "flex flex-wrap items-center justify-between gap-4 px-4 py-3 transition-colors",
+                                      isCollapsed ? "" : "border-b border-white/10",
+                                    )}
+                                  >
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-semibold text-white">{group.title}</p>
+                                        <span
+                                          className={`rounded-md border px-2 py-1 text-xs ${group.statusClassName}`}
+                                        >
+                                          {group.statusLabel}
+                                        </span>
+                                      </div>
+                                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                        <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300">
+                                          {group.totalCount} matchup
+                                          {group.totalCount === 1 ? "" : "s"}
+                                        </span>
+                                        <span className="rounded-md border border-emerald-300/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">
+                                          {group.reviewedCount} reviewed
+                                        </span>
+                                        <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-violet-100">
+                                          {group.draftCount} draft
+                                          {group.draftCount === 1 ? "" : "s"}
+                                        </span>
+                                        {group.missingCount !== null ? (
+                                          <span className="rounded-md border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-amber-100">
+                                            {group.missingCount} missing
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      {isGroupRegenerating ? (
+                                        <p className="mt-2 text-xs text-violet-100">
+                                          Regenerating {regeneratingChampionGroup.current}/
+                                          {regeneratingChampionGroup.total} matchup drafts...
+                                        </p>
+                                      ) : championRegenerationStatus?.groupId === group.id ? (
+                                        <p
+                                          className={cn(
+                                            "mt-2 text-xs",
+                                            championRegenerationStatus.type === "success"
+                                              ? "text-emerald-200"
+                                              : "text-rose-200",
+                                          )}
+                                        >
+                                          {championRegenerationStatus.text}
+                                        </p>
+                                      ) : null}
+                                    </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
-                          disabled={isRegenerateAllDisabled}
-                          onClick={() => regenerateChampionGroupDrafts(group)}
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <RefreshCw
-                            className={cn(
-                              "size-3.5",
-                              isGroupRegenerating ? "animate-spin" : ""
-                            )}
-                            aria-hidden="true"
-                          />
-                          {isGroupRegenerating
-                            ? `Regenerating ${regeneratingChampionGroup.current}/${regeneratingChampionGroup.total}`
-                            : "Regenerate all"}
-                        </Button>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Button
+                                        className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
+                                        disabled={isRegenerateAllDisabled}
+                                        onClick={() => regenerateChampionGroupDrafts(group)}
+                                        size="sm"
+                                        type="button"
+                                        variant="ghost"
+                                      >
+                                        <RefreshCw
+                                          className={cn(
+                                            "size-3.5",
+                                            isGroupRegenerating ? "animate-spin" : "",
+                                          )}
+                                          aria-hidden="true"
+                                        />
+                                        {isGroupRegenerating
+                                          ? `Regenerating ${regeneratingChampionGroup.current}/${regeneratingChampionGroup.total}`
+                                          : "Regenerate all"}
+                                      </Button>
 
-                        {group.approvableDraftIds.length > 0 ? (
-                          <Button
-                            className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
-                            disabled={isApproveAllDisabled}
-                            onClick={() =>
-                              onMarkReviewedForChampion(
-                                group.title,
-                                group.approvableDraftIds
-                              )
-                            }
-                            size="sm"
-                            type="button"
-                            variant="ghost"
-                          >
-                            <CheckCircle2
-                              className="size-3.5"
-                              aria-hidden="true"
-                            />
-                            Approve all drafts
-                          </Button>
-                        ) : null}
+                                      {group.approvableDraftIds.length > 0 ? (
+                                        <Button
+                                          className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                                          disabled={isApproveAllDisabled}
+                                          onClick={() =>
+                                            onMarkReviewedForChampion(
+                                              group.title,
+                                              group.approvableDraftIds,
+                                            )
+                                          }
+                                          size="sm"
+                                          type="button"
+                                          variant="ghost"
+                                        >
+                                          <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                                          Approve all drafts
+                                        </Button>
+                                      ) : null}
 
-                        <button
-                          aria-controls={contentId}
-                          aria-expanded={!isCollapsed}
-                          aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${
-                            group.title
-                          } matchups`}
-                          className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
-                          onClick={() => toggleChampionGroup(group.id)}
-                          type="button"
-                        >
-                          <ChevronDown
-                            className={cn(
-                              "size-4 transition-transform duration-200",
-                              isCollapsed ? "-rotate-90" : "rotate-0"
-                            )}
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-                    </div>
+                                      <button
+                                        aria-controls={contentId}
+                                        aria-expanded={!isCollapsed}
+                                        aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${
+                                          group.title
+                                        } matchups`}
+                                        className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+                                        onClick={() => toggleChampionGroup(group.id)}
+                                        type="button"
+                                      >
+                                        <ChevronDown
+                                          className={cn(
+                                            "size-4 transition-transform duration-200",
+                                            isCollapsed ? "-rotate-90" : "rotate-0",
+                                          )}
+                                          aria-hidden="true"
+                                        />
+                                      </button>
+                                    </div>
+                                  </div>
 
-                    <div
-                      aria-hidden={isCollapsed}
-                      className={cn(
-                        "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-                        isCollapsed
-                          ? "pointer-events-none grid-rows-[0fr] opacity-0"
-                          : "grid-rows-[1fr] opacity-100"
-                      )}
-                      id={contentId}
-                      inert={isCollapsed ? true : undefined}
-                    >
-                      <div className="overflow-hidden">
-                        {!isCollapsed && group.items.length > 0 ? (
-                          <ul className="space-y-3 p-4">
-                            {group.items.map((matchup) => {
-                const championA = championsById.get(matchup.champion_a_id);
-                const championB = championsById.get(matchup.champion_b_id);
-                const contentState = getMatchupContentState(matchup);
-                const isGenerating = generatingMatchupId === matchup.id;
-                const isDeletingDraft = deletingDraftMatchupId === matchup.id;
-                const hasDraftContent = hasMatchupDraftContent(matchup);
-                const failureReason = getGenerationFailureReason(
-                  matchup.admin_notes
-                );
+                                  <div
+                                    aria-hidden={isCollapsed}
+                                    className={cn(
+                                      "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+                                      isCollapsed
+                                        ? "pointer-events-none grid-rows-[0fr] opacity-0"
+                                        : "grid-rows-[1fr] opacity-100",
+                                    )}
+                                    id={contentId}
+                                    inert={isCollapsed ? true : undefined}
+                                  >
+                                    <div className="overflow-hidden">
+                                      {!isCollapsed && group.items.length > 0 ? (
+                                        <ul className="space-y-3 p-4">
+                                          {group.items.map((matchup) => {
+                                            const championA = championsById.get(
+                                              matchup.champion_a_id,
+                                            );
+                                            const championB = championsById.get(
+                                              matchup.champion_b_id,
+                                            );
+                                            const contentState = getMatchupContentState(matchup);
+                                            const isGenerating = generatingMatchupId === matchup.id;
+                                            const isDeletingDraft =
+                                              deletingDraftMatchupId === matchup.id;
+                                            const hasDraftContent = hasMatchupDraftContent(matchup);
+                                            const failureReason = getGenerationFailureReason(
+                                              matchup.admin_notes,
+                                            );
 
-                return (
-                  <li
-                    className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
-                    key={matchup.id}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-white">
-                          {championA?.name ?? matchup.champion_a_id} vs{" "}
-                          {championB?.name ?? matchup.champion_b_id}
-                        </p>
-                        <p className="mt-1 font-mono text-xs text-zinc-500">
-                          {matchup.champion_a_id} / {matchup.champion_b_id}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-xs text-zinc-300">
-                          {getRoleLabel(matchup.role)}
-                        </span>
-                        <span
-                          className={`rounded-md border px-2 py-1 text-xs ${contentState.className}`}
-                        >
-                          {contentState.label}
-                        </span>
-                        {matchup.difficulty_rating ? (
-                          <span className="rounded-md border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-xs text-amber-100">
-                            Difficulty {matchup.difficulty_rating}/5
-                          </span>
-                        ) : null}
-                        {matchup.confidence_level ? (
-                          <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
-                            {matchup.confidence_level}
-                          </span>
-                        ) : null}
-                        {failureReason ? (
-                          <span className="max-w-sm rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-right text-xs text-rose-100">
-                            {failureReason}
-                          </span>
-                        ) : null}
-                        {matchup.generation_status === "failed" &&
-                        matchup.generated_at ? (
-                          <span className="rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-xs text-rose-100">
-                            Failed {formatFeedbackDate(matchup.generated_at)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      <Button
-                        className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
-                        disabled={
-                          generatingMatchupId !== null ||
-                          deletingDraftMatchupId !== null ||
-                          batchStatus.isLoading
-                          || isBulkQueueActive ||
-                          isChampionRegenerationActive
-                        }
-                        onClick={() => onGenerateDraft(matchup)}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        {hasDraftContent ? (
-                          <RefreshCw className="size-3.5" aria-hidden="true" />
-                        ) : (
-                          <Sparkles className="size-3.5" aria-hidden="true" />
-                        )}
-                        {isGenerating
-                          ? "Generating..."
-                          : matchup.generation_status === "failed"
-                            ? "Retry generation"
-                          : hasDraftContent
-                            ? "Regenerate draft"
-                            : "Generate draft"}
-                      </Button>
-                      <Button
-                        className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                        disabled={
-                          isGenerating ||
-                          isDeletingDraft ||
-                          batchStatus.isLoading
-                          || isBulkQueueActive ||
-                          isChampionRegenerationActive
-                        }
-                        onClick={() => onStartEdit(matchup)}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Pencil className="size-3.5" aria-hidden="true" />
-                        Edit
-                      </Button>
-                      <Button
-                        className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
-                        disabled={
-                          isGenerating ||
-                          isDeletingDraft ||
-                          batchStatus.isLoading ||
-                          isBulkQueueActive ||
-                          isChampionRegenerationActive ||
-                          !hasDraftContent ||
-                          matchup.generation_status === "reviewed"
-                        }
-                        onClick={() => onMarkReviewed(matchup)}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                        Mark as reviewed
-                      </Button>
-                      <Button
-                        className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
-                        disabled={
-                          isGenerating ||
-                          deletingDraftMatchupId !== null ||
-                          batchStatus.isLoading ||
-                          isBulkQueueActive ||
-                          isChampionRegenerationActive ||
-                          !hasDraftContent
-                        }
-                        onClick={() => onDeleteDraft(matchup)}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Trash2 className="size-3.5" aria-hidden="true" />
-                        {isDeletingDraft ? "Deleting..." : "Delete draft"}
-                      </Button>
-                    </div>
-                  </li>
-                );
-                            })}
-                          </ul>
-                        ) : !isCollapsed ? (
-                          <div className="p-4">
-                            <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
-                              No saved matchups for this champion in the current
-                              lane filter.
-                            </p>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
-                );
+                                            return (
+                                              <li
+                                                className="rounded-lg border border-white/10 bg-white/[0.03] p-4"
+                                                key={matchup.id}
+                                              >
+                                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                                  <div>
+                                                    <p className="font-semibold text-white">
+                                                      {championA?.name ?? matchup.champion_a_id} vs{" "}
+                                                      {championB?.name ?? matchup.champion_b_id}
+                                                    </p>
+                                                    <p className="mt-1 font-mono text-xs text-zinc-500">
+                                                      {matchup.champion_a_id} /{" "}
+                                                      {matchup.champion_b_id}
+                                                    </p>
+                                                  </div>
+                                                  <div className="flex flex-col items-end gap-2">
+                                                    <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-xs text-zinc-300">
+                                                      {getRoleLabel(matchup.role)}
+                                                    </span>
+                                                    <span
+                                                      className={`rounded-md border px-2 py-1 text-xs ${contentState.className}`}
+                                                    >
+                                                      {contentState.label}
+                                                    </span>
+                                                    {matchup.difficulty_rating ? (
+                                                      <span className="rounded-md border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-xs text-amber-100">
+                                                        Difficulty {matchup.difficulty_rating}/5
+                                                      </span>
+                                                    ) : null}
+                                                    {matchup.confidence_level ? (
+                                                      <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
+                                                        {matchup.confidence_level}
+                                                      </span>
+                                                    ) : null}
+                                                    {failureReason ? (
+                                                      <span className="max-w-sm rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-right text-xs text-rose-100">
+                                                        {failureReason}
+                                                      </span>
+                                                    ) : null}
+                                                    {matchup.generation_status === "failed" &&
+                                                    matchup.generated_at ? (
+                                                      <span className="rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-xs text-rose-100">
+                                                        Failed{" "}
+                                                        {formatFeedbackDate(matchup.generated_at)}
+                                                      </span>
+                                                    ) : null}
+                                                  </div>
+                                                </div>
+                                                <div className="mt-4 flex flex-wrap gap-3">
+                                                  <Button
+                                                    className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
+                                                    disabled={
+                                                      generatingMatchupId !== null ||
+                                                      deletingDraftMatchupId !== null ||
+                                                      batchStatus.isLoading ||
+                                                      isBulkQueueActive ||
+                                                      isChampionRegenerationActive
+                                                    }
+                                                    onClick={() => onGenerateDraft(matchup)}
+                                                    size="sm"
+                                                    type="button"
+                                                    variant="ghost"
+                                                  >
+                                                    {hasDraftContent ? (
+                                                      <RefreshCw
+                                                        className="size-3.5"
+                                                        aria-hidden="true"
+                                                      />
+                                                    ) : (
+                                                      <Sparkles
+                                                        className="size-3.5"
+                                                        aria-hidden="true"
+                                                      />
+                                                    )}
+                                                    {isGenerating
+                                                      ? "Generating..."
+                                                      : matchup.generation_status === "failed"
+                                                        ? "Retry generation"
+                                                        : hasDraftContent
+                                                          ? "Regenerate draft"
+                                                          : "Generate draft"}
+                                                  </Button>
+                                                  <Button
+                                                    className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                                                    disabled={
+                                                      isGenerating ||
+                                                      isDeletingDraft ||
+                                                      batchStatus.isLoading ||
+                                                      isBulkQueueActive ||
+                                                      isChampionRegenerationActive
+                                                    }
+                                                    onClick={() => onStartEdit(matchup)}
+                                                    size="sm"
+                                                    type="button"
+                                                    variant="ghost"
+                                                  >
+                                                    <Pencil
+                                                      className="size-3.5"
+                                                      aria-hidden="true"
+                                                    />
+                                                    Edit
+                                                  </Button>
+                                                  <Button
+                                                    className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                                                    disabled={
+                                                      isGenerating ||
+                                                      isDeletingDraft ||
+                                                      batchStatus.isLoading ||
+                                                      isBulkQueueActive ||
+                                                      isChampionRegenerationActive ||
+                                                      !hasDraftContent ||
+                                                      matchup.generation_status === "reviewed"
+                                                    }
+                                                    onClick={() => onMarkReviewed(matchup)}
+                                                    size="sm"
+                                                    type="button"
+                                                    variant="ghost"
+                                                  >
+                                                    <CheckCircle2
+                                                      className="size-3.5"
+                                                      aria-hidden="true"
+                                                    />
+                                                    Mark as reviewed
+                                                  </Button>
+                                                  <Button
+                                                    className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                                                    disabled={
+                                                      isGenerating ||
+                                                      deletingDraftMatchupId !== null ||
+                                                      batchStatus.isLoading ||
+                                                      isBulkQueueActive ||
+                                                      isChampionRegenerationActive ||
+                                                      !hasDraftContent
+                                                    }
+                                                    onClick={() => onDeleteDraft(matchup)}
+                                                    size="sm"
+                                                    type="button"
+                                                    variant="ghost"
+                                                  >
+                                                    <Trash2
+                                                      className="size-3.5"
+                                                      aria-hidden="true"
+                                                    />
+                                                    {isDeletingDraft
+                                                      ? "Deleting..."
+                                                      : "Delete draft"}
+                                                  </Button>
+                                                </div>
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                      ) : !isCollapsed ? (
+                                        <div className="p-4">
+                                          <p className="rounded-lg border border-white/10 bg-black/15 p-4 text-sm text-zinc-400">
+                                            No saved matchups for this champion in the current lane
+                                            filter.
+                                          </p>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </li>
+                              );
                             })}
                           </ul>
                         ) : !isLaneCollapsed ? (
@@ -1260,18 +1191,15 @@ function LeagueMatchupFeedbackReview({
   onStartEdit: (matchup: AdminLeagueMatchup) => void;
   onUpdateFeedbackStatus: (
     feedback: AdminLeagueMatchupFeedback,
-    status: AdminLeagueMatchupFeedback["status"]
+    status: AdminLeagueMatchupFeedback["status"],
   ) => void;
 }) {
   const [cardFilter, setCardFilter] = useState("all");
   const [championFilter, setChampionFilter] = useState("");
   const [laneFilter, setLaneFilter] = useState<LeagueMatchupRoleFilter>("all");
   const [reasonFilter, setReasonFilter] = useState("all");
-  const [regeneratingFeedbackId, setRegeneratingFeedbackId] = useState<number | null>(
-    null
-  );
-  const [statusFilter, setStatusFilter] =
-    useState<LeagueMatchupFeedbackStatusFilter>("open");
+  const [regeneratingFeedbackId, setRegeneratingFeedbackId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<LeagueMatchupFeedbackStatusFilter>("open");
   const [targetedStatus, setTargetedStatus] = useState<FormStatus>({
     error: null,
     isLoading: false,
@@ -1279,7 +1207,7 @@ function LeagueMatchupFeedbackReview({
   });
   const matchupsById = useMemo(
     () => new Map(matchups.map((matchup) => [matchup.id, matchup] as const)),
-    [matchups]
+    [matchups],
   );
   const filteredFeedback = useMemo(
     () =>
@@ -1298,12 +1226,9 @@ function LeagueMatchupFeedbackReview({
           championMatch
         );
       }),
-    [cardFilter, championFilter, feedback, laneFilter, reasonFilter, statusFilter]
+    [cardFilter, championFilter, feedback, laneFilter, reasonFilter, statusFilter],
   );
-  const groups = useMemo(
-    () => groupFeedbackForAdmin(filteredFeedback),
-    [filteredFeedback]
-  );
+  const groups = useMemo(() => groupFeedbackForAdmin(filteredFeedback), [filteredFeedback]);
   const countsByStatus = getFeedbackCountsByStatus(feedback);
 
   async function regenerateAffectedCard(item: AdminLeagueMatchupFeedback) {
@@ -1324,8 +1249,7 @@ function LeagueMatchupFeedbackReview({
     setRegeneratingFeedbackId(item.id);
     setTargetedStatus({ error: null, isLoading: true, success: null });
 
-    const { data: sessionData, error: sessionError } =
-      await supabase.auth.getSession();
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
     if (sessionError || !accessToken) {
@@ -1388,24 +1312,20 @@ function LeagueMatchupFeedbackReview({
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <CardTitle className="font-mono text-xl">
-              Matchup feedback
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">Matchup feedback</CardTitle>
             <p className="mt-2 text-sm text-zinc-400">
               Review user reports before changing generated matchup guidance.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            {(["open", "reviewing", "resolved", "dismissed"] as const).map(
-              (status) => (
-                <span
-                  className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300"
-                  key={status}
-                >
-                  {titleCase(status)} {countsByStatus[status]}
-                </span>
-              )
-            )}
+            {(["open", "reviewing", "resolved", "dismissed"] as const).map((status) => (
+              <span
+                className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300"
+                key={status}
+              >
+                {titleCase(status)} {countsByStatus[status]}
+              </span>
+            ))}
           </div>
         </div>
       </CardHeader>
@@ -1418,9 +1338,7 @@ function LeagueMatchupFeedbackReview({
             <select
               className={`${fieldClassName} h-10`}
               onChange={(event) =>
-                setStatusFilter(
-                  event.target.value as LeagueMatchupFeedbackStatusFilter
-                )
+                setStatusFilter(event.target.value as LeagueMatchupFeedbackStatusFilter)
               }
               value={statusFilter}
             >
@@ -1448,9 +1366,7 @@ function LeagueMatchupFeedbackReview({
             </span>
             <select
               className={`${fieldClassName} h-10`}
-              onChange={(event) =>
-                setLaneFilter(event.target.value as LeagueMatchupRoleFilter)
-              }
+              onChange={(event) => setLaneFilter(event.target.value as LeagueMatchupRoleFilter)}
               value={laneFilter}
             >
               <option className={selectOptionClassName} value="all">
@@ -1570,8 +1486,7 @@ function LeagueMatchupFeedbackReview({
                               {getFeedbackTypeLabel(item.feedback_type)}
                               {item.reason
                                 ? ` · ${getFeedbackReasonLabel(item.reason)}`
-                                : ""}{" "}
-                              · {formatFeedbackDate(item.created_at)}
+                                : ""} · {formatFeedbackDate(item.created_at)}
                             </p>
                           </div>
 
@@ -1601,9 +1516,7 @@ function LeagueMatchupFeedbackReview({
                             <Button
                               className="border-violet-300/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
                               disabled={
-                                editStatus.isLoading ||
-                                targetedStatus.isLoading ||
-                                isRegenerating
+                                editStatus.isLoading || targetedStatus.isLoading || isRegenerating
                               }
                               onClick={() => regenerateAffectedCard(item)}
                               size="sm"
@@ -1611,9 +1524,7 @@ function LeagueMatchupFeedbackReview({
                               variant="ghost"
                             >
                               <RefreshCw
-                                className={`size-3.5 ${
-                                  isRegenerating ? "animate-spin" : ""
-                                }`}
+                                className={`size-3.5 ${isRegenerating ? "animate-spin" : ""}`}
                                 aria-hidden="true"
                               />
                               {isRegenerating ? "Regenerating" : "Regenerate card"}
@@ -1688,31 +1599,25 @@ function AdcGenerationReadinessCheck({
     () =>
       sortChampionsForRole(
         champions.filter((champion) => isChampionInRole(champion, "adc")),
-        "adc"
+        "adc",
       ),
-    [champions]
+    [champions],
   );
   const readiness = useMemo(
     () => getAdcGenerationReadiness(adcChampions, matchups),
-    [adcChampions, matchups]
+    [adcChampions, matchups],
   );
-  const profileReadiness = useMemo(
-    () => getCombatProfileReadiness(adcChampions),
-    [adcChampions]
-  );
+  const profileReadiness = useMemo(() => getCombatProfileReadiness(adcChampions), [adcChampions]);
 
   return (
     <Card className="border-violet-300/15 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="font-mono text-xl">
-              ADC generation readiness
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">ADC generation readiness</CardTitle>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-              Recommended model: ADC vs ADC under neutral support conditions.
-              Support impact should be handled as conditional setup until support
-              modifiers exist.
+              Recommended model: ADC vs ADC under neutral support conditions. Support impact should
+              be handled as conditional setup until support modifiers exist.
             </p>
           </div>
           <span className="rounded-md border border-violet-300/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-100">
@@ -1722,10 +1627,7 @@ function AdcGenerationReadinessCheck({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <QueueStat
-            label="ADC champions"
-            value={formatCompactNumber(readiness.championCount)}
-          />
+          <QueueStat label="ADC champions" value={formatCompactNumber(readiness.championCount)} />
           <QueueStat
             label="Expected matchups"
             value={formatCompactNumber(readiness.expectedMatchupCount)}
@@ -1745,26 +1647,21 @@ function AdcGenerationReadinessCheck({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-          <CombatProfileReadinessNotice
-            readiness={profileReadiness}
-            role="adc"
-            tone="default"
-          />
+          <CombatProfileReadinessNotice readiness={profileReadiness} role="adc" tone="default" />
 
           <div className="rounded-md border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-300">
             <p className="font-medium text-white">Readiness estimate</p>
             <p className="mt-1 leading-6">
-              Full ADC coverage would queue {readiness.expectedMatchupCount}{" "}
-              directional matchups. {readiness.existingMatchupCount} rows already
-              exist, so missing-only coverage would currently queue{" "}
-              {readiness.missingMatchupCount} and take about{" "}
+              Full ADC coverage would queue {readiness.expectedMatchupCount} directional matchups.{" "}
+              {readiness.existingMatchupCount} rows already exist, so missing-only coverage would
+              currently queue {readiness.missingMatchupCount} and take about{" "}
               {formatDuration(readiness.missingOnlyTimeMs)}.
             </p>
             <p className="mt-1 text-xs leading-5 text-zinc-500">
               OpenAI estimate: {readiness.expectedOpenAiRequests} request
-              {readiness.expectedOpenAiRequests === 1 ? "" : "s"} for a full
-              pass, with retry risk up to {readiness.retryRiskRequests} attempts
-              and roughly {formatCompactNumber(readiness.estimatedTokens)} tokens.
+              {readiness.expectedOpenAiRequests === 1 ? "" : "s"} for a full pass, with retry risk
+              up to {readiness.retryRiskRequests} attempts and roughly{" "}
+              {formatCompactNumber(readiness.estimatedTokens)} tokens.
             </p>
           </div>
         </div>
@@ -1785,14 +1682,11 @@ function LeagueMatchupBulkGenerationQueue({
   isDisabled: boolean;
   matchups: AdminLeagueMatchup[];
   onActiveChange: (isActive: boolean) => void;
-  onGenerateQueueItem: (
-    item: LeagueMatchupBatchPlanItem
-  ) => Promise<LeagueMatchupQueueItemResult>;
+  onGenerateQueueItem: (item: LeagueMatchupBatchPlanItem) => Promise<LeagueMatchupQueueItemResult>;
   onRefresh: () => Promise<boolean>;
 }) {
   const [queueRole, setQueueRole] = useState<AdminLeagueMatchup["role"]>("mid");
-  const [queueMode, setQueueMode] =
-    useState<LeagueMatchupQueueMode>("missing-only");
+  const [queueMode, setQueueMode] = useState<LeagueMatchupQueueMode>("missing-only");
   const [queueMessage, setQueueMessage] = useState<{
     text: string;
     type: "error" | "success";
@@ -1801,7 +1695,7 @@ function LeagueMatchupBulkGenerationQueue({
     { id: string; text: string; type: "error" | "info" | "success" }[]
   >([]);
   const [queueState, setQueueState] = useState<LeagueMatchupQueueState>(() =>
-    createEmptyQueueState("missing-only", "mid")
+    createEmptyQueueState("missing-only", "mid"),
   );
   const isProcessingRef = useRef(false);
   const matchupsRef = useRef(matchups);
@@ -1812,21 +1706,21 @@ function LeagueMatchupBulkGenerationQueue({
     () =>
       sortChampionsForRole(
         champions.filter((champion) => isChampionInRole(champion, queueRole)),
-        queueRole
+        queueRole,
       ),
-    [champions, queueRole]
+    [champions, queueRole],
   );
   const queueProfileReadiness = useMemo(
     () => getCombatProfileReadiness(roleChampions),
-    [roleChampions]
+    [roleChampions],
   );
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
-    [champions]
+    [champions],
   );
   const previewItems = useMemo(
     () => buildLaneQueueItems(roleChampions, matchups, queueMode, queueRole),
-    [matchups, queueMode, queueRole, roleChampions]
+    [matchups, queueMode, queueRole, roleChampions],
   );
   const stats = getQueueStats(queueState);
   const failedItems = queueState.items.filter((item) => item.status === "failed");
@@ -1842,8 +1736,7 @@ function LeagueMatchupBulkGenerationQueue({
     !isDisabled &&
     queueState.status !== "running" &&
     queueState.items.some((item) => item.status === "pending");
-  const canRetryFailed =
-    !isDisabled && queueState.status !== "running" && failedItems.length > 0;
+  const canRetryFailed = !isDisabled && queueState.status !== "running" && failedItems.length > 0;
 
   useEffect(() => {
     matchupsRef.current = matchups;
@@ -1858,9 +1751,7 @@ function LeagueMatchupBulkGenerationQueue({
       const storageKey = getMatchupQueueStorageKey(queueRole);
       const storedValue =
         window.localStorage.getItem(storageKey) ??
-        (queueRole === "mid"
-          ? window.localStorage.getItem(legacyMidMatchupQueueStorageKey)
-          : null);
+        (queueRole === "mid" ? window.localStorage.getItem(legacyMidMatchupQueueStorageKey) : null);
 
       if (!storedValue) {
         const emptyState = createEmptyQueueState("missing-only", queueRole);
@@ -1932,45 +1823,35 @@ function LeagueMatchupBulkGenerationQueue({
   }
 
   function updateQueueState(
-    updater: (currentState: LeagueMatchupQueueState) => LeagueMatchupQueueState
+    updater: (currentState: LeagueMatchupQueueState) => LeagueMatchupQueueState,
   ) {
     commitQueueState(updater(queueStateRef.current));
   }
 
-  function addQueueDebugMessage(
-    type: "error" | "info" | "success",
-    text: string
-  ) {
+  function addQueueDebugMessage(type: "error" | "info" | "success", text: string) {
     queueDebugMessageIdRef.current += 1;
     const messageId = `queue-debug-${queueDebugMessageIdRef.current}`;
 
-    setQueueDebugMessages((currentMessages) => [
-      {
-        id: messageId,
-        text,
-        type,
-      },
-      ...currentMessages,
-    ].slice(0, 8));
+    setQueueDebugMessages((currentMessages) =>
+      [
+        {
+          id: messageId,
+          text,
+          type,
+        },
+        ...currentMessages,
+      ].slice(0, 8),
+    );
   }
 
   function startQueue() {
-    const items = buildLaneQueueItems(
-      roleChampions,
-      matchupsRef.current,
-      queueMode,
-      queueRole
-    );
+    const items = buildLaneQueueItems(roleChampions, matchupsRef.current, queueMode, queueRole);
     const skippedExistingDraftCount =
       queueMode === "missing-only"
         ? Math.max(
-            buildLaneQueueItems(
-              roleChampions,
-              matchupsRef.current,
-              "regenerate-all",
-              queueRole
-            ).length - items.length,
-            0
+            buildLaneQueueItems(roleChampions, matchupsRef.current, "regenerate-all", queueRole)
+              .length - items.length,
+            0,
           )
         : 0;
 
@@ -2002,7 +1883,7 @@ function LeagueMatchupBulkGenerationQueue({
         "info",
         `${skippedExistingDraftCount} existing saved draft${
           skippedExistingDraftCount === 1 ? "" : "s"
-        } skipped by missing-only mode.`
+        } skipped by missing-only mode.`,
       );
     }
     commitQueueState(nextState);
@@ -2031,14 +1912,14 @@ function LeagueMatchupBulkGenerationQueue({
     updateQueueState((currentState) => ({
       ...currentState,
       items: currentState.items.map((item) =>
-        item.status === "running" ? { ...item, status: "pending" } : item
+        item.status === "running" ? { ...item, status: "pending" } : item,
       ),
       status: "stopped",
       updatedAt: Date.now(),
     }));
     addQueueDebugMessage(
       "info",
-      "Queue stopped. Progress was saved and remaining pending items were preserved."
+      "Queue stopped. Progress was saved and remaining pending items were preserved.",
     );
     void onRefresh();
   }
@@ -2056,7 +1937,7 @@ function LeagueMatchupBulkGenerationQueue({
               error: null,
               status: "pending",
             }
-          : item
+          : item,
       ),
       status: "running",
       updatedAt: Date.now(),
@@ -2092,9 +1973,7 @@ function LeagueMatchupBulkGenerationQueue({
     try {
       while (queueStateRef.current.status === "running") {
         const currentState = queueStateRef.current;
-        const nextItemIndex = currentState.items.findIndex(
-          (item) => item.status === "pending"
-        );
+        const nextItemIndex = currentState.items.findIndex((item) => item.status === "pending");
 
         if (nextItemIndex === -1) {
           const finalStats = getQueueStats(currentState);
@@ -2109,7 +1988,7 @@ function LeagueMatchupBulkGenerationQueue({
             didRefresh ? "success" : "error",
             didRefresh
               ? "Admin matchup list refreshed after queue completion."
-              : "Queue completed, but the admin matchup list could not refresh."
+              : "Queue completed, but the admin matchup list could not refresh.",
           );
           setQueueMessage({
             text:
@@ -2136,7 +2015,7 @@ function LeagueMatchupBulkGenerationQueue({
         });
 
         const result = await onGenerateQueueItem(
-          getFreshQueuePlanItem(nextItem, matchupsRef.current)
+          getFreshQueuePlanItem(nextItem, matchupsRef.current),
         );
         const completedAt = Date.now();
 
@@ -2145,7 +2024,7 @@ function LeagueMatchupBulkGenerationQueue({
             "success",
             result.skipped
               ? `Skipped ${nextItemLabel}; an existing saved draft was confirmed as matchup #${result.matchupId}.`
-              : `Saved ${nextItemLabel} as matchup #${result.matchupId}.`
+              : `Saved ${nextItemLabel} as matchup #${result.matchupId}.`,
           );
           updateQueueItem(nextItem.id, {
             completedAt,
@@ -2155,10 +2034,7 @@ function LeagueMatchupBulkGenerationQueue({
             status: "generated",
           });
         } else {
-          addQueueDebugMessage(
-            "error",
-            `Save failed for ${nextItemLabel}: ${result.error}`
-          );
+          addQueueDebugMessage("error", `Save failed for ${nextItemLabel}: ${result.error}`);
           updateQueueItem(nextItem.id, {
             completedAt,
             durationMs: completedAt - startedAt,
@@ -2172,15 +2048,10 @@ function LeagueMatchupBulkGenerationQueue({
     }
   }
 
-  function updateQueueItem(
-    itemId: string,
-    patch: Partial<LeagueMatchupQueueItem>
-  ) {
+  function updateQueueItem(itemId: string, patch: Partial<LeagueMatchupQueueItem>) {
     updateQueueState((currentState) => ({
       ...currentState,
-      items: currentState.items.map((item) =>
-        item.id === itemId ? { ...item, ...patch } : item
-      ),
+      items: currentState.items.map((item) => (item.id === itemId ? { ...item, ...patch } : item)),
       updatedAt: Date.now(),
     }));
   }
@@ -2194,8 +2065,8 @@ function LeagueMatchupBulkGenerationQueue({
               {queueRoleLabel} lane bulk generation queue
             </CardTitle>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Generate missing {queueLaneLabel} matchup drafts one at a time
-              with pause, resume, stop, retry, and refresh-safe progress.
+              Generate missing {queueLaneLabel} matchup drafts one at a time with pause, resume,
+              stop, retry, and refresh-safe progress.
             </p>
           </div>
           <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
@@ -2209,10 +2080,7 @@ function LeagueMatchupBulkGenerationQueue({
           <QueueStat label="Total" value={stats.total} />
           <QueueStat label="Remaining" value={stats.remaining} />
           <QueueStat label="Failed" value={stats.failed} />
-          <QueueStat
-            label="ETA"
-            value={stats.etaMs ? formatDuration(stats.etaMs) : "Pending"}
-          />
+          <QueueStat label="ETA" value={stats.etaMs ? formatDuration(stats.etaMs) : "Pending"} />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
@@ -2220,8 +2088,8 @@ function LeagueMatchupBulkGenerationQueue({
             <div>
               <p className="font-semibold text-white">Queue lane and mode</p>
               <p className="mt-1 text-xs text-zinc-500">
-                {roleChampions.length} {queueLaneLabel} champions available for
-                directional matchup generation.
+                {roleChampions.length} {queueLaneLabel} champions available for directional matchup
+                generation.
               </p>
             </div>
 
@@ -2280,12 +2148,10 @@ function LeagueMatchupBulkGenerationQueue({
             <div className="rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">
               <p>
                 {previewItems.length} matchup
-                {previewItems.length === 1 ? "" : "s"} will be queued with the
-                current mode.
+                {previewItems.length === 1 ? "" : "s"} will be queued with the current mode.
               </p>
               <p className="mt-1 text-xs text-zinc-500">
-                Existing saved drafts are skipped unless regenerate all is
-                selected.
+                Existing saved drafts are skipped unless regenerate all is selected.
               </p>
             </div>
           </div>
@@ -2297,9 +2163,7 @@ function LeagueMatchupBulkGenerationQueue({
                   <Clock3 className="size-4 text-violet-200" aria-hidden="true" />
                   Queue controls
                 </p>
-                <p className="mt-1 text-sm text-zinc-300">
-                  Status: {titleCase(queueState.status)}
-                </p>
+                <p className="mt-1 text-sm text-zinc-300">Status: {titleCase(queueState.status)}</p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -2393,7 +2257,7 @@ function LeagueMatchupBulkGenerationQueue({
                   "mt-4 rounded-md border p-3 text-sm",
                   queueMessage.type === "error"
                     ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
                 )}
               >
                 {queueMessage.text}
@@ -2413,7 +2277,7 @@ function LeagueMatchupBulkGenerationQueue({
                           ? "text-rose-100"
                           : message.type === "success"
                             ? "text-emerald-100"
-                            : "text-zinc-300"
+                            : "text-zinc-300",
                       )}
                       key={message.id}
                     >
@@ -2431,16 +2295,9 @@ function LeagueMatchupBulkGenerationQueue({
             <p className="font-semibold text-rose-100">Failed matchups</p>
             <ol className="mt-3 max-h-64 space-y-2 overflow-auto pr-1 text-sm">
               {failedItems.map((item) => (
-                <li
-                  className="rounded-md border border-rose-300/15 bg-black/15 p-3"
-                  key={item.id}
-                >
-                  <p className="font-medium text-white">
-                    {getQueueItemLabel(item, championsById)}
-                  </p>
-                  <p className="mt-1 text-rose-100">
-                    {item.error ?? "Generation failed."}
-                  </p>
+                <li className="rounded-md border border-rose-300/15 bg-black/15 p-3" key={item.id}>
+                  <p className="font-medium text-white">{getQueueItemLabel(item, championsById)}</p>
+                  <p className="mt-1 text-rose-100">{item.error ?? "Generation failed."}</p>
                 </li>
               ))}
             </ol>
@@ -2451,18 +2308,10 @@ function LeagueMatchupBulkGenerationQueue({
   );
 }
 
-function QueueStat({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | string;
-}) {
+function QueueStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
-        {label}
-      </p>
+      <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
     </div>
   );
@@ -2487,13 +2336,13 @@ function LeagueMatchupGapChecker({
     () =>
       sortChampionsForRole(
         champions.filter((champion) => isChampionInRole(champion, role)),
-        role
+        role,
       ),
-    [champions, role]
+    [champions, role],
   );
   const analysis = useMemo(
     () => getRoleMatchupGapAnalysis(roleChampions, matchups, role),
-    [matchups, role, roleChampions]
+    [matchups, role, roleChampions],
   );
   const roleLabel = getRoleLabel(role);
   const hasMissingMatchups = analysis.missingMatchups.length > 0;
@@ -2514,7 +2363,7 @@ function LeagueMatchupGapChecker({
         : {
             text: "Could not refresh matchup rows. Showing the last loaded admin data.",
             type: "error",
-          }
+          },
     );
   }
 
@@ -2532,26 +2381,21 @@ function LeagueMatchupGapChecker({
               hasExistingRow: matchup.hasExistingRow,
             })),
             null,
-            2
+            2,
           )
         : analysis.missingMatchups
             .map(
               (matchup) =>
                 `${matchup.sourceChampionName} (${matchup.sourceChampionId}) vs ${matchup.targetChampionName} (${matchup.targetChampionId}) [${matchup.role}]${
-                  matchup.hasExistingRow
-                    ? ` existing row #${matchup.existingMatchupId}`
-                    : " no row"
-                }`
+                  matchup.hasExistingRow ? ` existing row #${matchup.existingMatchupId}` : " no row"
+                }`,
             )
             .join("\n");
 
     try {
       await navigator.clipboard.writeText(output);
       setCopyStatus({
-        text:
-          format === "json"
-            ? "Missing matchup JSON copied."
-            : "Missing matchup text copied.",
+        text: format === "json" ? "Missing matchup JSON copied." : "Missing matchup text copied.",
         type: "success",
       });
     } catch {
@@ -2571,8 +2415,8 @@ function LeagueMatchupGapChecker({
               {roleLabel} lane matchup gap checker
             </CardTitle>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Compare the generator role pool against reviewed matchup rows without
-              creating, updating, or generating anything.
+              Compare the generator role pool against reviewed matchup rows without creating,
+              updating, or generating anything.
             </p>
           </div>
           <span className="rounded-md border border-emerald-300/20 bg-emerald-400/10 px-2 py-1 text-xs text-emerald-100">
@@ -2587,17 +2431,11 @@ function LeagueMatchupGapChecker({
               Lane
               <select
                 className={fieldClassName}
-                onChange={(event) =>
-                  setRole(event.target.value as AdminLeagueMatchup["role"])
-                }
+                onChange={(event) => setRole(event.target.value as AdminLeagueMatchup["role"])}
                 value={role}
               >
                 {leagueRoles.map((leagueRole) => (
-                  <option
-                    className={selectOptionClassName}
-                    key={leagueRole}
-                    value={leagueRole}
-                  >
+                  <option className={selectOptionClassName} key={leagueRole} value={leagueRole}>
                     {getRoleLabel(leagueRole)}
                   </option>
                 ))}
@@ -2606,9 +2444,9 @@ function LeagueMatchupGapChecker({
 
             <p className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300">
               {roleChampions.length} {roleLabel} champion
-              {roleChampions.length === 1 ? "" : "s"} are included using the same
-              role tagging logic as the bulk generation queue. Directional pairs
-              are counted separately and self-matchups are excluded.
+              {roleChampions.length === 1 ? "" : "s"} are included using the same role tagging logic
+              as the bulk generation queue. Directional pairs are counted separately and
+              self-matchups are excluded.
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -2653,7 +2491,7 @@ function LeagueMatchupGapChecker({
                   "rounded-md border p-3 text-sm",
                   copyStatus.type === "error"
                     ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
                 )}
               >
                 {copyStatus.text}
@@ -2670,21 +2508,17 @@ function LeagueMatchupGapChecker({
             </div>
 
             <p className="text-xs leading-5 text-zinc-400">
-              Available means reviewed and visible in public coverage. Existing
-              rows includes draft or unreviewed rows, which can explain why the
-              generator sees a role as complete while public coverage still has
-              gaps.
+              Available means reviewed and visible in public coverage. Existing rows includes draft
+              or unreviewed rows, which can explain why the generator sees a role as complete while
+              public coverage still has gaps.
             </p>
 
             {hasMissingMatchups ? (
               <div className="rounded-md border border-white/10 bg-black/15 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-white">
-                    Missing {roleLabel} matchups
-                  </p>
+                  <p className="font-semibold text-white">Missing {roleLabel} matchups</p>
                   <span className="text-xs text-zinc-500">
-                    Showing {missingPreview.length} of{" "}
-                    {analysis.missingMatchups.length}
+                    Showing {missingPreview.length} of {analysis.missingMatchups.length}
                   </span>
                 </div>
                 <ol className="mt-3 max-h-80 space-y-2 overflow-auto pr-1 text-sm">
@@ -2697,17 +2531,14 @@ function LeagueMatchupGapChecker({
                         {matchup.sourceChampionName} vs {matchup.targetChampionName}
                       </p>
                       <p className="mt-1 font-mono text-xs text-zinc-500">
-                        {matchup.sourceChampionId} / {matchup.targetChampionId} /{" "}
-                        {matchup.role}
+                        {matchup.sourceChampionId} / {matchup.targetChampionId} / {matchup.role}
                       </p>
                       {matchup.hasExistingRow ? (
                         <p className="mt-1 text-xs text-amber-100">
                           Existing unreviewed row #{matchup.existingMatchupId}
                         </p>
                       ) : (
-                        <p className="mt-1 text-xs text-rose-100">
-                          No matchup row found
-                        </p>
+                        <p className="mt-1 text-xs text-rose-100">No matchup row found</p>
                       )}
                     </li>
                   ))}
@@ -2742,7 +2573,7 @@ function CombatProfileReadinessNotice({
         "rounded-md border p-3 text-sm",
         hasMissingProfiles
           ? "border-amber-300/20 bg-amber-400/10 text-amber-100"
-          : "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
+          : "border-emerald-300/20 bg-emerald-500/10 text-emerald-100",
       )}
     >
       <p className="flex items-center gap-2 font-medium">
@@ -2762,8 +2593,8 @@ function CombatProfileReadinessNotice({
       </p>
       {tone === "jungle" ? (
         <p className="mt-1 text-xs leading-5">
-          Jungle totals are ready to preview here; keep full queue generation for
-          the next coverage pass.
+          Jungle totals are ready to preview here; keep full queue generation for the next coverage
+          pass.
         </p>
       ) : null}
     </div>
@@ -2787,8 +2618,9 @@ function LeagueMatchupBatchPlanner({
 }) {
   const [role, setRole] = useState<AdminLeagueMatchup["role"]>("mid");
   const [sourceChampionId, setSourceChampionId] = useState("");
-  const [direction, setDirection] =
-    useState<"source-first" | "source-second" | "both">("source-first");
+  const [direction, setDirection] = useState<"source-first" | "source-second" | "both">(
+    "source-first",
+  );
   const [poolFilter, setPoolFilter] = useState<"role" | "all">("role");
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -2797,23 +2629,20 @@ function LeagueMatchupBatchPlanner({
   const [selectedOpponentIds, setSelectedOpponentIds] = useState<string[]>([]);
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
-    [champions]
+    [champions],
   );
   const roleChampionPool = useMemo(
     () =>
       sortChampionsForRole(
-        champions.filter((champion) =>
-          isChampionInRole(champion, role, { includeOffMeta })
-        ),
-        role
+        champions.filter((champion) => isChampionInRole(champion, role, { includeOffMeta })),
+        role,
       ),
-    [champions, includeOffMeta, role]
+    [champions, includeOffMeta, role],
   );
-  const sourceChampionPool =
-    poolFilter === "role" ? roleChampionPool : champions;
+  const sourceChampionPool = poolFilter === "role" ? roleChampionPool : champions;
   const plannerProfileReadiness = useMemo(
     () => getCombatProfileReadiness(roleChampionPool),
-    [roleChampionPool]
+    [roleChampionPool],
   );
   const existingMatchupIds = useMemo(
     () =>
@@ -2821,9 +2650,9 @@ function LeagueMatchupBatchPlanner({
         matchups.map((matchup) => [
           getMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
           matchup.id,
-        ])
+        ]),
       ),
-    [matchups]
+    [matchups],
   );
   const opponentPool = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -2857,21 +2686,17 @@ function LeagueMatchupBatchPlanner({
       : filteredChampions;
   }, [champions, includeOffMeta, poolFilter, role, searchQuery, sourceChampionId]);
   const selectedOpponents = selectedOpponentIds.filter((id) =>
-    opponentPool.some((champion) => champion.id === id)
+    opponentPool.some((champion) => champion.id === id),
   );
   const plannedItems = useMemo(() => {
     const candidateItems = selectedOpponents.flatMap((opponentId) => {
-      const directions =
-        direction === "both" ? ["source-first", "source-second"] : [direction];
+      const directions = direction === "both" ? ["source-first", "source-second"] : [direction];
 
       return directions.map((plannedDirection) => {
-        const championAId =
-          plannedDirection === "source-first" ? sourceChampionId : opponentId;
-        const championBId =
-          plannedDirection === "source-first" ? opponentId : sourceChampionId;
+        const championAId = plannedDirection === "source-first" ? sourceChampionId : opponentId;
+        const championBId = plannedDirection === "source-first" ? opponentId : sourceChampionId;
         const existingMatchupId =
-          existingMatchupIds.get(getMatchupKey(championAId, championBId, role)) ??
-          null;
+          existingMatchupIds.get(getMatchupKey(championAId, championBId, role)) ?? null;
 
         return {
           championAId,
@@ -2885,20 +2710,12 @@ function LeagueMatchupBatchPlanner({
     return onlyMissing
       ? candidateItems.filter((item) => item.existingMatchupId === null)
       : candidateItems;
-  }, [
-    direction,
-    existingMatchupIds,
-    onlyMissing,
-    role,
-    selectedOpponents,
-    sourceChampionId,
-  ]);
+  }, [direction, existingMatchupIds, onlyMissing, role, selectedOpponents, sourceChampionId]);
   const safeBatchSize = Math.min(Math.max(maxBatchSize, 1), 25);
   const executableItems = plannedItems.slice(0, safeBatchSize);
   const skippedByLimit = Math.max(plannedItems.length - executableItems.length, 0);
   const selectedOpponentSet = new Set(selectedOpponents);
-  const canGenerate =
-    sourceChampionId && executableItems.length > 0 && !status.isLoading;
+  const canGenerate = sourceChampionId && executableItems.length > 0 && !status.isLoading;
 
   function updateRole(nextRole: AdminLeagueMatchup["role"]) {
     setRole(nextRole);
@@ -2967,16 +2784,16 @@ function LeagueMatchupBatchPlanner({
 
     return Boolean(
       champion &&
-        isChampionInRole(champion, nextRole, {
-          includeOffMeta: nextIncludeOffMeta,
-        })
+      isChampionInRole(champion, nextRole, {
+        includeOffMeta: nextIncludeOffMeta,
+      }),
     );
   }
 
   function updateSourceChampion(nextChampionId: string) {
     setSourceChampionId(nextChampionId);
     setSelectedOpponentIds((current) =>
-      current.filter((opponentId) => opponentId !== nextChampionId)
+      current.filter((opponentId) => opponentId !== nextChampionId),
     );
   }
 
@@ -2984,18 +2801,15 @@ function LeagueMatchupBatchPlanner({
     setSelectedOpponentIds((current) =>
       current.includes(opponentId)
         ? current.filter((id) => id !== opponentId)
-        : [...current, opponentId]
+        : [...current, opponentId],
     );
   }
 
   function selectVisibleOpponents() {
     setSelectedOpponentIds((current) =>
       Array.from(
-        new Set([
-          ...current,
-          ...opponentPool.slice(0, 50).map((champion) => champion.id),
-        ])
-      )
+        new Set([...current, ...opponentPool.slice(0, 50).map((champion) => champion.id)]),
+      ),
     );
   }
 
@@ -3008,12 +2822,10 @@ function LeagueMatchupBatchPlanner({
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="font-mono text-xl">
-              Batch generation planner
-            </CardTitle>
+            <CardTitle className="font-mono text-xl">Batch generation planner</CardTitle>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Plan a limited set of directional matchup drafts before generating.
-              Ekko vs Hwei and Hwei vs Ekko are treated as separate matchups.
+              Plan a limited set of directional matchup drafts before generating. Ekko vs Hwei and
+              Hwei vs Ekko are treated as separate matchups.
             </p>
           </div>
           <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100">
@@ -3028,17 +2840,11 @@ function LeagueMatchupBatchPlanner({
             <select
               className={fieldClassName}
               disabled={status.isLoading}
-              onChange={(event) =>
-                updateRole(event.target.value as AdminLeagueMatchup["role"])
-              }
+              onChange={(event) => updateRole(event.target.value as AdminLeagueMatchup["role"])}
               value={role}
             >
               {leagueRoles.map((leagueRole) => (
-                <option
-                  className={selectOptionClassName}
-                  key={leagueRole}
-                  value={leagueRole}
-                >
+                <option className={selectOptionClassName} key={leagueRole} value={leagueRole}>
                   {leagueRole === "adc" ? "ADC" : titleCase(leagueRole)}
                 </option>
               ))}
@@ -3057,19 +2863,14 @@ function LeagueMatchupBatchPlanner({
                 Select source
               </option>
               {sourceChampionPool.map((champion) => (
-                <option
-                  className={selectOptionClassName}
-                  key={champion.id}
-                  value={champion.id}
-                >
+                <option className={selectOptionClassName} key={champion.id} value={champion.id}>
                   {champion.name}
                 </option>
               ))}
             </select>
             <span className="text-xs text-zinc-500">
               {sourceChampionPool.length} champion
-              {sourceChampionPool.length === 1 ? "" : "s"} available in the
-              current pool.
+              {sourceChampionPool.length === 1 ? "" : "s"} available in the current pool.
             </span>
           </label>
 
@@ -3079,9 +2880,7 @@ function LeagueMatchupBatchPlanner({
               className={fieldClassName}
               disabled={status.isLoading}
               onChange={(event) =>
-                setDirection(
-                  event.target.value as "source-first" | "source-second" | "both"
-                )
+                setDirection(event.target.value as "source-first" | "source-second" | "both")
               }
               value={direction}
             >
@@ -3104,9 +2903,7 @@ function LeagueMatchupBatchPlanner({
               disabled={status.isLoading}
               max={25}
               min={1}
-              onChange={(event) =>
-                setMaxBatchSize(Number.parseInt(event.target.value, 10) || 1)
-              }
+              onChange={(event) => setMaxBatchSize(Number.parseInt(event.target.value, 10) || 1)}
               type="number"
               value={maxBatchSize}
             />
@@ -3126,9 +2923,7 @@ function LeagueMatchupBatchPlanner({
               <select
                 className={fieldClassName}
                 disabled={status.isLoading}
-                onChange={(event) =>
-                  updatePoolFilter(event.target.value as "role" | "all")
-                }
+                onChange={(event) => updatePoolFilter(event.target.value as "role" | "all")}
                 value={poolFilter}
               >
                 <option className={selectOptionClassName} value="role">
@@ -3203,8 +2998,7 @@ function LeagueMatchupBatchPlanner({
               <div>
                 <p className="font-semibold text-white">Opponent champions</p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  {selectedOpponents.length} selected from {opponentPool.length}{" "}
-                  visible champions.
+                  {selectedOpponents.length} selected from {opponentPool.length} visible champions.
                 </p>
               </div>
               <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-xs text-zinc-300">
@@ -3241,9 +3035,8 @@ function LeagueMatchupBatchPlanner({
               </p>
               <p className="mt-2 text-sm text-zinc-300">
                 {plannedItems.length} directional matchup
-                {plannedItems.length === 1 ? "" : "s"} planned.{" "}
-                {executableItems.length} will generate now with the current safe
-                limit of {safeBatchSize}.
+                {plannedItems.length === 1 ? "" : "s"} planned. {executableItems.length} will
+                generate now with the current safe limit of {safeBatchSize}.
               </p>
               {skippedByLimit > 0 ? (
                 <p className="mt-1 text-xs text-amber-100">
@@ -3276,8 +3069,7 @@ function LeagueMatchupBatchPlanner({
                     key={getMatchupKey(item.championAId, item.championBId, item.role)}
                   >
                     <span className="font-medium text-zinc-100">
-                      {championA?.name ?? item.championAId} vs{" "}
-                      {championB?.name ?? item.championBId}
+                      {championA?.name ?? item.championAId} vs {championB?.name ?? item.championBId}
                     </span>
                     <span className="ml-2 text-xs text-zinc-500">
                       {item.existingMatchupId ? "existing row" : "missing row"}
@@ -3288,8 +3080,7 @@ function LeagueMatchupBatchPlanner({
             </ol>
           ) : (
             <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-400">
-              Select a source champion and at least one opponent to preview a safe
-              batch.
+              Select a source champion and at least one opponent to preview a safe batch.
             </p>
           )}
 
@@ -3326,14 +3117,14 @@ function groupFeedbackForAdmin(feedback: AdminLeagueMatchupFeedback[]) {
     const id = `${item.matchup_id}:${item.lane}:${item.card_type}:${item.reason ?? "general"}:${item.status}`;
     const existingGroup = groups.get(id);
     const title = `${item.player_champion} vs ${item.enemy_champion} · ${getRoleLabel(
-      item.lane
+      item.lane,
     )} · ${getCardTypeLabel(item.card_type)} · ${
       item.reason ? getFeedbackReasonLabel(item.reason) : getFeedbackTypeLabel(item.feedback_type)
     } · ${titleCase(item.status)}`;
 
     const roleAwareTitle = title.replace(
       getCardTypeLabel(item.card_type),
-      getCardTypeLabel(item.card_type, item.lane)
+      getCardTypeLabel(item.card_type, item.lane),
     );
 
     if (existingGroup) {
@@ -3355,17 +3146,16 @@ function getFeedbackCountsByStatus(feedback: AdminLeagueMatchupFeedback[]) {
   };
 }
 
-function getUniqueFeedbackValues<
-  TKey extends "card_type" | "reason"
->(feedback: AdminLeagueMatchupFeedback[], key: TKey) {
+function getUniqueFeedbackValues<TKey extends "card_type" | "reason">(
+  feedback: AdminLeagueMatchupFeedback[],
+  key: TKey,
+) {
   return Array.from(
     new Set(
       feedback
         .map((item) => item[key])
-        .filter((value): value is NonNullable<AdminLeagueMatchupFeedback[TKey]> =>
-          Boolean(value)
-        )
-    )
+        .filter((value): value is NonNullable<AdminLeagueMatchupFeedback[TKey]> => Boolean(value)),
+    ),
   ).sort();
 }
 
@@ -3384,19 +3174,13 @@ function getFeedbackSectionKey(cardType: string): MatchupDraftSectionKey | null 
     : null;
 }
 
-function getFeedbackCardText(
-  matchup: AdminLeagueMatchup | undefined,
-  cardType: string
-) {
+function getFeedbackCardText(matchup: AdminLeagueMatchup | undefined, cardType: string) {
   const sectionKey = getFeedbackSectionKey(cardType);
 
   return sectionKey && matchup ? matchup[sectionKey] : null;
 }
 
-function getCardTypeLabel(
-  value: string,
-  role?: AdminLeagueMatchup["role"] | null
-) {
+function getCardTypeLabel(value: string, role?: AdminLeagueMatchup["role"] | null) {
   const sectionKey = getFeedbackSectionKey(value);
 
   if (sectionKey) {
@@ -3428,9 +3212,7 @@ function getFeedbackReasonLabel(value: string) {
   }
 }
 
-function getFeedbackTypeLabel(
-  value: AdminLeagueMatchupFeedback["feedback_type"]
-) {
+function getFeedbackTypeLabel(value: AdminLeagueMatchupFeedback["feedback_type"]) {
   switch (value) {
     case "helpful":
       return "Helpful";
@@ -3450,11 +3232,7 @@ function formatFeedbackDate(value: string) {
   }).format(new Date(value));
 }
 
-function getMatchupKey(
-  championAId: string,
-  championBId: string,
-  role: AdminLeagueMatchup["role"]
-) {
+function getMatchupKey(championAId: string, championBId: string, role: AdminLeagueMatchup["role"]) {
   return `${role}:${championAId}:${championBId}`;
 }
 
@@ -3490,24 +3268,15 @@ function filterLeagueMatchups({
       return false;
     }
 
-    if (
-      reviewedFilter === "reviewed" &&
-      matchup.generation_status !== "reviewed"
-    ) {
+    if (reviewedFilter === "reviewed" && matchup.generation_status !== "reviewed") {
       return false;
     }
 
-    if (
-      reviewedFilter === "unreviewed" &&
-      matchup.generation_status === "reviewed"
-    ) {
+    if (reviewedFilter === "unreviewed" && matchup.generation_status === "reviewed") {
       return false;
     }
 
-    if (
-      confidenceFilter === "none" &&
-      Boolean(matchup.confidence_level?.trim())
-    ) {
+    if (confidenceFilter === "none" && Boolean(matchup.confidence_level?.trim())) {
       return false;
     }
 
@@ -3550,7 +3319,7 @@ function filterLeagueMatchups({
 function sortLeagueMatchupsForAdminList(
   matchups: AdminLeagueMatchup[],
   championsById: Map<string, AdminLeagueChampion>,
-  sortMode: LeagueMatchupSortMode
+  sortMode: LeagueMatchupSortMode,
 ) {
   return [...matchups].sort((matchupA, matchupB) => {
     if (sortMode === "needs-review") {
@@ -3562,27 +3331,21 @@ function sortLeagueMatchupsForAdminList(
       }
 
       const confidenceDifference =
-        getMatchupConfidencePriority(matchupA) -
-        getMatchupConfidencePriority(matchupB);
+        getMatchupConfidencePriority(matchupA) - getMatchupConfidencePriority(matchupB);
 
       if (confidenceDifference !== 0) {
         return confidenceDifference;
       }
 
       const activityDifference =
-        getMatchupActivityTimestamp(matchupB) -
-        getMatchupActivityTimestamp(matchupA);
+        getMatchupActivityTimestamp(matchupB) - getMatchupActivityTimestamp(matchupA);
 
       if (activityDifference !== 0) {
         return activityDifference;
       }
     }
 
-    return compareLeagueMatchupsAlphabetically(
-      matchupA,
-      matchupB,
-      championsById
-    );
+    return compareLeagueMatchupsAlphabetically(matchupA, matchupB, championsById);
   });
 }
 
@@ -3612,7 +3375,7 @@ function getMatchupActivityTimestamp(matchup: AdminLeagueMatchup) {
   return Math.max(
     parseMatchupTimestamp(matchup.updated_at),
     parseMatchupTimestamp(matchup.generated_at),
-    parseMatchupTimestamp(matchup.reviewed_at)
+    parseMatchupTimestamp(matchup.reviewed_at),
   );
 }
 
@@ -3629,10 +3392,9 @@ function parseMatchupTimestamp(value: string | null) {
 function compareLeagueMatchupsAlphabetically(
   matchupA: AdminLeagueMatchup,
   matchupB: AdminLeagueMatchup,
-  championsById: Map<string, AdminLeagueChampion>
+  championsById: Map<string, AdminLeagueChampion>,
 ) {
-  const roleDifference =
-    leagueRoles.indexOf(matchupA.role) - leagueRoles.indexOf(matchupB.role);
+  const roleDifference = leagueRoles.indexOf(matchupA.role) - leagueRoles.indexOf(matchupB.role);
 
   if (roleDifference !== 0) {
     return roleDifference;
@@ -3640,7 +3402,7 @@ function compareLeagueMatchupsAlphabetically(
 
   const championADifference = getChampionSortName(
     matchupA.champion_a_id,
-    championsById
+    championsById,
   ).localeCompare(getChampionSortName(matchupB.champion_a_id, championsById));
 
   if (championADifference !== 0) {
@@ -3648,7 +3410,7 @@ function compareLeagueMatchupsAlphabetically(
   }
 
   return getChampionSortName(matchupA.champion_b_id, championsById).localeCompare(
-    getChampionSortName(matchupB.champion_b_id, championsById)
+    getChampionSortName(matchupB.champion_b_id, championsById),
   );
 }
 
@@ -3677,7 +3439,7 @@ function getLaneMatchupGroups({
       sortMode,
     });
     const reviewedCount = roleMatchups.filter(
-      (matchup) => matchup.generation_status === "reviewed"
+      (matchup) => matchup.generation_status === "reviewed",
     ).length;
 
     return {
@@ -3705,9 +3467,7 @@ function getChampionMatchupGroupsForRole({
   role: AdminLeagueMatchup["role"];
   sortMode: LeagueMatchupSortMode;
 }): ChampionMatchupGroup[] {
-  const championsById = new Map(
-    champions.map((champion) => [champion.id, champion] as const)
-  );
+  const championsById = new Map(champions.map((champion) => [champion.id, champion] as const));
   const filteredApprovableDraftIdsByChampion = new Map<string, Set<number>>();
   const matchupsBySourceChampion = new Map<string, AdminLeagueMatchup[]>();
 
@@ -3717,13 +3477,9 @@ function getChampionMatchupGroupsForRole({
       matchup,
     ]);
 
-    if (
-      matchup.generation_status === "draft" &&
-      hasMatchupDraftContent(matchup)
-    ) {
+    if (matchup.generation_status === "draft" && hasMatchupDraftContent(matchup)) {
       for (const championId of [matchup.champion_a_id, matchup.champion_b_id]) {
-        const draftIds =
-          filteredApprovableDraftIdsByChampion.get(championId) ?? new Set<number>();
+        const draftIds = filteredApprovableDraftIdsByChampion.get(championId) ?? new Set<number>();
 
         draftIds.add(matchup.id);
         filteredApprovableDraftIdsByChampion.set(championId, draftIds);
@@ -3739,21 +3495,20 @@ function getChampionMatchupGroupsForRole({
       const items = sortMatchupsForChampion(
         matchupsBySourceChampion.get(championId) ?? [],
         championsById,
-        sortMode
+        sortMode,
       );
       const totalCount = items.length;
       const reviewedCount = items.filter(
-        (matchup) => matchup.generation_status === "reviewed"
+        (matchup) => matchup.generation_status === "reviewed",
       ).length;
       const draftCount = totalCount - reviewedCount;
       const missingCount = includeMissingCount
         ? Math.max(
             champions.filter(
               (championOption) =>
-                championOption.id !== championId &&
-                isChampionInRole(championOption, role)
+                championOption.id !== championId && isChampionInRole(championOption, role),
             ).length - totalCount,
-            0
+            0,
           )
         : null;
       const status = getChampionGroupStatus({
@@ -3764,9 +3519,7 @@ function getChampionMatchupGroupsForRole({
       });
 
       return {
-        approvableDraftIds: Array.from(
-          filteredApprovableDraftIdsByChampion.get(championId) ?? []
-        ),
+        approvableDraftIds: Array.from(filteredApprovableDraftIdsByChampion.get(championId) ?? []),
         championId,
         draftCount,
         id: `${role}:${championId}`,
@@ -3786,7 +3539,7 @@ function getChampionMatchupGroupsForRole({
 function sortMatchupsForChampion(
   matchups: AdminLeagueMatchup[],
   championsById: Map<string, AdminLeagueChampion>,
-  sortMode: LeagueMatchupSortMode
+  sortMode: LeagueMatchupSortMode,
 ) {
   if (sortMode === "needs-review") {
     return sortLeagueMatchupsForAdminList(matchups, championsById, sortMode);
@@ -3794,7 +3547,7 @@ function sortMatchupsForChampion(
 
   return [...matchups].sort((matchupA, matchupB) => {
     return getChampionSortName(matchupA.champion_b_id, championsById).localeCompare(
-      getChampionSortName(matchupB.champion_b_id, championsById)
+      getChampionSortName(matchupB.champion_b_id, championsById),
     );
   });
 }
@@ -3802,18 +3555,14 @@ function sortMatchupsForChampion(
 function sortChampionGroups(
   groupA: ChampionMatchupGroup,
   groupB: ChampionMatchupGroup,
-  sortMode: LeagueMatchupSortMode
+  sortMode: LeagueMatchupSortMode,
 ) {
   switch (sortMode) {
     case "needs-review": {
       const draftDifference = groupB.draftCount - groupA.draftCount;
       const reviewedDifference = groupA.reviewedCount - groupB.reviewedCount;
 
-      return (
-        draftDifference ||
-        reviewedDifference ||
-        groupA.title.localeCompare(groupB.title)
-      );
+      return draftDifference || reviewedDifference || groupA.title.localeCompare(groupB.title);
     }
     case "least-reviewed": {
       const reviewedDifference = groupA.reviewedCount - groupB.reviewedCount;
@@ -3822,14 +3571,9 @@ function sortChampionGroups(
     }
     case "most-drafts": {
       const draftDifference = groupB.draftCount - groupA.draftCount;
-      const missingDifference =
-        (groupB.missingCount ?? 0) - (groupA.missingCount ?? 0);
+      const missingDifference = (groupB.missingCount ?? 0) - (groupA.missingCount ?? 0);
 
-      return (
-        draftDifference ||
-        missingDifference ||
-        groupA.title.localeCompare(groupB.title)
-      );
+      return draftDifference || missingDifference || groupA.title.localeCompare(groupB.title);
     }
     case "most-reviewed": {
       const reviewedDifference = groupB.reviewedCount - groupA.reviewedCount;
@@ -3841,10 +3585,7 @@ function sortChampionGroups(
   }
 }
 
-function getChampionSortName(
-  championId: string,
-  championsById: Map<string, AdminLeagueChampion>
-) {
+function getChampionSortName(championId: string, championsById: Map<string, AdminLeagueChampion>) {
   return championsById.get(championId)?.name ?? championId;
 }
 
@@ -3914,18 +3655,13 @@ function getLaneGroupLabel(role: AdminLeagueMatchup["role"]) {
 
 function getDefaultCollapsedLaneGroups(roleFilter: LeagueMatchupRoleFilter) {
   return Object.fromEntries(
-    leagueRoles.map((role) => [
-      role,
-      roleFilter === "all" ? role !== "mid" : role !== roleFilter,
-    ])
+    leagueRoles.map((role) => [role, roleFilter === "all" ? role !== "mid" : role !== roleFilter]),
   ) as Record<AdminLeagueMatchup["role"], boolean>;
 }
 
 function getMatchupContentState(matchup: AdminLeagueMatchup) {
   const hasContent = hasMatchupDraftContent(matchup);
-  const fallbackScan = scanMatchupDraftForFallbackContent(
-    getMatchupDraftContent(matchup)
-  );
+  const fallbackScan = scanMatchupDraftForFallbackContent(getMatchupDraftContent(matchup));
 
   if (matchup.generation_status === "failed") {
     return {
@@ -4011,7 +3747,7 @@ function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
 
 function createEmptyQueueState(
   mode: LeagueMatchupQueueMode,
-  role: AdminLeagueMatchup["role"]
+  role: AdminLeagueMatchup["role"],
 ): LeagueMatchupQueueState {
   const now = getQueueTimestamp();
 
@@ -4037,13 +3773,13 @@ function buildLaneQueueItems(
   roleChampions: AdminLeagueChampion[],
   matchups: AdminLeagueMatchup[],
   mode: LeagueMatchupQueueMode,
-  role: AdminLeagueMatchup["role"]
+  role: AdminLeagueMatchup["role"],
 ): LeagueMatchupQueueItem[] {
   const existingMatchupsByKey = new Map(
     matchups.map((matchup) => [
       getMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
       matchup,
-    ])
+    ]),
   );
   const items: LeagueMatchupQueueItem[] = [];
 
@@ -4056,11 +3792,7 @@ function buildLaneQueueItems(
       const key = getMatchupKey(championA.id, championB.id, role);
       const existingMatchup = existingMatchupsByKey.get(key);
 
-      if (
-        mode === "missing-only" &&
-        existingMatchup &&
-        hasMatchupDraftContent(existingMatchup)
-      ) {
+      if (mode === "missing-only" && existingMatchup && hasMatchupDraftContent(existingMatchup)) {
         continue;
       }
 
@@ -4082,9 +3814,7 @@ function buildLaneQueueItems(
   return items;
 }
 
-function getQueuePlanItemFromMatchup(
-  matchup: AdminLeagueMatchup
-): LeagueMatchupBatchPlanItem {
+function getQueuePlanItemFromMatchup(matchup: AdminLeagueMatchup): LeagueMatchupBatchPlanItem {
   return {
     championAId: matchup.champion_a_id,
     championBId: matchup.champion_b_id,
@@ -4096,33 +3826,22 @@ function getQueuePlanItemFromMatchup(
 function getRoleMatchupGapAnalysis(
   roleChampions: AdminLeagueChampion[],
   matchups: AdminLeagueMatchup[],
-  role: AdminLeagueMatchup["role"]
+  role: AdminLeagueMatchup["role"],
 ) {
   const existingRowsByKey = new Map(
     matchups
       .filter((matchup) => matchup.role === role)
       .map((matchup) => [
-        getDirectionalMatchupKey(
-          matchup.champion_a_id,
-          matchup.champion_b_id,
-          matchup.role
-        ),
+        getDirectionalMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
         matchup,
-      ])
+      ]),
   );
   const availableKeys = new Set(
     matchups
-      .filter(
-        (matchup) =>
-          matchup.role === role && matchup.generation_status === "reviewed"
-      )
+      .filter((matchup) => matchup.role === role && matchup.generation_status === "reviewed")
       .map((matchup) =>
-        getDirectionalMatchupKey(
-          matchup.champion_a_id,
-          matchup.champion_b_id,
-          matchup.role
-        )
-      )
+        getDirectionalMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
+      ),
   );
   const missingMatchups: {
     existingMatchupId: number | null;
@@ -4144,11 +3863,7 @@ function getRoleMatchupGapAnalysis(
 
       expectedCount += 1;
 
-      const key = getDirectionalMatchupKey(
-        sourceChampion.id,
-        targetChampion.id,
-        role
-      );
+      const key = getDirectionalMatchupKey(sourceChampion.id, targetChampion.id, role);
 
       if (availableKeys.has(key)) {
         continue;
@@ -4181,34 +3896,33 @@ function getRoleMatchupGapAnalysis(
 function getDirectionalMatchupKey(
   sourceChampionId: string,
   targetChampionId: string,
-  role: AdminLeagueMatchup["role"]
+  role: AdminLeagueMatchup["role"],
 ) {
   return `${sourceChampionId}:${targetChampionId}:${role}`;
 }
 
 function getFreshQueuePlanItem(
   item: LeagueMatchupQueueItem,
-  matchups: AdminLeagueMatchup[]
+  matchups: AdminLeagueMatchup[],
 ): LeagueMatchupBatchPlanItem {
   const freshMatchup = matchups.find(
     (matchup) =>
       matchup.champion_a_id === item.championAId &&
       matchup.champion_b_id === item.championBId &&
-      matchup.role === item.role
+      matchup.role === item.role,
   );
 
   return {
     championAId: item.championAId,
     championBId: item.championBId,
-    existingMatchupId:
-      freshMatchup?.id ?? item.matchupId ?? item.existingMatchupId ?? null,
+    existingMatchupId: freshMatchup?.id ?? item.matchupId ?? item.existingMatchupId ?? null,
     role: item.role,
   };
 }
 
 function getQueueItemLabel(
   item: LeagueMatchupBatchPlanItem,
-  championsById: Map<string, AdminLeagueChampion>
+  championsById: Map<string, AdminLeagueChampion>,
 ) {
   const championA = championsById.get(item.championAId)?.name ?? item.championAId;
   const championB = championsById.get(item.championBId)?.name ?? item.championBId;
@@ -4217,9 +3931,7 @@ function getQueueItemLabel(
 }
 
 function getQueueStats(queueState: LeagueMatchupQueueState) {
-  const generated = queueState.items.filter(
-    (item) => item.status === "generated"
-  ).length;
+  const generated = queueState.items.filter((item) => item.status === "generated").length;
   const failed = queueState.items.filter((item) => item.status === "failed").length;
   const processed = generated + failed;
   const remaining = Math.max(queueState.items.length - processed, 0);
@@ -4228,8 +3940,7 @@ function getQueueStats(queueState: LeagueMatchupQueueState) {
     .filter((duration): duration is number => typeof duration === "number");
   const averageDurationMs =
     completedDurations.length > 0
-      ? completedDurations.reduce((sum, duration) => sum + duration, 0) /
-        completedDurations.length
+      ? completedDurations.reduce((sum, duration) => sum + duration, 0) / completedDurations.length
       : 0;
 
   return {
@@ -4244,7 +3955,7 @@ function getQueueStats(queueState: LeagueMatchupQueueState) {
 
 function getAdcGenerationReadiness(
   adcChampions: AdminLeagueChampion[],
-  matchups: AdminLeagueMatchup[]
+  matchups: AdminLeagueMatchup[],
 ) {
   const expectedMatchupCount = adcChampions.length * (adcChampions.length - 1);
   const gapAnalysis = getRoleMatchupGapAnalysis(adcChampions, matchups, "adc");
@@ -4264,7 +3975,7 @@ function getAdcGenerationReadiness(
 
 function getCombatProfileReadiness(champions: AdminLeagueChampion[]) {
   const missingProfileCount = champions.filter(
-    (champion) => !getChampionCombatProfile(champion.id)
+    (champion) => !getChampionCombatProfile(champion.id),
   ).length;
 
   return {
@@ -4304,7 +4015,7 @@ function formatCompactNumber(value: number) {
 
 function parseStoredQueueState(
   value: string,
-  fallbackRole: AdminLeagueMatchup["role"]
+  fallbackRole: AdminLeagueMatchup["role"],
 ): LeagueMatchupQueueState | null {
   try {
     const parsedValue: unknown = JSON.parse(value);
@@ -4325,10 +4036,7 @@ function parseStoredQueueState(
       return null;
     }
 
-    if (
-      candidate.mode !== "missing-only" &&
-      candidate.mode !== "regenerate-all"
-    ) {
+    if (candidate.mode !== "missing-only" && candidate.mode !== "regenerate-all") {
       return null;
     }
 
@@ -4336,9 +4044,7 @@ function parseStoredQueueState(
       return null;
     }
 
-    const role = isLeagueMatchupRole(candidate.role)
-      ? candidate.role
-      : fallbackRole;
+    const role = isLeagueMatchupRole(candidate.role) ? candidate.role : fallbackRole;
 
     if (role !== fallbackRole) {
       return null;
@@ -4363,16 +4069,14 @@ function parseStoredQueueState(
 
 function parseStoredQueueItem(
   value: unknown,
-  fallbackRole: AdminLeagueMatchup["role"]
+  fallbackRole: AdminLeagueMatchup["role"],
 ): LeagueMatchupQueueItem | null {
   if (!value || typeof value !== "object") {
     return null;
   }
 
   const candidate = value as Partial<LeagueMatchupQueueItem>;
-  const role = isLeagueMatchupRole(candidate.role)
-    ? candidate.role
-    : fallbackRole;
+  const role = isLeagueMatchupRole(candidate.role) ? candidate.role : fallbackRole;
 
   if (
     typeof candidate.championAId !== "string" ||
@@ -4388,14 +4092,11 @@ function parseStoredQueueItem(
   return {
     championAId: candidate.championAId,
     championBId: candidate.championBId,
-    completedAt:
-      typeof candidate.completedAt === "number" ? candidate.completedAt : null,
+    completedAt: typeof candidate.completedAt === "number" ? candidate.completedAt : null,
     durationMs: typeof candidate.durationMs === "number" ? candidate.durationMs : null,
     error: typeof candidate.error === "string" ? candidate.error : null,
     existingMatchupId:
-      typeof candidate.existingMatchupId === "number"
-        ? candidate.existingMatchupId
-        : null,
+      typeof candidate.existingMatchupId === "number" ? candidate.existingMatchupId : null,
     id: candidate.id,
     matchupId: typeof candidate.matchupId === "number" ? candidate.matchupId : null,
     role,
@@ -4403,13 +4104,8 @@ function parseStoredQueueItem(
   };
 }
 
-function isLeagueMatchupRole(
-  value: unknown
-): value is AdminLeagueMatchup["role"] {
-  return (
-    typeof value === "string" &&
-    leagueRoles.includes(value as AdminLeagueMatchup["role"])
-  );
+function isLeagueMatchupRole(value: unknown): value is AdminLeagueMatchup["role"] {
+  return typeof value === "string" && leagueRoles.includes(value as AdminLeagueMatchup["role"]);
 }
 
 function isQueueStatus(value: string): value is LeagueMatchupQueueStatus {

@@ -30,7 +30,7 @@ export const matchupDraftSectionLabels = {
 
 export function getMatchupDraftSectionLabel(
   sectionKey: MatchupDraftSectionKey,
-  role?: LeagueRole | null
+  role?: LeagueRole | null,
 ) {
   if (role === "jungle" && sectionKey === "trading_pattern") {
     return "Jungle Plan";
@@ -48,13 +48,13 @@ export const matchupDraftSchema = {
       {
         type: "string",
       },
-    ])
+    ]),
   ),
   required: matchupDraftSectionKeys,
 };
 
 export function createMatchupDraftSchema(
-  sectionKeys: readonly MatchupDraftSectionKey[] = matchupDraftSectionKeys
+  sectionKeys: readonly MatchupDraftSectionKey[] = matchupDraftSectionKeys,
 ) {
   return {
     type: "object",
@@ -65,7 +65,7 @@ export function createMatchupDraftSchema(
         {
           type: "string",
         },
-      ])
+      ]),
     ),
     required: sectionKeys,
   };
@@ -173,11 +173,11 @@ export function buildLeagueMatchupDraftPrompt({
   const existingSectionContext = formatExistingSections(existingSections);
   const playerChampionContext = formatChampionKnowledgeForPrompt(
     playerChampionName,
-    playerChampionProfile
+    playerChampionProfile,
   );
   const enemyChampionContext = formatChampionKnowledgeForPrompt(
     enemyChampionName,
-    enemyChampionProfile
+    enemyChampionProfile,
   );
 
   return {
@@ -239,7 +239,7 @@ export function buildLeagueMatchupDraftPrompt({
       targetSection
         ? `Regenerate only the ${getMatchupDraftSectionLabel(
             targetSection,
-            role
+            role,
           )} card. Preserve the intent of the other existing cards as context, but do not rewrite them.`
         : "Regenerate the full matchup draft.",
       `Write JSON for these exact keys: ${outputKeys.join(", ")}.`,
@@ -543,7 +543,7 @@ function getRolePromptGuidance(role: LeagueRole) {
 
 function formatChampionKnowledgeForPrompt(
   championName: string,
-  profile?: LeagueChampionKnowledgeProfile | null
+  profile?: LeagueChampionKnowledgeProfile | null,
 ) {
   if (!profile) {
     return [
@@ -570,117 +570,70 @@ function formatChampionKnowledgeForPrompt(
     `hard_crowd_control: ${formatOptionalList(profile.hardCrowdControl)}`,
     `soft_crowd_control: ${formatOptionalList(profile.softCrowdControl)}`,
     `danger_abilities: ${formatOptionalList(profile.dangerAbilities)}`,
-    `stealth_or_invisibility: ${formatOptionalText(
-      profile.stealthOrInvisibility,
-      "none"
-    )}`,
+    `stealth_or_invisibility: ${formatOptionalText(profile.stealthOrInvisibility, "none")}`,
     `sustain: ${formatOptionalList(profile.sustain)}`,
     `shields: ${formatOptionalList(profile.shields)}`,
     `jungle_profile.early_game_pressure: ${formatJungleProfileCategory(
-      profile.jungleProfile?.earlyGamePressure
+      profile.jungleProfile?.earlyGamePressure,
     )}`,
-    `jungle_profile.scaling: ${formatJungleProfileCategory(
-      profile.jungleProfile?.scaling
-    )}`,
-    `jungle_profile.clear_speed: ${formatJungleProfileCategory(
-      profile.jungleProfile?.clearSpeed
-    )}`,
+    `jungle_profile.scaling: ${formatJungleProfileCategory(profile.jungleProfile?.scaling)}`,
+    `jungle_profile.clear_speed: ${formatJungleProfileCategory(profile.jungleProfile?.clearSpeed)}`,
     `jungle_profile.objective_control: ${formatJungleProfileCategory(
-      profile.jungleProfile?.objectiveControl
+      profile.jungleProfile?.objectiveControl,
     )}`,
-    `jungle_profile.dueling: ${formatJungleProfileCategory(
-      profile.jungleProfile?.dueling
-    )}`,
-    `jungle_profile.gank_threat: ${formatJungleProfileCategory(
-      profile.jungleProfile?.gankThreat
-    )}`,
+    `jungle_profile.dueling: ${formatJungleProfileCategory(profile.jungleProfile?.dueling)}`,
+    `jungle_profile.gank_threat: ${formatJungleProfileCategory(profile.jungleProfile?.gankThreat)}`,
     `jungle_profile.invade_resistance: ${formatJungleProfileCategory(
-      profile.jungleProfile?.invadeResistance
+      profile.jungleProfile?.invadeResistance,
     )}`,
-    `jungle_profile.pathing_notes: ${formatOptionalList(
-      profile.jungleProfile?.pathingNotes
-    )}`,
-    `jungle_profile.matchup_focus: ${formatOptionalList(
-      profile.jungleProfile?.matchupFocus
-    )}`,
+    `jungle_profile.pathing_notes: ${formatOptionalList(profile.jungleProfile?.pathingNotes)}`,
+    `jungle_profile.matchup_focus: ${formatOptionalList(profile.jungleProfile?.matchupFocus)}`,
     `lane_plan.wants: ${formatOptionalList(profile.lanePlan?.wants)}`,
     `lane_plan.avoids: ${formatOptionalList(profile.lanePlan?.avoids)}`,
-    `lane_plan.ideal_lane_state: ${
-      profile.lanePlan?.idealLaneState ?? "not supplied"
-    }`,
+    `lane_plan.ideal_lane_state: ${profile.lanePlan?.idealLaneState ?? "not supplied"}`,
     `lane_identity.early_game_agency: ${formatLaneIdentityField(
       profile.laneIdentity,
-      "earlyGameAgency"
+      "earlyGameAgency",
     )}`,
     `lane_identity.scaling_priority: ${formatLaneIdentityField(
       profile.laneIdentity,
-      "scalingPriority"
+      "scalingPriority",
     )}`,
-    `lane_identity.lane_pressure: ${formatLaneIdentityField(
-      profile.laneIdentity,
-      "lanePressure"
-    )}`,
+    `lane_identity.lane_pressure: ${formatLaneIdentityField(profile.laneIdentity, "lanePressure")}`,
     `lane_identity.preferred_game_state: ${formatLaneIdentityList(
       profile.laneIdentity,
-      "preferredGameState"
+      "preferredGameState",
     )}`,
-    `lane_identity.win_lane_by: ${formatLaneIdentityList(
-      profile.laneIdentity,
-      "winLaneBy"
-    )}`,
-    `trading.primary_pattern: ${
-      profile.trading?.primaryPattern ?? "not supplied"
-    }`,
-    `trading.good_trade_conditions: ${formatOptionalList(
-      profile.trading?.goodTradeConditions
-    )}`,
-    `trading.bad_trade_conditions: ${formatOptionalList(
-      profile.trading?.badTradeConditions
-    )}`,
+    `lane_identity.win_lane_by: ${formatLaneIdentityList(profile.laneIdentity, "winLaneBy")}`,
+    `trading.primary_pattern: ${profile.trading?.primaryPattern ?? "not supplied"}`,
+    `trading.good_trade_conditions: ${formatOptionalList(profile.trading?.goodTradeConditions)}`,
+    `trading.bad_trade_conditions: ${formatOptionalList(profile.trading?.badTradeConditions)}`,
     `matchup_preferences.strong_into: ${formatOptionalList(
-      profile.matchupPreferences?.strongInto
+      profile.matchupPreferences?.strongInto,
     )}`,
-    `matchup_preferences.weak_into: ${formatOptionalList(
-      profile.matchupPreferences?.weakInto
-    )}`,
-    `danger_profile.dangerous_when: ${formatOptionalList(
-      profile.dangerProfile?.dangerousWhen
-    )}`,
-    `danger_profile.must_respect: ${formatOptionalList(
-      profile.dangerProfile?.mustRespect
-    )}`,
-    `punish_profile.can_punish: ${formatOptionalList(
-      profile.punishProfile?.canPunish
-    )}`,
+    `matchup_preferences.weak_into: ${formatOptionalList(profile.matchupPreferences?.weakInto)}`,
+    `danger_profile.dangerous_when: ${formatOptionalList(profile.dangerProfile?.dangerousWhen)}`,
+    `danger_profile.must_respect: ${formatOptionalList(profile.dangerProfile?.mustRespect)}`,
+    `punish_profile.can_punish: ${formatOptionalList(profile.punishProfile?.canPunish)}`,
     `punish_profile.struggles_to_punish: ${formatOptionalList(
-      profile.punishProfile?.strugglesToPunish
+      profile.punishProfile?.strugglesToPunish,
     )}`,
     `power_spikes.major: ${formatPowerSpikes(profile.powerSpikes?.major)}`,
     `power_spikes.minor: ${formatPowerSpikes(profile.powerSpikes?.minor)}`,
-    `strategic_identity.lane_goal: ${
-      profile.strategicIdentity?.laneGoal ?? "not supplied"
-    }`,
+    `strategic_identity.lane_goal: ${profile.strategicIdentity?.laneGoal ?? "not supplied"}`,
     `strategic_identity.scaling_profile: ${
       profile.strategicIdentity?.scalingProfile ?? "not supplied"
     }`,
     `strategic_identity.preferred_game_length: ${
       profile.strategicIdentity?.preferredGameLength ?? "not supplied"
     }`,
-    `strategic_identity.win_method: ${formatOptionalList(
-      profile.strategicIdentity?.winMethod
-    )}`,
-    `primary_trading_pattern: ${
-      profile.primaryTradingPattern ?? "not supplied"
-    }`,
+    `strategic_identity.win_method: ${formatOptionalList(profile.strategicIdentity?.winMethod)}`,
+    `primary_trading_pattern: ${profile.primaryTradingPattern ?? "not supplied"}`,
     `primary_win_conditions: ${formatOptionalList(profile.primaryWinCondition)}`,
     `punish_windows: ${formatOptionalList(profile.punishWindows)}`,
-    `lane_identity_summary: ${formatLaneIdentitySummary(
-      profile.laneIdentity
-    )}`,
+    `lane_identity_summary: ${formatLaneIdentitySummary(profile.laneIdentity)}`,
     `major_power_spikes: ${formatOptionalList(profile.majorPowerSpikes)}`,
-    `important_ability_notes: ${formatOptionalList(
-      profile.importantAbilityNotes
-    )}`,
+    `important_ability_notes: ${formatOptionalList(profile.importantAbilityNotes)}`,
     `common_weaknesses: ${formatOptionalList(profile.commonWeaknesses)}`,
   ].join("\n");
 }
@@ -693,9 +646,7 @@ function formatOptionalList(values?: readonly string[]) {
   return values && values.length > 0 ? formatList(values) : "not supplied";
 }
 
-function formatExistingSections(
-  existingSections?: Partial<MatchupDraftSections> | null
-) {
+function formatExistingSections(existingSections?: Partial<MatchupDraftSections> | null) {
   if (!existingSections) {
     return "not supplied";
   }
@@ -722,14 +673,12 @@ function formatPowerSpikes(spikes?: readonly LeagueChampionPowerSpike[]) {
         `changes_gameplay=${spike.changesGameplay}`,
         `player_action=${spike.playerAction}`,
         `enemy_response=${spike.enemyResponse ?? "not supplied"}`,
-      ].join(" | ")
+      ].join(" | "),
     )
     .join("; ");
 }
 
-function formatJungleProfileCategory(
-  category?: LeagueChampionJungleProfileCategory
-) {
+function formatJungleProfileCategory(category?: LeagueChampionJungleProfileCategory) {
   if (!category) {
     return "not supplied";
   }
@@ -737,25 +686,17 @@ function formatJungleProfileCategory(
   return `rating=${category.rating} | notes=${formatList(category.notes)}`;
 }
 
-function formatAbilityMap(
-  abilities: LeagueChampionKnowledgeProfile["abilities"]
-) {
+function formatAbilityMap(abilities: LeagueChampionKnowledgeProfile["abilities"]) {
   if (!abilities) {
     return "not supplied";
   }
 
-  return [
-    `Q=${abilities.Q}`,
-    `W=${abilities.W}`,
-    `E=${abilities.E}`,
-    `R=${abilities.R}`,
-  ].join("; ");
+  return [`Q=${abilities.Q}`, `W=${abilities.W}`, `E=${abilities.E}`, `R=${abilities.R}`].join(
+    "; ",
+  );
 }
 
-function formatOptionalText(
-  value: string | null | undefined,
-  nullFallback = "not supplied"
-) {
+function formatOptionalText(value: string | null | undefined, nullFallback = "not supplied") {
   if (value === undefined) {
     return "not supplied";
   }
@@ -765,7 +706,7 @@ function formatOptionalText(
 
 function formatLaneIdentityField(
   laneIdentity: LeagueChampionKnowledgeProfile["laneIdentity"],
-  field: "earlyGameAgency" | "lanePressure" | "scalingPriority"
+  field: "earlyGameAgency" | "lanePressure" | "scalingPriority",
 ) {
   if (!laneIdentity || typeof laneIdentity === "string") {
     return "not supplied";
@@ -776,7 +717,7 @@ function formatLaneIdentityField(
 
 function formatLaneIdentityList(
   laneIdentity: LeagueChampionKnowledgeProfile["laneIdentity"],
-  field: "preferredGameState" | "winLaneBy"
+  field: "preferredGameState" | "winLaneBy",
 ) {
   if (!laneIdentity || typeof laneIdentity === "string") {
     return "not supplied";
@@ -785,9 +726,7 @@ function formatLaneIdentityList(
   return formatOptionalList(laneIdentity[field]);
 }
 
-function formatLaneIdentitySummary(
-  laneIdentity: LeagueChampionKnowledgeProfile["laneIdentity"]
-) {
+function formatLaneIdentitySummary(laneIdentity: LeagueChampionKnowledgeProfile["laneIdentity"]) {
   if (!laneIdentity) {
     return "not supplied";
   }

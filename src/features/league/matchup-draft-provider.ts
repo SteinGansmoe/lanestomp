@@ -61,7 +61,7 @@ const openaiMatchupModel = "gpt-4.1-mini";
 const openaiMaxGenerationAttempts = 2;
 
 export async function generateLeagueMatchupDraftContent(
-  input: GenerateLeagueMatchupDraftContentInput
+  input: GenerateLeagueMatchupDraftContentInput,
 ): Promise<GenerateLeagueMatchupDraftContentResult> {
   const profileWarning = getMissingChampionProfileWarning(input);
 
@@ -103,14 +103,14 @@ export async function generateLeagueMatchupDraftContent(
 
   return {
     error: formatOpenAIAttemptFailure(
-      openaiResult?.error ?? "AI provider did not return a result."
+      openaiResult?.error ?? "AI provider did not return a result.",
     ),
     ok: false,
   };
 }
 
 export async function generateLeagueMatchupDraftSectionContent(
-  input: GenerateLeagueMatchupDraftSectionContentInput
+  input: GenerateLeagueMatchupDraftSectionContentInput,
 ): Promise<GenerateLeagueMatchupDraftSectionContentResult> {
   const profileWarning = getMissingChampionProfileWarning(input);
 
@@ -154,7 +154,7 @@ export async function generateLeagueMatchupDraftSectionContent(
 
   return {
     error: formatOpenAIAttemptFailure(
-      openaiResult?.error ?? "AI provider did not return a result."
+      openaiResult?.error ?? "AI provider did not return a result.",
     ),
     ok: false,
   };
@@ -184,8 +184,7 @@ function logOpenAIRetryFailure({
     championAName,
     championBName,
     error,
-    nextAttempt:
-      attempt < openaiMaxGenerationAttempts ? attempt + 1 : null,
+    nextAttempt: attempt < openaiMaxGenerationAttempts ? attempt + 1 : null,
     role,
     sectionKey: sectionKey ?? null,
   });
@@ -233,7 +232,7 @@ function getMissingChampionProfileWarning({
   }
 
   return `Missing combat profile for ${missingProfiles.join(
-    " and "
+    " and ",
   )}; generated draft should be reviewed as lower confidence.`;
 }
 
@@ -306,8 +305,7 @@ async function generateDraftWithOpenAIProvider({
     };
   }
 
-  const promptLanguageWarnings =
-    findPromptLanguageWarningsInDraft(normalizedDraft);
+  const promptLanguageWarnings = findPromptLanguageWarningsInDraft(normalizedDraft);
 
   if (promptLanguageWarnings.length > 0) {
     logPromptLanguageWarnings({
@@ -381,7 +379,7 @@ async function generateDraftSectionWithOpenAIProvider({
     {
       championName: championBName,
       profile: championBProfile,
-    }
+    },
   );
   const promptLeakage = findPromptLeakageInSection(sectionKey, normalizedSection);
 
@@ -408,10 +406,7 @@ async function generateDraftSectionWithOpenAIProvider({
     };
   }
 
-  const promptLanguageWarning = findPromptLanguageWarningsInSection(
-    sectionKey,
-    normalizedSection
-  );
+  const promptLanguageWarning = findPromptLanguageWarningsInSection(sectionKey, normalizedSection);
 
   if (promptLanguageWarning) {
     logPromptLanguageWarnings({
@@ -578,20 +573,16 @@ function getOpenAIOutputText(responseBody: OpenAIResponseBody) {
 
 function parseDraftSections(outputText: string): MatchupDraftSections | null {
   try {
-    const parsed = JSON.parse(outputText) as Partial<
-      Record<MatchupDraftSectionKey, unknown>
-    >;
+    const parsed = JSON.parse(outputText) as Partial<Record<MatchupDraftSectionKey, unknown>>;
 
     if (
-      matchupDraftSectionKeys.every(
-        (key) => typeof parsed[key] === "string" && parsed[key].trim()
-      )
+      matchupDraftSectionKeys.every((key) => typeof parsed[key] === "string" && parsed[key].trim())
     ) {
       return Object.fromEntries(
         matchupDraftSectionKeys.map((key) => [
           key,
           normalizeDraftSection(parsed[key]?.toString() ?? ""),
-        ])
+        ]),
       ) as MatchupDraftSections;
     }
   } catch {
@@ -601,14 +592,9 @@ function parseDraftSections(outputText: string): MatchupDraftSections | null {
   return null;
 }
 
-function parseDraftSection(
-  outputText: string,
-  sectionKey: MatchupDraftSectionKey
-) {
+function parseDraftSection(outputText: string, sectionKey: MatchupDraftSectionKey) {
   try {
-    const parsed = JSON.parse(outputText) as Partial<
-      Record<MatchupDraftSectionKey, unknown>
-    >;
+    const parsed = JSON.parse(outputText) as Partial<Record<MatchupDraftSectionKey, unknown>>;
     const section = parsed[sectionKey];
 
     if (typeof section === "string" && section.trim()) {
@@ -691,8 +677,7 @@ const promptLeakagePatterns: readonly PromptLeakagePattern[] = [
   },
   {
     label: "writer-facing do-not wording",
-    pattern:
-      /(^|\n)-\s*do not\s+(?:write|echo|return|include|use the phrases?|start|say)\b/i,
+    pattern: /(^|\n)-\s*do not\s+(?:write|echo|return|include|use the phrases?|start|say)\b/i,
   },
   {
     label: "returned bullet/value prompt wording",
@@ -707,8 +692,7 @@ const promptLeakagePatterns: readonly PromptLeakagePattern[] = [
 const promptLanguageWarningPatterns: readonly PromptLeakagePattern[] = [
   {
     label: "instruction-like bullet opening",
-    pattern:
-      /(^|\n)-\s*(identify|build|choose|respect|treat|explain|list|keep|convert)\b/i,
+    pattern: /(^|\n)-\s*(identify|build|choose|respect|treat|explain|list|keep|convert)\b/i,
   },
   {
     label: "generic cross-map phrasing",
@@ -716,8 +700,7 @@ const promptLanguageWarningPatterns: readonly PromptLeakagePattern[] = [
   },
   {
     label: "soft power-spike process wording",
-    pattern:
-      /(^|\n)-\s*(re-?evaluate|reassess|monitor|watch for|remember to|consider)\b/i,
+    pattern: /(^|\n)-\s*(re-?evaluate|reassess|monitor|watch for|remember to|consider)\b/i,
     sectionKeys: ["power_spikes"],
   },
   {
@@ -732,8 +715,7 @@ const promptLanguageWarningPatterns: readonly PromptLeakagePattern[] = [
   },
   {
     label: "soft generic power-spike placeholder",
-    pattern:
-      /\b(real level|slow the game down|push tempo when|level,\s*ultimate,\s*item)\b/i,
+    pattern: /\b(real level|slow the game down|push tempo when|level,\s*ultimate,\s*item)\b/i,
     sectionKeys: ["power_spikes"],
   },
 ];
@@ -749,49 +731,38 @@ type PromptLanguageSectionWarning = PromptLeakageSectionRejection;
 function findPromptLeakageInDraft(draft: MatchupDraftSections) {
   return matchupDraftSectionKeys
     .map((sectionKey) => findPromptLeakageInSection(sectionKey, draft[sectionKey]))
-    .filter((rejection): rejection is PromptLeakageSectionRejection =>
-      Boolean(rejection)
-    );
+    .filter((rejection): rejection is PromptLeakageSectionRejection => Boolean(rejection));
 }
 
 function findPromptLeakageInSection(
   sectionKey: MatchupDraftSectionKey,
-  content: string
+  content: string,
 ): PromptLeakageSectionRejection | null {
   return findPromptPatternMatch(sectionKey, content, promptLeakagePatterns);
 }
 
 function findPromptLanguageWarningsInDraft(draft: MatchupDraftSections) {
   return matchupDraftSectionKeys
-    .map((sectionKey) =>
-      findPromptLanguageWarningsInSection(sectionKey, draft[sectionKey])
-    )
-    .filter((warning): warning is PromptLanguageSectionWarning =>
-      Boolean(warning)
-    );
+    .map((sectionKey) => findPromptLanguageWarningsInSection(sectionKey, draft[sectionKey]))
+    .filter((warning): warning is PromptLanguageSectionWarning => Boolean(warning));
 }
 
 function findPromptLanguageWarningsInSection(
   sectionKey: MatchupDraftSectionKey,
-  content: string
+  content: string,
 ): PromptLanguageSectionWarning | null {
-  return findPromptPatternMatch(
-    sectionKey,
-    content,
-    promptLanguageWarningPatterns
-  );
+  return findPromptPatternMatch(sectionKey, content, promptLanguageWarningPatterns);
 }
 
 function findPromptPatternMatch(
   sectionKey: MatchupDraftSectionKey,
   content: string,
-  patterns: readonly PromptLeakagePattern[]
+  patterns: readonly PromptLeakagePattern[],
 ) {
   const phrases = patterns
     .filter(
       ({ pattern, sectionKeys }) =>
-        (!sectionKeys || sectionKeys.includes(sectionKey)) &&
-        pattern.test(content)
+        (!sectionKeys || sectionKeys.includes(sectionKey)) && pattern.test(content),
     )
     .map(({ label }) => label);
 
@@ -810,7 +781,7 @@ function getPromptPatternSample(
   sectionKey: MatchupDraftSectionKey,
   content: string,
   phrases: string[],
-  patterns: readonly PromptLeakagePattern[]
+  patterns: readonly PromptLeakagePattern[],
 ) {
   const matchingLine =
     content
@@ -820,16 +791,14 @@ function getPromptPatternSample(
           ({ label, pattern, sectionKeys }) =>
             phrases.includes(label) &&
             (!sectionKeys || sectionKeys.includes(sectionKey)) &&
-            pattern.test(line)
-        )
+            pattern.test(line),
+        ),
       ) ?? content;
 
   return matchingLine.trim().slice(0, 180);
 }
 
-function formatPromptLeakageError(
-  rejectedSections: PromptLeakageSectionRejection[]
-) {
+function formatPromptLeakageError(rejectedSections: PromptLeakageSectionRejection[]) {
   const sectionList = rejectedSections
     .map(({ phrases, sectionKey }) => `${sectionKey} (${phrases.join(", ")})`)
     .join("; ");
@@ -842,9 +811,7 @@ function logPromptLeakageRejection({
   provider,
   rejectedSections,
 }: {
-  input:
-    | GenerateLeagueMatchupDraftContentInput
-    | GenerateLeagueMatchupDraftSectionContentInput;
+  input: GenerateLeagueMatchupDraftContentInput | GenerateLeagueMatchupDraftSectionContentInput;
   provider: LeagueMatchupDraftProvider;
   rejectedSections: PromptLeakageSectionRejection[];
 }) {
@@ -866,9 +833,7 @@ function logPromptLanguageWarnings({
   provider,
   warnings,
 }: {
-  input:
-    | GenerateLeagueMatchupDraftContentInput
-    | GenerateLeagueMatchupDraftSectionContentInput;
+  input: GenerateLeagueMatchupDraftContentInput | GenerateLeagueMatchupDraftSectionContentInput;
   provider: LeagueMatchupDraftProvider;
   warnings: PromptLanguageSectionWarning[];
 }) {
@@ -910,9 +875,9 @@ function normalizeDraftAbilityReferences({
         {
           championName: enemyChampionName,
           profile: enemyChampionProfile,
-        }
+        },
       ),
-    ])
+    ]),
   ) as MatchupDraftSections;
 }
 
@@ -930,51 +895,47 @@ function normalizeSectionAbilityReferences(
       return currentSection;
     }
 
-    return (Object.entries(abilities) as Array<[
-      keyof typeof abilities,
-      string,
-    ]>).reduce((currentText, [abilityKey, abilityName]) => {
-      const replacement = `(${abilityKey})`;
-      const aliases = [
-        `${champion.championName}'s (${champion.championName}'s (${abilityKey}))`,
-        `${champion.championName}'s ${champion.championName}'s (${abilityKey})`,
-        `${champion.championName} ${champion.championName}'s (${abilityKey})`,
-        `${champion.championName}'s (${abilityKey}) ${abilityName}`,
-        `${champion.championName} (${abilityKey}) ${abilityName}`,
-        `${champion.championName}'s ${abilityKey}`,
-        `${champion.championName} ${abilityKey}`,
-        `((${abilityKey}))`,
-        `(${abilityKey}) ${abilityName}`,
-        `${abilityKey} ${abilityName}`,
-        abilityName,
-        `(${abilityKey})`,
-      ];
+    return (Object.entries(abilities) as Array<[keyof typeof abilities, string]>).reduce(
+      (currentText, [abilityKey, abilityName]) => {
+        const replacement = `(${abilityKey})`;
+        const aliases = [
+          `${champion.championName}'s (${champion.championName}'s (${abilityKey}))`,
+          `${champion.championName}'s ${champion.championName}'s (${abilityKey})`,
+          `${champion.championName} ${champion.championName}'s (${abilityKey})`,
+          `${champion.championName}'s (${abilityKey}) ${abilityName}`,
+          `${champion.championName} (${abilityKey}) ${abilityName}`,
+          `${champion.championName}'s ${abilityKey}`,
+          `${champion.championName} ${abilityKey}`,
+          `((${abilityKey}))`,
+          `(${abilityKey}) ${abilityName}`,
+          `${abilityKey} ${abilityName}`,
+          abilityName,
+          `(${abilityKey})`,
+        ];
 
-      const nextText = replaceBareAbilityKey(
-        aliases.reduce(
-          (nextText, alias) =>
-            replaceAbilityAlias(
-              replaceChampionOwnedAbilityAlias(
-                nextText,
-                champion.championName,
+        const nextText = replaceBareAbilityKey(
+          aliases.reduce(
+            (nextText, alias) =>
+              replaceAbilityAlias(
+                replaceChampionOwnedAbilityAlias(
+                  nextText,
+                  champion.championName,
+                  alias,
+                  replacement,
+                ),
                 alias,
-                replacement
+                replacement,
               ),
-              alias,
-              replacement
-            ),
-          currentText
-        ),
-        abilityKey,
-        replacement
-      );
+            currentText,
+          ),
+          abilityKey,
+          replacement,
+        );
 
-      return normalizeAbilityOwnerReferences(
-        nextText,
-        champion.championName,
-        abilityKey
-      );
-    }, currentSection);
+        return normalizeAbilityOwnerReferences(nextText, champion.championName, abilityKey);
+      },
+      currentSection,
+    );
   }, section);
 }
 
@@ -982,15 +943,11 @@ function replaceChampionOwnedAbilityAlias(
   text: string,
   championName: string,
   alias: string,
-  replacement: string
+  replacement: string,
 ) {
-  return replaceAbilityAlias(
-    text,
-    `${championName}'s ${alias}`,
-    replacement
-  ).replace(
+  return replaceAbilityAlias(text, `${championName}'s ${alias}`, replacement).replace(
     getAbilityAliasPattern(`${championName} ${alias}`),
-    `$1${replacement}`
+    `$1${replacement}`,
   );
 }
 
@@ -998,41 +955,25 @@ function replaceAbilityAlias(text: string, alias: string, replacement: string) {
   return text.replace(getAbilityAliasPattern(alias), `$1${replacement}`);
 }
 
-function replaceBareAbilityKey(
-  text: string,
-  abilityKey: string,
-  replacement: string
-) {
-  return text.replace(
-    getBareAbilityKeyPattern(abilityKey),
-    `$1${replacement}`
-  );
+function replaceBareAbilityKey(text: string, abilityKey: string, replacement: string) {
+  return text.replace(getBareAbilityKeyPattern(abilityKey), `$1${replacement}`);
 }
 
-function normalizeAbilityOwnerReferences(
-  text: string,
-  championName: string,
-  abilityKey: string
-) {
+function normalizeAbilityOwnerReferences(text: string, championName: string, abilityKey: string) {
   return text
     .replace(
-      getAbilityAliasPattern(
-        `${championName}'s (${championName}'s (${abilityKey}))`
-      ),
-      `$1(${abilityKey})`
+      getAbilityAliasPattern(`${championName}'s (${championName}'s (${abilityKey}))`),
+      `$1(${abilityKey})`,
     )
     .replace(
       getAbilityAliasPattern(`${championName}'s ${championName}'s (${abilityKey})`),
-      `$1(${abilityKey})`
+      `$1(${abilityKey})`,
     )
     .replace(
       getAbilityAliasPattern(`${championName} ${championName}'s (${abilityKey})`),
-      `$1${championName} (${abilityKey})`
+      `$1${championName} (${abilityKey})`,
     )
-    .replace(
-      getAbilityAliasPattern(`${championName}'s (${abilityKey})`),
-      `$1(${abilityKey})`
-    )
+    .replace(getAbilityAliasPattern(`${championName}'s (${abilityKey})`), `$1(${abilityKey})`)
     .replace(getAbilityAliasPattern(`${championName} (${abilityKey})`), `$1(${abilityKey})`)
     .replace(getAbilityAliasPattern(`((${abilityKey}))`), `$1(${abilityKey})`)
     .replace(getAbilityAliasPattern(`(${abilityKey}) (${abilityKey})`), `$1(${abilityKey})`);
@@ -1043,10 +984,7 @@ function getAbilityAliasPattern(alias: string) {
 }
 
 function getBareAbilityKeyPattern(abilityKey: string) {
-  return new RegExp(
-    `(^|[^A-Za-z0-9(])${escapeRegex(abilityKey)}(?![A-Za-z0-9)])`,
-    "gi"
-  );
+  return new RegExp(`(^|[^A-Za-z0-9(])${escapeRegex(abilityKey)}(?![A-Za-z0-9)])`, "gi");
 }
 
 function escapeRegex(value: string) {

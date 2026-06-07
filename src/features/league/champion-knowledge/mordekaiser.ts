@@ -89,8 +89,10 @@ export const mordekaiserCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) forces an isolated duel",
-        changesGameplay: "The lane becomes much more dangerous for targets that cannot kite or survive him alone.",
-        playerAction: "Use (R) after landing or threatening (E), not as a blind opener into easy disengage.",
+        changesGameplay:
+          "The lane becomes much more dangerous for targets that cannot kite or survive him alone.",
+        playerAction:
+          "Use (R) after landing or threatening (E), not as a blind opener into easy disengage.",
         enemyResponse: "Save mobility and defensive cooldowns for the realm window.",
       },
       {
