@@ -117,6 +117,15 @@ export function AdminLoginForm() {
             />
           </label>
 
+          <div className="-mt-2 text-right">
+            <Link
+              className="text-sm font-medium text-violet-200 transition hover:text-white"
+              href="/auth/forgot-password"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+
           {error ? (
             <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
               {error}

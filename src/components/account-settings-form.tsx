@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, UserCircle } from "lucide-react";
+import { KeyRound, Save, UserCircle } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -14,6 +14,7 @@ import {
   type UserProfile,
   validateUsername,
 } from "@/src/lib/profile";
+import { validatePasswordConfirmation } from "@/src/lib/password";
 import { supabase } from "@/src/lib/supabase";
 
 function AccountSettingsFormSkeleton() {
@@ -41,9 +42,15 @@ function AccountSettingsFormSkeleton() {
 }
 
 export function AccountSettingsForm() {
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [username, setUsername] = useState("");
@@ -162,6 +169,57 @@ export function AccountSettingsForm() {
     router.refresh();
   }
 
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !profile?.email) {
+      setPasswordError("Account email is not ready yet.");
+      return;
+    }
+
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (!currentPassword) {
+      setPasswordError("Enter your current password.");
+      return;
+    }
+
+    const validationError = validatePasswordConfirmation(newPassword, confirmPassword);
+
+    if (validationError) {
+      setPasswordError(validationError);
+      return;
+    }
+
+    setIsPasswordSaving(true);
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      setPasswordError("Current password is incorrect.");
+      setIsPasswordSaving(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+
+    setIsPasswordSaving(false);
+
+    if (updateError) {
+      setPasswordError(updateError.message);
+      return;
+    }
+
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordSuccess("Password changed successfully.");
+  }
+
   if (isLoading) {
     return <AccountSettingsFormSkeleton />;
   }
@@ -236,6 +294,90 @@ export function AccountSettingsForm() {
           >
             <Save className="size-4" aria-hidden="true" />
             {isSaving ? "Saving..." : "Save username"}
+          </Button>
+        </form>
+
+        <form
+          className="mt-8 space-y-5 border-t border-white/10 pt-6"
+          onSubmit={handlePasswordSubmit}
+        >
+          <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
+              <KeyRound className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="font-mono text-sm font-semibold uppercase text-violet-200">
+                Change Password
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-zinc-400">
+                Update the password used to sign in to your LaneStomp account.
+              </p>
+            </div>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Current password</span>
+            <Input
+              autoComplete="current-password"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              disabled={isPasswordSaving}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              required
+              type="password"
+              value={currentPassword}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">New password</span>
+            <Input
+              autoComplete="new-password"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              disabled={isPasswordSaving}
+              minLength={8}
+              onChange={(event) => setNewPassword(event.target.value)}
+              required
+              type="password"
+              value={newPassword}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Confirm password</span>
+            <Input
+              autoComplete="new-password"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              disabled={isPasswordSaving}
+              minLength={8}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
+              type="password"
+              value={confirmPassword}
+            />
+            <span className="block text-xs text-zinc-500">
+              Password must be at least 8 characters.
+            </span>
+          </label>
+
+          {passwordError ? (
+            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+              {passwordError}
+            </p>
+          ) : null}
+
+          {passwordSuccess ? (
+            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+              {passwordSuccess}
+            </p>
+          ) : null}
+
+          <Button
+            className="h-11 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+            disabled={isPasswordSaving}
+            type="submit"
+          >
+            <KeyRound className="size-4" aria-hidden="true" />
+            {isPasswordSaving ? "Changing password..." : "Change password"}
           </Button>
         </form>
       </CardContent>
