@@ -305,6 +305,31 @@ async function generateDraftWithOpenAIProvider({
     };
   }
 
+  const supportFarmingLanguage =
+    role === "support" ? findSupportFarmingLanguageInDraft(normalizedDraft) : [];
+
+  if (supportFarmingLanguage.length > 0) {
+    logSupportFarmingLanguageRejection({
+      input: {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+      },
+      provider: "openai",
+      rejectedSections: supportFarmingLanguage,
+    });
+
+    return {
+      allowFallback: false,
+      error: formatSupportFarmingLanguageError(supportFarmingLanguage),
+      ok: false,
+    };
+  }
+
   const promptLanguageWarnings = findPromptLanguageWarningsInDraft(normalizedDraft);
 
   if (promptLanguageWarnings.length > 0) {
@@ -402,6 +427,34 @@ async function generateDraftSectionWithOpenAIProvider({
     return {
       allowFallback: false,
       error: formatPromptLeakageError([promptLeakage]),
+      ok: false,
+    };
+  }
+
+  const supportFarmingLanguage =
+    role === "support"
+      ? findSupportFarmingLanguageInSection(sectionKey, normalizedSection)
+      : null;
+
+  if (supportFarmingLanguage) {
+    logSupportFarmingLanguageRejection({
+      input: {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+        sectionKey,
+      },
+      provider: "openai",
+      rejectedSections: [supportFarmingLanguage],
+    });
+
+    return {
+      allowFallback: false,
+      error: formatSupportFarmingLanguageError([supportFarmingLanguage]),
       ok: false,
     };
   }
@@ -720,6 +773,14 @@ const promptLanguageWarningPatterns: readonly PromptLeakagePattern[] = [
   },
 ];
 
+const supportFarmingLanguagePatterns: readonly PromptLeakagePattern[] = [
+  {
+    label: "support farming language",
+    pattern:
+      /\b(?:CS|farm(?:s|ed|ing)?|free farm|deny farm|last[-\s]?hit(?:s|ting)?|last hitting)\b/i,
+  },
+];
+
 type PromptLeakageSectionRejection = {
   phrases: string[];
   sample: string;
@@ -752,6 +813,19 @@ function findPromptLanguageWarningsInSection(
   content: string,
 ): PromptLanguageSectionWarning | null {
   return findPromptPatternMatch(sectionKey, content, promptLanguageWarningPatterns);
+}
+
+function findSupportFarmingLanguageInDraft(draft: MatchupDraftSections) {
+  return matchupDraftSectionKeys
+    .map((sectionKey) => findSupportFarmingLanguageInSection(sectionKey, draft[sectionKey]))
+    .filter((rejection): rejection is PromptLeakageSectionRejection => Boolean(rejection));
+}
+
+function findSupportFarmingLanguageInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+): PromptLeakageSectionRejection | null {
+  return findPromptPatternMatch(sectionKey, content, supportFarmingLanguagePatterns);
 }
 
 function findPromptPatternMatch(
@@ -806,6 +880,14 @@ function formatPromptLeakageError(rejectedSections: PromptLeakageSectionRejectio
   return `Generated matchup draft was rejected because it contained prompt-like or instruction-style language: ${sectionList}. Regenerate the draft.`;
 }
 
+function formatSupportFarmingLanguageError(rejectedSections: PromptLeakageSectionRejection[]) {
+  const sectionList = rejectedSections
+    .map(({ phrases, sectionKey }) => `${sectionKey} (${phrases.join(", ")})`)
+    .join("; ");
+
+  return `Generated support matchup draft was rejected because it contained CS, farming, or last-hit language: ${sectionList}. Regenerate the draft.`;
+}
+
 function logPromptLeakageRejection({
   input,
   provider,
@@ -816,6 +898,28 @@ function logPromptLeakageRejection({
   rejectedSections: PromptLeakageSectionRejection[];
 }) {
   console.warn("Rejected League matchup draft prompt leakage", {
+    enemyChampion: input.championBName,
+    playerChampion: input.championAName,
+    provider,
+    rejectedSections: rejectedSections.map(({ phrases, sample, sectionKey }) => ({
+      phrases,
+      sample,
+      sectionKey,
+    })),
+    role: input.role,
+  });
+}
+
+function logSupportFarmingLanguageRejection({
+  input,
+  provider,
+  rejectedSections,
+}: {
+  input: GenerateLeagueMatchupDraftContentInput | GenerateLeagueMatchupDraftSectionContentInput;
+  provider: LeagueMatchupDraftProvider;
+  rejectedSections: PromptLeakageSectionRejection[];
+}) {
+  console.warn("Rejected support matchup draft farming language", {
     enemyChampion: input.championBName,
     playerChampion: input.championAName,
     provider,
