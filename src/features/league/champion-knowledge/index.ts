@@ -3,22 +3,29 @@ import { aatroxCombatProfile } from "./aatrox";
 import { ahriCombatProfile } from "./ahri";
 import { akaliCombatProfile } from "./akali";
 import { akshanCombatProfile } from "./akshan";
+import { asheCombatProfile } from "./ashe";
 import { azirCombatProfile } from "./azir";
+import { caitlynCombatProfile } from "./caitlyn";
 import { cassiopeiaCombatProfile } from "./cassiopeia";
 import { corkiCombatProfile } from "./corki";
 import { dianaCombatProfile } from "./diana";
 import { ekkoCombatProfile } from "./ekko";
+import { ezrealCombatProfile } from "./ezreal";
 import { fizzCombatProfile } from "./fizz";
 import { galioCombatProfile } from "./galio";
 import { hweiCombatProfile } from "./hwei";
 import { ireliaCombatProfile } from "./irelia";
+import { jinxCombatProfile } from "./jinx";
+import { kaisaCombatProfile } from "./kaisa";
 import { kassadinCombatProfile } from "./kassadin";
 import { katarinaCombatProfile } from "./katarina";
 import { leblancCombatProfile } from "./leblanc";
 import { lissandraCombatProfile } from "./lissandra";
+import { lucianCombatProfile } from "./lucian";
 import { luxCombatProfile } from "./lux";
 import { malzaharCombatProfile } from "./malzahar";
 import { melCombatProfile } from "./mel";
+import { missFortuneCombatProfile } from "./miss-fortune";
 import { naafiriCombatProfile } from "./naafiri";
 import { neekoCombatProfile } from "./neeko";
 import { oriannaCombatProfile } from "./orianna";
@@ -29,11 +36,14 @@ import { syndraCombatProfile } from "./syndra";
 import { taliyahCombatProfile } from "./taliyah";
 import { talonCombatProfile } from "./talon";
 import { twistedFateCombatProfile } from "./twisted-fate";
+import { tristanaCombatProfile } from "./tristana";
 import { veigarCombatProfile } from "./veigar";
+import { varusCombatProfile } from "./varus";
 import { vexCombatProfile } from "./vex";
 import { viktorCombatProfile } from "./viktor";
 import { vladimirCombatProfile } from "./vladimir";
 import { xerathCombatProfile } from "./xerath";
+import { xayahCombatProfile } from "./xayah";
 import { yasuoCombatProfile } from "./yasuo";
 import { yoneCombatProfile } from "./yone";
 import { ziggsCombatProfile } from "./ziggs";
@@ -129,22 +139,29 @@ export { ahriCombatProfile } from "./ahri";
 export { aatroxCombatProfile } from "./aatrox";
 export { akaliCombatProfile } from "./akali";
 export { akshanCombatProfile } from "./akshan";
+export { asheCombatProfile } from "./ashe";
 export { azirCombatProfile } from "./azir";
+export { caitlynCombatProfile } from "./caitlyn";
 export { cassiopeiaCombatProfile } from "./cassiopeia";
 export { corkiCombatProfile } from "./corki";
 export { dianaCombatProfile } from "./diana";
 export { ekkoCombatProfile } from "./ekko";
+export { ezrealCombatProfile } from "./ezreal";
 export { fizzCombatProfile } from "./fizz";
 export { galioCombatProfile } from "./galio";
 export { hweiCombatProfile } from "./hwei";
 export { ireliaCombatProfile } from "./irelia";
+export { jinxCombatProfile } from "./jinx";
+export { kaisaCombatProfile } from "./kaisa";
 export { kassadinCombatProfile } from "./kassadin";
 export { katarinaCombatProfile } from "./katarina";
 export { leblancCombatProfile } from "./leblanc";
 export { lissandraCombatProfile } from "./lissandra";
+export { lucianCombatProfile } from "./lucian";
 export { luxCombatProfile } from "./lux";
 export { malzaharCombatProfile } from "./malzahar";
 export { melCombatProfile } from "./mel";
+export { missFortuneCombatProfile } from "./miss-fortune";
 export { naafiriCombatProfile } from "./naafiri";
 export { neekoCombatProfile } from "./neeko";
 export { oriannaCombatProfile } from "./orianna";
@@ -155,11 +172,14 @@ export { syndraCombatProfile } from "./syndra";
 export { taliyahCombatProfile } from "./taliyah";
 export { talonCombatProfile } from "./talon";
 export { twistedFateCombatProfile } from "./twisted-fate";
+export { tristanaCombatProfile } from "./tristana";
 export { veigarCombatProfile } from "./veigar";
+export { varusCombatProfile } from "./varus";
 export { vexCombatProfile } from "./vex";
 export { viktorCombatProfile } from "./viktor";
 export { vladimirCombatProfile } from "./vladimir";
 export { xerathCombatProfile } from "./xerath";
+export { xayahCombatProfile } from "./xayah";
 export { yasuoCombatProfile } from "./yasuo";
 export { yoneCombatProfile } from "./yone";
 export { ziggsCombatProfile } from "./ziggs";
@@ -264,22 +284,29 @@ export const leagueChampionKnowledgeProfiles = {
   Ahri: ahriCombatProfile,
   Akali: akaliCombatProfile,
   Akshan: akshanCombatProfile,
+  Ashe: asheCombatProfile,
   Azir: azirCombatProfile,
+  Caitlyn: caitlynCombatProfile,
   Cassiopeia: cassiopeiaCombatProfile,
   Corki: corkiCombatProfile,
   Diana: dianaCombatProfileWithJungle,
   Ekko: ekkoCombatProfileWithJungle,
+  Ezreal: ezrealCombatProfile,
   Fizz: fizzCombatProfile,
   Galio: galioCombatProfile,
   Hwei: hweiCombatProfile,
   Irelia: ireliaCombatProfile,
+  Jinx: jinxCombatProfile,
+  Kaisa: kaisaCombatProfile,
   Kassadin: kassadinCombatProfile,
   Katarina: katarinaCombatProfile,
   Leblanc: leblancCombatProfile,
   Lissandra: lissandraCombatProfile,
+  Lucian: lucianCombatProfile,
   Lux: luxCombatProfile,
   Malzahar: malzaharCombatProfile,
   Mel: melCombatProfile,
+  MissFortune: missFortuneCombatProfile,
   Naafiri: naafiriCombatProfile,
   Neeko: neekoCombatProfile,
   Orianna: oriannaCombatProfile,
@@ -340,11 +367,14 @@ export const leagueChampionKnowledgeProfiles = {
   TahmKench: tahmKenchCombatProfile,
   Teemo: teemoCombatProfile,
   Trundle: trundleCombatProfileWithJungle,
+  Tristana: tristanaCombatProfile,
   Tryndamere: tryndamereCombatProfile,
   Urgot: urgotCombatProfile,
   Vayne: vayneCombatProfile,
+  Varus: varusCombatProfile,
   Volibear: volibearCombatProfileWithJungle,
   Warwick: warwickCombatProfileWithJungle,
+  Xayah: xayahCombatProfile,
   Yorick: yorickCombatProfile,
   Belveth: belvethCombatProfile,
   JarvanIV: jarvanIvCombatProfile,

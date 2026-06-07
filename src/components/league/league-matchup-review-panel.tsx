@@ -22,6 +22,11 @@ import { generateLeagueMatchupDraftSection } from "@/src/app/admin/league/matchu
 import { MatchupFeedbackControls } from "@/src/components/league/matchup-feedback-controls";
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
+import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
+import {
+  calculateLeagueMatchupConfidence,
+  getLeagueMatchupConfidenceSourceFromNotes,
+} from "@/src/features/league/matchup-confidence";
 import type { LeagueMatchup } from "@/src/features/league/matchups";
 import { getMatchupDraftSectionLabel } from "@/src/features/league/matchup-draft-prompt";
 import type { LeagueRole } from "@/src/features/league/roles";
@@ -35,6 +40,7 @@ type MatchupSectionKey =
   | "win_conditions";
 
 type AdminMatchupRow = LeagueMatchup & {
+  admin_notes: string | null;
   generated_at: string | null;
   id: number;
   reviewed_at: string | null;
@@ -193,6 +199,7 @@ export function LeagueMatchupReviewPanel({
         .select(
           [
             "id",
+            "admin_notes",
             "champion_a_id",
             "champion_b_id",
             "generation_status",
@@ -271,12 +278,19 @@ export function LeagueMatchupReviewPanel({
         form[section.key].trim() || null,
       ])
     ) as Record<MatchupSectionKey, string | null>;
+    const confidence = calculateConfidenceForReviewPanelMatchup({
+      ...adminMatchup,
+      ...payload,
+    });
     const { data, error } = await supabase
       .from("league_matchups")
-      .update(payload)
+      .update({
+        ...payload,
+        confidence_level: confidence.level,
+      })
       .eq("id", adminMatchup.id)
       .select(
-        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+        "id, admin_notes, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
       )
       .single<AdminMatchupRow>();
 
@@ -285,6 +299,11 @@ export function LeagueMatchupReviewPanel({
       return;
     }
 
+    console.info("League matchup confidence calculation", {
+      confidence: confidence.level,
+      matchupId: adminMatchup.id,
+      reasons: confidence.reasons,
+    });
     setAdminMatchup(data);
     setForm(getReviewFormState(data));
     setIsEditing(false);
@@ -319,16 +338,21 @@ export function LeagueMatchupReviewPanel({
       return;
     }
 
+    const confidence = calculateConfidenceForReviewPanelMatchup({
+      ...adminMatchup,
+      generation_status: "reviewed",
+    });
     const { data, error } = await supabase
       .from("league_matchups")
       .update({
+        confidence_level: confidence.level,
         generation_status: "reviewed",
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id,
       })
       .eq("id", adminMatchup.id)
       .select(
-        "id, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
+        "id, admin_notes, champion_a_id, champion_b_id, generation_status, role, overview, early_game, trading_pattern, power_spikes, danger_windows, win_conditions, difficulty_rating, confidence_level, generated_at, reviewed_at, reviewed_by, updated_at"
       )
       .single<AdminMatchupRow>();
 
@@ -337,6 +361,11 @@ export function LeagueMatchupReviewPanel({
       return;
     }
 
+    console.info("League matchup confidence calculation", {
+      confidence: confidence.level,
+      matchupId: adminMatchup.id,
+      reasons: confidence.reasons,
+    });
     setAdminMatchup(data);
     setStatus({
       error: null,
@@ -631,6 +660,20 @@ function getReviewFormState(matchup: LeagueMatchup | null): ReviewFormState {
       matchup?.[section.key] ?? "",
     ])
   ) as ReviewFormState;
+}
+
+function calculateConfidenceForReviewPanelMatchup(matchup: AdminMatchupRow) {
+  return calculateLeagueMatchupConfidence({
+    championAName: matchup.champion_a_id,
+    championAProfile: getChampionCombatProfile(matchup.champion_a_id),
+    championBName: matchup.champion_b_id,
+    championBProfile: getChampionCombatProfile(matchup.champion_b_id),
+    draft: getReviewFormState(matchup),
+    generationSource: getLeagueMatchupConfidenceSourceFromNotes(
+      matchup.admin_notes
+    ),
+    generationStatus: matchup.generation_status,
+  });
 }
 
 function getMatchupSectionBody(

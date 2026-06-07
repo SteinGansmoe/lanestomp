@@ -64,6 +64,11 @@ import {
 } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
+import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
+import {
+  calculateLeagueMatchupConfidence,
+  getLeagueMatchupConfidenceSourceFromNotes,
+} from "@/src/features/league/matchup-confidence";
 import { isAdminUser } from "@/src/lib/admin";
 import {
   fetchUserProfile,
@@ -1355,9 +1360,31 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
     setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
 
+    const { data: matchupDetails, error: matchupDetailsError } = await supabase
+      .from("league_matchups")
+      .select(leagueMatchupDetailSelect)
+      .eq("id", matchup.id)
+      .single<AdminLeagueMatchup>();
+
+    if (matchupDetailsError || !matchupDetails) {
+      setEditLeagueMatchupStatus({
+        error:
+          matchupDetailsError?.message ??
+          "League matchup details could not be loaded.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const confidence = calculateAdminLeagueMatchupConfidence({
+      ...matchupDetails,
+      generation_status: "reviewed",
+    });
     const { error: reviewError } = await supabase
       .from("league_matchups")
       .update({
+        confidence_level: confidence.level,
         generation_status: "reviewed",
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id,
@@ -1373,6 +1400,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return;
     }
 
+    logLeagueMatchupConfidenceCalculation(matchup.id, confidence);
     await reloadAdminData();
     setEditLeagueMatchupStatus({
       error: null,
@@ -1420,23 +1448,54 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     }
 
     setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
+    const supabaseClient = supabase;
 
-    const { error: reviewError } = await supabase
+    const { data: draftMatchups, error: draftMatchupsError } = await supabaseClient
       .from("league_matchups")
-      .update({
-        generation_status: "reviewed",
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user.id,
-      })
+      .select(leagueMatchupDetailSelect)
       .in("id", uniqueMatchupIds)
       .eq("generation_status", "draft");
 
-    if (reviewError) {
+    if (draftMatchupsError) {
       setEditLeagueMatchupStatus({
-        error: reviewError.message,
+        error: draftMatchupsError.message,
         isLoading: false,
         success: null,
       });
+      return;
+    }
+
+    const reviewedAt = new Date().toISOString();
+    const reviewResults = await Promise.all(
+      (((draftMatchups ?? []) as unknown) as AdminLeagueMatchup[]).map((draftMatchup) => {
+        const confidence = calculateAdminLeagueMatchupConfidence({
+          ...draftMatchup,
+          generation_status: "reviewed",
+        });
+
+        logLeagueMatchupConfidenceCalculation(draftMatchup.id, confidence);
+
+        return supabaseClient
+          .from("league_matchups")
+          .update({
+            confidence_level: confidence.level,
+            generation_status: "reviewed",
+            reviewed_at: reviewedAt,
+            reviewed_by: user.id,
+          })
+          .eq("id", draftMatchup.id)
+          .eq("generation_status", "draft");
+      })
+    );
+    const failedReview = reviewResults.find((result) => result.error);
+
+    if (failedReview?.error) {
+      setEditLeagueMatchupStatus({
+        error: failedReview.error.message,
+        isLoading: false,
+        success: null,
+      });
+      await reloadAdminData();
       return;
     }
 
@@ -1444,8 +1503,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setEditLeagueMatchupStatus({
       error: null,
       isLoading: false,
-      success: `${uniqueMatchupIds.length} ${championName} draft matchup${
-        uniqueMatchupIds.length === 1 ? "" : "s"
+      success: `${draftMatchups?.length ?? 0} ${championName} draft matchup${
+        draftMatchups?.length === 1 ? "" : "s"
       } marked as reviewed.`,
     });
   }
@@ -2545,6 +2604,45 @@ function normalizeDraftForForm(
     trading_pattern: draft.trading_pattern ?? "",
     win_conditions: draft.win_conditions ?? "",
   };
+}
+
+function getDraftSectionsFromAdminLeagueMatchup(
+  matchup: Pick<
+    AdminLeagueMatchup,
+    | "danger_windows"
+    | "early_game"
+    | "overview"
+    | "power_spikes"
+    | "trading_pattern"
+    | "win_conditions"
+  >
+) {
+  return normalizeDraftForForm(matchup);
+}
+
+function calculateAdminLeagueMatchupConfidence(matchup: AdminLeagueMatchup) {
+  return calculateLeagueMatchupConfidence({
+    championAName: matchup.champion_a_id,
+    championAProfile: getChampionCombatProfile(matchup.champion_a_id),
+    championBName: matchup.champion_b_id,
+    championBProfile: getChampionCombatProfile(matchup.champion_b_id),
+    draft: getDraftSectionsFromAdminLeagueMatchup(matchup),
+    generationSource: getLeagueMatchupConfidenceSourceFromNotes(
+      matchup.admin_notes
+    ),
+    generationStatus: matchup.generation_status,
+  });
+}
+
+function logLeagueMatchupConfidenceCalculation(
+  matchupId: number,
+  confidence: ReturnType<typeof calculateLeagueMatchupConfidence>
+) {
+  console.info("League matchup confidence calculation", {
+    confidence: confidence.level,
+    matchupId,
+    reasons: confidence.reasons,
+  });
 }
 
 function hasSavedLeagueMatchupDraftContent(

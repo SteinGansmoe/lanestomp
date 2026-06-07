@@ -13,6 +13,7 @@ import {
   type MatchupDraftSections,
 } from "@/src/features/league/matchup-draft-prompt";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
+import { calculateLeagueMatchupConfidence } from "@/src/features/league/matchup-confidence";
 import {
   scanMatchupDraftForFallbackContent,
   type MatchupFallbackContaminationResult,
@@ -86,6 +87,7 @@ type MatchupRow = {
 };
 
 type SavedMatchupDraftRow = MatchupDraftSections & {
+  confidence_level: string | null;
   generated_at: string | null;
   generation_status: AdminLeagueMatchup["generation_status"];
   reviewed_at: string | null;
@@ -100,6 +102,7 @@ type ChampionRow = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const savedMatchupDraftSelect = [
+  "confidence_level",
   "danger_windows",
   "early_game",
   "generated_at",
@@ -247,9 +250,18 @@ export async function generateLeagueMatchupDraft({
   }
 
   const generatedAt = new Date().toISOString();
+  const confidence = calculateLeagueMatchupConfidence({
+    championAName,
+    championAProfile,
+    championBName,
+    championBProfile,
+    draft,
+    generationSource: provider,
+    generationStatus: "draft",
+  });
   const metadata = getGenerationMetadata({
     baseAdminNotes: cleanedAdminNotes.notes,
-    currentConfidenceLevel: matchup.confidence_level,
+    confidenceLevel: confidence.level,
     generatedAt,
     profileWarning: providerResult.profileWarning,
     provider,
@@ -260,6 +272,7 @@ export async function generateLeagueMatchupDraft({
   logGenerationMetadata({
     championAProfileFound: Boolean(championAProfile),
     championBProfileFound: Boolean(championBProfile),
+    confidenceReasons: confidence.reasons,
     confidenceAfter: metadata.confidenceLevel,
     confidenceBefore: matchup.confidence_level,
     matchupId,
@@ -456,9 +469,22 @@ export async function generateLeagueMatchupDraftSection({
   }
 
   const generatedAt = new Date().toISOString();
+  const nextDraft = {
+    ...getDraftFromMatchupRow(matchup),
+    [sectionKey]: providerResult.content,
+  };
+  const confidence = calculateLeagueMatchupConfidence({
+    championAName,
+    championAProfile,
+    championBName,
+    championBProfile,
+    draft: nextDraft,
+    generationSource: providerResult.provider,
+    generationStatus: "draft",
+  });
   const metadata = getGenerationMetadata({
     baseAdminNotes: cleanedAdminNotes.notes,
-    currentConfidenceLevel: matchup.confidence_level,
+    confidenceLevel: confidence.level,
     generatedAt,
     profileWarning: providerResult.profileWarning,
     provider: providerResult.provider,
@@ -469,6 +495,7 @@ export async function generateLeagueMatchupDraftSection({
   logGenerationMetadata({
     championAProfileFound: Boolean(championAProfile),
     championBProfileFound: Boolean(championBProfile),
+    confidenceReasons: confidence.reasons,
     confidenceAfter: metadata.confidenceLevel,
     confidenceBefore: matchup.confidence_level,
     matchupId,
@@ -546,6 +573,7 @@ export async function deleteLeagueMatchupDraft({
     .update({
       danger_windows: null,
       early_game: null,
+      confidence_level: null,
       generated_at: null,
       generation_status: "draft",
       overview: null,
@@ -726,7 +754,7 @@ function getFallbackContaminationError({
 
 function getGenerationMetadata({
   baseAdminNotes,
-  currentConfidenceLevel,
+  confidenceLevel,
   generatedAt,
   profileWarning,
   provider,
@@ -734,17 +762,13 @@ function getGenerationMetadata({
   removedStaleWarnings,
 }: {
   baseAdminNotes: string | null;
-  currentConfidenceLevel: string | null;
+  confidenceLevel: string;
   generatedAt: string;
   profileWarning?: string;
   provider: LeagueMatchupDraftProvider;
   providerWarning?: string;
   removedStaleWarnings: boolean;
 }) {
-  const confidenceLevel = getNextConfidenceLevel({
-    currentConfidenceLevel,
-    profileWarning,
-  });
   const adminNotes = appendGenerationNote(
     baseAdminNotes,
     getGenerationNote(provider, generatedAt, providerWarning, profileWarning)
@@ -755,24 +779,6 @@ function getGenerationMetadata({
     confidenceLevel,
     removedStaleWarnings,
   };
-}
-
-function getNextConfidenceLevel({
-  currentConfidenceLevel,
-  profileWarning,
-}: {
-  currentConfidenceLevel: string | null;
-  profileWarning?: string;
-}) {
-  if (profileWarning) {
-    return "low";
-  }
-
-  if (currentConfidenceLevel?.trim().toLowerCase() === "low") {
-    return null;
-  }
-
-  return currentConfidenceLevel;
 }
 
 function removeSystemGenerationNotes(currentNotes: string | null) {
@@ -856,6 +862,7 @@ function logGenerationMetadata({
   championBProfileFound,
   confidenceAfter,
   confidenceBefore,
+  confidenceReasons,
   matchupId,
   removedStaleWarnings,
   sectionKey,
@@ -864,6 +871,7 @@ function logGenerationMetadata({
   championBProfileFound: boolean;
   confidenceAfter: string | null;
   confidenceBefore: string | null;
+  confidenceReasons: string[];
   matchupId: number;
   removedStaleWarnings: boolean;
   sectionKey?: MatchupDraftSectionKey;
@@ -871,8 +879,10 @@ function logGenerationMetadata({
   console.info("League matchup generation metadata", {
     championAProfileFound,
     championBProfileFound,
+    confidence: confidenceAfter,
     confidenceAfter,
     confidenceBefore,
+    confidenceReasons,
     matchupId,
     removedStaleWarnings,
     sectionKey,
