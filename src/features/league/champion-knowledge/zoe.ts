@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const zoeCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   abilities: {
     Q: "Paddle Star",
     W: "Spell Thief",
@@ -45,8 +45,8 @@ export const zoeCombatProfile = {
   },
   majorPowerSpikes: ["Level 6 (R) for extended poke angles.", "First completed AP burst item."],
   matchupPreferences: {
-    strongInto: [],
-    weakInto: [],
+    strongInto: ["Short range champions who struggle to punish missed (E).", "Champions who rely on dodging skillshots to trade."],
+    weakInto: ["Champions with reliable point-and-click CC", "Champions that can easily dodge (E) and punish the cooldown."],
   },
   mobilityLevel: "medium",
   name: "Zoe",

@@ -77,7 +77,7 @@ export const zileanCombatProfile = {
   },
   mobilityLevel: "low",
   name: "Zilean",
-  offMetaRoles: [],
+  offMetaRoles: ["top"],
   powerSpikes: {
     major: [
       {
@@ -104,7 +104,7 @@ export const zileanCombatProfile = {
     ],
   },
   primaryRoles: ["support"],
-  secondaryRoles: [],
+  secondaryRoles: ["mid"],
   primaryTradingPattern: "Set bombs on the wave or slowed targets, use speed to control trade distance, and hold (R) for real lethal damage.",
   punishProfile: {
     canPunish: [

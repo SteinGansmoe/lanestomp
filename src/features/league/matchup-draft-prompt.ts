@@ -87,6 +87,8 @@ export type LeagueMatchupDraftPrompt = {
   userPrompt: string;
 };
 
+type SupportArchetype = "engage" | "enchanter" | "hook" | "hybrid" | "poke" | "roaming";
+
 const leagueTerminologyRules = [
   "League Terminology Rules:",
   "- Use terms experienced League players use: free farm, CS, lane priority, wave control, crash wave, freeze, slow push, trade window, cooldown window, all-in, poke, spacing, punish, overextend, power spike, deny farm, and force off the wave.",
@@ -154,6 +156,98 @@ const adcPromptRules = [
   "- Avoid jungle-only language such as invade, camp tracking, jungle pathing, clear speed, Smite, Scuttle, Herald, Void Grubs, counter-jungle, or first clear unless the admin notes directly require it.",
 ].join("\n");
 
+const roamingSupportIdentities = [
+  "Alistar",
+  "Bard",
+  "Blitzcrank",
+  "Nautilus",
+  "Pyke",
+  "Rakan",
+  "Thresh",
+];
+
+const supportArchetypeOrder: readonly SupportArchetype[] = [
+  "engage",
+  "hook",
+  "roaming",
+  "enchanter",
+  "poke",
+  "hybrid",
+];
+
+const supportArchetypeThemes = {
+  engage: "engage timing, ADC follow-up, level 2 windows, cooldown tracking, brush control",
+  enchanter: "ADC protection, sustain, shielding, peel, scaling, cooldown trading",
+  hook: "fog-of-war pressure, hook threat, positioning mistakes, brush denial, pick potential",
+  hybrid: "flexible engage and disengage, utility, follow-up, ADC enablement",
+  poke: "wave pressure, lane control, HP advantages, mana management, range advantage",
+  roaming: "roam timers, wave crashes, river control, mid pressure, vision setup, matching roams",
+} as const satisfies Record<SupportArchetype, string>;
+
+const supportChampionArchetypeOverrides: Record<string, readonly SupportArchetype[]> = {
+  alistar: ["engage", "roaming"],
+  bard: ["roaming", "hybrid"],
+  blitzcrank: ["hook"],
+  brand: ["poke"],
+  janna: ["enchanter"],
+  karma: ["hybrid", "poke", "enchanter"],
+  leona: ["engage"],
+  lulu: ["enchanter"],
+  lux: ["poke", "hybrid"],
+  milio: ["enchanter"],
+  morgana: ["hybrid", "poke"],
+  nami: ["enchanter"],
+  nautilus: ["engage", "hook"],
+  pyke: ["hook", "roaming"],
+  rakan: ["roaming", "hybrid", "engage"],
+  rell: ["engage"],
+  seraphine: ["hybrid", "enchanter", "poke"],
+  soraka: ["enchanter"],
+  thresh: ["hook", "roaming", "hybrid"],
+  velkoz: ["poke"],
+  xerath: ["poke"],
+  zyra: ["poke"],
+};
+
+const supportArchetypeSignals = {
+  engage: ["engage", "all-in", "frontline", "initiator", "tank", "teamfight"],
+  enchanter: ["attach", "enchanter", "heal", "peel", "protect", "shield", "sustain"],
+  hook: ["catch", "hook", "pick"],
+  hybrid: ["counter-engage", "disengage", "flexible", "hybrid", "utility"],
+  poke: ["artillery", "burst", "lane control", "mage", "poke", "range", "zone"],
+  roaming: ["fog", "mid pressure", "mobility", "mobile", "river", "roam", "roaming"],
+} as const satisfies Record<SupportArchetype, readonly string[]>;
+
+const supportPromptRules = [
+  "Support Matchup Rules:",
+  "- Treat support matchups as 2v2 bot-lane guidance, not isolated support-vs-support duels.",
+  "- Every support bullet should explain how Champion A protects their ADC, enables their ADC, denies the enemy ADC, controls engage or disengage, controls brush and lane space, manages roam timers, or sets up vision and objectives.",
+  "- Do not tell supports to punish CS, trade aggressively into the enemy support, or fight the enemy support after a cooldown miss unless the sentence clearly explains ADC access, ADC follow-up, brush control, or lane-state control.",
+  "- Avoid support 1v1 phrasing such as beats the enemy support, wins the duel, trade into the support, punish the support stepping up for CS, or kill the enemy support repeatedly.",
+  "- Support overview should explain which side wants engage, which side wants disengage, which ADC benefits from extended fights, and who controls brush or lane space.",
+  "- Support trading_pattern should focus on ADC follow-up, engage timing, cooldown synchronization, support positioning, peel timing, and whether to hold cooldowns for enemy engage instead of forcing first.",
+  "- Support early_game should cover level 2 race, lane priority, brush control, wave crash, and ADC access to the wave.",
+  "- Support danger_windows should name enemy ADC follow-up, enemy support engage range, brush or fog control, vision denial, and wave states that make the ADC vulnerable.",
+  "- Support win_conditions should convert lane control into ADC access, denied enemy ADC positioning, vision around dragon, roam timers, objective setup, and favorable teamfight entry.",
+  "- Brush control should appear when either profile has engage, hook, pick, melee threat, plant control, sapling control, or lane-zone identity.",
+  "- For engage supports, explain when engage is correct only if the ADC can immediately follow and wave or brush state allows it.",
+  "- For peel and enchanter supports, explain when to hold shields, polymorphs, disengage, slows, heals, or knockbacks to protect ADC access.",
+  "- For poke supports, explain how poke creates ADC CS denial, turret pressure, recall timing, or objective setup rather than isolated support damage.",
+  "- For roaming supports, explain roam timers after wave crashes, ADC safety before leaving lane, vision setup, river control, mid-lane impact, and return timing before the ADC becomes vulnerable.",
+  `- Treat these champions as roaming-capable supports when their supplied profile supports it: ${roamingSupportIdentities.join(", ")}.`,
+  "- Roaming support bullets must not imply the support should permanently sit lane if profile fields mention roam, fog, pick, hook, mobility, or river control.",
+  "- Use support_identity_archetypes before writing support guidance; make engage, hook, roaming, enchanter, poke, and hybrid matchups feel different.",
+  "- Engage support matchups should emphasize engage timing, level 2 windows, ADC follow-up, cooldown tracking, and brush control.",
+  "- Hook support matchups should emphasize hook angles, fog-of-war pressure, brush denial, positioning discipline, pick potential, and cooldown windows.",
+  "- Roaming support matchups should emphasize wave crashes, roam timers, ADC safety while alone, river vision, mid pressure, missing support pings, and matching or punishing roams.",
+  "- Enchanter matchups should emphasize ADC protection, peel, sustain, shielding, scaling, and forcing inefficient defensive cooldowns.",
+  "- Poke support matchups should emphasize range advantage, wave pressure, HP leads, mana pressure, brush control, and converting lane control into dragon setup.",
+  "- Hybrid support matchups should emphasize flexible engage or disengage choices, utility layering, follow-up, and ADC enablement.",
+  "- Pyke matchups should frequently discuss roam timers, river control, missing support pings, vision denial, forcing Pyke to stay in lane, and punishing failed roams.",
+  "- Bard matchups should frequently discuss roam windows, chime timing, portal angles, ADC isolation risk, river vision, and mid-lane pressure.",
+  "- Blitzcrank matchups should frequently discuss hook angles, fog-of-war pressure, brush denial, and positioning discipline.",
+].join("\n");
+
 // This builder is the provider-facing prompt contract for League draft generation.
 // Keep it independent from the OpenAI call so future provider swaps reuse the same quality bar.
 export function buildLeagueMatchupDraftPrompt({
@@ -179,6 +273,15 @@ export function buildLeagueMatchupDraftPrompt({
     enemyChampionName,
     enemyChampionProfile,
   );
+  const supportIdentityContext =
+    role === "support"
+      ? formatSupportIdentityMatchupContext({
+          enemyChampionName,
+          enemyChampionProfile,
+          playerChampionName,
+          playerChampionProfile,
+        })
+      : null;
 
   return {
     systemPrompt: [
@@ -230,6 +333,8 @@ export function buildLeagueMatchupDraftPrompt({
       writingStyleRules,
       ...(role === "jungle" ? ["", junglePlanRules, ""] : [""]),
       ...(role === "adc" ? ["", adcPromptRules, ""] : [""]),
+      ...(role === "support" ? ["", supportPromptRules, ""] : [""]),
+      ...(supportIdentityContext ? ["Support identity matchup:", supportIdentityContext, ""] : []),
       "Structured champion profiles:",
       `Player champion combat profile:\n${playerChampionContext}`,
       `Enemy champion combat profile:\n${enemyChampionContext}`,
@@ -264,6 +369,10 @@ export function buildLeagueMatchupDraftPrompt({
       "For jungle matchups, treat jungle_profile fields as higher priority than lanePlan, laneIdentity, trading, or lane-focused summary fields.",
       "For jungle matchups, compare early_game_pressure, clear_speed, objective_control, dueling, gank_threat, invade_resistance, scaling, pathing_notes, and matchup_focus before writing any section.",
       "For ADC matchups, treat lanePlan, laneIdentity, trading, matchupPreferences, dangerProfile, punishProfile, powerSpikes, and strategicIdentity as the source of truth for ADC-versus-ADC guidance under neutral support conditions.",
+      "For support matchups, treat lanePlan, laneIdentity, trading, matchupPreferences, dangerProfile, punishProfile, powerSpikes, strategicIdentity, and supportSynergy as the source of truth for 2v2 support guidance.",
+      "For support matchups, compare how both supports affect ADC access, ADC follow-up, engage or disengage, brush control, roam timers, vision control, and objective setup before writing any section.",
+      "For support matchups, use support_identity_archetypes to decide the primary matchup lens before using generic support rules.",
+      "For support matchups, make the card text reflect the interaction between Champion A's support identity and Champion B's support identity.",
       "For non-jungle matchups, treat lanePlan, laneIdentity, strategicIdentity, trading, matchupPreferences, dangerProfile, punishProfile, or powerSpikes fields as higher priority than the older summary fields.",
       "Use strategicIdentity to infer high-level matchup identities such as snowball vs scale, roam vs scale, control vs roam, teamfight vs splitpush, or lane pressure vs scaling carry.",
       "Do not name a matchup identity unless it follows from the supplied strategicIdentity fields.",
@@ -277,6 +386,10 @@ export function buildLeagueMatchupDraftPrompt({
       `For non-jungle matchups, compare ${playerChampionName}'s lanePlan.wants against ${enemyChampionName}'s lanePlan.wants and explain what ${playerChampionName} must deny.`,
       `For non-jungle matchups, compare ${playerChampionName}'s laneIdentity against ${enemyChampionName}'s laneIdentity before writing overview, early_game, trading_pattern, or win_conditions.`,
       `For ADC matchups, compare ${playerChampionName}'s range, wave access, poke, all-in risk, scaling curve, item spikes, and teamfight role against ${enemyChampionName}'s profile before writing any section.`,
+      `For support matchups, compare ${playerChampionName}'s ADC setup, peel, engage, brush control, roam timers, and vision access against ${enemyChampionName}'s profile before writing any section.`,
+      `For support matchups, if ${enemyChampionName} is a hook support, prioritize hook angles, fog pressure, brush denial, and ADC positioning safety over generic trade advice.`,
+      `For support matchups, if ${enemyChampionName} is a roaming support, prioritize crash timers, missing pings, river vision, ADC isolation risk, and punishing failed roams.`,
+      `For support matchups, if ${enemyChampionName} is an enchanter, prioritize forcing inefficient shields, denying ADC scaling comfort, and choosing engage or poke windows around peel cooldowns.`,
       `Compare ${playerChampionName}'s strategicIdentity against ${enemyChampionName}'s strategicIdentity before writing overview or win_conditions.`,
       `For non-jungle matchups, compare ${playerChampionName}'s punishProfile.canPunish against ${enemyChampionName}'s dangerProfile.mustRespect and trading.badTradeConditions.`,
       `For non-jungle matchups, compare ${enemyChampionName}'s punishProfile.canPunish and dangerProfile.dangerousWhen against ${playerChampionName}'s trading.badTradeConditions.`,
@@ -289,6 +402,7 @@ export function buildLeagueMatchupDraftPrompt({
       "If either profile is missing, make the draft more conservative and lower-confidence instead of inventing details.",
       "For jungle matchups, use natural jungle terms such as full clear, three-camp, level 3 invade, counter-invade, scuttle contest, river fight, objective setup, cross-map, counter-jungle, tempo reset, tracking, gank angle, and scaling window.",
       "For ADC matchups, use natural bot-lane terms such as range advantage, wave access, CS pressure, support cooldowns, bot prio, crash timing, reset, plates, dragon setup, all-in window, poke lane, and teamfight DPS.",
+      "For support matchups, use natural support terms such as level 2 race, brush control, hook angle, engage window, peel, ADC follow-up, lane prio, wave crash, roam timer, vision line, river control, dragon setup, and reset timer.",
       "For non-jungle matchups, use natural League terms such as wave on your side, punish cooldowns, avoid all-in windows, short trades, spacing, roam timers, freeze, crash, slow push, and reset only when they fit the role and lane.",
       "Use the ability_map as the canonical ability name source for reasoning, not as the default display format.",
       "Apply short ability references consistently in overview, early_game, trading_pattern, power_spikes, danger_windows, and win_conditions.",
@@ -343,6 +457,12 @@ export function buildLeagueMatchupDraftPrompt({
       "- Better: Sejuani's level 6 adds reliable engage and stronger objective control around grouped river fights.",
       "- Bad: Slow the game down when Zed reaches a real level, ultimate, item, objective, or dueling breakpoint.",
       "- Better: Zed's level 6 sharply increases kill pressure on isolated targets before objective setup.",
+      `- Bad: Punish ${enemyChampionName} stepping up for CS.`,
+      `- Better: Control brush so your ADC can farm while ${enemyChampionName}'s engage angle is denied.`,
+      `- Bad: Trade aggressively into ${enemyChampionName} when their cooldowns are down.`,
+      `- Better: Engage only when your ADC can follow before ${enemyChampionName}'s peel or counter-engage resets.`,
+      `- Bad: Fight ${enemyChampionName} after they miss their main engage.`,
+      `- Better: Use ${enemyChampionName}'s missed engage to crash the wave, ward river, or set your ADC's reset.`,
       "",
       "Section requirements are generation rules, not card text. Do not echo their wording into returned values:",
       `overview: Use 1-2 bullets from ${playerChampionName}'s point of view only; state the matchup identity and the main thing ${playerChampionName} must manage.`,
@@ -352,6 +472,8 @@ export function buildLeagueMatchupDraftPrompt({
       `overview: For ADC, state which champion benefits from which lane state, such as pushed wave, large wave, thinned wave, brush control, or safe first-item access.`,
       `overview: For ADC, compare lane identity in plain terms: short trades vs extended trades, early pressure vs scaling, wave priority vs safe farming, and who needs time.`,
       `overview: For ADC, explain why the matchup works that way, not only what ${playerChampionName} should do.`,
+      `overview: For support, explain the 2v2 lane dynamic: engage or disengage, ADC follow-up, extended fights, and brush or lane-space control.`,
+      `overview: For support, state whether ${playerChampionName} should enable ADC access, deny enemy ADC access, protect scaling, force engage, or hold disengage.`,
       `overview: Use strategicIdentity to summarize whether this is snowball vs scale, roam vs control, control vs teamfight, or another supplied-profile identity.`,
       `overview: Mention defensive adaptation here only when it materially changes how ${playerChampionName} should play the matchup.`,
       `early_game: For jungle, cover first clear choice, level 3 strength, first river move, invade/counter-invade risk, scuttle contest, and whether ${playerChampionName} should fight or path away.`,
@@ -359,6 +481,8 @@ export function buildLeagueMatchupDraftPrompt({
       `early_game: For ADC, focus on the first three waves, level 2 race, caster-minion last-hit punish windows, support brush position, and wave size before all-ins.`,
       `early_game: For ADC, explain why the wave decision matters, such as reducing ${enemyChampionName}'s dash window, creating poke angles, denying bounce angles, or preventing support engage.`,
       `early_game: For ADC, use minion-specific windows when relevant: low-health minions, caster minions, cannon minions, wave size, crash timing, or recall timing.`,
+      `early_game: For support, cover level 2 race, brush control, lane priority, wave crash, ADC access to farm, and safe roam or ward timing.`,
+      `early_game: For support, explain when ${playerChampionName} should stand forward, hold peel, concede brush, or help crash based on ADC vulnerability.`,
       `early_game: Focus on how ${playerChampionName} should approach the opening minutes; never describe ${enemyChampionName}'s early plan unless it changes ${playerChampionName}'s action.`,
       `trading_pattern: For jungle, this card is displayed as Jungle Plan; it must answer what ${playerChampionName} should try to do on the map, not how ${playerChampionName} should trade.`,
       `trading_pattern: For jungle, write pathing strategy, first clear goals, Scuttle contest conditions, river control, invade opportunities, counter-jungling, counter-gank timing, objective setup, dragon, Void Grubs, Rift Herald, tempo management, scaling denial, and lane priority requirements before invading or contesting.`,
@@ -374,6 +498,8 @@ export function buildLeagueMatchupDraftPrompt({
       `trading_pattern: For ADC, make each bullet immediately usable in lane: where ${playerChampionName} should stand, what minion state matters, which ability to track, or when support threat blocks the punish.`,
       `trading_pattern: For ADC, name the exact cooldown that matters and explain why it changes the trade, such as ${enemyChampionName} losing poke pressure after a missed skillshot or losing all-in threat after a dash is spent.`,
       `trading_pattern: For ADC, include ability-vs-minion, ability-vs-wave, or ability-vs-ability interactions whenever the profiles support them.`,
+      `trading_pattern: For support, explain how ${playerChampionName} should time engage, peel, poke, or disengage around ADC follow-up, brush state, wave state, and ${enemyChampionName}'s threat range.`,
+      `trading_pattern: For support, do not frame the pattern as ${playerChampionName} dueling ${enemyChampionName}; frame it as creating or denying a 2v2 window.`,
       `trading_pattern: For non-jungle roles, explain how ${playerChampionName} should trade, which ${enemyChampionName} cooldowns or resource states matter, and how lane initiative changes those trades.`,
       `trading_pattern: Never explain how ${enemyChampionName} should trade or skirmish; translate ${enemyChampionName}'s mistakes into ${playerChampionName} punish actions.`,
       `power_spikes: Cover ${playerChampionName}'s real spikes and ${enemyChampionName}'s real spikes that change ${playerChampionName}'s decisions.`,
@@ -390,6 +516,8 @@ export function buildLeagueMatchupDraftPrompt({
       `danger_windows: For ADC, name the specific ability combination, support position, brush control, wave state, or cooldown window that lets ${enemyChampionName} punish ${playerChampionName}.`,
       `danger_windows: For ADC, explain dangerous support-enabled windows through positioning, such as stepping into hook range, losing brush control, or trading when enemy support can immediately follow.`,
       `danger_windows: For ADC, explain why the danger exists, such as ${enemyChampionName}'s short-trade burst, extended DPS, poke angle, dash access, root setup, or support follow-up.`,
+      `danger_windows: For support, name enemy ADC follow-up, enemy support engage range, brush or fog control, vision denial, and wave states that expose ${playerChampionName}'s ADC.`,
+      `danger_windows: For support, explain whether ${playerChampionName} should hold peel, ward before face-checking, drop brush control, or avoid leaving the ADC alone.`,
       `danger_windows: Describe ${enemyChampionName}'s threat windows, ${playerChampionName}'s vulnerability windows, and matchup swing moments that require caution from ${playerChampionName}.`,
       `danger_windows: Never describe ${enemyChampionName}'s vulnerability windows here; move those to trading_pattern or win_conditions as ${playerChampionName} punish opportunities.`,
       "danger_windows: If the enemy roams and the player cannot follow, say to hard push, take plates, ping danger, or punish the roam; do not frame the roam itself as direct lane danger.",
@@ -398,6 +526,8 @@ export function buildLeagueMatchupDraftPrompt({
       `win_conditions: For ADC, explain how ${playerChampionName} wins through lane pressure, CS leads, plates, dragon setup, item spikes, teamfight positioning, or scaling into DPS windows.`,
       `win_conditions: For ADC, connect the lane interaction to conversion: health lead into recall, wave crash into plates, CS punishment into item lead, or bot priority into dragon vision.`,
       `win_conditions: For ADC, explain why the preferred game flow favors ${playerChampionName}, such as denying early burst, reaching safer scaling windows, or forcing ${enemyChampionName} under tower before objectives.`,
+      `win_conditions: For support, explain how ${playerChampionName} wins by enabling ADC access, denying enemy ADC positioning, securing vision, timing roams, setting dragon, or creating teamfight entry.`,
+      `win_conditions: For support, connect lane actions to bot prio, reset timers, river vision, dragon setup, roam impact, or ADC teamfight protection.`,
       `win_conditions: For non-jungle roles, explain concrete ways ${playerChampionName} can win this matchup by using lane agency, denying scaling, reaching the preferred game state, or executing strategicIdentity.winMethod.`,
       `win_conditions: Never describe how ${enemyChampionName} wins; only explain how ${playerChampionName} increases their chance of winning.`,
       "",
@@ -420,6 +550,10 @@ export function buildLeagueMatchupDraftPrompt({
       "- For ADC matchups, do not use jungle-only concepts such as invade, camp tracking, jungle pathing, clear speed, Smite, Scuttle, Herald, Void Grubs, counter-jungle, or first clear unless admin notes explicitly require it.",
       "- For ADC matchups, do not name specific support champions or assume a support matchup unless admin notes explicitly provide that support context.",
       "- For ADC matchups, do not recommend last-hit punishment when the enemy support can zone, engage, hook, stun, or punish the step forward.",
+      "- For support matchups, do not write isolated support duel advice; every bullet should affect ADC access, ADC follow-up, brush control, vision, roams, objective setup, or teamfight entry.",
+      "- For support matchups, do not tell the support to punish CS, contest last hits, or trade aggressively into the enemy support unless the same sentence explains the 2v2 lane reason.",
+      "- For support matchups, do not say fight after cooldowns are down unless the bullet names ADC follow-up, peel safety, brush state, wave state, or vision control.",
+      "- For support matchups, do not recommend roaming without checking wave crash timing, ADC safety, vision setup, river control, or return timing.",
       "- Do not start bullets with prompt or fallback wording such as Review, Analyze, List only, Keep broad notes, Re-check, Instruction, or Generated matchup.",
       "- Do not say use cross-map trades when direct river fights are not favorable; name the actual trade, side of the map, objective, camp, vision, or tempo window.",
       `- Do not write any bullet that is mainly useful for a ${enemyChampionName} player.`,
@@ -471,6 +605,11 @@ export function buildLeagueMatchupDraftPrompt({
       "- For ADC matchups, does win_conditions explain how lane interactions convert into recalls, plates, dragon setup, item lead, or teamfight access?",
       "- For ADC matchups, does the guide explain why the lane works this way rather than only listing what to do?",
       "- For ADC matchups, did it avoid specific support-pick assumptions and jungle-only terminology?",
+      "- For support matchups, does the draft read like 2v2 support coaching rather than an isolated support duel?",
+      "- For support matchups, did it prioritize ADC protection, ADC setup, enemy ADC denial, engage or disengage timing, brush or lane space, wave state, vision, roams, and objective setup?",
+      "- For support matchups, did it avoid advice about CS punishment, direct dueling, or killing the enemy support unless tied to ADC access or follow-up?",
+      "- For support matchups, did roaming guidance mention crash timers, ADC safety, river or mid pressure, vision, or objective rotations when relevant?",
+      "- For support matchups, does danger_windows explain how the player's ADC becomes vulnerable rather than only naming enemy support damage?",
       "- Does the wording sound like a high-ELO League coach rather than generic AI advice?",
       "- Did the draft use authentic League terms and avoid the banned comfort/farming phrases?",
       "- Is each power_spikes bullet a real power spike?",
@@ -536,9 +675,148 @@ function getRolePromptGuidance(role: LeagueRole) {
   }
 
   return [
-    "Treat this as a support matchup.",
-    "Frame advice around lane control, engage or peel windows, roam timing, warding access, partner safety, and objective setup.",
+    "Treat this as a 2v2 support matchup, not a support 1v1.",
+    "Frame advice around ADC access and protection, ADC follow-up, engage and disengage timing, brush control, lane space, wave state, vision, roam timers, and objective setup.",
+    "When describing enemy support threats, explain how they reach the ADC or enable enemy ADC damage.",
+    "When describing punish windows, explain whether Champion A should peel, deny brush, crash the wave, roam, ward, or create ADC follow-up.",
+    "Avoid isolated trade advice, CS-punish advice, and duel language unless the sentence clearly connects to the 2v2 lane state.",
+    "For roaming supports, mention wave crash timers, ADC safety before leaving, river vision, mid pressure, and return timing.",
   ].join("\n");
+}
+
+function formatSupportIdentityMatchupContext({
+  enemyChampionName,
+  enemyChampionProfile,
+  playerChampionName,
+  playerChampionProfile,
+}: {
+  enemyChampionName: string;
+  enemyChampionProfile?: LeagueChampionKnowledgeProfile | null;
+  playerChampionName: string;
+  playerChampionProfile?: LeagueChampionKnowledgeProfile | null;
+}) {
+  const playerArchetypes = getSupportArchetypes(playerChampionName, playerChampionProfile);
+  const enemyArchetypes = getSupportArchetypes(enemyChampionName, enemyChampionProfile);
+
+  return [
+    `player_support_identity_archetypes: ${formatSupportArchetypeList(playerArchetypes)}`,
+    `player_support_identity_themes: ${formatSupportArchetypeThemes(playerArchetypes)}`,
+    `enemy_support_identity_archetypes: ${formatSupportArchetypeList(enemyArchetypes)}`,
+    `enemy_support_identity_themes: ${formatSupportArchetypeThemes(enemyArchetypes)}`,
+    `support_identity_instruction: Make ${playerChampionName} into ${enemyChampionName} feel shaped by these exact identities, not by generic support advice.`,
+    formatSupportChampionIdentityNotes(playerChampionName, "player"),
+    formatSupportChampionIdentityNotes(enemyChampionName, "enemy"),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function getSupportArchetypes(
+  championName: string,
+  profile?: LeagueChampionKnowledgeProfile | null,
+): SupportArchetype[] {
+  const archetypes = new Set<SupportArchetype>(
+    supportChampionArchetypeOverrides[normalizeSupportIdentityName(championName)] ?? [],
+  );
+  const profileNameOverride = profile?.name
+    ? (supportChampionArchetypeOverrides[normalizeSupportIdentityName(profile.name)] ?? [])
+    : [];
+
+  for (const archetype of profileNameOverride ?? []) {
+    archetypes.add(archetype);
+  }
+
+  const profileText = formatSupportArchetypeSourceText(profile);
+
+  for (const archetype of supportArchetypeOrder) {
+    if (
+      supportArchetypeSignals[archetype].some((signal) =>
+        profileText.includes(signal.toLowerCase()),
+      )
+    ) {
+      archetypes.add(archetype);
+    }
+  }
+
+  return supportArchetypeOrder.filter((archetype) => archetypes.has(archetype));
+}
+
+function formatSupportArchetypeSourceText(profile?: LeagueChampionKnowledgeProfile | null) {
+  if (!profile) {
+    return "";
+  }
+
+  return [
+    profile.archetype,
+    profile.commonWeaknesses,
+    profile.dangerAbilities,
+    profile.dangerProfile?.dangerousWhen,
+    profile.dangerProfile?.mustRespect,
+    profile.hardCrowdControl,
+    profile.importantAbilityNotes,
+    profile.lanePlan?.avoids,
+    profile.lanePlan?.wants,
+    profile.matchupPreferences?.strongInto,
+    profile.matchupPreferences?.weakInto,
+    profile.primaryTradingPattern,
+    profile.primaryWinCondition,
+    profile.punishProfile?.canPunish,
+    profile.punishWindows,
+    profile.softCrowdControl,
+    profile.strategicIdentity?.laneGoal,
+    profile.strategicIdentity?.winMethod,
+    profile.supportSynergy?.excellentWith,
+    profile.supportSynergy?.goodWith,
+    profile.supportSynergy?.notes,
+    profile.supportSynergy?.strugglesWith,
+    profile.trading?.badTradeConditions,
+    profile.trading?.goodTradeConditions,
+    profile.trading?.primaryPattern,
+  ]
+    .flat()
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+}
+
+function formatSupportArchetypeList(archetypes: readonly SupportArchetype[]) {
+  return archetypes.length > 0 ? archetypes.join("; ") : "not supplied";
+}
+
+function formatSupportArchetypeThemes(archetypes: readonly SupportArchetype[]) {
+  if (archetypes.length === 0) {
+    return "not supplied";
+  }
+
+  return archetypes
+    .map((archetype) => `${archetype}: ${supportArchetypeThemes[archetype]}`)
+    .join("; ");
+}
+
+function formatSupportChampionIdentityNotes(
+  championName: string,
+  perspective: "enemy" | "player",
+) {
+  const normalizedName = normalizeSupportIdentityName(championName);
+  const subject = perspective === "player" ? "player champion" : "enemy champion";
+
+  if (normalizedName === "pyke") {
+    return `${subject}_identity_note: Pyke guidance should prioritize roam timers, river control, missing support pings, vision denial, forcing Pyke to stay lane, and punishing failed roams.`;
+  }
+
+  if (normalizedName === "bard") {
+    return `${subject}_identity_note: Bard guidance should prioritize wave-crash roam windows, chime timing, portal angles, ADC isolation risk, river vision, and mid pressure.`;
+  }
+
+  if (normalizedName === "blitzcrank") {
+    return `${subject}_identity_note: Blitzcrank guidance should prioritize hook angles, fog pressure, brush denial, and ADC positioning discipline.`;
+  }
+
+  return "";
+}
+
+function normalizeSupportIdentityName(championName: string) {
+  return championName.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function formatChampionKnowledgeForPrompt(
@@ -566,6 +844,9 @@ function formatChampionKnowledgeForPrompt(
     `off_meta_roles: ${formatOptionalList(profile.offMetaRoles)}`,
     `damage_type: ${profile.damageType ?? "not supplied"}`,
     `archetype: ${formatOptionalList(profile.archetype)}`,
+    `support_identity_archetypes: ${formatSupportArchetypeList(
+      getSupportArchetypes(profile.name, profile),
+    )}`,
     `mobility_level: ${profile.mobilityLevel ?? "not supplied"}`,
     `hard_crowd_control: ${formatOptionalList(profile.hardCrowdControl)}`,
     `soft_crowd_control: ${formatOptionalList(profile.softCrowdControl)}`,
@@ -612,6 +893,10 @@ function formatChampionKnowledgeForPrompt(
       profile.matchupPreferences?.strongInto,
     )}`,
     `matchup_preferences.weak_into: ${formatOptionalList(profile.matchupPreferences?.weakInto)}`,
+    `support_synergy.excellent_with: ${formatOptionalList(profile.supportSynergy?.excellentWith)}`,
+    `support_synergy.good_with: ${formatOptionalList(profile.supportSynergy?.goodWith)}`,
+    `support_synergy.struggles_with: ${formatOptionalList(profile.supportSynergy?.strugglesWith)}`,
+    `support_synergy.notes: ${formatOptionalList(profile.supportSynergy?.notes)}`,
     `danger_profile.dangerous_when: ${formatOptionalList(profile.dangerProfile?.dangerousWhen)}`,
     `danger_profile.must_respect: ${formatOptionalList(profile.dangerProfile?.mustRespect)}`,
     `punish_profile.can_punish: ${formatOptionalList(profile.punishProfile?.canPunish)}`,

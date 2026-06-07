@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const smolderCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "medium",
   abilities: {
     Q: "Super Scorcher Breath",

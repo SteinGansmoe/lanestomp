@@ -104,7 +104,7 @@ export const zyraCombatProfile = {
     ],
   },
   primaryRoles: ["support"],
-  secondaryRoles: [],
+  secondaryRoles: ["jungle"],
   primaryTradingPattern: "Seed brush, threaten (E), and use plants to punish every CS attempt while holding (R) for committed fights.",
   punishProfile: {
     canPunish: [

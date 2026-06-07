@@ -11,7 +11,7 @@ export const lucianCombatProfile = {
   },
   archetype: ["marksman", "lane bully", "burst trades", "short range"],
   primaryWinCondition: [
-    "Use early lane agency and support-triggered burst windows to create CS and kill pressure before longer-range scalers stabilize.",
+    "Use early lane pressure and support-triggered burst windows to create CS and kill pressure before longer-range scalers stabilize.",
   ],
   dangerAbilities: ["(Q) poke", "(E) dash", "(R) burst channel"],
   dangerProfile: {
