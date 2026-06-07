@@ -34,6 +34,12 @@ type ChangeMatchupPanelProps = {
   currentChampionAId?: string;
   currentChampionBId?: string;
   currentRole: LeagueRole;
+  mode?: "collapsible" | "inline";
+  onSelectionChange?: (selection: {
+    championAId: string;
+    championBId: string;
+    role: LeagueRole;
+  }) => void;
 };
 
 const selectClassName =
@@ -115,9 +121,12 @@ export function ChangeMatchupPanel({
   currentChampionAId,
   currentChampionBId,
   currentRole,
+  mode = "collapsible",
+  onSelectionChange,
 }: ChangeMatchupPanelProps) {
   const panelId = useId();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const isInline = mode === "inline";
+  const [isExpanded, setIsExpanded] = useState(isInline);
   const [championAId, setChampionAId] = useState(currentChampionAId ?? "");
   const [championBId, setChampionBId] = useState(currentChampionBId ?? "");
   const [openPicker, setOpenPicker] = useState<OpenPicker>(null);
@@ -143,6 +152,10 @@ export function ChangeMatchupPanel({
     championA && championB
       ? getLeagueMatchupHref({ championA, championB, role })
       : null;
+
+  useEffect(() => {
+    onSelectionChange?.({ championAId, championBId, role });
+  }, [championAId, championBId, onSelectionChange, role]);
 
   function handleChampionFilterChange(nextFilter: ChampionFilter) {
     setStoredChampionFilter(nextFilter);
@@ -177,26 +190,30 @@ export function ChangeMatchupPanel({
 
   return (
     <div className="contents">
-      <button
-        aria-controls={panelId}
-        aria-expanded={isExpanded}
-        className={cn(navigationPillClassName, "justify-center")}
-        onClick={() => setIsExpanded((current) => !current)}
-        type="button"
-      >
-        <ChevronDown
-          className={cn(
-            "size-4 transition-transform",
-            isExpanded && "rotate-180"
-          )}
-          aria-hidden="true"
-        />
-        Change Matchup
-      </button>
+      {!isInline ? (
+        <button
+          aria-controls={panelId}
+          aria-expanded={isExpanded}
+          className={cn(navigationPillClassName, "justify-center")}
+          onClick={() => setIsExpanded((current) => !current)}
+          type="button"
+        >
+          <ChevronDown
+            className={cn(
+              "size-4 transition-transform",
+              isExpanded && "rotate-180"
+            )}
+            aria-hidden="true"
+          />
+          Change Matchup
+        </button>
+      ) : null}
 
       <div
         className={cn(
-          "order-last grid basis-full transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none",
+          isInline
+            ? "grid basis-full"
+            : "order-last grid basis-full transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none",
           isExpanded
             ? "grid-rows-[1fr] overflow-visible opacity-100"
             : "grid-rows-[0fr] overflow-hidden opacity-0"
@@ -210,7 +227,10 @@ export function ChangeMatchupPanel({
           )}
         >
           <div
-            className="mt-3 rounded-xl border border-white/10 bg-[#10182b]/90 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5"
+            className={cn(
+              "rounded-xl border border-white/10 bg-[#10182b]/90 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5",
+              !isInline && "mt-3"
+            )}
           >
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_12rem_auto] lg:items-end">
               <MatchupChampionPicker

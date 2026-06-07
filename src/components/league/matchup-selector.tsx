@@ -1,17 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import {
   ArrowLeftRight,
   Plus,
   Search,
-  Swords,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
+import { ChangeMatchupPanel } from "@/src/components/league/change-matchup-panel";
 import {
   type LeagueChampion,
 } from "@/src/features/league/champions";
@@ -22,7 +21,6 @@ import {
   sortChampionsForRole,
 } from "@/src/features/league/champion-roles";
 import { type LeagueRole } from "@/src/features/league/roles";
-import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
 import { cn } from "@/src/lib/utils";
 
 type MatchupSelectorProps = {
@@ -117,10 +115,6 @@ export function MatchupSelector({
       activeFilter
     );
   }, [activeFilter, champions, includeOffMeta, query]);
-  const matchupHref =
-    championA && championB
-      ? getLeagueMatchupHref({ championA, championB, role })
-      : null;
   const visibleCoverage =
     matchupCoverage?.[activeFilter] ?? matchupCoverage?.all ?? null;
 
@@ -149,61 +143,79 @@ export function MatchupSelector({
     setChampionBId(championAId);
   }
 
+  const handleMatchupControlsChange = useCallback(
+    (selection: {
+      championAId: string;
+      championBId: string;
+      role: LeagueRole;
+    }) => {
+      setChampionAId(selection.championAId || null);
+      setChampionBId(selection.championBId || null);
+      setRole(selection.role);
+      setActiveFilter(selection.role);
+    },
+    []
+  );
+
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-[#07101f] shadow-2xl shadow-black/25">
       <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_28rem),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_26rem)] p-4 sm:p-5">
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-          <div>
+        <div className="grid gap-3">
+          <div className="min-w-0">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
               Matchup setup
             </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
-              <SelectionSlot
-                champion={championA}
-                label="Your champion"
-                tone="cyan"
-              />
-              <button
-                aria-label="Swap selected champions"
-                className="hidden size-11 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:flex"
-                disabled={!championAId && !championBId}
-                onClick={handleSwapChampions}
-                type="button"
-              >
-                <ArrowLeftRight className="size-5" aria-hidden="true" />
-              </button>
-              <SelectionSlot
-                champion={championB}
-                label="Opponent"
-                tone="violet"
-              />
-            </div>
-
-            <RoleIconSelector
-              activeFilter={activeFilter}
-              onChange={handleFilterChange}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row xl:flex-col">
-            {matchupHref ? (
-              <Button
-                asChild
-                className="h-11 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
-              >
-                <Link href={matchupHref}>
-                  <Swords className="size-4" aria-hidden="true" />
-                  View matchup
-                </Link>
-              </Button>
+            {championAId ? (
+              <div className="mt-3">
+                <ChangeMatchupPanel
+                  champions={champions}
+                  currentChampionAId={championAId}
+                  currentChampionBId={championBId ?? undefined}
+                  currentRole={role}
+                  key={`${championAId}-${championBId ?? "none"}-${role}`}
+                  mode="inline"
+                  onSelectionChange={handleMatchupControlsChange}
+                />
+              </div>
             ) : (
-              <Button
-                className="h-11 bg-white/10 px-4 text-zinc-400"
-                disabled
-                type="button"
-              >
-                Select two champions
-              </Button>
+              <>
+                <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
+                    <SelectionSlot
+                      champion={championA}
+                      label="Your champion"
+                      tone="cyan"
+                    />
+                    <button
+                      aria-label="Swap selected champions"
+                      className="hidden size-11 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:flex"
+                      disabled={!championAId && !championBId}
+                      onClick={handleSwapChampions}
+                      type="button"
+                    >
+                      <ArrowLeftRight className="size-5" aria-hidden="true" />
+                    </button>
+                    <SelectionSlot
+                      champion={championB}
+                      label="Opponent"
+                      tone="violet"
+                    />
+                  </div>
+
+                  <Button
+                    className="h-11 bg-white/10 px-4 text-zinc-400"
+                    disabled
+                    type="button"
+                  >
+                    Select two champions
+                  </Button>
+                </div>
+
+                <RoleIconSelector
+                  activeFilter={activeFilter}
+                  onChange={handleFilterChange}
+                />
+              </>
             )}
           </div>
         </div>
@@ -233,16 +245,18 @@ export function MatchupSelector({
               ) : null}
             </div>
 
-            <button
-              aria-label="Swap selected champions"
-              className="flex h-11 items-center justify-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:hidden"
-              disabled={!championAId && !championBId}
-              onClick={handleSwapChampions}
-              type="button"
-            >
-              <ArrowLeftRight className="size-4" aria-hidden="true" />
-              Swap
-            </button>
+            {!championAId ? (
+              <button
+                aria-label="Swap selected champions"
+                className="flex h-11 items-center justify-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:hidden"
+                disabled
+                onClick={handleSwapChampions}
+                type="button"
+              >
+                <ArrowLeftRight className="size-4" aria-hidden="true" />
+                Swap
+              </button>
+            ) : null}
           </div>
 
           <div className="grid max-h-[36rem] grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2 overflow-y-auto border-b border-white/10 py-4 sm:grid-cols-[repeat(auto-fill,minmax(4rem,1fr))]">
