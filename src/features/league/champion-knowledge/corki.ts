@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const corkiCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   abilities: {
     Q: "Phosphorus Bomb",
     W: "Valkyrie",
@@ -10,7 +10,7 @@ export const corkiCombatProfile = {
   },
   archetype: ["poke", "marksman mage", "scaling", "mobility"],
   primaryWinCondition: [
-    "Secure CS into item spikes, then use rockets and mixed damage poke to control mid-game fights.",
+    "Farm CS to get to item spikes, then use rockets and mixed damage poke to control mid-game fights.",
   ],
   dangerAbilities: ["(R) poke", "(W) reposition"],
   dangerProfile: {

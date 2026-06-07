@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const nilahCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "high",
   abilities: {
     Q: "Formless Blade",

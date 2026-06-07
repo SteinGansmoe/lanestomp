@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const kaisaCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "high",
   abilities: {
     Q: "Icathian Rain",
@@ -51,6 +51,7 @@ export const kaisaCombatProfile = {
       "A stable bot lane where Kai'Sa preserves health, farms toward evolves, and all-ins only when support setup creates plasma access.",
     wants: [
       "Safe access to first item spike.",
+      "Item components that gives her access to upgraded abilities.",
       "Support can start plasma stacks or force a target to stand still.",
       "Short all-in windows after enemy poke or disengage is down.",
       "Small or thinned waves that let (Q) hit the enemy ADC instead of minions.",

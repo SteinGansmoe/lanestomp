@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const twitchCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "medium",
   abilities: {
     Q: "Ambush",

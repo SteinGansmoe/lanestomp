@@ -112,6 +112,16 @@ export const xerathCombatProfile = {
   shields: [],
   softCrowdControl: ["(W) slow"],
   stealthOrInvisibility: null,
+  supportSynergy: {
+    excellentWith: ["Jhin", "Caitlyn", "Varus"],
+    goodWith: ["Ezreal", "Ashe", "MissFortune"],
+    strugglesWith: ["Samira", "Nilah", "Kalista"],
+    notes: [
+      "Long-range ADCs stack poke with Xerath and force enemies to farm under constant skillshots.",
+      "Root or trap follow-up makes his stun and ultimate easier to convert.",
+      "Short-range all-in ADCs can leave Xerath exposed when they engage beyond his peel range.",
+  ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const jinxCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "medium",
   abilities: {
     Q: "Switcheroo!",
@@ -144,6 +144,7 @@ export const jinxCombatProfile = {
       "Thresh lantern gives Jinx a second escape when she oversteps for rockets or plates.",
       "Braum and Janna peel divers so Jinx can keep firing in front-to-back fights.",
       "Roaming supports can strand Jinx in lane before she has enough waveclear and items.",
+      "Jinx needs to be protected early, so supports that leave her alone to farm or poke can make her lane much harder.",
     ],
   },
   sustain: [],

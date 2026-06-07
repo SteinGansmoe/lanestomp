@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const zeriCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "high",
   abilities: {
     Q: "Burst Fire",
@@ -11,7 +11,7 @@ export const zeriCombatProfile = {
   },
   archetype: ["marksman", "mobility", "scaling", "kite carry"],
   primaryWinCondition: [
-    "Use safe farming and wall mobility to reach item spikes, then kite extended fights with (R) movement and repeated (Q) damage.",
+    "Farm safely and use wall mobility to reach item spikes, then kite extended fights with (R) movement and repeated (Q) damage.",
   ],
   dangerAbilities: ["(E) wall dash", "(R) extended fight", "(W) wall laser"],
   dangerProfile: {

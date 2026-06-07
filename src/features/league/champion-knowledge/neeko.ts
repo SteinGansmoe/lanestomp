@@ -130,6 +130,16 @@ export const neekoCombatProfile = {
   shields: ["(R) shield during cast"],
   softCrowdControl: [],
   stealthOrInvisibility: "Passive Inherent Glamour disguise and (W) clone misdirection.",
+  supportSynergy: {
+    excellentWith: ["Jhin", "MissFortune", "Kaisa"],
+    goodWith: ["Ashe", "Varus", "Caitlyn"],
+    strugglesWith: ["Ezreal", "Smolder", "KogMaw"],
+    notes: [
+      "ADC follow-up with roots, slows, or burst makes Neeko's (E) and (R) easier to convert.",
+      "AoE ADCs can punish enemies trapped in Pop Blossom.",
+      "Low-commit scaling ADCs may not capitalize on Neeko's short-range all-in windows.",
+  ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

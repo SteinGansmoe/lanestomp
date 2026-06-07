@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const jhinCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "medium",
   abilities: {
     Q: "Dancing Grenade",
@@ -164,14 +164,15 @@ export const jhinCombatProfile = {
     winMethod: ["fourth-shot pressure", "pick setup", "objective zoning"],
   },
   supportSynergy: {
-    excellentWith: ["Zyra", "Morgana", "Lux"],
-    goodWith: ["Thresh", "Nautilus", "Karma"],
+    excellentWith: ["Zyra", "Morgana", "Lux", "Leona"],
+    goodWith: ["Thresh", "Nautilus", "Karma", "Seraphine", "Braum"],
     strugglesWith: ["Yuumi", "Sona", "low-setup enchanters"],
     notes: [
-      "Zyra plants and roots make Jhin (W) follow-up easy to confirm.",
+      "Zyra plants and roots make Jhin (W) follow-up easy to complete.",
       "Morgana and Lux create long-range CC chains that match Jhin's pick style.",
       "Thresh and Nautilus can start fights that Jhin converts with fourth shot and (W).",
       "Supports without poke or CC make it harder for Jhin to turn lane control into kills.",
+      "Supports with enough CC to set up (W) roots and gives Jhin time to shoot his fourth shot are ideal",
     ],
   },
   sustain: [],

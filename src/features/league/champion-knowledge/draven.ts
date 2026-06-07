@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const dravenCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "high",
   abilities: {
     Q: "Spinning Axe",
@@ -11,7 +11,7 @@ export const dravenCombatProfile = {
   },
   archetype: ["marksman", "lane bully", "snowball", "high-risk carry"],
   primaryWinCondition: [
-    "Use Spinning Axe damage to win early trades, cash in passive gold, and turn lane control into kill pressure before scaling ADCs stabilize.",
+    "Use (Q) Spinning Axe damage to win early trades, cash in passive gold from kills, and turn lane control into kill pressure before scaling ADCs stabilize.",
   ],
   dangerAbilities: ["(Q) axe damage", "(E) interrupt", "(R) execute"],
   dangerProfile: {
@@ -90,7 +90,7 @@ export const dravenCombatProfile = {
       "Disengage lanes that deny early cash-in.",
     ],
   },
-  mobilityLevel: "low",
+  mobilityLevel: "medium",
   name: "Draven",
   offMetaRoles: [],
   powerSpikes: {

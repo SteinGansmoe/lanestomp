@@ -1,4 +1,33 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
+import { zyraCombatProfile } from "./zyra";
+import { zileanCombatProfile } from "./zilean";
+import { yuumiCombatProfile } from "./yuumi";
+import { velkozCombatProfile } from "./velkoz";
+import { threshCombatProfile } from "./thresh";
+import { taricCombatProfile } from "./taric";
+import { swainCombatProfile } from "./swain";
+import { sorakaCombatProfile } from "./soraka";
+import { sonaCombatProfile } from "./sona";
+import { seraphineCombatProfile } from "./seraphine";
+import { sennaCombatProfile } from "./senna";
+import { renataCombatProfile } from "./renata";
+import { rellCombatProfile } from "./rell";
+import { rakanCombatProfile } from "./rakan";
+import { pykeCombatProfile } from "./pyke";
+import { nautilusCombatProfile } from "./nautilus";
+import { namiCombatProfile } from "./nami";
+import { morganaCombatProfile } from "./morgana";
+import { milioCombatProfile } from "./milio";
+import { maokaiCombatProfile } from "./maokai";
+import { luluCombatProfile } from "./lulu";
+import { leonaCombatProfile } from "./leona";
+import { karmaCombatProfile } from "./karma";
+import { jannaCombatProfile } from "./janna";
+import { braumCombatProfile } from "./braum";
+import { brandCombatProfile } from "./brand";
+import { blitzcrankCombatProfile } from "./blitzcrank";
+import { bardCombatProfile } from "./bard";
+import { alistarCombatProfile } from "./alistar";
 import { aatroxCombatProfile } from "./aatrox";
 import { ahriCombatProfile } from "./ahri";
 import { akaliCombatProfile } from "./akali";
@@ -147,6 +176,35 @@ export type {
   LeagueChampionTradingProfile,
 } from "./types";
 
+export { zyraCombatProfile } from "./zyra";
+export { zileanCombatProfile } from "./zilean";
+export { yuumiCombatProfile } from "./yuumi";
+export { velkozCombatProfile } from "./velkoz";
+export { threshCombatProfile } from "./thresh";
+export { taricCombatProfile } from "./taric";
+export { swainCombatProfile } from "./swain";
+export { sorakaCombatProfile } from "./soraka";
+export { sonaCombatProfile } from "./sona";
+export { seraphineCombatProfile } from "./seraphine";
+export { sennaCombatProfile } from "./senna";
+export { renataCombatProfile } from "./renata";
+export { rellCombatProfile } from "./rell";
+export { rakanCombatProfile } from "./rakan";
+export { pykeCombatProfile } from "./pyke";
+export { nautilusCombatProfile } from "./nautilus";
+export { namiCombatProfile } from "./nami";
+export { morganaCombatProfile } from "./morgana";
+export { milioCombatProfile } from "./milio";
+export { maokaiCombatProfile } from "./maokai";
+export { luluCombatProfile } from "./lulu";
+export { leonaCombatProfile } from "./leona";
+export { karmaCombatProfile } from "./karma";
+export { jannaCombatProfile } from "./janna";
+export { braumCombatProfile } from "./braum";
+export { brandCombatProfile } from "./brand";
+export { blitzcrankCombatProfile } from "./blitzcrank";
+export { bardCombatProfile } from "./bard";
+export { alistarCombatProfile } from "./alistar";
 export { ahriCombatProfile } from "./ahri";
 export { aatroxCombatProfile } from "./aatrox";
 export { akaliCombatProfile } from "./akali";
@@ -303,6 +361,35 @@ const warwickCombatProfileWithJungle = {
 
 export const leagueChampionKnowledgeProfiles = {
   ...remainingJungleCombatProfiles,
+  Alistar: alistarCombatProfile,
+  Bard: bardCombatProfile,
+  Blitzcrank: blitzcrankCombatProfile,
+  Brand: brandCombatProfile,
+  Braum: braumCombatProfile,
+  Janna: jannaCombatProfile,
+  Karma: karmaCombatProfile,
+  Leona: leonaCombatProfile,
+  Lulu: luluCombatProfile,
+  Maokai: maokaiCombatProfile,
+  Milio: milioCombatProfile,
+  Morgana: morganaCombatProfile,
+  Nami: namiCombatProfile,
+  Nautilus: nautilusCombatProfile,
+  Pyke: pykeCombatProfile,
+  Rakan: rakanCombatProfile,
+  Rell: rellCombatProfile,
+  Renata: renataCombatProfile,
+  Senna: sennaCombatProfile,
+  Seraphine: seraphineCombatProfile,
+  Sona: sonaCombatProfile,
+  Soraka: sorakaCombatProfile,
+  Swain: swainCombatProfile,
+  Taric: taricCombatProfile,
+  Thresh: threshCombatProfile,
+  Velkoz: velkozCombatProfile,
+  Yuumi: yuumiCombatProfile,
+  Zilean: zileanCombatProfile,
+  Zyra: zyraCombatProfile,
   Aatrox: aatroxCombatProfile,
   Ahri: ahriCombatProfile,
   Akali: akaliCombatProfile,

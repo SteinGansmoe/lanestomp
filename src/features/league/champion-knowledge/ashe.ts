@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const asheCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "low",
   abilities: {
     Q: "Ranger's Focus",
@@ -35,6 +35,7 @@ export const asheCombatProfile = {
   hardCrowdControl: ["(R) stun"],
   id: "Ashe",
   importantAbilityNotes: [
+    "(Q) is a self-buff that empowers her next few attacks, but it requires her to stay in combat and can be interrupted by hard CC.",
     "(W) is strongest when enemy ADC movement is restricted by the wave or they must step up for CS.",
     "Passive slows turn one auto during a last-hit window into repeated follow-up autos if Ashe can keep spacing.",
     "(E) does not win trades directly, but it protects push or dragon setup by checking jungle pathing.",

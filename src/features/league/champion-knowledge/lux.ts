@@ -100,6 +100,16 @@ export const luxCombatProfile = {
   shields: ["(W)"],
   softCrowdControl: ["(E) slow"],
   stealthOrInvisibility: null,
+  supportSynergy: {
+    excellentWith: ["Caitlyn", "Jhin", "Varus"],
+    goodWith: ["Ezreal", "Ashe", "MissFortune"],
+    strugglesWith: ["Samira", "Nilah", "Kalista"],
+    notes: [
+      "Caitlyn and Jhin convert Lux binding into traps, roots, or guaranteed burst.",
+      "Poke ADCs help Lux maintain lane pressure without overstepping.",
+      "Hard all-in ADCs often want a tankier support or more reliable engage.",
+  ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

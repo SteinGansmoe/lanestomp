@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const missFortuneCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "low",
   abilities: {
     Q: "Double Up",
@@ -11,7 +11,7 @@ export const missFortuneCombatProfile = {
   },
   archetype: ["marksman", "lane poke", "teamfight ultimate", "burst"],
   primaryWinCondition: [
-    "Use lane poke and wave pressure to reach grouped fights where (R) can decide objectives with support CC setup.",
+    "Manage minion waves to set up (Q) poke and follow up on support CC with (E) and (R).",
   ],
   dangerAbilities: ["(Q) bounce poke", "(E) slow", "(R) teamfight channel"],
   dangerProfile: {
@@ -138,11 +138,11 @@ export const missFortuneCombatProfile = {
     winMethod: ["lane poke", "dragon setup", "teamfight ultimate"],
   },
   supportSynergy: {
-    excellentWith: ["Leona", "Nautilus", "Amumu"],
+    excellentWith: ["Leona", "Nautilus", "Nami"],
     goodWith: ["Morgana", "Seraphine", "Rell"],
     strugglesWith: ["Yuumi", "Janna", "low-lockdown supports"],
     notes: [
-      "Leona, Nautilus, and Amumu hold enemies inside Miss Fortune (R).",
+      "Leona, Nautilus, and Nami hold enemies inside Miss Fortune (R).",
       "Morgana binding and Seraphine CC create safe channels for Bullet Time.",
       "Rell gives Miss Fortune strong grouped-fight lockdown around dragon and turret dives.",
       "Supports with little lockdown can make Miss Fortune rely too much on raw lane poke.",

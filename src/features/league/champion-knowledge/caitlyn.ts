@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const caitlynCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "medium",
   abilities: {
     Q: "Piltover Peacemaker",
@@ -11,7 +11,7 @@ export const caitlynCombatProfile = {
   },
   archetype: ["marksman", "lane bully", "siege", "range advantage"],
   primaryWinCondition: [
-    "Use superior range and wave control to build CS, plate, and dragon setup leads before short-range ADCs reach item spikes.",
+    "Use her longer range to keep wave control and build CS leads, take plates, and have prio for dragon fights.",
   ],
   dangerAbilities: ["(Q) poke", "(W) trap setup", "(E) disengage"],
   dangerProfile: {
@@ -128,10 +128,12 @@ export const caitlynCombatProfile = {
       "Enemies trapped under turret with limited movement space.",
       "Enemy ADCs collecting cannon minions without support covering the forward step.",
       "Bot lanes that surrender brush control and let her trap the lane exit.",
+      "When Caitlyn's wave is pushed up to enemy turret, she can place traps under the turret which are hard to see and punish enemies trying to last hit or escape.",
     ],
     strugglesToPunish: [
       "Hard engage when (E) is down.",
       "Long-range waveclear that denies turret pressure.",
+      "High CC champions that can stick to her",
     ],
   },
   shields: [],
@@ -144,14 +146,15 @@ export const caitlynCombatProfile = {
     winMethod: ["range pressure", "plate leads", "siege control"],
   },
   supportSynergy: {
-    excellentWith: ["Morgana", "Lux", "Karma"],
-    goodWith: ["Thresh", "Milio", "Janna"],
-    strugglesWith: ["Yuumi", "Sona", "low-pressure enchanters"],
+    excellentWith: ["Morgana", "Lux", "Karma", "Leona"],
+    goodWith: ["Thresh", "Milio", "Janna", "Nautilus", "Rell", "Braum", "Alistar", "Seraphine"],
+    strugglesWith: ["Yuumi", "Sona", "Passive enchanters"],
     notes: [
-      "Morgana (Q) enables guaranteed Caitlyn (W) trap follow-up.",
-      "Lux binding creates similar trap-chain kill pressure while adding lane poke.",
-      "Karma helps Caitlyn keep enemies under tower where traps and headshots are hardest to dodge.",
-      "Low-pressure enchanters can leave Caitlyn with push but few actual punish windows.",
+  "Morgana (Q) enables guaranteed Caitlyn (W) trap follow-up.",
+  "Lux bindings create similar trap-chain kill pressure while adding poke.",
+  "Karma helps Caitlyn maintain lane priority and siege pressure.",
+  "Leona provides reliable engage that lets Caitlyn convert range advantage into kills.",
+  "Low-pressure enchanters can leave Caitlyn with push but few punish windows.",
     ],
   },
   sustain: [],
