@@ -137,6 +137,17 @@ export const missFortuneCombatProfile = {
     scalingProfile: "mid",
     winMethod: ["lane poke", "dragon setup", "teamfight ultimate"],
   },
+  supportSynergy: {
+    excellentWith: ["Leona", "Nautilus", "Amumu"],
+    goodWith: ["Morgana", "Seraphine", "Rell"],
+    strugglesWith: ["Yuumi", "Janna", "low-lockdown supports"],
+    notes: [
+      "Leona, Nautilus, and Amumu hold enemies inside Miss Fortune (R).",
+      "Morgana binding and Seraphine CC create safe channels for Bullet Time.",
+      "Rell gives Miss Fortune strong grouped-fight lockdown around dragon and turret dives.",
+      "Supports with little lockdown can make Miss Fortune rely too much on raw lane poke.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

@@ -135,6 +135,17 @@ export const asheCombatProfile = {
     scalingProfile: "mid",
     winMethod: ["utility picks", "lane control", "objective setup"],
   },
+  supportSynergy: {
+    excellentWith: ["Braum", "Leona", "Milio"],
+    goodWith: ["Karma", "Lux", "Zyra"],
+    strugglesWith: ["Yuumi", "Soraka", "passive scaling supports"],
+    notes: [
+      "Braum stacks passive quickly through Ashe slows and creates strong level 1 lane control.",
+      "Leona turns Ashe slow and (R) follow-up into reliable all-in chains.",
+      "Poke supports amplify Ashe's lane control by forcing enemies to CS through slows and skillshots.",
+      "Very passive supports can waste Ashe's early push and vision control windows.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

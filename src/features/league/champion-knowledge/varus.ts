@@ -135,6 +135,17 @@ export const varusCombatProfile = {
     scalingProfile: "mid",
     winMethod: ["poke pressure", "pick setup", "objective control"],
   },
+  supportSynergy: {
+    excellentWith: ["Karma", "Lux", "Nautilus"],
+    goodWith: ["Morgana", "Thresh", "Milio"],
+    strugglesWith: ["Yuumi", "Sona", "supports with no pressure or setup"],
+    notes: [
+      "Karma and Lux maximize Varus poke lanes by forcing enemies to dodge through charged arrows.",
+      "Nautilus gives on-hit and pick Varus reliable engage that chains into Varus (R).",
+      "Morgana and Thresh create CC windows for guaranteed Piercing Arrow follow-up.",
+      "Supports without lane pressure or setup make Varus easier to outscale or engage on.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

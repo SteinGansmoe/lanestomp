@@ -138,6 +138,17 @@ export const tristanaCombatProfile = {
     scalingProfile: "late",
     winMethod: ["level all-ins", "tower pressure", "reset cleanup"],
   },
+  supportSynergy: {
+    excellentWith: ["Rell", "Leona", "Nautilus"],
+    goodWith: ["Alistar", "Rakan", "Thresh"],
+    strugglesWith: ["Yuumi", "Sona", "supports that cannot enable level 2 pressure"],
+    notes: [
+      "Rell and Leona hold targets still while Tristana stacks (E).",
+      "Nautilus and Alistar create reliable jump-in windows for early lane kills.",
+      "Rakan and Thresh add engage without completely abandoning Tristana after she jumps.",
+      "Low-pressure enchanters can waste Tristana's strongest early all-in timing.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

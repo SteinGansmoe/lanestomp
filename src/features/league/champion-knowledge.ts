@@ -21,5 +21,6 @@ export type {
   LeagueChampionPowerSpikeProfile,
   LeagueChampionProfileQuality,
   LeagueChampionPunishProfile,
+  LeagueChampionSupportSynergy,
   LeagueChampionTradingProfile,
 } from "./champion-knowledge/types";

@@ -34,11 +34,18 @@ export const xayahCombatProfile = {
   damageType: "physical",
   hardCrowdControl: ["(E) root"],
   id: "Xayah",
+  importantAbilityNotes: [
+    "(Q) and autos place feathers that define whether a trade can become a root.",
+    "(W) improves DPS for committed trades but needs enough spacing to keep firing.",
+    "(E) punishes enemies who chase through feathers or stand in predictable CS paths.",
+    "(R) makes her untargetable and adds feathers, so it can deny all-in lanes and create a return root.",
+  ],
   lanePlan: {
     avoids: [
       "Taking poke trades before feather setup exists.",
       "Using (R) for low-value damage instead of avoiding engage.",
       "Standing too far forward when feathers cannot threaten the return path.",
+      "Letting long-range ADCs farm freely while she waits for perfect feather lines.",
     ],
     idealLaneState:
       "A controlled bot lane where Xayah farms toward items, places feathers through trades, and punishes engage attempts with (E).",
@@ -46,6 +53,8 @@ export const xayahCombatProfile = {
       "Support can help hold enemies in feather lines.",
       "Safe access to first item spike.",
       "Enemy engage paths that must cross her feathers.",
+      "Enemy ADCs stepping forward for CS through existing feather lines.",
+      "Wave states where she can place feathers behind the enemy without overextending.",
     ],
   },
   laneIdentity: {
@@ -61,6 +70,7 @@ export const xayahCombatProfile = {
       "Punishing linear engage with feather roots.",
       "Using (R) to deny the enemy's key commit.",
       "Scaling into reliable DPS with peel.",
+      "Threatening (E) when enemies last-hit in line with her feathers.",
     ],
   },
   majorPowerSpikes: ["Level 6 (R).", "First completed marksman item.", "Two-item DPS spike."],
@@ -107,6 +117,7 @@ export const xayahCombatProfile = {
       "Engage champions chasing through feathers.",
       "ADCs that step forward after (W) starts.",
       "Forced fights where (R) dodges the key burst.",
+      "Enemy ADCs walking through feather return lines for cannon or melee CS.",
     ],
     strugglesToPunish: [
       "Long-range poke that never enters feather lines.",
@@ -122,6 +133,17 @@ export const xayahCombatProfile = {
     scalingProfile: "late",
     winMethod: ["self-peel", "feather control", "front-to-back DPS"],
   },
+  supportSynergy: {
+    excellentWith: ["Rakan", "Thresh", "Rell"],
+    goodWith: ["Leona", "Nautilus", "Milio"],
+    strugglesWith: ["Yuumi", "Sona", "low-pressure scaling supports"],
+    notes: [
+      "Rakan gives Xayah unique engage and peel timing around feather pullbacks.",
+      "Thresh and Rell hold enemies in place long enough for Xayah to set up blade roots.",
+      "Leona and Nautilus make it easier to punish enemies who step through feathers.",
+      "Very passive supports can leave Xayah without enough pressure to control feather zones.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [
@@ -133,6 +155,7 @@ export const xayahCombatProfile = {
       "Enemy engage must cross feather lines.",
       "Support CC can hold targets for (E).",
       "(R) is available to deny the counter-engage.",
+      "The wave lets her place feathers through the enemy's last-hit path.",
     ],
     primaryPattern:
       "Set feathers first, then punish enemies that chase or commit through the pullback line.",

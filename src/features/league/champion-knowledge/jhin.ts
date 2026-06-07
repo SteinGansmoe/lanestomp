@@ -163,6 +163,17 @@ export const jhinCombatProfile = {
     scalingProfile: "mid",
     winMethod: ["fourth-shot pressure", "pick setup", "objective zoning"],
   },
+  supportSynergy: {
+    excellentWith: ["Zyra", "Morgana", "Lux"],
+    goodWith: ["Thresh", "Nautilus", "Karma"],
+    strugglesWith: ["Yuumi", "Sona", "low-setup enchanters"],
+    notes: [
+      "Zyra plants and roots make Jhin (W) follow-up easy to confirm.",
+      "Morgana and Lux create long-range CC chains that match Jhin's pick style.",
+      "Thresh and Nautilus can start fights that Jhin converts with fourth shot and (W).",
+      "Supports without poke or CC make it harder for Jhin to turn lane control into kills.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

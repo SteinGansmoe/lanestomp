@@ -34,16 +34,17 @@ export const corkiCombatProfile = {
   hardCrowdControl: [],
   id: "Corki",
   importantAbilityNotes: [
-    "(Q) reveals and adds poke in trades.",
-    "(W) is mobility, not a reliable combat engage in lane.",
-    "(E) shreds resistances during close trades.",
-    "(R) is his main post-6 poke pattern.",
+    "(Q) reveals and adds poke in trades, including bot-lane brush checks.",
+    "(W) is mobility, not a reliable combat engage in lane; using it forward invites support engage.",
+    "(E) shreds resistances during close trades but requires Corki to stand in punish range.",
+    "(R) is his main post-6 poke pattern and can punish ADCs walking up for CS before objectives.",
   ],
   lanePlan: {
     avoids: [
       "Using (W) forward without knowing enemy cooldowns.",
       "Taking extended early fights before items.",
       "Letting wave pressure force him off CS.",
+      "Playing bot lane as if he can match early marksman DPS before his poke items.",
     ],
     idealLaneState:
       "A stable mid lane where Corki secures CS, chips with (Q) and autos, then uses (R) poke after level 6.",
@@ -51,6 +52,8 @@ export const corkiCombatProfile = {
       "CS access toward item spikes.",
       "Poke windows before objectives or recalls.",
       "Enemies low enough that rockets control their movement.",
+      "Support peel that lets him farm safely until rockets and item poke matter.",
+      "Enemy ADCs forced to last-hit while he has (Q) or (R) poke available.",
     ],
   },
   laneIdentity: {
@@ -66,6 +69,7 @@ export const corkiCombatProfile = {
       "Preserving health through early pressure.",
       "Using post-6 rockets to control recalls and river setups.",
       "Reaching item spikes where his poke becomes hard to ignore.",
+      "Punishing bot-lane CS attempts with safe poke instead of walking into extended autos.",
     ],
   },
   majorPowerSpikes: [
@@ -135,6 +139,7 @@ export const corkiCombatProfile = {
       "Enemies who take repeated rockets before objectives.",
       "Short-range champions walking into (Q) and (E) range.",
       "Overcommits after he kites back with (W).",
+      "ADC players who step out from minion cover into rocket or (Q) poke.",
     ],
     strugglesToPunish: [
       "Long-range champions who outrange his early poke.",
@@ -144,6 +149,17 @@ export const corkiCombatProfile = {
   shields: [],
   softCrowdControl: [],
   stealthOrInvisibility: null,
+  supportSynergy: {
+    excellentWith: ["Lulu", "Milio", "Janna"],
+    goodWith: ["Karma", "Nami", "Braum"],
+    strugglesWith: ["Leona", "Nautilus", "hard-forcing engage supports"],
+    notes: [
+      "Lulu and Milio protect Corki through short-range trades until item spikes take over.",
+      "Karma and Nami help Corki contest early waves without committing to losing all-ins.",
+      "Braum covers Corki when he needs to step forward for poke or package setup.",
+      "Supports that demand constant early all-ins can desync from Corki's scaling poke plan.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [
@@ -155,6 +171,7 @@ export const corkiCombatProfile = {
       "He can poke without spending (W).",
       "(R) is available for repeat follow-up.",
       "The enemy is already low from rockets or (Q).",
+      "Support can discourage all-in while he uses poke to contest CS.",
     ],
     primaryPattern:
       "Take short poke trades, avoid spending (W) casually, and use (R) to soften enemies before any longer fight.",

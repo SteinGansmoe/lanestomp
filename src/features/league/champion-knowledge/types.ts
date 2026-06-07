@@ -92,6 +92,13 @@ export type LeagueChampionJungleProfile = {
   scaling: LeagueChampionJungleProfileCategory;
 };
 
+export type LeagueChampionSupportSynergy = {
+  excellentWith: string[];
+  goodWith: string[];
+  strugglesWith: string[];
+  notes: string[];
+};
+
 export type LeagueChampionKnowledgeProfile = {
   abilities?: LeagueChampionAbilityMap;
   archetype?: string[];
@@ -118,6 +125,7 @@ export type LeagueChampionKnowledgeProfile = {
   shields?: string[];
   softCrowdControl?: string[];
   strategicIdentity: LeagueChampionStrategicIdentity;
+  supportSynergy?: LeagueChampionSupportSynergy;
   stealthOrInvisibility?: string | null;
   sustain?: string[];
   dangerAbilities?: string[];

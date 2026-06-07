@@ -131,6 +131,17 @@ export const lucianCombatProfile = {
     scalingProfile: "early",
     winMethod: ["early lane pressure", "burst trades", "mid-game tempo"],
   },
+  supportSynergy: {
+    excellentWith: ["Nami", "Milio", "Braum"],
+    goodWith: ["Leona", "Thresh", "Rakan"],
+    strugglesWith: ["Yuumi", "Soraka", "passive scaling supports"],
+    notes: [
+      "Nami's (E) and Lucian's passive create one of his strongest short-trade burst patterns.",
+      "Milio extends Lucian's dash-forward trading range while protecting him after the trade.",
+      "Braum applies passive quickly with Lucian's double-hit patterns.",
+      "Passive scaling supports can leave Lucian without enough lane pressure to justify the pick.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

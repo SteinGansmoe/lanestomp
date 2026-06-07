@@ -30,20 +30,26 @@ export const vayneCombatProfile = {
   hardCrowdControl: ["(E) wall stun"],
   id: "Vayne",
   importantAbilityNotes: [
-    "(Q) repositions and empowers the next attack.",
-    "(W) deals true damage every third hit.",
-    "(E) knocks back and stuns into terrain.",
-    "(R) empowers combat and grants stealth during (Q).",
+    "(Q) repositions and empowers the next attack, making it her main CS punish and dodge tool.",
+    "(W) deals true damage every third hit, so extended trades are much better than single poke autos.",
+    "(E) knocks back and stuns into terrain, especially around bot lane wall and alcove angles.",
+    "(R) empowers combat and grants stealth during (Q), letting her reposition in all-ins.",
   ],
   lanePlan: {
     avoids: [
       "Pushing without vision.",
       "Using (Q) forward when engage is ready.",
       "Fighting near walls that help the enemy if she cannot control spacing.",
+      "Letting long-range ADCs punish every last hit before she reaches item spikes.",
     ],
     idealLaneState:
-      "A ranged top lane where Vayne keeps the wave safe, pokes melee champions, and holds (E) for all-ins.",
-    wants: ["Space to kite.", "Tanks or bruisers she can shred.", "Side-lane duels after items."],
+      "A safe bot lane or ranged side lane where Vayne keeps enough space to farm, punishes close CS attempts with (Q) autos, and holds (E) for engage or wall angles.",
+    wants: [
+      "Space to kite.",
+      "Support peel through early range disadvantage.",
+      "Enemy ADCs forced into short-range CS contests.",
+      "Side-lane duels after items.",
+    ],
   },
   laneIdentity: {
     earlyGameAgency: "high",
@@ -58,6 +64,7 @@ export const vayneCombatProfile = {
       "Spacing with autos and (Q).",
       "Condemning engage into walls.",
       "Scaling into true damage DPS.",
+      "Punishing exposed last hits with (Q) auto while preserving (E).",
     ],
   },
   majorPowerSpikes: ["Level 6 (R).", "First marksman item.", "Two-item side-lane duel spike."],
@@ -98,6 +105,7 @@ export const vayneCombatProfile = {
       "Tanks in extended range.",
       "Melee champions without gap close.",
       "Targets near walls for (E).",
+      "Short-range ADCs that must enter her auto range for CS.",
     ],
     strugglesToPunish: ["Coordinated ganks.", "Hard engage after (E)."],
   },
@@ -111,6 +119,17 @@ export const vayneCombatProfile = {
     scalingProfile: "late",
     winMethod: ["ranged top pressure", "anti-tank DPS", "side-lane kiting"],
   },
+  supportSynergy: {
+    excellentWith: ["Lulu", "Milio", "Janna"],
+    goodWith: ["Nami", "Braum", "TahmKench"],
+    strugglesWith: ["Xerath", "Zyra", "roam-heavy supports"],
+    notes: [
+      "Lulu and Milio keep Vayne alive through short-range tumble trades and late fights.",
+      "Janna and Tahm Kench cover Vayne when enemies try to punish her weak early lane.",
+      "Braum can protect Vayne while adding stun threat during extended trades.",
+      "Roaming or poke-only supports can leave Vayne too vulnerable before her item spikes.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [
@@ -122,6 +141,7 @@ export const vayneCombatProfile = {
       "There is space to kite.",
       "The enemy's engage is down.",
       "A wall angle enables (E).",
+      "The enemy ADC is locked into a last-hit and cannot extend through her (Q) reposition.",
     ],
     primaryPattern:
       "Win with spacing discipline and true damage, not by standing still in fair melee range.",

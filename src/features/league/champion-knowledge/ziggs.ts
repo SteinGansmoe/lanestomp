@@ -34,16 +34,17 @@ export const ziggsCombatProfile = {
   hardCrowdControl: ["(W) displacement"],
   id: "Ziggs",
   importantAbilityNotes: [
-    "(Q) is his main poke tool.",
+    "(Q) is his main poke tool and can punish ADCs locked into last-hit paths.",
     "(W) can knock enemies away, reposition Ziggs, and execute turrets.",
     "(E) controls zones and slows enemies crossing it.",
-    "(R) gives long-range area damage.",
+    "(R) gives long-range area damage and can swing bot-side objective fights.",
   ],
   lanePlan: {
     avoids: [
       "Standing close enough for engage while poking.",
       "Using (W) carelessly when enemy dive threat exists.",
       "Following roams through unsafe fog instead of pushing wave.",
+      "Standing close enough for ADC auto trades when his advantage is spell range and waveclear.",
     ],
     idealLaneState:
       "A long-range lane where Ziggs clears waves, chips health and turret plates, and forces enemies to walk through poke.",
@@ -51,6 +52,8 @@ export const ziggsCombatProfile = {
       "Wave states he can clear from range.",
       "Objective setups where poke lands first.",
       "Turrets low enough for (W) execute pressure.",
+      "Enemy ADCs forced to last-hit under bomb or minefield threat.",
+      "Support pressure that keeps engage away while he sieges plates.",
     ],
   },
   laneIdentity: {
@@ -66,6 +69,7 @@ export const ziggsCombatProfile = {
       "Keeping enemies low with repeated poke.",
       "Denying roam value through fast waveclear.",
       "Turning lane pressure into turret damage.",
+      "Punishing CS attempts with (Q) and (E) rather than taking auto trades.",
     ],
   },
   majorPowerSpikes: ["Level 6 (R).", "First completed mage poke item."],
@@ -121,6 +125,7 @@ export const ziggsCombatProfile = {
       "Enemies walking through (E) or repeated (Q) zones.",
       "Slow pushes where he can clear safely.",
       "Low turrets with (W) execute pressure.",
+      "ADC last-hit paths under tower or near low minions.",
     ],
     strugglesToPunish: [
       "Mobile champions who dodge poke and reach him.",
@@ -130,6 +135,17 @@ export const ziggsCombatProfile = {
   shields: [],
   softCrowdControl: ["(E) slow"],
   stealthOrInvisibility: null,
+  supportSynergy: {
+    excellentWith: ["Lux", "Morgana", "Karma"],
+    goodWith: ["Zyra", "Velkoz", "Janna"],
+    strugglesWith: ["Leona", "Nautilus", "supports that demand repeated all-ins"],
+    notes: [
+      "Lux and Morgana lock enemies in place for Ziggs bombs and turret pressure.",
+      "Karma and Zyra amplify Ziggs' poke lane and make it difficult to defend plates.",
+      "Janna protects Ziggs when enemies try to engage through his long-range waveclear.",
+      "Repeated hard all-ins can pull Ziggs away from his siege and poke identity.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [
@@ -141,6 +157,7 @@ export const ziggsCombatProfile = {
       "He can poke from outside engage range.",
       "(E) controls the enemy approach path.",
       "The wave or turret state rewards long-range pressure.",
+      "Support can stop the enemy bot lane from engaging through his minefield.",
     ],
     primaryPattern:
       "Maintain distance, poke through (Q) and (E), and preserve (W) as the emergency answer to hard engage.",

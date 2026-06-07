@@ -136,6 +136,17 @@ export const ezrealCombatProfile = {
     scalingProfile: "mid",
     winMethod: ["safe lane access", "poke control", "mid-game item spikes"],
   },
+  supportSynergy: {
+    excellentWith: ["Karma", "Lux", "Morgana"],
+    goodWith: ["Yuumi", "Braum", "Janna"],
+    strugglesWith: ["Leona", "Nautilus", "hard engage that forces early all-ins"],
+    notes: [
+      "Karma turns Ezreal's (Q) poke lane into constant push and turret pressure.",
+      "Lux and Morgana add binding angles that let Ezreal land guaranteed follow-up damage.",
+      "Yuumi works with Ezreal's safety and scaling, but the lane may lack early control.",
+      "Hard engage supports can overforce before Ezreal has enough damage to finish all-ins.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

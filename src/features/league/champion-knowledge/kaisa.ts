@@ -136,6 +136,17 @@ export const kaisaCombatProfile = {
     scalingProfile: "mid",
     winMethod: ["item thresholds", "isolated burst", "teamfight dive follow-up"],
   },
+  supportSynergy: {
+    excellentWith: ["Nautilus", "Leona", "Rell"],
+    goodWith: ["Alistar", "Thresh", "Nami"],
+    strugglesWith: ["Xerath", "Zyra", "poke-only supports without reliable setup"],
+    notes: [
+      "Nautilus and Leona apply reliable crowd control that helps Kai'Sa stack Plasma.",
+      "Rell and Alistar create dive angles that let Kai'Sa follow with (R).",
+      "Nami adds burst and trading windows without forcing Kai'Sa to start fights herself.",
+      "Pure poke supports can leave Kai'Sa short-ranged and unable to access her best all-ins.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

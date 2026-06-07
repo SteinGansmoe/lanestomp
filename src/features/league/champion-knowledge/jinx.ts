@@ -135,6 +135,17 @@ export const jinxCombatProfile = {
     scalingProfile: "late",
     winMethod: ["item scaling", "teamfight resets", "front-to-back DPS"],
   },
+  supportSynergy: {
+    excellentWith: ["Lulu", "Milio", "Thresh"],
+    goodWith: ["Braum", "Janna", "Nami"],
+    strugglesWith: ["Pyke", "Bard", "roam-heavy engage supports"],
+    notes: [
+      "Lulu and Milio protect Jinx through her weakest early windows and amplify reset fights.",
+      "Thresh lantern gives Jinx a second escape when she oversteps for rockets or plates.",
+      "Braum and Janna peel divers so Jinx can keep firing in front-to-back fights.",
+      "Roaming supports can strand Jinx in lane before she has enough waveclear and items.",
+    ],
+  },
   sustain: [],
   trading: {
     badTradeConditions: [

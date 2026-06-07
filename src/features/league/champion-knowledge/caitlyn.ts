@@ -19,17 +19,20 @@ export const caitlynCombatProfile = {
       "She controls the wave and can hit tower with support cover.",
       "(W) traps punish CC from her support or enemy pathing around turret.",
       "Her range lets her take first move on CS and plate windows.",
+      "Before the first back, Caitlyn is generally stronger than other ADCs due to her range, but she can be punished by aggressive supports or enemy ADCs that can win short trades.",
     ],
     mustRespect: [
       "Her auto range decides many early trade windows.",
       "Trap setups are strongest when support CC or turret pressure forces movement.",
       "(E) can deny direct all-ins if it is held for engage.",
+      "She has strong level 1 range control compared to most ADCs.",
     ],
   },
   commonWeaknesses: [
     "Can struggle when forced into extended all-ins.",
     "Needs lane control to make range pressure matter.",
     "Vulnerable if (E) is down and support cannot peel.",
+    "After first back, other ADCs catch up to her in stats."
   ],
   damageType: "physical",
   hardCrowdControl: ["(W) root"],
@@ -139,6 +142,17 @@ export const caitlynCombatProfile = {
     preferredGameLength: "medium",
     scalingProfile: "early",
     winMethod: ["range pressure", "plate leads", "siege control"],
+  },
+  supportSynergy: {
+    excellentWith: ["Morgana", "Lux", "Karma"],
+    goodWith: ["Thresh", "Milio", "Janna"],
+    strugglesWith: ["Yuumi", "Sona", "low-pressure enchanters"],
+    notes: [
+      "Morgana (Q) enables guaranteed Caitlyn (W) trap follow-up.",
+      "Lux binding creates similar trap-chain kill pressure while adding lane poke.",
+      "Karma helps Caitlyn keep enemies under tower where traps and headshots are hardest to dodge.",
+      "Low-pressure enchanters can leave Caitlyn with push but few actual punish windows.",
+    ],
   },
   sustain: [],
   trading: {
