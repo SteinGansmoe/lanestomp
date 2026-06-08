@@ -1141,7 +1141,9 @@ function formatPromptLeakageError(rejectedSections: PromptLeakageSectionRejectio
 
 function formatSupportFarmingLanguageError(rejectedSections: PromptLeakageSectionRejection[]) {
   const sectionList = rejectedSections
-    .map(({ phrases, sectionKey }) => `${sectionKey} (${phrases.join(", ")})`)
+    .map(({ phrases, sample, sectionKey }) =>
+      `${sectionKey} (${phrases.join(", ")}; rejected bullet: ${sample})`,
+    )
     .join("; ");
 
   return `Generated support matchup draft was rejected because it contained CS, farming, or last-hit language: ${sectionList}. Regenerate the draft.`;

@@ -94,6 +94,10 @@ type ChampionRegenerationState = {
 };
 
 type ChampionRegenerationStatus = {
+  failures?: {
+    error: string;
+    label: string;
+  }[];
   groupId: string;
   text: string;
   type: "error" | "success";
@@ -246,6 +250,22 @@ export function AdminLeagueMatchupsSection({
 
     return sortedFilteredMatchups.slice(startIndex, startIndex + pageSize);
   }, [pageSize, safeCurrentPage, sortedFilteredMatchups]);
+  const failedRecoveryMatchups = useMemo(
+    () =>
+      matchups
+        .filter((matchup) => isFailedGenerationMatchup(matchup))
+        .sort((matchupA, matchupB) => {
+          const dateA = parseMatchupTimestamp(matchupA.updated_at) ?? 0;
+          const dateB = parseMatchupTimestamp(matchupB.updated_at) ?? 0;
+
+          return dateB - dateA;
+        }),
+    [matchups],
+  );
+  const editingMatchup = useMemo(
+    () => matchups.find((matchup) => matchup.id === editingMatchupId) ?? null,
+    [editingMatchupId, matchups],
+  );
   const laneGroups = useMemo(
     () =>
       getLaneMatchupGroups({
@@ -361,7 +381,7 @@ export function AdminLeagueMatchupsSection({
       return;
     }
 
-    let failedCount = 0;
+    const failures: ChampionRegenerationStatus["failures"] = [];
     let warningCount = 0;
 
     setChampionRegenerationStatus(null);
@@ -383,7 +403,10 @@ export function AdminLeagueMatchupsSection({
       const result = await onGenerateQueueItem(item);
 
       if (!result.ok) {
-        failedCount += 1;
+        failures.push({
+          error: result.error,
+          label: getQueueItemLabel(item, championsById),
+        });
       } else if (result.profileWarning) {
         warningCount += 1;
       }
@@ -391,16 +414,19 @@ export function AdminLeagueMatchupsSection({
 
     setRegeneratingChampionGroup(null);
     setChampionRegenerationStatus({
+      failures,
       groupId: group.id,
       text:
-        failedCount > 0
-          ? `Regenerated ${items.length - failedCount} of ${
+        failures.length > 0
+          ? `Regenerated ${items.length - failures.length} of ${
               items.length
-            } ${group.title} matchup draft${items.length === 1 ? "" : "s"}. ${failedCount} failed.`
+            } ${group.title} matchup draft${items.length === 1 ? "" : "s"}. ${
+              failures.length
+            } failed.`
           : `Regenerated all ${items.length} ${group.title} matchup draft${
               items.length === 1 ? "" : "s"
             }.${warningCount > 0 ? ` ${warningCount} saved with warnings.` : ""}`,
-      type: failedCount > 0 ? "error" : "success",
+      type: failures.length > 0 ? "error" : "success",
     });
   }
 
@@ -421,15 +447,23 @@ export function AdminLeagueMatchupsSection({
           </CardHeader>
           <CardContent>
             {editingMatchupId ? (
-              <LeagueMatchupForm
-                champions={champions}
-                form={editForm}
-                onCancel={onCancelEdit}
-                onChange={onEditChange}
-                onSubmit={onEditSubmit}
-                status={editStatus}
-                submitLabel="Save changes"
-              />
+              <div className="space-y-4">
+                {editingMatchup && isFailedGenerationMatchup(editingMatchup) ? (
+                  <FailedGenerationNotice
+                    championsById={championsById}
+                    matchup={editingMatchup}
+                  />
+                ) : null}
+                <LeagueMatchupForm
+                  champions={champions}
+                  form={editForm}
+                  onCancel={onCancelEdit}
+                  onChange={onEditChange}
+                  onSubmit={onEditSubmit}
+                  status={editStatus}
+                  submitLabel="Save changes"
+                />
+              </div>
             ) : (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
                 Select a matchup below to edit its structured guidance.
@@ -458,6 +492,14 @@ export function AdminLeagueMatchupsSection({
         onActiveChange={setIsBulkQueueActive}
         onGenerateQueueItem={onGenerateQueueItem}
         onRefresh={onRefresh}
+      />
+
+      <LeagueMatchupFailedRecovery
+        championsById={championsById}
+        editStatus={editStatus}
+        matchups={failedRecoveryMatchups}
+        onMarkReviewed={onMarkReviewed}
+        onStartEdit={onStartEdit}
       />
 
       <LeagueMatchupGapChecker champions={champions} matchups={matchups} onRefresh={onRefresh} />
@@ -881,16 +923,33 @@ export function AdminLeagueMatchupsSection({
                                           {regeneratingChampionGroup.total} matchup drafts...
                                         </p>
                                       ) : championRegenerationStatus?.groupId === group.id ? (
-                                        <p
-                                          className={cn(
-                                            "mt-2 text-xs",
-                                            championRegenerationStatus.type === "success"
-                                              ? "text-emerald-200"
-                                              : "text-rose-200",
-                                          )}
-                                        >
-                                          {championRegenerationStatus.text}
-                                        </p>
+                                        <div className="mt-2 space-y-2">
+                                          <p
+                                            className={cn(
+                                              "text-xs",
+                                              championRegenerationStatus.type === "success"
+                                                ? "text-emerald-200"
+                                                : "text-rose-200",
+                                            )}
+                                          >
+                                            {championRegenerationStatus.text}
+                                          </p>
+                                          {championRegenerationStatus.failures?.length ? (
+                                            <ol className="space-y-1 rounded-md border border-rose-300/15 bg-rose-500/[0.06] p-2 text-xs text-rose-100">
+                                              {championRegenerationStatus.failures.map(
+                                                (failure) => (
+                                                  <li key={`${failure.label}:${failure.error}`}>
+                                                    <span className="font-medium text-white">
+                                                      {failure.label}
+                                                    </span>
+                                                    <span className="text-zinc-400"> - </span>
+                                                    {getShortFailureReason(failure.error)}
+                                                  </li>
+                                                ),
+                                              )}
+                                            </ol>
+                                          ) : null}
+                                        </div>
                                       ) : null}
                                     </div>
 
@@ -2294,17 +2353,191 @@ function LeagueMatchupBulkGenerationQueue({
           <div className="rounded-lg border border-rose-300/20 bg-rose-500/[0.06] p-4">
             <p className="font-semibold text-rose-100">Failed matchups</p>
             <ol className="mt-3 max-h-64 space-y-2 overflow-auto pr-1 text-sm">
-              {failedItems.map((item) => (
-                <li className="rounded-md border border-rose-300/15 bg-black/15 p-3" key={item.id}>
-                  <p className="font-medium text-white">{getQueueItemLabel(item, championsById)}</p>
-                  <p className="mt-1 text-rose-100">{item.error ?? "Generation failed."}</p>
-                </li>
-              ))}
+              {failedItems.map((item) => {
+                const failure = getGenerationFailureDetails(item.error);
+
+                return (
+                  <li
+                    className="rounded-md border border-rose-300/15 bg-black/15 p-3"
+                    key={item.id}
+                  >
+                    <p className="font-medium text-white">
+                      {getQueueItemLabel(item, championsById)}
+                    </p>
+                    <p className="mt-1 text-rose-100">
+                      {failure.reason ?? item.error ?? "Generation failed."}
+                    </p>
+                    {failure.rejectedBullet ? (
+                      <blockquote className="mt-2 rounded-md border border-rose-300/15 bg-black/20 p-2 text-xs leading-5 text-zinc-200">
+                        {failure.rejectedBullet}
+                      </blockquote>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ol>
           </div>
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function LeagueMatchupFailedRecovery({
+  championsById,
+  editStatus,
+  matchups,
+  onMarkReviewed,
+  onStartEdit,
+}: {
+  championsById: Map<string, AdminLeagueChampion>;
+  editStatus: FormStatus;
+  matchups: AdminLeagueMatchup[];
+  onMarkReviewed: (matchup: AdminLeagueMatchup) => void;
+  onStartEdit: (matchup: AdminLeagueMatchup) => void;
+}) {
+  const visibleFailures = matchups.slice(0, 20);
+
+  if (matchups.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card className="border-rose-300/15 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="font-mono text-xl">Failed generation recovery</CardTitle>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+              Open failed AI generations, inspect the rejection reason, manually edit the guidance,
+              then mark the matchup reviewed to clear the failed state.
+            </p>
+          </div>
+          <span className="rounded-md border border-rose-300/20 bg-rose-500/10 px-2 py-1 text-xs text-rose-100">
+            {matchups.length} failed
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <ul className="grid gap-3 xl:grid-cols-2">
+          {visibleFailures.map((matchup) => {
+            const failure = getGenerationFailureDetails(matchup.admin_notes);
+            const hasPreviousContent = hasMatchupDraftContent(matchup);
+
+            return (
+              <li
+                className="rounded-lg border border-rose-300/15 bg-rose-500/[0.04] p-4"
+                key={matchup.id}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-md border border-cyan-300/20 bg-cyan-400/10 px-2 py-1 text-cyan-100">
+                        {getRoleLabel(matchup.role)}
+                      </span>
+                      <span className="rounded-md border border-white/10 bg-black/15 px-2 py-1 text-zinc-300">
+                        {failure.timestamp ? formatFailureTimestamp(failure.timestamp) : "Failed"}
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-md border px-2 py-1",
+                          hasPreviousContent
+                            ? "border-violet-300/20 bg-violet-500/10 text-violet-100"
+                            : "border-amber-300/20 bg-amber-400/10 text-amber-100",
+                        )}
+                      >
+                        {hasPreviousContent ? "Existing content" : "Needs manual content"}
+                      </span>
+                    </div>
+                    <p className="mt-3 font-semibold text-white">
+                      {getMatchupLabel(matchup, championsById)}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-rose-100">
+                      {failure.reason ?? "Generation failed."}
+                    </p>
+                    {failure.rejectedSection ? (
+                      <p className="mt-1 text-xs text-zinc-400">
+                        Rejected section:{" "}
+                        <span className="text-zinc-200">{failure.rejectedSection}</span>
+                      </p>
+                    ) : null}
+                    {failure.rejectedBullet ? (
+                      <blockquote className="mt-3 rounded-md border border-rose-300/15 bg-black/20 p-3 text-sm leading-6 text-zinc-200">
+                        {failure.rejectedBullet}
+                      </blockquote>
+                    ) : null}
+                  </div>
+
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button
+                      className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                      disabled={editStatus.isLoading}
+                      onClick={() => onStartEdit(matchup)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Pencil className="size-3.5" aria-hidden="true" />
+                      Edit guidance
+                    </Button>
+                    <Button
+                      className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                      disabled={editStatus.isLoading}
+                      onClick={() => onMarkReviewed(matchup)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                      Mark reviewed
+                    </Button>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {matchups.length > visibleFailures.length ? (
+          <p className="mt-4 text-xs text-zinc-500">
+            Showing the latest {visibleFailures.length} failed matchups. Use the status filter for
+            the full failed list.
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FailedGenerationNotice({
+  championsById,
+  matchup,
+}: {
+  championsById: Map<string, AdminLeagueChampion>;
+  matchup: AdminLeagueMatchup;
+}) {
+  const failure = getGenerationFailureDetails(matchup.admin_notes);
+
+  return (
+    <div className="rounded-lg border border-rose-300/20 bg-rose-500/[0.08] p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-rose-200" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="font-semibold text-rose-50">
+            Regeneration failed for {getMatchupLabel(matchup, championsById)}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-rose-100">
+            {failure.reason ?? "Generation failed."} Existing guidance is preserved when present.
+            You can edit manually here, save, then mark reviewed to clear the failed state.
+          </p>
+          {failure.rejectedBullet ? (
+            <blockquote className="mt-3 rounded-md border border-rose-300/15 bg-black/20 p-3 text-sm leading-6 text-zinc-200">
+              {failure.rejectedBullet}
+            </blockquote>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -3720,14 +3953,113 @@ function hasGenerationFailureNote(adminNotes: string | null) {
 }
 
 function getGenerationFailureReason(adminNotes: string | null) {
-  const match = adminNotes?.match(/\bGeneration failed\b[\s\S]*?\bError:\s*([^\n]+)/i);
-  const reason = match?.[1]?.trim();
+  return getGenerationFailureDetails(adminNotes).reason;
+}
 
-  if (!reason) {
+function isFailedGenerationMatchup(matchup: AdminLeagueMatchup) {
+  return matchup.generation_status === "failed" || hasGenerationFailureNote(matchup.admin_notes);
+}
+
+function getGenerationFailureDetails(source: string | null | undefined) {
+  const text = source?.trim() ?? "";
+  const failureText = getLatestGenerationFailureText(text);
+  const timestamp =
+    failureText
+      .match(/^Generation failed\s+(.+)$/im)?.[1]
+      ?.trim()
+      .replace(/\.$/, "") ?? null;
+  const reasonLine = failureText.match(/^Reason:\s*(.+?)\.?$/im)?.[1]?.trim() ?? null;
+  const rejectedSection =
+    failureText.match(/^Rejected section:\s*([a-z_]+)\.?$/im)?.[1]?.trim() ??
+    failureText.match(/(?:contained .*?language|content).*?:\s*([a-z_]+)\s*\(/i)?.[1]?.trim() ??
+    null;
+  const rejectedBullet = cleanRejectedBullet(
+    failureText.match(/^Rejected bullet:\s*"?([^"\n]+)"?\.?$/im)?.[1] ??
+      failureText.match(/rejected bullet:\s*(.*?)(?:\);|;|$)/i)?.[1] ??
+      null,
+  );
+  const errorText = failureText.match(/\bError:\s*([\s\S]+)/i)?.[1]?.trim() ?? text;
+  const reason =
+    reasonLine ??
+    (/support matchup draft.*CS, farming, or last-hit language/i.test(errorText)
+      ? "Support farming language detected"
+      : truncateText(summarizeFailureError(errorText), 180));
+
+  return {
+    reason: reason || null,
+    rejectedBullet,
+    rejectedSection,
+    timestamp,
+  };
+}
+
+function getLatestGenerationFailureText(text: string) {
+  if (!text) {
+    return "";
+  }
+
+  const failureIndex = text.lastIndexOf("Generation failed");
+
+  if (failureIndex === -1) {
+    return text;
+  }
+
+  const followingSystemNoteIndex = text
+    .slice(failureIndex + "Generation failed".length)
+    .search(/\n{2,}(?:AI draft generated|Placeholder draft generated|Generation failed)\b/i);
+
+  if (followingSystemNoteIndex === -1) {
+    return text.slice(failureIndex).trim();
+  }
+
+  return text
+    .slice(failureIndex, failureIndex + "Generation failed".length + followingSystemNoteIndex)
+    .trim();
+}
+
+function cleanRejectedBullet(value: string | null) {
+  if (!value) {
     return null;
   }
 
-  return reason.length > 180 ? `${reason.slice(0, 177)}...` : reason;
+  const cleaned = value
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^\-\s*/, "")
+    .replace(/\.$/, "")
+    .trim();
+
+  return cleaned || null;
+}
+
+function summarizeFailureError(error: string) {
+  const withoutQueuePrefix = error.replace(/^Could not save generated draft for .*?:\s*/i, "");
+  const firstSentence = withoutQueuePrefix.split(/(?<=\.)\s+/)[0]?.trim() || withoutQueuePrefix;
+
+  return firstSentence;
+}
+
+function getShortFailureReason(error: string | null) {
+  const failure = getGenerationFailureDetails(error);
+
+  return failure.reason ?? "Generation failed.";
+}
+
+function truncateText(text: string, maxLength: number) {
+  return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
+}
+
+function formatFailureTimestamp(timestamp: string) {
+  const parsedTime = Date.parse(timestamp);
+
+  if (Number.isNaN(parsedTime)) {
+    return timestamp;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(parsedTime));
 }
 
 function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
@@ -3928,6 +4260,16 @@ function getQueueItemLabel(
   const championB = championsById.get(item.championBId)?.name ?? item.championBId;
 
   return `${championA} vs ${championB} (${getRoleLabel(item.role)})`;
+}
+
+function getMatchupLabel(
+  matchup: AdminLeagueMatchup,
+  championsById: Map<string, AdminLeagueChampion>,
+) {
+  const championA = championsById.get(matchup.champion_a_id)?.name ?? matchup.champion_a_id;
+  const championB = championsById.get(matchup.champion_b_id)?.name ?? matchup.champion_b_id;
+
+  return `${championA} vs ${championB} (${getRoleLabel(matchup.role)})`;
 }
 
 function getQueueStats(queueState: LeagueMatchupQueueState) {

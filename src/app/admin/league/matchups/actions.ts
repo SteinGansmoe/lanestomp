@@ -894,6 +894,62 @@ function getGenerationFailureNote({
   source: Extract<GenerationSource, "failed">;
 }) {
   const sectionNote = sectionKey ? ` Section: ${sectionKey}.` : "";
+  const failureDetails = getGenerationFailureDetails(error);
+  const failureLines = [
+    `Generation failed ${generatedAt}.`,
+    `Source: ${source}.`,
+    `Role: ${role}.`,
+    `Champion A: ${championAName}.`,
+    `Champion B: ${championBName}.`,
+    sectionKey ? `Section: ${sectionKey}.` : null,
+    `Reason: ${failureDetails.reason}.`,
+    failureDetails.rejectedSection ? `Rejected section: ${failureDetails.rejectedSection}.` : null,
+    failureDetails.rejectedBullet ? `Rejected bullet: "${failureDetails.rejectedBullet}".` : null,
+    `Error: ${error}`,
+  ].filter(Boolean);
 
-  return `Generation failed ${generatedAt}. Source: ${source}. Role: ${role}. Champion A: ${championAName}. Champion B: ${championBName}.${sectionNote} Error: ${error}`;
+  if (failureDetails.rejectedBullet || failureDetails.rejectedSection) {
+    return failureLines.join("\n");
+  }
+
+  return `Generation failed ${generatedAt}. Source: ${source}. Role: ${role}. Champion A: ${championAName}. Champion B: ${championBName}.${sectionNote} Reason: ${failureDetails.reason}. Error: ${error}`;
+}
+
+function getGenerationFailureDetails(error: string) {
+  const rejectedBulletMatch =
+    error.match(/rejected bullet:\s*(.*?)(?:\);|;|$)/i) ??
+    error.match(/Rejected bullet:\s*"?([^"\n]+)"?/i);
+  const rejectedSectionMatch =
+    error.match(/(?:contained .*?language|content).*?:\s*([a-z_]+)\s*\(/i) ??
+    error.match(/Rejected section:\s*([a-z_]+)/i);
+  const hasSupportFarmingLanguage = /support matchup draft.*CS, farming, or last-hit language/i.test(
+    error,
+  );
+
+  return {
+    reason: hasSupportFarmingLanguage ? "Support farming language detected" : summarizeError(error),
+    rejectedBullet: cleanRejectedBullet(rejectedBulletMatch?.[1] ?? null),
+    rejectedSection: rejectedSectionMatch?.[1]?.trim() ?? null,
+  };
+}
+
+function cleanRejectedBullet(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const cleaned = value
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/^\-\s*/, "")
+    .replace(/\.$/, "")
+    .trim();
+
+  return cleaned || null;
+}
+
+function summarizeError(error: string) {
+  const firstSentence = error.split(/(?<=\.)\s+/)[0]?.trim() || error.trim();
+
+  return firstSentence.length > 180 ? `${firstSentence.slice(0, 177)}...` : firstSentence;
 }

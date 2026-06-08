@@ -72,6 +72,7 @@ type SessionResult = Awaited<ReturnType<NonNullable<typeof supabase>["auth"]["ge
 const adminDataPageSize = 1000;
 const leagueMatchupSelect = [
   "id",
+  "admin_notes",
   "champion_a_id",
   "champion_b_id",
   "role",
@@ -1282,9 +1283,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       ...matchupDetails,
       generation_status: "reviewed",
     });
+    const reviewedAdminNotes = removeLeagueMatchupGenerationFailureNotes(matchupDetails.admin_notes);
     const { error: reviewError } = await supabase
       .from("league_matchups")
       .update({
+        admin_notes: reviewedAdminNotes,
         confidence_level: confidence.level,
         generation_status: "reviewed",
         reviewed_at: new Date().toISOString(),
@@ -2493,6 +2496,15 @@ function logLeagueMatchupConfidenceCalculation(
     matchupId,
     reasons: confidence.reasons,
   });
+}
+
+function removeLeagueMatchupGenerationFailureNotes(adminNotes: string | null) {
+  const paragraphs = adminNotes
+    ?.split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph && !paragraph.startsWith("Generation failed "));
+
+  return paragraphs?.length ? paragraphs.join("\n\n") : null;
 }
 
 function hasSavedLeagueMatchupDraftContent(
