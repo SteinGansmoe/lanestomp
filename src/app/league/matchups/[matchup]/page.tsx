@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Crosshair, Hourglass, Lightbulb, ShieldAlert, Sparkles } from "lucide-react";
 import { connection } from "next/server";
 
@@ -26,6 +27,41 @@ type LeagueMatchupPageProps = {
   params: Promise<{ matchup: string }>;
   searchParams: Promise<{ role?: string | string[] }>;
 };
+
+const fallbackMetadataTitle = "League Matchup Guide";
+const fallbackMetadataDescription =
+  "Learn League of Legends matchups, trading patterns, power spikes and win conditions with LaneStomp.";
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: LeagueMatchupPageProps): Promise<Metadata> {
+  const [{ matchup }, query, championsResult] = await Promise.all([
+    params,
+    searchParams,
+    getLeagueChampions(),
+  ]);
+  const role = getValidRole(query.role);
+  const { championA, championB } = parseMatchup(matchup, championsResult.champions);
+
+  if (championsResult.error || !championA || !championB) {
+    return createMatchupMetadata({
+      description: fallbackMetadataDescription,
+      title: fallbackMetadataTitle,
+      url: "/league/matchups",
+    });
+  }
+
+  const roleLabel = getSeoRoleLabel(role);
+  const title = `${championA.name} vs ${championB.name} ${roleLabel} Matchup Guide`;
+  const description = `Learn how to play ${championA.name} into ${championB.name} as ${roleLabel}. Trading patterns, power spikes, danger windows and win conditions.`;
+
+  return createMatchupMetadata({
+    description,
+    title,
+    url: `/league/matchups/${matchup}?role=${role}`,
+  });
+}
 
 export default async function LeagueMatchupPage({ params, searchParams }: LeagueMatchupPageProps) {
   await connection();
@@ -504,11 +540,18 @@ function ChampionIcon({ champion }: { champion: LeagueChampion }) {
 }
 
 function parseMatchup(matchup: string, champions: LeagueChampion[]) {
-  const [championASlug, championBSlug] = matchup.split("-vs-");
+  const matchupParts = matchup.split("-vs-");
+  const [championASlug, championBSlug] = matchupParts;
 
   return {
-    championA: championASlug ? findChampionBySlug(champions, championASlug) : null,
-    championB: championBSlug ? findChampionBySlug(champions, championBSlug) : null,
+    championA:
+      matchupParts.length === 2 && championASlug
+        ? findChampionBySlug(champions, championASlug)
+        : null,
+    championB:
+      matchupParts.length === 2 && championBSlug
+        ? findChampionBySlug(champions, championBSlug)
+        : null,
   };
 }
 
@@ -520,6 +563,40 @@ function getValidRole(role: string | string[] | undefined): LeagueRole {
 
 function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function getSeoRoleLabel(role: LeagueRole) {
+  return role.toUpperCase();
+}
+
+function createMatchupMetadata({
+  description,
+  title,
+  url,
+}: {
+  description: string;
+  title: string;
+  url: string;
+}): Metadata {
+  return {
+    alternates: {
+      canonical: url,
+    },
+    description,
+    openGraph: {
+      description,
+      siteName: "LaneStomp",
+      title,
+      type: "article",
+      url,
+    },
+    title,
+    twitter: {
+      card: "summary_large_image",
+      description,
+      title,
+    },
+  };
 }
 
 function formatNumber(value: number) {
