@@ -323,9 +323,40 @@ async function generateDraftWithOpenAIProvider({
       rejectedSections: supportFarmingLanguage,
     });
 
+    const rewriteResult = await rewriteSupportDraftWithoutFarmingLanguage(
+      {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+      },
+      normalizedDraft,
+      supportFarmingLanguage,
+    );
+
+    if (rewriteResult.ok) {
+      logSupportFarmingLanguageRewriteSuccess({
+        championAName,
+        championBName,
+        role,
+      });
+
+      return rewriteResult;
+    }
+
+    logSupportFarmingLanguageRewriteFailure({
+      championAName,
+      championBName,
+      error: rewriteResult.error,
+      role,
+    });
+
     return {
       allowFallback: false,
-      error: formatSupportFarmingLanguageError(supportFarmingLanguage),
+      error: rewriteResult.error,
       ok: false,
     };
   }
@@ -452,9 +483,43 @@ async function generateDraftSectionWithOpenAIProvider({
       rejectedSections: [supportFarmingLanguage],
     });
 
+    const rewriteResult = await rewriteSupportDraftSectionWithoutFarmingLanguage(
+      {
+        adminNotes,
+        championAName,
+        championAProfile,
+        championBName,
+        championBProfile,
+        existingSections,
+        role,
+        sectionKey,
+      },
+      normalizedSection,
+      [supportFarmingLanguage],
+    );
+
+    if (rewriteResult.ok) {
+      logSupportFarmingLanguageRewriteSuccess({
+        championAName,
+        championBName,
+        role,
+        sectionKey,
+      });
+
+      return rewriteResult;
+    }
+
+    logSupportFarmingLanguageRewriteFailure({
+      championAName,
+      championBName,
+      error: rewriteResult.error,
+      role,
+      sectionKey,
+    });
+
     return {
       allowFallback: false,
-      error: formatSupportFarmingLanguageError([supportFarmingLanguage]),
+      error: rewriteResult.error,
       ok: false,
     };
   }
@@ -473,6 +538,200 @@ async function generateDraftSectionWithOpenAIProvider({
         role,
         sectionKey,
       },
+      provider: "openai",
+      warnings: [promptLanguageWarning],
+    });
+  }
+
+  return {
+    content: normalizedSection,
+    ok: true,
+    provider: "openai",
+  };
+}
+
+async function rewriteSupportDraftWithoutFarmingLanguage(
+  input: GenerateLeagueMatchupDraftContentInput,
+  rejectedDraft: MatchupDraftSections,
+  rejectedSections: PromptLeakageSectionRejection[],
+): Promise<GenerateLeagueMatchupDraftContentResult> {
+  const prompt = buildLeagueMatchupDraftPrompt({
+    adminNotes: buildSupportFarmingRewriteAdminNotes(input.adminNotes, rejectedSections),
+    enemyChampionProfile: input.championBProfile,
+    enemyChampionName: input.championBName,
+    existingSections: rejectedDraft,
+    playerChampionProfile: input.championAProfile,
+    playerChampionName: input.championAName,
+    role: input.role,
+  });
+  const responseResult = await requestOpenAIDraft({
+    prompt,
+    schema: matchupDraftSchema,
+    schemaName: "league_matchup_draft",
+  });
+
+  if (!responseResult.ok) {
+    return responseResult;
+  }
+
+  const draft = parseDraftSections(responseResult.outputText);
+
+  if (!draft) {
+    return {
+      allowFallback: false,
+      error: "AI provider returned rewritten draft content in an unexpected format.",
+      ok: false,
+    };
+  }
+
+  const normalizedDraft = normalizeDraftAbilityReferences({
+    draft,
+    enemyChampionName: input.championBName,
+    enemyChampionProfile: input.championBProfile,
+    playerChampionName: input.championAName,
+    playerChampionProfile: input.championAProfile,
+  });
+  const promptLeakage = findPromptLeakageInDraft(normalizedDraft);
+
+  if (promptLeakage.length > 0) {
+    logPromptLeakageRejection({
+      input,
+      provider: "openai",
+      rejectedSections: promptLeakage,
+    });
+
+    return {
+      allowFallback: false,
+      error: formatPromptLeakageError(promptLeakage),
+      ok: false,
+    };
+  }
+
+  const supportFarmingLanguage = findSupportFarmingLanguageInDraft(normalizedDraft);
+
+  if (supportFarmingLanguage.length > 0) {
+    logSupportFarmingLanguageRejection({
+      input,
+      provider: "openai",
+      rejectedSections: supportFarmingLanguage,
+    });
+
+    return {
+      allowFallback: false,
+      error: formatSupportFarmingLanguageError(supportFarmingLanguage),
+      ok: false,
+    };
+  }
+
+  const promptLanguageWarnings = findPromptLanguageWarningsInDraft(normalizedDraft);
+
+  if (promptLanguageWarnings.length > 0) {
+    logPromptLanguageWarnings({
+      input,
+      provider: "openai",
+      warnings: promptLanguageWarnings,
+    });
+  }
+
+  return {
+    draft: normalizedDraft,
+    ok: true,
+    provider: "openai",
+  };
+}
+
+async function rewriteSupportDraftSectionWithoutFarmingLanguage(
+  input: GenerateLeagueMatchupDraftSectionContentInput,
+  rejectedSection: string,
+  rejectedSections: PromptLeakageSectionRejection[],
+): Promise<GenerateLeagueMatchupDraftSectionContentResult> {
+  const prompt = buildLeagueMatchupDraftPrompt({
+    adminNotes: buildSupportFarmingRewriteAdminNotes(input.adminNotes, rejectedSections),
+    enemyChampionProfile: input.championBProfile,
+    enemyChampionName: input.championBName,
+    existingSections: {
+      ...(input.existingSections ?? {}),
+      [input.sectionKey]: rejectedSection,
+    },
+    playerChampionProfile: input.championAProfile,
+    playerChampionName: input.championAName,
+    role: input.role,
+    targetSection: input.sectionKey,
+  });
+  const responseResult = await requestOpenAIDraft({
+    prompt,
+    schema: createMatchupDraftSchema([input.sectionKey]),
+    schemaName: "league_matchup_draft_section",
+  });
+
+  if (!responseResult.ok) {
+    return responseResult;
+  }
+
+  const section = parseDraftSection(responseResult.outputText, input.sectionKey);
+
+  if (!section) {
+    return {
+      allowFallback: false,
+      error: "AI provider returned rewritten draft card content in an unexpected format.",
+      ok: false,
+    };
+  }
+
+  const normalizedSection = normalizeSectionAbilityReferences(
+    section,
+    {
+      championName: input.championAName,
+      profile: input.championAProfile,
+    },
+    {
+      championName: input.championBName,
+      profile: input.championBProfile,
+    },
+  );
+  const promptLeakage = findPromptLeakageInSection(input.sectionKey, normalizedSection);
+
+  if (promptLeakage) {
+    logPromptLeakageRejection({
+      input,
+      provider: "openai",
+      rejectedSections: [promptLeakage],
+    });
+
+    return {
+      allowFallback: false,
+      error: formatPromptLeakageError([promptLeakage]),
+      ok: false,
+    };
+  }
+
+  const supportFarmingLanguage = findSupportFarmingLanguageInSection(
+    input.sectionKey,
+    normalizedSection,
+  );
+
+  if (supportFarmingLanguage) {
+    logSupportFarmingLanguageRejection({
+      input,
+      provider: "openai",
+      rejectedSections: [supportFarmingLanguage],
+    });
+
+    return {
+      allowFallback: false,
+      error: formatSupportFarmingLanguageError([supportFarmingLanguage]),
+      ok: false,
+    };
+  }
+
+  const promptLanguageWarning = findPromptLanguageWarningsInSection(
+    input.sectionKey,
+    normalizedSection,
+  );
+
+  if (promptLanguageWarning) {
+    logPromptLanguageWarnings({
+      input,
       provider: "openai",
       warnings: [promptLanguageWarning],
     });
@@ -888,6 +1147,28 @@ function formatSupportFarmingLanguageError(rejectedSections: PromptLeakageSectio
   return `Generated support matchup draft was rejected because it contained CS, farming, or last-hit language: ${sectionList}. Regenerate the draft.`;
 }
 
+function buildSupportFarmingRewriteAdminNotes(
+  adminNotes: string | null,
+  rejectedSections: PromptLeakageSectionRejection[],
+) {
+  const rejectedBullets = rejectedSections
+    .map(
+      ({ phrases, sample, sectionKey }) =>
+        `- ${sectionKey} (${phrases.join(", ")}): ${sample}`,
+    )
+    .join("\n");
+
+  return [
+    adminNotes?.trim(),
+    "Support rewrite retry: the previous output used invalid support economy wording.",
+    "Rewrite the affected card text without any CS, farming, farm, free farm, deny farm, last-hit, or last hitting language.",
+    "Use ADC access, enemy ADC denial, engage angles, brush control, hook pressure, roam windows, vision control, peel windows, follow-up timing, wave state for ADC safety, and objective setup.",
+    `Rejected bullets and reasons:\n${rejectedBullets}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 function logPromptLeakageRejection({
   input,
   provider,
@@ -924,11 +1205,52 @@ function logSupportFarmingLanguageRejection({
     playerChampion: input.championAName,
     provider,
     rejectedSections: rejectedSections.map(({ phrases, sample, sectionKey }) => ({
-      phrases,
-      sample,
+      reason: phrases.join(", "),
+      rejectedBullet: sample,
       sectionKey,
     })),
     role: input.role,
+  });
+}
+
+function logSupportFarmingLanguageRewriteFailure({
+  championAName,
+  championBName,
+  error,
+  role,
+  sectionKey,
+}: {
+  championAName: string;
+  championBName: string;
+  error: string;
+  role: LeagueRole;
+  sectionKey?: MatchupDraftSectionKey;
+}) {
+  console.warn("Support matchup farming-language rewrite failed", {
+    championAName,
+    championBName,
+    error,
+    role,
+    sectionKey: sectionKey ?? null,
+  });
+}
+
+function logSupportFarmingLanguageRewriteSuccess({
+  championAName,
+  championBName,
+  role,
+  sectionKey,
+}: {
+  championAName: string;
+  championBName: string;
+  role: LeagueRole;
+  sectionKey?: MatchupDraftSectionKey;
+}) {
+  console.info("Support matchup farming-language rewrite succeeded", {
+    championAName,
+    championBName,
+    role,
+    sectionKey: sectionKey ?? null,
   });
 }
 
