@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Save, UserCircle } from "lucide-react";
+import { KeyRound, Mail, Save, UserCircle } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -16,6 +16,8 @@ import {
 } from "@/src/lib/profile";
 import { validatePasswordConfirmation } from "@/src/lib/password";
 import { supabase } from "@/src/lib/supabase";
+
+const pendingEmailStorageKey = "lanestomp.account.pendingEmailChange";
 
 function AccountSettingsFormSkeleton() {
   return (
@@ -46,11 +48,17 @@ export function AccountSettingsForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEmailSaving, setIsEmailSaving] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [username, setUsername] = useState("");
@@ -77,6 +85,8 @@ export function AccountSettingsForm() {
         return;
       }
 
+      const authEmail = authData.user.email ?? "";
+      const nextPendingEmail = authData.user.new_email?.trim() || null;
       const { data, error: profileError } = await fetchUserProfile(authData.user.id);
 
       if (!isMounted) {
@@ -90,7 +100,20 @@ export function AccountSettingsForm() {
       }
 
       setProfile(data);
+      const nextCurrentEmail = authEmail || data.email || "";
+      const wasEmailChangeCompleted = reconcileStoredPendingEmail(nextCurrentEmail, nextPendingEmail);
+
+      setCurrentEmail(nextCurrentEmail);
+      setNewEmail(nextPendingEmail ?? "");
+      setPendingEmail(nextPendingEmail);
       setUsername(data.username ?? "");
+      setEmailSuccess(wasEmailChangeCompleted ? "Email updated successfully." : null);
+
+      if (wasEmailChangeCompleted) {
+        window.dispatchEvent(new Event("lanestomp-profile-updated"));
+        router.refresh();
+      }
+
       setIsLoading(false);
     }
 
@@ -132,7 +155,7 @@ export function AccountSettingsForm() {
       }
 
       if (!availability.isAvailable) {
-        setError("That username is already taken.");
+        setError("This username is already taken.");
         setIsSaving(false);
         return;
       }
@@ -146,7 +169,7 @@ export function AccountSettingsForm() {
     if (updateError) {
       setError(
         updateError.message.includes("profiles_username_lower_unique")
-          ? "That username is already taken."
+          ? "This username is already taken."
           : updateError.message,
       );
       setIsSaving(false);
@@ -164,15 +187,92 @@ export function AccountSettingsForm() {
 
     setProfile(data);
     setUsername(data.username ?? nextUsername);
-    setSuccess("Username updated.");
+    setSuccess("Username updated successfully.");
     window.dispatchEvent(new Event("lanestomp-profile-updated"));
     router.refresh();
+  }
+
+  async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !profile) {
+      setEmailError("Account profile is not ready yet.");
+      return;
+    }
+
+    const nextEmail = newEmail.trim();
+    const emailValidationError = validateEmail(nextEmail);
+
+    setEmailError(null);
+    setEmailSuccess(null);
+
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      return;
+    }
+
+    if (nextEmail.toLowerCase() === currentEmail.toLowerCase()) {
+      setEmailError("Enter a different email address.");
+      return;
+    }
+
+    setIsEmailSaving(true);
+
+    const { data, error: updateError } = await supabase.auth.updateUser(
+      { email: nextEmail },
+      { emailRedirectTo: getAccountSettingsRedirectUrl() },
+    );
+
+    setIsEmailSaving(false);
+
+    if (updateError) {
+      setEmailError(getEmailChangeErrorMessage(updateError.message));
+      return;
+    }
+
+    const nextPendingEmail = data.user?.new_email?.trim() || nextEmail;
+
+    window.localStorage.setItem(pendingEmailStorageKey, nextPendingEmail);
+    setCurrentEmail(data.user?.email ?? currentEmail);
+    setNewEmail("");
+    setPendingEmail(nextPendingEmail);
+    setEmailSuccess("Verification email sent.");
+  }
+
+  async function resendEmailVerification() {
+    if (!pendingEmail) {
+      return;
+    }
+
+    setEmailError(null);
+    setEmailSuccess(null);
+    setIsEmailSaving(true);
+
+    const { data, error: updateError } = await supabase!.auth.updateUser(
+      { email: pendingEmail },
+      { emailRedirectTo: getAccountSettingsRedirectUrl() },
+    );
+
+    setIsEmailSaving(false);
+
+    if (updateError) {
+      setEmailError(getEmailChangeErrorMessage(updateError.message));
+      return;
+    }
+
+    const nextPendingEmail = data.user?.new_email?.trim() || pendingEmail;
+
+    window.localStorage.setItem(pendingEmailStorageKey, nextPendingEmail);
+    setCurrentEmail(data.user?.email ?? currentEmail);
+    setNewEmail("");
+    setPendingEmail(nextPendingEmail);
+    setEmailSuccess("Verification email sent.");
   }
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!supabase || !profile?.email) {
+    if (!supabase || !currentEmail) {
       setPasswordError("Account email is not ready yet.");
       return;
     }
@@ -195,7 +295,7 @@ export function AccountSettingsForm() {
     setIsPasswordSaving(true);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: profile.email,
+      email: currentEmail,
       password: currentPassword,
     });
 
@@ -255,17 +355,6 @@ export function AccountSettingsForm() {
             </span>
           </label>
 
-          <label className="block space-y-2">
-            <span className="text-sm text-zinc-300">Email</span>
-            <Input
-              className="h-11 border-white/10 bg-white/[0.03] text-zinc-400"
-              disabled
-              readOnly
-              type="email"
-              value={profile?.email ?? ""}
-            />
-          </label>
-
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
             <h2 className="font-mono text-sm font-semibold uppercase text-violet-200">
               Riot account
@@ -294,6 +383,87 @@ export function AccountSettingsForm() {
           >
             <Save className="size-4" aria-hidden="true" />
             {isSaving ? "Saving..." : "Save username"}
+          </Button>
+        </form>
+
+        <form className="mt-8 space-y-5 border-t border-white/10 pt-6" onSubmit={handleEmailSubmit}>
+          <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 text-cyan-100 ring-1 ring-cyan-300/20">
+              <Mail className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="font-mono text-sm font-semibold uppercase text-cyan-200">
+                Change Email
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-zinc-400">
+                Enter a new email address. Supabase will update it only after verification.
+              </p>
+            </div>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Current email</span>
+            <Input
+              className="h-11 border-white/10 bg-white/[0.03] text-zinc-400"
+              disabled
+              readOnly
+              type="email"
+              value={currentEmail}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">New email</span>
+            <Input
+              autoComplete="email"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              disabled={isEmailSaving}
+              onChange={(event) => setNewEmail(event.target.value)}
+              placeholder="new@email.com"
+              required
+              type="email"
+              value={newEmail}
+            />
+          </label>
+
+          {pendingEmail ? (
+            <div className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100">
+              <p>
+                Pending email change: <span className="font-medium text-white">{pendingEmail}</span>
+              </p>
+              <p className="text-cyan-100/80">Verification email sent.</p>
+              <Button
+                className="mt-3 h-9 border-cyan-300/20 bg-cyan-400/10 px-3 text-cyan-100 hover:bg-cyan-400/15"
+                disabled={isEmailSaving}
+                onClick={resendEmailVerification}
+                type="button"
+                variant="ghost"
+              >
+                <Mail className="size-3.5" aria-hidden="true" />
+                {isEmailSaving ? "Sending..." : "Resend verification"}
+              </Button>
+            </div>
+          ) : null}
+
+          {emailError ? (
+            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+              {emailError}
+            </p>
+          ) : null}
+
+          {emailSuccess ? (
+            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+              {emailSuccess}
+            </p>
+          ) : null}
+
+          <Button
+            className="h-11 bg-cyan-400/80 px-4 text-[#05111d] hover:bg-cyan-300"
+            disabled={isEmailSaving}
+            type="submit"
+          >
+            <Mail className="size-4" aria-hidden="true" />
+            {isEmailSaving ? "Sending..." : "Change email"}
           </Button>
         </form>
 
@@ -383,4 +553,66 @@ export function AccountSettingsForm() {
       </CardContent>
     </Card>
   );
+}
+
+function getAccountSettingsRedirectUrl() {
+  return new URL("/account/settings", window.location.origin).toString();
+}
+
+function validateEmail(value: string) {
+  const email = value.trim();
+
+  if (!email) {
+    return "Invalid email address.";
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return "Invalid email address.";
+  }
+
+  return null;
+}
+
+function getEmailChangeErrorMessage(message: string) {
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes("already") || lowerMessage.includes("registered")) {
+    return "Email already in use.";
+  }
+
+  if (lowerMessage.includes("invalid")) {
+    return "Invalid email address.";
+  }
+
+  if (lowerMessage.includes("rate limit") || lowerMessage.includes("too many")) {
+    return "Please wait before requesting another verification email.";
+  }
+
+  return message;
+}
+
+function reconcileStoredPendingEmail(currentEmail: string, pendingEmail: string | null) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const storedPendingEmail = window.localStorage.getItem(pendingEmailStorageKey);
+
+  if (!storedPendingEmail) {
+    return false;
+  }
+
+  const normalizedStoredEmail = storedPendingEmail.trim().toLowerCase();
+  const normalizedCurrentEmail = currentEmail.trim().toLowerCase();
+
+  if (!pendingEmail && normalizedStoredEmail === normalizedCurrentEmail) {
+    window.localStorage.removeItem(pendingEmailStorageKey);
+    return true;
+  }
+
+  if (!pendingEmail && normalizedStoredEmail !== normalizedCurrentEmail) {
+    window.localStorage.removeItem(pendingEmailStorageKey);
+  }
+
+  return false;
 }

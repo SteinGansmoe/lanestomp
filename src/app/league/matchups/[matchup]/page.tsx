@@ -175,23 +175,30 @@ export default async function LeagueMatchupPage({ params, searchParams }: League
             ) : null}
 
             {matchupResult?.matchup ? (
-              <>
-                <LeagueMatchupReviewPanel
-                  championAId={championA.id}
-                  championAName={championA.name}
-                  championBId={championB.id}
-                  championBName={championB.name}
-                  initialMatchup={matchupResult.matchup}
-                  role={role}
-                />
+              <section className="mt-10 grid justify-center gap-4 sm:mt-12">
+                <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-3">
+                  <LeagueMatchupReviewPanel
+                    championAId={championA.id}
+                    championAName={championA.name}
+                    championBId={championB.id}
+                    championBName={championB.name}
+                    initialMatchup={matchupResult.matchup}
+                    role={role}
+                  />
 
-                <TipStrip
-                  championA={championA}
-                  championB={championB}
-                  role={role}
-                  updatedAt={matchupResult.matchup.updated_at}
+                  <TipStrip
+                    championA={championA}
+                    championB={championB}
+                    role={role}
+                    updatedAt={matchupResult.matchup.updated_at}
+                  />
+                </div>
+
+                <aside
+                  aria-hidden="true"
+                  className="hidden"
                 />
-              </>
+              </section>
             ) : (
               <UnavailableMatchupState
                 championA={championA}

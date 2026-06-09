@@ -509,7 +509,7 @@ export function LeagueMatchupReviewPanel({
         </section>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid items-stretch gap-3 md:grid-cols-2">
         {sections.map((section) => (
           <MatchupGuideCard
             canRegenerate={Boolean(
@@ -575,7 +575,7 @@ function MatchupGuideCard({
   const bullets = getGuideBullets(section.body);
 
   return (
-    <article className="group rounded-lg border border-white/12 bg-[#10182b]/82 p-3 shadow-lg shadow-black/20 ring-1 ring-white/10 backdrop-blur-md transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]/88 sm:p-3.5">
+    <article className="group flex h-full flex-col rounded-lg border border-white/12 bg-[#10182b]/82 p-3 shadow-lg shadow-black/20 ring-1 ring-white/10 backdrop-blur-md transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]/88 sm:p-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span
@@ -621,7 +621,7 @@ function MatchupGuideCard({
           value={formValue}
         />
       ) : (
-        <ul className="mt-3 space-y-1.5 text-sm leading-5 text-zinc-400">
+        <ul className="mt-3 grow space-y-1.5 text-sm leading-5 text-zinc-400">
           {bullets.map((line, index) => (
             <li className="flex gap-2" key={`${line}-${index}`}>
               <span

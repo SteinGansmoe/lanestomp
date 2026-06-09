@@ -21,8 +21,8 @@ export default function Loading() {
           <div className="mt-4 h-4 w-full max-w-3xl rounded bg-white/5" />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="rounded-lg border border-white/10 bg-[#10182b]/90 p-5 shadow-xl shadow-black/20">
+        <section className="mt-10 grid justify-center gap-6 sm:mt-12">
+          <div className="mx-auto w-full max-w-6xl rounded-lg border border-white/10 bg-[#10182b]/90 p-5 shadow-xl shadow-black/20">
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem]">
               <div className="h-11 rounded-lg border border-white/10 bg-white/[0.04]" />
               <div className="h-11 rounded-lg border border-white/10 bg-white/[0.04]" />
@@ -35,7 +35,7 @@ export default function Loading() {
                 />
               ))}
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 12 }).map((_, index) => (
                 <div
                   className="h-20 rounded-lg border border-white/10 bg-white/[0.04]"
