@@ -58,6 +58,7 @@ import {
 } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card } from "@/src/components/ui/card";
+import { isChampionInRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import {
   calculateLeagueMatchupConfidence,
@@ -983,6 +984,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       }
     }
 
+    const lanePoolError = getLeagueMatchupLanePoolError(form, adminData.leagueChampions);
+
+    if (lanePoolError) {
+      return lanePoolError;
+    }
+
     return null;
   }
 
@@ -1064,11 +1071,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     }
 
     if (existingMatchup && hasSavedLeagueMatchupDraftContent(existingMatchup)) {
+      await startEditingLeagueMatchup(
+        existingMatchup,
+        "Opened the existing matchup row. You can edit it here or regenerate this exact draft.",
+      );
       setCreateLeagueMatchupStatus({
-        error:
-          "This matchup already has saved guidance. Use the existing matchup row to regenerate or edit it.",
+        error: null,
         isLoading: false,
-        success: null,
+        success:
+          "This matchup already has saved guidance, so the existing row was opened for editing.",
       });
       return;
     }
@@ -1135,7 +1146,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     });
   }
 
-  async function startEditingLeagueMatchup(matchup: AdminLeagueMatchup) {
+  async function startEditingLeagueMatchup(matchup: AdminLeagueMatchup, successMessage?: string) {
     setEditingLeagueMatchupId(matchup.id);
     setEditLeagueMatchupStatus({ error: null, isLoading: true, success: null });
     setEditLeagueMatchupForm({
@@ -1191,7 +1202,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       trading_pattern: data.trading_pattern ?? "",
       win_conditions: data.win_conditions ?? "",
     });
-    setEditLeagueMatchupStatus({ error: null, isLoading: false, success: null });
+    setEditLeagueMatchupStatus({ error: null, isLoading: false, success: successMessage ?? null });
   }
 
   function stopEditingLeagueMatchup() {
@@ -1283,7 +1294,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       ...matchupDetails,
       generation_status: "reviewed",
     });
-    const reviewedAdminNotes = removeLeagueMatchupGenerationFailureNotes(matchupDetails.admin_notes);
+    const reviewedAdminNotes = removeLeagueMatchupGenerationFailureNotes(
+      matchupDetails.admin_notes,
+    );
     const { error: reviewError } = await supabase
       .from("league_matchups")
       .update({
@@ -1612,6 +1625,19 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return;
     }
 
+    const invalidItemError = items
+      .map((item) => getLeagueMatchupPlanLanePoolError(item, adminData.leagueChampions))
+      .find((error): error is string => Boolean(error));
+
+    if (invalidItemError) {
+      setBatchLeagueMatchupStatus({
+        error: invalidItemError,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
@@ -1739,6 +1765,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     }
 
     const matchupLabel = getLeagueMatchupPlanLabel(item, adminData.leagueChampions);
+    const lanePoolError = getLeagueMatchupPlanLanePoolError(item, adminData.leagueChampions);
+
+    if (lanePoolError) {
+      return {
+        error: lanePoolError,
+        ok: false,
+      };
+    }
+
     let matchupId = item.existingMatchupId;
 
     if (!matchupId) {
@@ -2532,6 +2567,55 @@ function hasSavedLeagueMatchupDraftContent(
       matchup.win_conditions,
     ].some((value) => Boolean(value?.trim()))
   );
+}
+
+function getLeagueMatchupLanePoolError(
+  form: Pick<LeagueMatchupFormState, "champion_a_id" | "champion_b_id" | "role">,
+  champions: AdminLeagueChampion[],
+) {
+  return getLanePoolValidationError(
+    {
+      championAId: form.champion_a_id,
+      championBId: form.champion_b_id,
+      role: form.role,
+    },
+    champions,
+  );
+}
+
+function getLeagueMatchupPlanLanePoolError(
+  item: LeagueMatchupBatchPlanItem,
+  champions: AdminLeagueChampion[],
+) {
+  return getLanePoolValidationError(item, champions);
+}
+
+function getLanePoolValidationError(
+  item: Pick<LeagueMatchupBatchPlanItem, "championAId" | "championBId" | "role">,
+  champions: AdminLeagueChampion[],
+) {
+  const championsById = new Map(champions.map((champion) => [champion.id, champion] as const));
+  const roleLabel = getAdminLeagueRoleLabel(item.role);
+  const championA = championsById.get(item.championAId);
+  const championB = championsById.get(item.championBId);
+
+  if (!championA) {
+    return `Cannot create matchup because ${item.championAId} is not currently available in the champion list.`;
+  }
+
+  if (!championB) {
+    return `Cannot create matchup because ${item.championBId} is not currently available in the champion list.`;
+  }
+
+  if (!isChampionInRole(championA, item.role)) {
+    return `Cannot create matchup because ${championA.name} is not currently included in the ${roleLabel} pool.`;
+  }
+
+  if (!isChampionInRole(championB, item.role)) {
+    return `Cannot create matchup because ${championB.name} is not currently included in the ${roleLabel} pool.`;
+  }
+
+  return null;
 }
 
 function getLeagueMatchupPlanLabel(

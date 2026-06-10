@@ -449,10 +449,42 @@ export function AdminLeagueMatchupsSection({
             {editingMatchupId ? (
               <div className="space-y-4">
                 {editingMatchup && isFailedGenerationMatchup(editingMatchup) ? (
-                  <FailedGenerationNotice
-                    championsById={championsById}
-                    matchup={editingMatchup}
-                  />
+                  <FailedGenerationNotice championsById={championsById} matchup={editingMatchup} />
+                ) : null}
+                {editingMatchup ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-violet-300/15 bg-violet-500/[0.06] p-3">
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        {getMatchupLabel(editingMatchup, championsById)}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-400">
+                        Regenerate only this saved matchup row.
+                      </p>
+                    </div>
+                    <Button
+                      className="h-9 bg-violet-500/80 px-3 text-white hover:bg-violet-500"
+                      disabled={
+                        editStatus.isLoading ||
+                        generatingMatchupId !== null ||
+                        deletingDraftMatchupId !== null ||
+                        batchStatus.isLoading ||
+                        isBulkQueueActive ||
+                        isChampionRegenerationActive
+                      }
+                      onClick={() => onGenerateDraft(editingMatchup)}
+                      size="sm"
+                      type="button"
+                    >
+                      <Sparkles
+                        className={cn(
+                          "size-3.5",
+                          generatingMatchupId === editingMatchup.id ? "animate-pulse" : "",
+                        )}
+                        aria-hidden="true"
+                      />
+                      {generatingMatchupId === editingMatchup.id ? "Regenerating..." : "Regenerate"}
+                    </Button>
+                  </div>
                 ) : null}
                 <LeagueMatchupForm
                   champions={champions}
@@ -1914,6 +1946,14 @@ function LeagueMatchupBulkGenerationQueue({
           )
         : 0;
 
+    logLaneMissingQueueDebug({
+      items,
+      matchups: matchupsRef.current,
+      mode: queueMode,
+      role: queueRole,
+      roleChampions,
+    });
+
     if (items.length === 0) {
       setQueueMessage({
         text:
@@ -2741,9 +2781,9 @@ function LeagueMatchupGapChecker({
             </div>
 
             <p className="text-xs leading-5 text-zinc-400">
-              Available means reviewed and visible in public coverage. Existing rows includes draft
-              or unreviewed rows, which can explain why the generator sees a role as complete while
-              public coverage still has gaps.
+              Available means a directional row exists for the current lane pool. Existing rows
+              includes draft and reviewed rows, so missing only tracks pairs that need a row
+              created.
             </p>
 
             {hasMissingMatchups ? (
@@ -2779,7 +2819,7 @@ function LeagueMatchupGapChecker({
               </div>
             ) : (
               <p className="rounded-md border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-                No missing reviewed {roleLabel} directional matchups found.
+                No missing {roleLabel} directional matchup rows found.
               </p>
             )}
           </div>
@@ -3050,6 +3090,22 @@ function LeagueMatchupBatchPlanner({
     setSelectedOpponentIds([]);
   }
 
+  function generateBatch() {
+    const sourceChampion = championsById.get(sourceChampionId);
+
+    logChampionMissingQueueDebug({
+      direction,
+      executableItems,
+      existingMatchupIds,
+      opponentPool,
+      plannedItems,
+      role,
+      selectedOpponentIds: selectedOpponents,
+      sourceChampion,
+    });
+    onGenerateBatch(executableItems);
+  }
+
   return (
     <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
       <CardHeader>
@@ -3282,7 +3338,7 @@ function LeagueMatchupBatchPlanner({
             <Button
               className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
               disabled={!canGenerate || isDisabled}
-              onClick={() => onGenerateBatch(executableItems)}
+              onClick={generateBatch}
               type="button"
             >
               <Sparkles className="size-4" aria-hidden="true" />
@@ -4077,6 +4133,142 @@ function hasMatchupDraftContent(matchup: AdminLeagueMatchup) {
   );
 }
 
+function logLaneMissingQueueDebug({
+  items,
+  matchups,
+  mode,
+  role,
+  roleChampions,
+}: {
+  items: LeagueMatchupQueueItem[];
+  matchups: AdminLeagueMatchup[];
+  mode: LeagueMatchupQueueMode;
+  role: AdminLeagueMatchup["role"];
+  roleChampions: AdminLeagueChampion[];
+}) {
+  if (mode !== "missing-only") {
+    return;
+  }
+
+  const queuedKeys = new Set(
+    items.map((item) => getMatchupKey(item.championAId, item.championBId, role)),
+  );
+  const existingRowsByKey = new Map(
+    matchups
+      .filter((matchup) => matchup.role === role)
+      .map((matchup) => [
+        getMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
+        matchup,
+      ]),
+  );
+
+  for (const sourceChampion of roleChampions) {
+    const opponentCandidates = roleChampions.filter(
+      (opponent) => opponent.id !== sourceChampion.id,
+    );
+    const skipped = opponentCandidates
+      .map((opponent) => {
+        const key = getMatchupKey(sourceChampion.id, opponent.id, role);
+
+        if (queuedKeys.has(key)) {
+          return null;
+        }
+
+        const existingRow = existingRowsByKey.get(key);
+
+        return existingRow
+          ? {
+              champion: opponent.name,
+              reason: `Existing matchup row #${existingRow.id}`,
+            }
+          : {
+              champion: opponent.name,
+              reason: "Not queued by current filters",
+            };
+      })
+      .filter((item): item is { champion: string; reason: string } => Boolean(item));
+
+    console.info("League matchup missing queue debug", {
+      lane: getRoleLabel(role),
+      opponentCandidates: opponentCandidates.map((opponent) => opponent.name),
+      poolSize: roleChampions.length,
+      selectedChampion: sourceChampion.name,
+      skipped,
+    });
+  }
+}
+
+function logChampionMissingQueueDebug({
+  direction,
+  executableItems,
+  existingMatchupIds,
+  opponentPool,
+  plannedItems,
+  role,
+  selectedOpponentIds,
+  sourceChampion,
+}: {
+  direction: "source-first" | "source-second" | "both";
+  executableItems: LeagueMatchupBatchPlanItem[];
+  existingMatchupIds: Map<string, number>;
+  opponentPool: AdminLeagueChampion[];
+  plannedItems: LeagueMatchupBatchPlanItem[];
+  role: AdminLeagueMatchup["role"];
+  selectedOpponentIds: string[];
+  sourceChampion: AdminLeagueChampion | undefined;
+}) {
+  if (!sourceChampion) {
+    return;
+  }
+
+  const executableKeys = new Set(
+    executableItems.map((item) => getMatchupKey(item.championAId, item.championBId, item.role)),
+  );
+  const plannedKeys = new Set(
+    plannedItems.map((item) => getMatchupKey(item.championAId, item.championBId, item.role)),
+  );
+  const selectedOpponentSet = new Set(selectedOpponentIds);
+  const opponentCandidates = opponentPool.filter((opponent) =>
+    selectedOpponentSet.has(opponent.id),
+  );
+  const skipped = opponentCandidates.flatMap((opponent) => {
+    const directions = direction === "both" ? ["source-first", "source-second"] : [direction];
+
+    return directions
+      .map((plannedDirection) => {
+        const championAId = plannedDirection === "source-first" ? sourceChampion.id : opponent.id;
+        const championBId = plannedDirection === "source-first" ? opponent.id : sourceChampion.id;
+        const key = getMatchupKey(championAId, championBId, role);
+        const existingMatchupId = existingMatchupIds.get(key);
+
+        if (executableKeys.has(key)) {
+          return null;
+        }
+
+        return {
+          champion: opponent.name,
+          direction: plannedDirection,
+          reason: existingMatchupId
+            ? `Existing matchup row #${existingMatchupId}`
+            : plannedKeys.has(key)
+              ? "Planned but outside current batch limit"
+              : "Not queued by current filters",
+        };
+      })
+      .filter((item): item is { champion: string; direction: string; reason: string } =>
+        Boolean(item),
+      );
+  });
+
+  console.info("League matchup champion missing generation debug", {
+    lane: getRoleLabel(role),
+    opponentCandidates: opponentCandidates.map((opponent) => opponent.name),
+    poolSize: opponentPool.length + 1,
+    selectedChampion: sourceChampion.name,
+    skipped,
+  });
+}
+
 function createEmptyQueueState(
   mode: LeagueMatchupQueueMode,
   role: AdminLeagueMatchup["role"],
@@ -4124,7 +4316,7 @@ function buildLaneQueueItems(
       const key = getMatchupKey(championA.id, championB.id, role);
       const existingMatchup = existingMatchupsByKey.get(key);
 
-      if (mode === "missing-only" && existingMatchup && hasMatchupDraftContent(existingMatchup)) {
+      if (mode === "missing-only" && existingMatchup) {
         continue;
       }
 
@@ -4168,13 +4360,6 @@ function getRoleMatchupGapAnalysis(
         matchup,
       ]),
   );
-  const availableKeys = new Set(
-    matchups
-      .filter((matchup) => matchup.role === role && matchup.generation_status === "reviewed")
-      .map((matchup) =>
-        getDirectionalMatchupKey(matchup.champion_a_id, matchup.champion_b_id, matchup.role),
-      ),
-  );
   const missingMatchups: {
     existingMatchupId: number | null;
     hasExistingRow: boolean;
@@ -4197,15 +4382,15 @@ function getRoleMatchupGapAnalysis(
 
       const key = getDirectionalMatchupKey(sourceChampion.id, targetChampion.id, role);
 
-      if (availableKeys.has(key)) {
+      const existingRow = existingRowsByKey.get(key);
+
+      if (existingRow) {
         continue;
       }
 
-      const existingRow = existingRowsByKey.get(key);
-
       missingMatchups.push({
-        existingMatchupId: existingRow?.id ?? null,
-        hasExistingRow: Boolean(existingRow),
+        existingMatchupId: null,
+        hasExistingRow: false,
         key,
         role,
         sourceChampionId: sourceChampion.id,
@@ -4217,7 +4402,7 @@ function getRoleMatchupGapAnalysis(
   }
 
   return {
-    availableCount: availableKeys.size,
+    availableCount: existingRowsByKey.size,
     existingRowCount: existingRowsByKey.size,
     expectedCount,
     missingCount: missingMatchups.length,
