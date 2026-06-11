@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -20,7 +21,11 @@ import { connection } from "next/server";
 import { MatchupSelector } from "@/src/components/league/matchup-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
-import { getLeagueChampions } from "@/src/features/league/champions";
+import {
+  getChampionSplashUrl,
+  getLeagueChampions,
+  type LeagueChampion,
+} from "@/src/features/league/champions";
 import {
   getLeagueMatchupCoverageSummary,
   type LeagueMatchupCoverageSummary,
@@ -40,10 +45,12 @@ export default async function Home() {
   const { coverage } =
     champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
   const progressStats = getProgressStats(champions.length, coverage);
+  const featuredChampion = getHomeAtmosphereChampion(champions);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#050b18] text-white">
-      <section className="px-4 py-6 sm:px-6 lg:px-8 lg:py-6">
+    <main className="relative min-h-screen overflow-hidden bg-[#050b18] text-[#AEB8C7]">
+      <HomeAtmosphere champion={featuredChampion} />
+      <section className="relative z-10 px-4 py-6 sm:px-6 lg:px-8 lg:py-6">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
           <SiteHeader />
 
@@ -63,7 +70,7 @@ export default async function Home() {
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
                   Available now
                 </p>
-                <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+                <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF7] sm:text-3xl">
                   Open the Matchup Tool
                 </h2>
               </div>
@@ -81,11 +88,11 @@ export default async function Home() {
             ) : champions.length > 0 ? (
               <MatchupSelector champions={champions} matchupCoverage={coverage} />
             ) : (
-              <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
+              <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-[#AEB8C7]">
                 <CardTitle className="font-mono text-xl">
                   Champion data is not imported yet
                 </CardTitle>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                <p className="mt-3 text-sm leading-6 text-[#8F9CAE]">
                   Import League champion data to enable the matchup picker.
                 </p>
               </Card>
@@ -97,9 +104,37 @@ export default async function Home() {
   );
 }
 
+function HomeAtmosphere({ champion }: { champion: LeagueChampion | null }) {
+  if (!champion) {
+    return (
+      <div
+        className="pointer-events-none absolute inset-x-0 top-32 z-0 h-[34rem] bg-[radial-gradient(circle_at_18%_22%,rgba(14,165,233,0.12),transparent_22rem),radial-gradient(circle_at_82%_18%,rgba(250,204,21,0.08),transparent_20rem)]"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 top-36 z-0 h-[42rem] overflow-hidden opacity-35"
+      aria-hidden="true"
+    >
+      <Image
+        alt=""
+        className="object-cover object-[70%_18%] opacity-25 blur-2xl saturate-125"
+        fill
+        priority
+        sizes="100vw"
+        src={getChampionSplashUrl(champion)}
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.98)_0%,rgba(5,11,24,0.82)_34%,rgba(5,11,24,0.72)_100%),linear-gradient(0deg,rgba(5,11,24,1)_0%,rgba(5,11,24,0.18)_42%,rgba(5,11,24,0.95)_100%)]" />
+    </div>
+  );
+}
+
 function HeroSection({ matchupCount }: { matchupCount: number }) {
   return (
-    <section className="relative isolate min-h-[34rem] overflow-hidden rounded-lg border border-white/10 bg-[#07101f] shadow-2xl shadow-black/30">
+    <section className="relative isolate min-h-[34rem] overflow-hidden rounded-lg border border-cyan-100/10 bg-[#07101f] shadow-2xl shadow-black/30">
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(5,11,24,0.98)_0%,rgba(5,11,24,0.86)_42%,rgba(5,11,24,0.42)_100%),linear-gradient(0deg,rgba(5,11,24,0.96),rgba(5,11,24,0.08)_42%,rgba(5,11,24,0.76)),url('/images/summoners-rift.jpeg')] bg-cover bg-center" />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[#050b18] to-transparent" />
 
@@ -111,10 +146,10 @@ function HeroSection({ matchupCount }: { matchupCount: number }) {
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
             LaneStomp League learning platform
           </p>
-          <h1 className="mt-4 max-w-4xl font-mono text-4xl font-semibold tracking-normal text-white sm:text-5xl 2xl:text-6xl">
+          <h1 className="mt-4 max-w-4xl font-mono text-4xl font-semibold tracking-normal text-[#EAF1FB] sm:text-5xl 2xl:text-6xl">
             Prepare before champion select. Win more games.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-200 sm:text-lg">
+          <p className="mt-5 max-w-2xl text-base leading-7 text-[#C0CAD8] sm:text-lg">
             LaneStomp helps you understand matchups, counter picks, power
             spikes, and champion strengths before the game begins.
           </p>
@@ -127,7 +162,7 @@ function HeroSection({ matchupCount }: { matchupCount: number }) {
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
             <Link
-              className="inline-flex h-11 items-center gap-2 rounded-md border border-white/15 bg-white/10 px-4 text-sm font-medium text-zinc-100 transition hover:border-white/30 hover:bg-white/15"
+              className="inline-flex h-11 items-center gap-2 rounded-md border border-cyan-100/15 bg-white/[0.07] px-4 text-sm font-medium text-[#E6EDF7] transition hover:border-cyan-100/30 hover:bg-white/[0.12]"
               href="/champions"
             >
               Browse Champions
@@ -135,13 +170,15 @@ function HeroSection({ matchupCount }: { matchupCount: number }) {
           </div>
         </div>
 
-        <div className="self-end rounded-lg border border-white/10 bg-black/35 p-4 shadow-xl shadow-black/20 backdrop-blur">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
+        <div className="self-end rounded-lg border border-cyan-100/10 bg-black/35 p-4 shadow-xl shadow-black/20 backdrop-blur">
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#8F9CAE]">
             Current coverage
           </p>
-          <p className="mt-3 text-4xl font-semibold text-white">{formatNumber(matchupCount)}</p>
+          <p className="mt-3 text-4xl font-semibold text-[#E6EDF7]">
+            {formatNumber(matchupCount)}
+          </p>
           <p className="mt-1 text-sm text-cyan-100">reviewed matchup guides available now</p>
-          <div className="mt-5 grid gap-3 text-sm text-zinc-300">
+          <div className="mt-5 grid gap-3 text-sm text-[#AEB8C7]">
             {["Role-specific guidance", "Champion-specific advice", "Admin-reviewed drafts"].map(
               (item) => (
                 <p className="flex items-center gap-2" key={item}>
@@ -207,7 +244,7 @@ function PlatformStatusSection({ matchupCount }: { matchupCount: number }) {
 
           return (
             <article
-              className="rounded-lg border border-white/10 bg-[#10182b]/90 p-5 shadow-xl shadow-black/15"
+              className="rounded-lg border border-cyan-100/10 bg-[#10182b]/90 p-5 shadow-xl shadow-black/15"
               key={card.title}
             >
               <div className="flex items-start justify-between gap-4">
@@ -228,9 +265,11 @@ function PlatformStatusSection({ matchupCount }: { matchupCount: number }) {
                   {card.badge}
                 </span>
               </div>
-              <h3 className="mt-5 font-mono text-xl font-semibold text-white">{card.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">{card.description}</p>
-              <ul className="mt-5 grid gap-2 text-sm text-zinc-300">
+              <h3 className="mt-5 font-mono text-xl font-semibold text-[#E6EDF7]">
+                {card.title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-[#8F9CAE]">{card.description}</p>
+              <ul className="mt-5 grid gap-2 text-sm text-[#AEB8C7]">
                 {card.features.map((feature) => (
                   <li className="flex gap-2" key={feature}>
                     <Sparkles
@@ -282,12 +321,14 @@ function WhyLaneStompSection() {
 
           return (
             <article
-              className="rounded-lg border border-white/10 bg-white/[0.035] p-5"
+              className="rounded-lg border border-cyan-100/10 bg-white/[0.035] p-5"
               key={pillar.title}
             >
               <Icon className="size-6 text-cyan-200" aria-hidden="true" />
-              <h3 className="mt-4 font-mono text-lg font-semibold text-white">{pillar.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">{pillar.description}</p>
+              <h3 className="mt-4 font-mono text-lg font-semibold text-[#E6EDF7]">
+                {pillar.title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-[#8F9CAE]">{pillar.description}</p>
             </article>
           );
         })}
@@ -302,16 +343,16 @@ function ProgressSection({
   stats: { icon: typeof BarChart3; label: string; value: string }[];
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_26rem),linear-gradient(135deg,rgba(16,24,43,0.96),rgba(7,16,31,0.92))] p-5 shadow-xl shadow-black/15 sm:p-6">
+    <section className="rounded-lg border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_26rem),linear-gradient(135deg,rgba(16,24,43,0.96),rgba(7,16,31,0.92))] p-5 shadow-xl shadow-black/15 sm:p-6">
       <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
             Current progress
           </p>
-          <h2 className="mt-3 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+          <h2 className="mt-3 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF7] sm:text-3xl">
             The platform is already live and expanding.
           </h2>
-          <p className="mt-3 text-sm leading-6 text-zinc-400">
+          <p className="mt-3 text-sm leading-6 text-[#8F9CAE]">
             Matchup coverage, champion support, and role guidance are updated as the platform grows.
           </p>
         </div>
@@ -321,12 +362,12 @@ function ProgressSection({
 
             return (
               <div
-                className="rounded-lg border border-white/10 bg-black/20 p-4 shadow-lg shadow-black/10"
+                className="rounded-lg border border-cyan-100/10 bg-black/20 p-4 shadow-lg shadow-black/10"
                 key={stat.label}
               >
                 <Icon className="size-5 text-cyan-200" aria-hidden="true" />
-                <p className="mt-4 text-3xl font-semibold text-white">{stat.value}</p>
-                <p className="mt-1 text-sm text-zinc-400">{stat.label}</p>
+                <p className="mt-4 text-3xl font-semibold text-[#E6EDF7]">{stat.value}</p>
+                <p className="mt-1 text-sm text-[#8F9CAE]">{stat.label}</p>
               </div>
             );
           })}
@@ -344,7 +385,7 @@ function CtaSection() {
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
             Ready before queue
           </p>
-          <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white">
+          <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF7]">
             Start with the matchup you are about to play.
           </h2>
         </div>
@@ -357,7 +398,7 @@ function CtaSection() {
             <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
           <Link
-            className="inline-flex h-11 items-center rounded-md border border-white/15 bg-white/10 px-4 text-sm font-medium text-zinc-100 transition hover:border-white/30 hover:bg-white/15"
+            className="inline-flex h-11 items-center rounded-md border border-cyan-100/15 bg-white/[0.07] px-4 text-sm font-medium text-[#E6EDF7] transition hover:border-cyan-100/30 hover:bg-white/[0.12]"
             href="/champions"
           >
             Browse Champions
@@ -372,7 +413,7 @@ function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) 
   return (
     <div className="max-w-3xl">
       <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">{eyebrow}</p>
-      <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+      <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF7] sm:text-3xl">
         {title}
       </h2>
     </div>
@@ -436,6 +477,19 @@ function getProgressStats(championCount: number, coverage: LeagueMatchupCoverage
     ],
     matchupCount,
   };
+}
+
+function getHomeAtmosphereChampion(champions: LeagueChampion[]) {
+  const preferredChampionIds = ["Aurora", "Akali", "Yasuo", "Ahri", "Lux"];
+
+  return (
+    preferredChampionIds
+      .map((championId) => champions.find((champion) => champion.id === championId))
+      .find(Boolean) ??
+    champions.find((champion) => champion.tags.includes("Mage")) ??
+    champions[0] ??
+    null
+  );
 }
 
 function getToneClass(tone: "cyan" | "emerald" | "violet", element: "badge" | "icon") {
