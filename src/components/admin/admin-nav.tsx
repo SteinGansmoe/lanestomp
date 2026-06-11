@@ -35,6 +35,11 @@ const adminNavGroups: Array<{
         label: "Matchups",
         section: "league-matchups",
       },
+      {
+        href: "/admin/league/counter-picks",
+        label: "Counter Picks",
+        section: "league-counter-picks",
+      },
       { label: "Champions", status: "planned" },
       {
         href: "/admin/league/matchups",

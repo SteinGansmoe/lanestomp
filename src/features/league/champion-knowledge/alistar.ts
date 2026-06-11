@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const alistarCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   masteryDifficulty: "medium",
   abilities: { Q: "Pulverize", W: "Headbutt", E: "Trample", R: "Unbreakable Will" },
   archetype: ["support", "tank", "engage", "peel"],

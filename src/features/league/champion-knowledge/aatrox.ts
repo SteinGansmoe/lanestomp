@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const aatroxCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   abilities: {
     Q: "The Darkin Blade",
     W: "Infernal Chains",
@@ -10,7 +10,7 @@ export const aatroxCombatProfile = {
   },
   archetype: ["juggernaut", "drain tank", "lane bully", "teamfight"],
   primaryWinCondition: [
-    "Control spacing with repeated (Q) sweet spots, sustain through extended fights, and turn level 6 or item spikes into side-lane pressure.",
+    "Control spacing with repeated (Q) sweet spots, sustain through extended fights, use your advantage into sidelane pressure.",
   ],
   dangerAbilities: ["(Q) sweet spots", "(W) pull", "(R) reset and healing amp"],
   dangerProfile: {
@@ -60,6 +60,7 @@ export const aatroxCombatProfile = {
       "Measured top-lane spacing around (Q) cooldowns.",
       "Extended skirmishes where sustain and resets matter.",
       "Side-lane pressure that pulls enemies into his spell ranges.",
+      "Split-push threat that forces multiple enemies to respond or miss objectives.",
     ],
     scalingPriority: "medium",
     winLaneBy: [

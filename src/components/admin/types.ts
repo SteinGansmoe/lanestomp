@@ -138,6 +138,7 @@ export type LeagueMatchupQueueItemResult =
 export type AdminData = {
   games: AdminGame[];
   leagueChampions: AdminLeagueChampion[];
+  leagueCounterPicks: LeagueCounterPick[];
   leagueFeedback: AdminLeagueMatchupFeedback[];
   leagueMatchups: AdminLeagueMatchup[];
   resources: AdminResource[];
@@ -148,6 +149,7 @@ export type AdminData = {
 export type AdminSection =
   | "community"
   | "games"
+  | "league-counter-picks"
   | "league-matchups"
   | "overview"
   | "resources"

@@ -67,6 +67,7 @@ export const emptyLeagueMatchupForm: LeagueMatchupFormState = {
 export const emptyAdminData: AdminData = {
   games: [],
   leagueChampions: [],
+  leagueCounterPicks: [],
   leagueFeedback: [],
   leagueMatchups: [],
   resources: [],
@@ -80,6 +81,8 @@ export const missingTimelineEventsTableMessage =
   "Timeline events are not set up in Supabase yet. Apply the timeline_events migration to enable the Timeline admin page.";
 export const missingLeagueMatchupsTableMessage =
   "League matchup management is not fully set up in Supabase yet. Apply the latest league_matchups migration to enable this admin page.";
+export const missingLeagueCounterPicksTableMessage =
+  "Counter Pick management is not fully set up in Supabase yet. Apply the latest league_counter_picks migration to enable this admin page.";
 export const missingLeagueFeedbackTableMessage =
   "League matchup feedback is not fully set up in Supabase yet. Apply the latest matchup_feedback migration to enable feedback review.";
 
