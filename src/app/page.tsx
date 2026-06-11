@@ -566,7 +566,6 @@ function getHeroSplashChampion(champions: LeagueChampion[]) {
     "Yasuo",
     "Jinx",
     "Lux",
-    "Yone",
     "Thresh",
     "Ekko",
     "Lucian",
