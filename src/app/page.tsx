@@ -572,7 +572,7 @@ function getHeroSplashChampion(champions: LeagueChampion[]) {
     "Vayne",
     "Riven",
     "Sylas",
-    "Malphite",
+    "Teemo",
     "Diana",
     "Aurora",
     "Nasus",
