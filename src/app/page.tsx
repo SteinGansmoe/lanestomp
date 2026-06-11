@@ -218,7 +218,6 @@ function HeroBackground({ champion }: { champion: LeagueChampion | null }) {
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.99)_0%,rgba(5,11,24,0.9)_30%,rgba(5,11,24,0.52)_64%,rgba(5,11,24,0.34)_100%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,11,24,0.96)_0%,rgba(5,11,24,0.18)_46%,rgba(5,11,24,0.68)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_28%,rgba(103,232,249,0.2),transparent_29rem)]" />
     </div>
   );
 }
@@ -301,7 +300,6 @@ function PlatformStatusSection({
                     }}
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,24,43,1)_0%,rgba(16,24,43,0.9)_22%,rgba(16,24,43,0.5)_52%,rgba(16,24,43,0.34)_76%,rgba(16,24,43,0.58)_100%)]" />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_36%,rgba(103,232,249,0.2),transparent_18rem)]" />
                 </div>
               ) : null}
 
