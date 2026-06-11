@@ -266,15 +266,12 @@ function ThemedSplash({ champion, side }: { champion: LeagueChampion; side: "lef
         WebkitMaskImage: fadeMask,
       }}
     >
-      <Image
-        alt=""
-        aria-hidden="true"
-        className="object-cover blur-[1px] saturate-125"
-        fill
-        priority={side === "left"}
-        sizes="(min-width: 1024px) 68vw, 100vw"
-        src={getChampionSplashUrl(champion)}
-        style={{ objectPosition }}
+      <div
+        className="absolute inset-0 bg-cover blur-[1px] saturate-125"
+        style={{
+          backgroundImage: `url("${getChampionSplashUrl(champion)}")`,
+          backgroundPosition: objectPosition,
+        }}
       />
       <div
         className={`absolute inset-0 ${
@@ -538,9 +535,10 @@ function ChampionIcon({ champion }: { champion: LeagueChampion }) {
     <Image
       alt=""
       aria-hidden="true"
-      className="size-12 rounded-lg border border-white/15 object-cover shadow-lg shadow-black/30 sm:size-14"
+      className="size-12 rounded-lg border border-white/15 bg-[#0b1220] object-cover shadow-lg shadow-black/30 sm:size-14"
       height={56}
       src={champion.image_url}
+      unoptimized
       width={56}
     />
   );

@@ -84,9 +84,10 @@ export async function LeagueChampionsPage() {
                     <Image
                       alt=""
                       aria-hidden="true"
-                      className="size-16 rounded-md border border-white/10 object-cover"
+                      className="size-16 rounded-md border border-white/10 bg-[#0b1220] object-cover"
                       height={64}
                       src={champion.image_url}
+                      unoptimized
                       width={64}
                     />
                     <div className="min-w-0">

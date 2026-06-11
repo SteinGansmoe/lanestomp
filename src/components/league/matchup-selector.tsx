@@ -384,10 +384,11 @@ function ChampionButton({
       <Image
         alt=""
         aria-hidden="true"
-        className="object-cover transition duration-200 group-hover:scale-105"
+        className="bg-[#0b1220] object-cover transition duration-200 group-hover:scale-105"
         fill
         sizes="72px"
         src={champion.image_url}
+        unoptimized
       />
       <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
       <span className="absolute bottom-1 left-1 right-1 truncate rounded bg-black/65 px-1.5 py-0.5 text-[0.65rem] font-medium text-white opacity-0 transition group-hover:opacity-100">
@@ -430,10 +431,11 @@ function SelectionSlot({
           <Image
             alt=""
             aria-hidden="true"
-            className="object-cover"
+            className="bg-[#0b1220] object-cover"
             fill
             sizes="48px"
             src={champion.image_url}
+            unoptimized
           />
         ) : (
           <Plus className="size-5" aria-hidden="true" />

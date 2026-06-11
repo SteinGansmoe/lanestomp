@@ -384,9 +384,10 @@ function MatchupChampionPicker({
             <Image
               alt=""
               aria-hidden="true"
-              className="size-7 shrink-0 rounded-md border border-white/10 object-cover"
+              className="size-7 shrink-0 rounded-md border border-white/10 bg-[#0b1220] object-cover"
               height={28}
               src={selectedChampion.image_url}
+              unoptimized
               width={28}
             />
           ) : (
@@ -475,10 +476,11 @@ function MatchupChampionPicker({
                   <Image
                     alt=""
                     aria-hidden="true"
-                    className="object-cover"
+                    className="bg-[#0b1220] object-cover"
                     fill
                     sizes="48px"
                     src={champion.image_url}
+                    unoptimized
                   />
                 </button>
               );
