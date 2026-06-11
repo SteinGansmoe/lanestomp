@@ -69,6 +69,30 @@ export type AdminLeagueMatchup = {
   win_conditions: string | null;
 };
 
+export type LeagueCounterPickType = "best_counter" | "countered_by";
+export type LeagueCounterPickStatus = "draft" | "reviewed";
+export type LeagueCounterPickBuildPath = Record<string, unknown>;
+
+export type LeagueCounterPick = {
+  behind_build_path: LeagueCounterPickBuildPath | null;
+  champion_id: string;
+  common_build_vs: LeagueCounterPickBuildPath | null;
+  counter_champion_id: string;
+  counter_strength: string | null;
+  counter_type: LeagueCounterPickType;
+  created_at: string;
+  games: number | null;
+  generation_status: LeagueCounterPickStatus;
+  id: number;
+  patch: string | null;
+  rank_filter: string | null;
+  region: string | null;
+  reason: string | null;
+  role: AdminLeagueMatchup["role"];
+  updated_at: string;
+  win_rate: number | null;
+};
+
 export type AdminLeagueMatchupFeedback = {
   card_type: string;
   created_at: string;
