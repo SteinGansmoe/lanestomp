@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -123,13 +122,11 @@ function HomeAtmosphere({ champion }: { champion: LeagueChampion | null }) {
       className="pointer-events-none absolute inset-x-0 top-36 z-0 h-[42rem] overflow-hidden opacity-30"
       aria-hidden="true"
     >
-      <Image
-        alt=""
-        className="object-cover object-[70%_18%] opacity-20 blur-2xl saturate-110"
-        fill
-        priority
-        sizes="100vw"
-        src={getChampionSplashUrl(champion)}
+      <div
+        className="absolute inset-0 bg-cover bg-[position:70%_18%] opacity-20 blur-2xl saturate-110"
+        style={{
+          backgroundImage: `url("${getChampionSplashUrl(champion)}")`,
+        }}
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.99)_0%,rgba(5,11,24,0.88)_34%,rgba(5,11,24,0.8)_100%),linear-gradient(0deg,rgba(5,11,24,1)_0%,rgba(5,11,24,0.28)_42%,rgba(5,11,24,0.96)_100%)]" />
     </div>
@@ -213,13 +210,11 @@ function HeroBackground({ champion }: { champion: LeagueChampion | null }) {
 
   return (
     <div className="absolute inset-0 -z-10 overflow-hidden bg-[#07101f]" aria-hidden="true">
-      <Image
-        alt=""
-        className="object-cover object-[68%_24%] opacity-56 blur-[0.2px] saturate-120"
-        fill
-        priority
-        sizes="(min-width: 1024px) calc(100vw - 18rem), 100vw"
-        src={getChampionSplashUrl(champion)}
+      <div
+        className="absolute inset-0 bg-cover bg-[position:68%_24%] opacity-56 blur-[0.2px] saturate-120"
+        style={{
+          backgroundImage: `url("${getChampionSplashUrl(champion)}")`,
+        }}
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.99)_0%,rgba(5,11,24,0.9)_30%,rgba(5,11,24,0.52)_64%,rgba(5,11,24,0.34)_100%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,11,24,0.96)_0%,rgba(5,11,24,0.18)_46%,rgba(5,11,24,0.68)_100%)]" />
@@ -299,12 +294,11 @@ function PlatformStatusSection({
                   className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[82%] overflow-hidden"
                   aria-hidden="true"
                 >
-                  <Image
-                    alt=""
-                    className="object-cover object-[72%_35%] opacity-48 blur-[0.2px] saturate-125"
-                    fill
-                    sizes="(min-width: 1024px) 26vw, 100vw"
-                    src={getChampionSplashUrl(card.backgroundChampion)}
+                  <div
+                    className="absolute inset-0 bg-cover bg-[position:72%_35%] opacity-48 blur-[0.2px] saturate-125"
+                    style={{
+                      backgroundImage: `url("${getChampionSplashUrl(card.backgroundChampion)}")`,
+                    }}
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,24,43,1)_0%,rgba(16,24,43,0.9)_22%,rgba(16,24,43,0.5)_52%,rgba(16,24,43,0.34)_76%,rgba(16,24,43,0.58)_100%)]" />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_36%,rgba(103,232,249,0.2),transparent_18rem)]" />
