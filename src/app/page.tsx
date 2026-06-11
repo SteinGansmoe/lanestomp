@@ -566,12 +566,17 @@ function getHeroSplashChampion(champions: LeagueChampion[]) {
     "Yasuo",
     "Jinx",
     "Lux",
-    "LeeSin",
+    "Yone",
     "Thresh",
     "Ekko",
     "Lucian",
     "Vayne",
     "Riven",
+    "Sylas",
+    "Malphite",
+    "Diana",
+    "Ambessa",
+    "Zaahen",
   ];
   const curatedChampions = curatedChampionIds
     .map((championId) => champions.find((champion) => champion.id === championId))
