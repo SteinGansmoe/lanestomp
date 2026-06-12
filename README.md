@@ -1,6 +1,8 @@
 # LaneStomp
 
-LaneStomp is a League of Legends learning platform focused on helping players understand matchups, champion identities, and lane decisions faster.
+LaneStomp is a League of Legends learning platform with matchup guides, counter pick tools, and champion data.
+
+Visit: https://www.lanestomp.com
 
 The current MVP is centered on matchup guidance for League of Legends, with future product areas planned around:
 
