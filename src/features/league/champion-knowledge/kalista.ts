@@ -86,6 +86,26 @@ export const kalistaCombatProfile = {
       "Disengage supports that deny extended spear stacks.",
     ],
   },
+  counters: [
+    {
+      champion: "Ezreal",
+      reasons: [
+        "Kalista can force extended fights when Ezreal's (E) is down.",
+        "Rend threatens objective and minion-wave control that Ezreal cannot easily contest early.",
+        "Her support ultimate can start fights before Ezreal has enough poke damage.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Ashe",
+      reasons: [
+        "Ashe slows reduce Kalista's passive hop value and make trades harder to reset.",
+        "(R) can start fights from outside Kalista's preferred engage range.",
+        "Repeated (W) poke can force Kalista low before she finds a clean all-in.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Kalista",
   offMetaRoles: [],

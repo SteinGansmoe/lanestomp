@@ -94,6 +94,26 @@ export const caitlynCombatProfile = {
       "Waveclear lanes that neutralize her plate pressure.",
     ],
   },
+  counters: [
+    {
+      champion: "Vayne",
+      reasons: [
+        "Caitlyn's range lets her punish Vayne before Vayne has enough items to fight back.",
+        "(W) traps can punish Vayne when she tumbles forward or gets crowd controlled by support.",
+        "Caitlyn can use early wave control to take plates before Vayne reaches scaling thresholds.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Sivir",
+      reasons: [
+        "Sivir can spell shield Caitlyn trap follow-up or ultimate pressure.",
+        "Sivir's waveclear can neutralize Caitlyn's normal push-and-plate lane pattern.",
+        "Once Sivir has items, team speed can force fights where Caitlyn has less time to set traps.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Caitlyn",
   offMetaRoles: [],

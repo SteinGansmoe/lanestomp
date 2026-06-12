@@ -32,9 +32,11 @@ import {
 import { leagueRoles } from "@/src/features/league/roles";
 
 export const metadata: Metadata = {
-  title: "League of Legends Matchup Guides and Learning Tools",
+  title:
+    "League of Legends Matchup Guides, Counter Picks & Champion Data",
+
   description:
-    "LaneStomp is a League of Legends improvement platform for matchup guides, counter-pick preparation, champion strengths, and role-specific learning tools.",
+    "Find League of Legends matchup guides, counter picks, champion data, power spikes, and role-specific advice. Prepare before champion select and win more games with LaneStomp.",
 };
 
 export default async function Home() {

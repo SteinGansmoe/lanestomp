@@ -73,6 +73,26 @@ export const alistarCombatProfile = {
       "Disengage supports who cancel his entry.",
   ],
   },
+  counters: [
+    {
+      champion: "Samira",
+      reasons: [
+        "Alistar's (Q) and (W) are not projectiles, so Samira cannot block the engage with (W).",
+        "Point-blank crowd control can interrupt Samira's all-in before she stacks into (R).",
+        "(R) lets Alistar absorb return damage when he commits into Samira's short range.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Janna",
+      reasons: [
+        "Janna can interrupt Alistar's engage path with (Q) before he completes the combo.",
+        "(R) resets Alistar's all-in and can deny the follow-up from his marksman.",
+        "Janna's lane poke can force Alistar too low before he finds a clean engage angle.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Alistar",
   offMetaRoles: [],

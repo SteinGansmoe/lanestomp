@@ -91,6 +91,26 @@ export const tristanaCombatProfile = {
       "Wave states where passive push exposes her.",
     ],
   },
+  counters: [
+    {
+      champion: "Corki",
+      reasons: [
+        "Tristana can jump onto Corki before his rocket poke controls the lane.",
+        "Explosive Charge creates early turret pressure that Corki struggles to match.",
+        "Reset threat lets Tristana keep chasing if Corki uses (W) too late.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can punish Tristana before she stacks (E) safely.",
+        "If Tristana jumps in without a reset, Draven's axe damage can win the extended fight.",
+        "Draven's early lane pressure can deny Tristana the wave setup she wants for tower plates.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Tristana",
   offMetaRoles: ["mid"],

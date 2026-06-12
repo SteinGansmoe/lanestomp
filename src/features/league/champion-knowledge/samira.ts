@@ -86,6 +86,26 @@ export const samiraCombatProfile = {
       "Bot lanes that deny her support's engage angle.",
     ],
   },
+  counters: [
+    {
+      champion: "Jhin",
+      reasons: [
+        "Samira can block Jhin (W) or parts of his follow-up with (W).",
+        "Her dash punishes Jhin during reload windows or after he spends root setup.",
+        "Once Samira stacks style, Jhin has limited tools to stop her close-range reset pattern alone.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Alistar",
+      reasons: [
+        "Alistar's main engage and peel tools are not projectiles, so Samira cannot block them with (W).",
+        "Point-blank knockup can stop Samira before she reaches (R).",
+        "Alistar can survive her return damage with (R) while his team finishes the all-in.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Samira",
   offMetaRoles: [],

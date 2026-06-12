@@ -90,6 +90,26 @@ export const dravenCombatProfile = {
       "Disengage lanes that deny early cash-in.",
     ],
   },
+  counters: [
+    {
+      champion: "Smolder",
+      reasons: [
+        "Draven can punish Smolder's weak early lane before Smolder stacks safely.",
+        "Axe trades force Smolder to spend (E) defensively instead of using it for wave or spacing.",
+        "If Draven cashes in early, Smolder's scaling plan is delayed by item and wave pressure.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn's range can punish Draven when he moves to predictable axe pickup spots.",
+        "(W) traps make it risky for Draven to chase through minion waves or support CC.",
+        "If Caitlyn controls the wave, Draven gets fewer clean short trades to stack his passive safely.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Draven",
   offMetaRoles: [],

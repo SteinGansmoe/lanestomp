@@ -86,6 +86,26 @@ export const kogMawCombatProfile = {
       "Dive comps that ignore his frontline.",
     ],
   },
+  counters: [
+    {
+      champion: "Nilah",
+      reasons: [
+        "Kog'Maw can punish Nilah before she reaches melee range with (W) range uptime.",
+        "Bio-Arcane Barrage lets Kog'Maw hit through Nilah's short-range scaling plan.",
+        "If Kog'Maw has peel, Nilah has to spend key mobility just to enter his damage zone.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can punish Kog'Maw before Kog'Maw has attack speed and peel.",
+        "Kog'Maw has no dash, so axe trades can force summoners early.",
+        "If Draven controls the wave, Kog'Maw cannot safely walk up to use (W) for farm.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Kog'Maw",
   offMetaRoles: [],

@@ -19,6 +19,7 @@ import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
+import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import { leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
@@ -117,6 +118,11 @@ export function AdminLeagueCounterPicksSection({
   const selectedChampion = effectiveSelectedChampionId
     ? championsById.get(effectiveSelectedChampionId)
     : null;
+  const selectedChampionCombatProfile = useMemo(
+    () =>
+      effectiveSelectedChampionId ? getChampionCombatProfile(effectiveSelectedChampionId) : null,
+    [effectiveSelectedChampionId],
+  );
   const createCounterChampionOptions = useMemo(
     () => champions.filter((champion) => champion.id !== effectiveSelectedChampionId),
     [champions, effectiveSelectedChampionId],
@@ -259,7 +265,7 @@ export function AdminLeagueCounterPicksSection({
 
     const { error } = await supabase.from("league_counter_picks").upsert(
       {
-        champion_id: selectedChampionId,
+        champion_id: effectiveSelectedChampionId,
         counter_champion_id: effectiveCreateCounterChampionId,
         counter_strength: nullableTrim(createForm.counter_strength),
         counter_type: createForm.counter_type,
@@ -489,6 +495,14 @@ export function AdminLeagueCounterPicksSection({
           )}
         </CardContent>
       </Card>
+
+      {selectedChampionCombatProfile ? (
+        <CombatProfileCounterRelationships
+          championName={selectedChampionCombatProfile.name}
+          counteredBy={selectedChampionCombatProfile.counteredBy}
+          counters={selectedChampionCombatProfile.counters}
+        />
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
@@ -782,6 +796,83 @@ function CounterPickEditableFields<TForm extends CounterPickEditForm>({
         />
       </label>
     </>
+  );
+}
+
+function CombatProfileCounterRelationships({
+  championName,
+  counteredBy,
+  counters,
+}: {
+  championName: string;
+  counteredBy?: readonly { champion: string; reasons: readonly string[] }[];
+  counters?: readonly { champion: string; reasons: readonly string[] }[];
+}) {
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <CardTitle className="font-mono text-xl">Combat profile counter notes</CardTitle>
+        <p className="mt-2 text-sm leading-6 text-zinc-400">
+          Static combat-profile relationships for {championName}. Add bullets in the champion
+          profile files and they will appear here for Counter Pick review.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <CombatProfileRelationshipList
+            emptyText="No champions are listed as matchups this champion counters yet."
+            relationships={counters}
+            title={`${championName} counters`}
+          />
+          <CombatProfileRelationshipList
+            emptyText="No champions are listed as counters into this champion yet."
+            relationships={counteredBy}
+            title={`${championName} is countered by`}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CombatProfileRelationshipList({
+  emptyText,
+  relationships,
+  title,
+}: {
+  emptyText: string;
+  relationships?: readonly { champion: string; reasons: readonly string[] }[];
+  title: string;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      {relationships && relationships.length > 0 ? (
+        <ul className="mt-4 space-y-4">
+          {relationships.map((relationship) => (
+            <li
+              className="rounded-md border border-white/10 bg-black/15 p-3"
+              key={relationship.champion}
+            >
+              <p className="text-sm font-semibold text-violet-100">{relationship.champion}</p>
+              {relationship.reasons.length > 0 ? (
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-300">
+                  {relationship.reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-zinc-500">No reasons added yet.</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-500">
+          {emptyText}
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -34,6 +34,11 @@ export type LeagueChampionMatchupPreferences = {
   weakInto: string[];
 };
 
+export type LeagueChampionCounterRelationship = {
+  champion: string;
+  reasons: string[];
+};
+
 export type LeagueChampionDangerProfile = {
   dangerousWhen: string[];
   mustRespect: string[];
@@ -103,6 +108,8 @@ export type LeagueChampionKnowledgeProfile = {
   abilities?: LeagueChampionAbilityMap;
   archetype?: string[];
   commonWeaknesses?: string[];
+  counteredBy?: LeagueChampionCounterRelationship[];
+  counters?: LeagueChampionCounterRelationship[];
   damageType?: LeagueChampionDamageType;
   dangerProfile?: LeagueChampionDangerProfile;
   hardCrowdControl?: string[];

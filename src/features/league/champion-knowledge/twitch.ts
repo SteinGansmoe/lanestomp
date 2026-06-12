@@ -86,6 +86,26 @@ export const twitchCombatProfile = {
       "Vision control that removes ambush angles.",
     ],
   },
+  counters: [
+    {
+      champion: "Jinx",
+      reasons: [
+        "Twitch can use stealth angles to attack Jinx before she has trap control set up.",
+        "Spray and Pray lets Twitch outrange Jinx in surprise fights and punish grouped targets.",
+        "If Twitch starts fights first, Jinx may die before she can trigger reset movement.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can punish Twitch's weak early lane with range and wave control.",
+        "Trap lines make it harder for Twitch to exit stealth into clean auto range.",
+        "If Twitch falls behind, he struggles to reach the item timing needed for flank fights.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Twitch",
   offMetaRoles: [],

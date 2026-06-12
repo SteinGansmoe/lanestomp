@@ -86,6 +86,26 @@ export const smolderCombatProfile = {
       "Wave control that freezes him away from safe (Q) last hits.",
     ],
   },
+  counters: [
+    {
+      champion: "Vayne",
+      reasons: [
+        "Smolder can farm with abilities and avoid matching Vayne's short-range tumble trades early.",
+        "His range and wave tools improve as stacks rise, making direct duels less necessary.",
+        "Late-game burn damage can threaten Vayne even when she tries to kite extended fights.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can force fights before Smolder has meaningful stacks.",
+        "Axe trades punish Smolder whenever (E) is unavailable.",
+        "Early deaths or lost waves delay the stacking and item thresholds Smolder needs.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Smolder",
   offMetaRoles: [],

@@ -87,6 +87,26 @@ export const ahriCombatProfile = {
       "Champions with lots of mobility who can dodge her skillshots",
     ],
   },
+  counters: [
+    {
+      champion: "Akali",
+      reasons: [
+        "Ahri can hold (E) for Akali's (E) recast or (R) commit instead of throwing it early.",
+        "(Q) waveclear lets Ahri move before Akali has reliable ranged shove.",
+        "After level 6, Ahri can use (R) charges to kite through Akali's all-in windows.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Yasuo",
+      reasons: [
+        "Yasuo can block Ahri's (E) and return damage when her charm is unavailable.",
+        "Minion waves give Yasuo dash paths that make Ahri's skillshots harder to line up.",
+        "If Ahri spends (R) defensively, Yasuo can keep lane pressure with lower cooldown trading.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Ahri",
   offMetaRoles: [],

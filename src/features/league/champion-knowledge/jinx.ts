@@ -87,6 +87,26 @@ export const jinxCombatProfile = {
       "Dive compositions that reach her before resets.",
     ],
   },
+  counters: [
+    {
+      champion: "KogMaw",
+      reasons: [
+        "Jinx can use rocket range and wave pressure to hit Kog'Maw before he has full item uptime.",
+        "Chompers punish Kog'Maw's low mobility if he is forced to walk through narrow fights.",
+        "Once Jinx gets a reset, Kog'Maw has limited tools to escape her chase range.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can punish Jinx before she has attack speed and rocket range items.",
+        "Jinx has no dash, so axe trades and support CC can force her flash early.",
+        "If Draven snowballs, Jinx struggles to safely reach the reset fights she wants.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Jinx",
   offMetaRoles: [],

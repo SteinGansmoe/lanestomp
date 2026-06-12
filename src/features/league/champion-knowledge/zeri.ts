@@ -86,6 +86,26 @@ export const zeriCombatProfile = {
       "Wave states where she has no wall escape.",
     ],
   },
+  counters: [
+    {
+      champion: "Ashe",
+      reasons: [
+        "Zeri can use mobility to avoid Ashe's slower all-in setup and kite around (R) threat.",
+        "Once Zeri has movement speed from (R), Ashe struggles to keep her pinned down alone.",
+        "Wall angles let Zeri escape lanes where Ashe wants repeated slow pressure.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can punish Zeri's early low range and weak first waves.",
+        "Traps make Zeri's wall and dash paths more predictable around objectives.",
+        "If Caitlyn gets plates early, Zeri reaches her mobile teamfight spikes later.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Zeri",
   offMetaRoles: [],

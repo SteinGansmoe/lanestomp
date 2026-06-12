@@ -88,6 +88,26 @@ export const asheCombatProfile = {
       "Late hypercarries if fights become pure DPS races.",
     ],
   },
+  counters: [
+    {
+      champion: "Kalista",
+      reasons: [
+        "Ashe's repeated slows reduce Kalista's ability to use passive hops aggressively.",
+        "(R) can force Kalista or her support to spend defensive tools before they can start an all-in.",
+        "Ashe can use (W) to control the lane from outside Kalista's preferred short trade range.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Sivir",
+      reasons: [
+        "Sivir can spell shield Ashe (R), removing Ashe's strongest pick tool.",
+        "Fast waveclear can keep Ashe from freezing or slowly stacking poke pressure.",
+        "Sivir's team speed makes it harder for Ashe to kite once fights fully commit.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Ashe",
   offMetaRoles: [],

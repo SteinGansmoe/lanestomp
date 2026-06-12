@@ -57,6 +57,26 @@ export const akaliCombatProfile = {
     strongInto: ["Melee champions"],
     weakInto: ["Long distance champions with strong poke or waveclear"],
   },
+  counters: [
+    {
+      champion: "Veigar",
+      reasons: [
+        "Akali can use (W) to delay Veigar's target access and make his burst window awkward.",
+        "(E) and (R) let Akali threaten Veigar after his (E) cage is down.",
+        "Veigar's early lane gives Akali time to reach level 6 and start forcing all-ins.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can hold (W) for Akali's dash-in timing and stop the follow-up trade.",
+        "After level 6, Lissandra can use (R) to deny Akali's burst or lock Akali down.",
+        "Early defensive items and waveclear make it harder for Akali to snowball the lane.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Akali",
   offMetaRoles: [],

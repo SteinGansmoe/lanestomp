@@ -87,6 +87,26 @@ export const lucianCombatProfile = {
       "Late-game hypercarries if he does not build a lead.",
     ],
   },
+  counters: [
+    {
+      champion: "Kaisa",
+      reasons: [
+        "Lucian can force short trades before Kaisa has evolved damage or range.",
+        "Dash plus passive burst punishes Kaisa when she walks up for isolated (Q).",
+        "Early lane pressure can delay Kaisa's first item and make her (R) commits riskier.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn outranges Lucian and can punish him before he dashes into trade range.",
+        "Traps punish Lucian after he uses (E), especially with support crowd control.",
+        "If Caitlyn keeps the wave pushed, Lucian gets fewer clean short-trade windows.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Lucian",
   offMetaRoles: ["mid"],

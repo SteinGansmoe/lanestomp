@@ -87,6 +87,26 @@ export const ezrealCombatProfile = {
       "High-DPS late carries if fights become long front-to-back.",
     ],
   },
+  counters: [
+    {
+      champion: "Blitzcrank",
+      reasons: [
+        "Ezreal can buffer (E) against Blitzcrank hook timing and deny the main engage.",
+        "(Q) lets Ezreal farm while staying outside common hook angles.",
+        "If Blitzcrank misses (Q), Ezreal can safely poke during the long cooldown window.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can force high-damage trades before Ezreal has enough items to poke safely.",
+        "If Ezreal uses (E) defensively, Draven can keep lane control with stronger autos.",
+        "Draven's early cash-in threat punishes Ezreal lanes that give up wave or health.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Ezreal",
   offMetaRoles: [],

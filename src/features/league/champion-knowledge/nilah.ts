@@ -86,6 +86,26 @@ export const nilahCombatProfile = {
       "Bot lanes that freeze outside her safe range.",
     ],
   },
+  counters: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Nilah can use (W) to dodge Caitlyn autos during committed trades.",
+        "Once Nilah reaches engage range, Caitlyn has limited mobility after (E) is forced.",
+        "Nilah scales well if she survives Caitlyn's early plate pressure.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Ashe",
+      reasons: [
+        "Ashe slows make it hard for Nilah to enter and exit short melee trades.",
+        "(R) can stop Nilah before she reaches the backline or after she uses mobility.",
+        "Repeated (W) poke can keep Nilah too low to safely all-in.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Nilah",
   offMetaRoles: [],

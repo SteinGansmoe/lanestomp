@@ -48,6 +48,26 @@ export const zoeCombatProfile = {
     strongInto: ["Short range champions who struggle to punish missed (E).", "Champions who rely on dodging skillshots to trade."],
     weakInto: ["Champions with reliable point-and-click CC", "Champions that can easily dodge (E) and punish the cooldown."],
   },
+  counters: [
+    {
+      champion: "Corki",
+      reasons: [
+        "Zoe can punish Corki before he has enough rocket uptime by landing (E) through fog or walls.",
+        "Sleep into paddle star threatens Corki whenever his (W) is down.",
+        "Bubble control around objectives can deny Corki safe Package entry angles.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Yasuo",
+      reasons: [
+        "Yasuo can block Zoe's key projectile damage or bubble follow-up with Wind Wall.",
+        "Minion dash paths make it difficult for Zoe to land clean lane bubbles.",
+        "If Zoe misses (E), Yasuo can punish her low mobility before the cooldown returns.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Zoe",
   offMetaRoles: [],

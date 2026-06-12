@@ -82,6 +82,26 @@ export const aatroxCombatProfile = {
       "Champions that punish him hard after (Q) and (E) are down.",
     ],
   },
+  counters: [
+    {
+      champion: "Sion",
+      reasons: [
+        "Aatrox can punish Sion's slow (Q) windup with repeated (Q) sweet spots.",
+        "(W) makes it hard for Sion to walk out after missing a charged (Q).",
+        "(R) healing lets Aatrox keep fighting through Sion's extended health bar.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Fiora",
+      reasons: [
+        "Fiora can use (Q) movement to dodge Aatrox sweet spots and keep hitting vitals.",
+        "(W) can parry Aatrox's key crowd control from (W) pull timing or third (Q).",
+        "Fiora's true damage and side-lane scaling make Aatrox's drain-tank pattern harder to rely on.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Aatrox",
   offMetaRoles: ["jungle"],

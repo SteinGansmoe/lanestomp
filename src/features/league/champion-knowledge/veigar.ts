@@ -81,6 +81,26 @@ export const veigarCombatProfile = {
       "Champions that can make themselves untargetable or dodge his skillshots easily.",
     ],
   },
+  counters: [
+    {
+      champion: "Akali",
+      reasons: [
+        "Veigar can punish Akali's dash paths by holding (E) until she commits.",
+        "Burst threat after level 6 makes Akali think twice before using (R) aggressively.",
+        "Early defensive items make it easier for Veigar to survive Akali's first all-in and scale.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Xerath",
+      reasons: [
+        "Xerath outranges Veigar and can poke without entering cage range.",
+        "Long-range waveclear can keep Veigar from freely stacking under safe conditions.",
+        "If Veigar misses (E), Xerath can continue harassing before Veigar can threaten burst.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Veigar",
   offMetaRoles: ["adc", "support"],

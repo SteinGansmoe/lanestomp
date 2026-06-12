@@ -7,6 +7,7 @@ export {
 export type {
   LeagueChampionAbilityKey,
   LeagueChampionAbilityMap,
+  LeagueChampionCounterRelationship,
   LeagueChampionDangerProfile,
   LeagueChampionDamageType,
   LeagueChampionJungleProfile,

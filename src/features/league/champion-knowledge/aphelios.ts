@@ -91,6 +91,26 @@ export const apheliosCombatProfile = {
       "Mobile ADCs that can avoid his best weapon windows.",
     ],
   },
+  counters: [
+    {
+      champion: "KogMaw",
+      reasons: [
+        "Aphelios can punish Kog'Maw before Kog'Maw has enough attack speed and range uptime.",
+        "Severum and Gravitum rotations give Aphelios sustain or setup that Kog'Maw cannot easily match early.",
+        "Infernum objective fights can punish Kog'Maw's low mobility if he is forced to group tightly.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can use range and traps to punish Aphelios before his stronger weapon pairs are ready.",
+        "Aphelios has no dash, so Caitlyn's (W) trap setups are hard to escape after support crowd control.",
+        "If Caitlyn controls the wave, Aphelios can be denied safe access to early farm and plates.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Aphelios",
   offMetaRoles: [],

@@ -16,40 +16,36 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lanestomp.com"),
+
   title: {
-    default: "LaneStomp",
+    default:
+      "LaneStomp | League of Legends Matchup Guides, Counter Picks & Champion Data",
     template: "%s | LaneStomp",
   },
+
   description:
-    "LaneStomp helps League players master matchups, improve champion pools, and climb with confidence.",
+    "Find League of Legends matchup guides, counter picks, champion data, power spikes, and role-specific advice. Prepare before champion select and win more games with LaneStomp.",
+
   applicationName: "LaneStomp",
   openGraph: {
-    description:
-      "LaneStomp helps League players master matchups, improve champion pools, and climb with confidence.",
-    images: [
-      {
-        alt: "LaneStomp League matchup improvement platform",
-        height: 630,
-        url: "/opengraph-image.png",
-        width: 1200,
-      },
-    ],
-    siteName: "LaneStomp",
-    title: "LaneStomp",
-    type: "website",
-    url: "https://lanestomp.com",
+  title:
+    "LaneStomp | League of Legends Matchup Guides & Counter Picks",
+
+  description:
+    "Prepare before champion select with matchup guides, counter picks, champion data, power spikes, and role-specific advice.",
+
+  type: "website",
+  siteName: "LaneStomp",
+  url: "https://lanestomp.com",
   },
   twitter: {
-    card: "summary_large_image",
-    description:
-      "LaneStomp helps League players master matchups, improve champion pools, and climb with confidence.",
-    images: [
-      {
-        alt: "LaneStomp League matchup improvement platform",
-        url: "/twitter-image.png",
-      },
-    ],
-    title: "LaneStomp",
+  card: "summary_large_image",
+
+  title:
+    "LaneStomp | League of Legends Matchup Guides & Counter Picks",
+
+  description:
+    "Prepare before champion select with matchup guides, counter picks, champion data, power spikes, and role-specific advice.",
   },
 };
 
