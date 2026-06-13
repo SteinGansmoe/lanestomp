@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
@@ -8,6 +8,7 @@ import { supabase } from "@/src/lib/supabase";
 import type { LeagueRole } from "@/src/features/league/roles";
 
 type FeedbackType = "helpful" | "not_helpful" | "report_issue";
+type VoteFeedbackType = Exclude<FeedbackType, "report_issue">;
 type FeedbackReason =
   | "ability_formatting_issue"
   | "incorrect_advice"
@@ -21,6 +22,18 @@ type FeedbackStatus = {
   isLoading: boolean;
   success: string | null;
 };
+
+type FeedbackCounts = {
+  helpful_count: number;
+  not_helpful_count: number;
+};
+
+const emptyFeedbackCounts: FeedbackCounts = {
+  helpful_count: 0,
+  not_helpful_count: 0,
+};
+
+const feedbackSessionStorageKey = "lanestomp-feedback-session-id";
 
 const feedbackReasons: Array<{ label: string; value: FeedbackReason }> = [
   { label: "Incorrect advice", value: "incorrect_advice" },
@@ -47,11 +60,47 @@ export function MatchupFeedbackControls({
   const [isReporting, setIsReporting] = useState(false);
   const [message, setMessage] = useState("");
   const [reason, setReason] = useState<FeedbackReason>("incorrect_advice");
+  const [counts, setCounts] = useState<FeedbackCounts>(emptyFeedbackCounts);
+  const [selectedFeedbackType, setSelectedFeedbackType] = useState<VoteFeedbackType | null>(null);
   const [status, setStatus] = useState<FeedbackStatus>({
     error: null,
     isLoading: false,
     success: null,
   });
+  const selectedFeedbackStorageKey = `lanestomp-feedback-selection:${matchupId}:${cardType}`;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFeedbackState() {
+      setSelectedFeedbackType(getStoredSelectedFeedback(selectedFeedbackStorageKey));
+
+      if (!supabase) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("matchup_feedback_counts")
+        .select("helpful_count, not_helpful_count")
+        .eq("matchup_id", matchupId)
+        .eq("card_type", cardType)
+        .maybeSingle<FeedbackCounts>();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (!error && data) {
+        setCounts(normalizeFeedbackCounts(data));
+      }
+    }
+
+    void loadFeedbackState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cardType, matchupId, selectedFeedbackStorageKey]);
 
   async function submitFeedback(feedbackType: FeedbackType) {
     if (!supabase) {
@@ -65,22 +114,33 @@ export function MatchupFeedbackControls({
 
     setStatus({ error: null, isLoading: true, success: null });
 
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("matchup_feedback").insert({
-      card_type: cardType,
-      enemy_champion: enemyChampion,
-      feedback_type: feedbackType,
-      lane,
-      matchup_id: matchupId,
-      message: message.trim() || null,
-      player_champion: playerChampion,
-      reason: feedbackType === "report_issue" ? reason : null,
-      user_id: userData.user?.id ?? null,
+    const sessionId = getFeedbackSessionId();
+    const { data, error } = await supabase.rpc("submit_matchup_feedback", {
+      p_card_type: cardType,
+      p_enemy_champion: enemyChampion,
+      p_feedback_type: feedbackType,
+      p_lane: lane,
+      p_matchup_id: matchupId,
+      p_message: message.trim() || null,
+      p_player_champion: playerChampion,
+      p_reason: feedbackType === "report_issue" ? reason : null,
+      p_session_id: sessionId,
     });
 
     if (error) {
       setStatus({ error: error.message, isLoading: false, success: null });
       return;
+    }
+
+    const nextCounts = getSubmittedFeedbackCounts(data);
+
+    if (nextCounts) {
+      setCounts(nextCounts);
+    }
+
+    if (feedbackType !== "report_issue") {
+      setSelectedFeedbackType(feedbackType);
+      storeSelectedFeedback(selectedFeedbackStorageKey, feedbackType);
     }
 
     setMessage("");
@@ -97,27 +157,36 @@ export function MatchupFeedbackControls({
     <div className="mt-3 border-t border-white/10 pt-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          className="h-8 border-emerald-300/20 bg-emerald-500/10 px-2 text-xs text-emerald-100 hover:bg-emerald-500/20"
+          aria-pressed={selectedFeedbackType === "helpful"}
+          className={`h-8 border-emerald-300/20 bg-emerald-500/10 px-2 text-xs text-emerald-100 hover:bg-emerald-500/20 ${
+            selectedFeedbackType === "helpful" ? "ring-1 ring-emerald-300/45" : ""
+          }`}
           disabled={status.isLoading}
           onClick={() => submitFeedback("helpful")}
           type="button"
           variant="ghost"
         >
           <ThumbsUp className="size-3.5" aria-hidden="true" />
-          Helpful
+          Helpful ({formatFeedbackCount(counts.helpful_count)})
         </Button>
         <Button
-          className="h-8 border-amber-300/20 bg-amber-400/10 px-2 text-xs text-amber-100 hover:bg-amber-400/20"
+          aria-pressed={selectedFeedbackType === "not_helpful"}
+          className={`h-8 border-amber-300/20 bg-amber-400/10 px-2 text-xs text-amber-100 hover:bg-amber-400/20 ${
+            selectedFeedbackType === "not_helpful" ? "ring-1 ring-amber-300/45" : ""
+          }`}
           disabled={status.isLoading}
           onClick={() => submitFeedback("not_helpful")}
           type="button"
           variant="ghost"
         >
           <ThumbsDown className="size-3.5" aria-hidden="true" />
-          Not helpful
+          Not helpful ({formatFeedbackCount(counts.not_helpful_count)})
         </Button>
         <Button
-          className="h-8 border-rose-300/20 bg-rose-500/10 px-2 text-xs text-rose-100 hover:bg-rose-500/20"
+          aria-expanded={isReporting}
+          className={`h-8 border-rose-300/20 bg-rose-500/10 px-2 text-xs text-rose-100 hover:bg-rose-500/20 ${
+            isReporting ? "ring-1 ring-rose-300/45" : ""
+          }`}
           disabled={status.isLoading}
           onClick={() => setIsReporting((current) => !current)}
           type="button"
@@ -171,4 +240,78 @@ export function MatchupFeedbackControls({
       ) : null}
     </div>
   );
+}
+
+function normalizeFeedbackCounts(value: Partial<FeedbackCounts>): FeedbackCounts {
+  return {
+    helpful_count: Number(value.helpful_count ?? 0),
+    not_helpful_count: Number(value.not_helpful_count ?? 0),
+  };
+}
+
+function getSubmittedFeedbackCounts(value: unknown) {
+  const row = Array.isArray(value) ? value[0] : value;
+
+  if (!row || typeof row !== "object") {
+    return null;
+  }
+
+  return normalizeFeedbackCounts(row as Partial<FeedbackCounts>);
+}
+
+function formatFeedbackCount(value: number) {
+  if (value < 1000) {
+    return String(value);
+  }
+
+  const compactValue = value / 1000;
+  const formatted =
+    compactValue >= 10 || Number.isInteger(compactValue)
+      ? compactValue.toFixed(0)
+      : compactValue.toFixed(1);
+
+  return `${formatted}k`;
+}
+
+function getFeedbackSessionId() {
+  if (typeof window === "undefined") {
+    return "server";
+  }
+
+  const existingSessionId = window.localStorage.getItem(feedbackSessionStorageKey);
+
+  if (existingSessionId) {
+    return existingSessionId;
+  }
+
+  const nextSessionId =
+    typeof window.crypto?.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  window.localStorage.setItem(feedbackSessionStorageKey, nextSessionId);
+
+  return nextSessionId;
+}
+
+function getStoredSelectedFeedback(storageKey: string): VoteFeedbackType | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const value = window.localStorage.getItem(storageKey);
+
+  return isVoteFeedbackType(value) ? value : null;
+}
+
+function storeSelectedFeedback(storageKey: string, feedbackType: VoteFeedbackType) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(storageKey, feedbackType);
+}
+
+function isVoteFeedbackType(value: string | null): value is VoteFeedbackType {
+  return value === "helpful" || value === "not_helpful";
 }
