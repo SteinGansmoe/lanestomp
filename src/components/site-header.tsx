@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Home, Menu, Search, Shield, Swords, X } from "lucide-react";
+import { Home, Menu, Search, Shield, ShieldCheck, Swords, X } from "lucide-react";
 
 import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
 import { Button } from "@/src/components/ui/button";
@@ -13,6 +13,7 @@ import { Input } from "@/src/components/ui/input";
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/league/matchups", icon: Swords, label: "Matchups" },
+  { href: "/league/counters", icon: ShieldCheck, label: "Counters" },
   {
     href: "/champions",
     icon: Shield,
