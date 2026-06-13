@@ -17,7 +17,7 @@ type LeagueDataTooltipProps = {
   children?: ReactNode;
   className?: string;
   description?: string;
-  footer?: string;
+  goldCost?: string;
   iconAlt: string;
   iconSrc: string;
   stats?: Array<{ label: string; value: number | string }>;
@@ -39,14 +39,14 @@ export function LeagueItemTooltip({
     <LeagueDataTooltip
       className={className}
       description={item.plaintext || cleanDataDragonText(item.description)}
-      footer={`Patch ${item.patch} · ${item.gold.total}g`}
+      goldCost={`${item.gold.total}g`}
       iconAlt={`${item.name} item icon`}
       iconSrc={iconSrc}
       stats={statEntries.map((stat) => ({
         label: stat.label,
         value: formatTooltipStatValue(stat.value),
       }))}
-      subtitle={item.tags.slice(0, 3).join(" · ")}
+      subtitle={item.tags.slice(0, 3).join(" / ")}
       title={item.name}
     />
   );
@@ -65,10 +65,9 @@ export function LeagueAbilityTooltip({
     <LeagueDataTooltip
       className={className}
       description={cleanDataDragonText(ability.description)}
-      footer={`Patch ${ability.patch}`}
       iconAlt={`${ability.name} ability icon`}
       iconSrc={getLeagueAbilityIconPath(ability)}
-      subtitle={[championName, ability.key].filter(Boolean).join(" · ")}
+      subtitle={[championName, ability.key].filter(Boolean).join(" / ")}
       title={ability.name}
     />
   );
@@ -78,7 +77,7 @@ export function LeagueDataTooltip({
   children,
   className,
   description,
-  footer,
+  goldCost,
   iconAlt,
   iconSrc,
   stats = [],
@@ -141,9 +140,9 @@ export function LeagueDataTooltip({
           </span>
         ) : null}
 
-        {footer ? (
-          <span className="mt-3 block text-[0.68rem] uppercase tracking-[0.14em] text-zinc-500">
-            {footer}
+        {goldCost ? (
+          <span className="mt-3 block text-sm font-semibold text-[#D8B14A]">
+            {goldCost}
           </span>
         ) : null}
       </span>

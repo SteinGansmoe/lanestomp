@@ -18,10 +18,15 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { BackButton } from "@/src/components/back-button";
+import { LeagueItemTooltip } from "@/src/components/league/league-data-tooltip";
 import {
   fetchReviewedCounterPicksByChampionAndRole,
   type LeagueCounterPick,
 } from "@/src/features/league/counter-picks";
+import {
+  getCounterPickBuildGuide,
+  type CounterPickBuildPath,
+} from "@/src/features/league/counter-pick-builds";
 import {
   getChampionRoles,
   isChampionInRole,
@@ -37,6 +42,7 @@ import {
   getChampionCombatProfile,
   type LeagueChampionCounterRelationship,
 } from "@/src/features/league/champion-knowledge";
+import { getLeagueItemById, type LeagueItemMetadata } from "@/src/features/league/items";
 import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
 import { getLeagueRoleLabel, type LeagueRole } from "@/src/features/league/roles";
 import { supabase } from "@/src/lib/supabase";
@@ -47,7 +53,14 @@ type CounterPickSelectorProps = {
 };
 
 type CounterDirection = "best-counter" | "countered-by";
-type CounterPrepSectionKey = "ad-heavy" | "alternative-build" | "build" | "guide" | "lane" | "why";
+type CounterPrepSectionKey =
+  | "ad-heavy"
+  | "alternative-build"
+  | "ap-heavy"
+  | "build"
+  | "guide"
+  | "lane"
+  | "why";
 
 type CounterMatchupStats = {
   delta: number | null;
@@ -841,6 +854,9 @@ function CounterPreparationSection({
       getChampionCombatProfile(selectedCounter.champion.name)
     : null;
   const lanePrepNotes = getLanePrepNotes(counterProfile);
+  const buildGuide = selectedCounter.champion
+    ? getCounterPickBuildGuide(selectedCounter.champion.id, selectedCounter.champion.name)
+    : null;
   const sectionItems: CounterPrepSectionItem[] = [
     {
       content: <PrepBulletList items={selectedCounter.reasons} />,
@@ -856,19 +872,24 @@ function CounterPreparationSection({
       title: `How ${counterName} Should Play the Lane`,
     },
     {
-      content: <PrepPlaceholder />,
+      content: <CounterBuildPath buildPath={buildGuide?.build ?? null} />,
       key: "build",
-      title: "Common Build Path",
+      title: `Build ${counterName}`,
     },
     {
-      content: <PrepPlaceholder />,
+      content: <CounterBuildPath buildPath={buildGuide?.["alternative-build"] ?? null} />,
       key: "alternative-build",
       title: "Alternative Build Path",
     },
     {
-      content: <PrepPlaceholder />,
+      content: <CounterBuildPath buildPath={buildGuide?.["ad-heavy"] ?? null} />,
       key: "ad-heavy",
       title: "If Enemy Team Is AD Heavy",
+    },
+    {
+      content: <CounterBuildPath buildPath={buildGuide?.["ap-heavy"] ?? null} />,
+      key: "ap-heavy",
+      title: "If Enemy Team Is AP Heavy",
     },
     {
       content: selectedCounter.href ? (
@@ -1167,10 +1188,40 @@ function CounterPrepAccordionItem({
           isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
-        <div className="min-h-0 overflow-hidden">
+        <div className={cn("min-h-0", isOpen ? "overflow-visible" : "overflow-hidden")}>
           <div className="pb-5">{item.content}</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CounterBuildPath({ buildPath }: { buildPath: CounterPickBuildPath | null }) {
+  if (!buildPath) {
+    return <BuildGuidancePlaceholder />;
+  }
+
+  const items = buildPath.itemIds
+    .map((itemId) => getLeagueItemById(itemId))
+    .filter((item): item is LeagueItemMetadata => Boolean(item));
+
+  if (items.length === 0) {
+    return <BuildGuidancePlaceholder />;
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {items.map((item, index) => (
+          <div className="flex items-center gap-2" key={item.id}>
+            {index > 0 ? (
+              <ChevronRight className="size-4 text-cyan-200/45" aria-hidden="true" />
+            ) : null}
+            <LeagueItemTooltip className="shrink-0" item={item} />
+          </div>
+        ))}
+      </div>
+      <p className="max-w-3xl text-sm leading-6 text-zinc-300">{buildPath.note}</p>
     </div>
   );
 }
@@ -1198,6 +1249,14 @@ function PrepPlaceholder() {
   return (
     <p className="border-y border-dashed border-white/10 py-4 text-sm leading-6 text-zinc-400">
       Detailed preparation coming soon.
+    </p>
+  );
+}
+
+function BuildGuidancePlaceholder() {
+  return (
+    <p className="border-y border-dashed border-white/10 py-4 text-sm leading-6 text-zinc-400">
+      Build guidance coming soon.
     </p>
   );
 }
