@@ -24,6 +24,12 @@ import {
   type LeagueCounterPick,
 } from "@/src/features/league/counter-picks";
 import {
+  emptyCounterPickStatistics,
+  getCounterPickStatisticsFromCounterPick,
+  hasCounterPickStatistics,
+  type CounterPickStatistics,
+} from "@/src/features/league/counter-pick-statistics";
+import {
   getCounterPickBuildGuide,
   type CounterPickBuildPath,
 } from "@/src/features/league/counter-pick-builds";
@@ -62,12 +68,6 @@ type CounterPrepSectionKey =
   | "lane"
   | "why";
 
-type CounterMatchupStats = {
-  delta: number | null;
-  games: number | null;
-  winRate: number | null;
-};
-
 type CounterRowModel = {
   champion: LeagueChampion | null;
   direction: CounterDirection;
@@ -79,7 +79,7 @@ type CounterRowModel = {
   matchupLabel: string;
   reasons: string[];
   roleLabel: string;
-  stats: CounterMatchupStats;
+  stats: CounterPickStatistics;
 };
 
 type CounterPrepSectionItem = {
@@ -95,12 +95,6 @@ type ReviewedCounterPickState = {
 
 type GuideAvailabilityState = {
   reviewedGuideKeys: Set<string>;
-};
-
-const pendingStats: CounterMatchupStats = {
-  delta: null,
-  games: null,
-  winRate: null,
 };
 
 const emptyReviewedCounterPickState: ReviewedCounterPickState = {
@@ -391,15 +385,10 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
             title="Choose a champion"
             text="Select a champion and role to start building the counter-pick picture."
           />
-        ) : !selectedProfile ? (
-          <EmptyState
-            title="No combat profile yet"
-            text={`${selectedChampion.name} does not have counter notes in the combat profile yet.`}
-          />
         ) : bestCounterRows.length === 0 && counteredByRows.length === 0 ? (
           <EmptyState
             title="No counter data yet"
-            text={`Counter relationships for ${selectedChampion.name} are still being reviewed.`}
+            text="No counter data available yet for this champion."
           />
         ) : (
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -613,7 +602,7 @@ function CounterMatchupList({
             <span>Champion</span>
             <span>Win Rate</span>
             <span>Games</span>
-            <span>Delta</span>
+            <span>Tier</span>
             <span />
           </div>
           {rows.map((row) => (
@@ -644,6 +633,7 @@ function CounterMatchupRow({
   row: CounterRowModel;
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
+  const hasStats = hasCounterPickStatistics(row.stats);
 
   return (
     <button
@@ -676,27 +666,39 @@ function CounterMatchupRow({
       <div className="min-w-0">
         <h3 className="truncate text-base font-semibold text-white">{championName}</h3>
         <p className="mt-1 truncate text-sm text-zinc-400">{row.roleLabel}</p>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-xs sm:hidden">
-          <MobileRowStat label="Win" value={formatWinRate(row.stats.winRate)} />
-          <MobileRowStat label="Games" value={formatGames(row.stats.games)} />
-          <MobileRowStat label="Delta" value={formatDelta(row.stats.delta)} />
+        {hasStats ? (
+          <div className="mt-3 grid grid-cols-3 gap-2 text-xs sm:hidden">
+            <MobileRowStat label="Win" value={formatWinRate(row.stats.winRate)} />
+            <MobileRowStat label="Games" value={formatGames(row.stats.games)} />
+            <MobileRowStat label="Tier" value={formatStatisticsTier(row.stats.tier)} />
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-zinc-500 sm:hidden">No matchup data yet</p>
+        )}
+      </div>
+
+      {hasStats ? (
+        <>
+          <div className="hidden text-sm sm:block">
+            <p className="font-semibold text-cyan-200">{formatWinRate(row.stats.winRate)}</p>
+            <p className="mt-1 text-xs text-zinc-500">Win Rate</p>
+          </div>
+
+          <div className="hidden text-sm sm:block">
+            <p className="font-semibold text-zinc-200">{formatGames(row.stats.games)}</p>
+            <p className="mt-1 text-xs text-zinc-500">Games</p>
+          </div>
+
+          <div className="hidden text-sm sm:block">
+            <p className="font-semibold text-zinc-200">{formatStatisticsTier(row.stats.tier)}</p>
+            <p className="mt-1 text-xs text-zinc-500">Tier</p>
+          </div>
+        </>
+      ) : (
+        <div className="hidden text-sm text-zinc-500 sm:col-span-3 sm:block">
+          No matchup data yet
         </div>
-      </div>
-
-      <div className="hidden text-sm sm:block">
-        <p className="font-semibold text-cyan-200">{formatWinRate(row.stats.winRate)}</p>
-        <p className="mt-1 text-xs text-zinc-500">Win Rate</p>
-      </div>
-
-      <div className="hidden text-sm sm:block">
-        <p className="font-semibold text-zinc-200">{formatGames(row.stats.games)}</p>
-        <p className="mt-1 text-xs text-zinc-500">Games</p>
-      </div>
-
-      <div className="hidden text-sm sm:block">
-        <p className="font-semibold text-zinc-200">{formatDelta(row.stats.delta)}</p>
-        <p className="mt-1 text-xs text-zinc-500">Delta</p>
-      </div>
+      )}
 
       <ChevronRight
         className={cn(
@@ -727,6 +729,7 @@ function CounterAnalysisPanel({
   const counterName = counter.champion?.name ?? counter.fallbackName;
   const matchupTitle = `${counterName} into ${selectedChampion.name}`;
   const quickSummary = counter.reasons[0] ?? "Matchup summary is still being reviewed.";
+  const hasStats = hasCounterPickStatistics(counter.stats);
 
   return (
     <aside className="overflow-hidden border border-white/10 bg-[#07101f]/90 shadow-2xl shadow-black/25">
@@ -791,11 +794,17 @@ function CounterAnalysisPanel({
       </div>
 
       <div className="p-5">
-        <div className="grid grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-3">
-          <PanelStat label="Games" value={formatGames(counter.stats.games)} />
-          <PanelStat label="Delta" value={formatDelta(counter.stats.delta)} />
-          <PanelStat label="Guide" value={counter.href ? "Ready" : "Soon"} />
-        </div>
+        {hasStats ? (
+          <div className="grid grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-3">
+            <PanelStat label="Games" value={formatGames(counter.stats.games)} />
+            <PanelStat label="Tier" value={formatStatisticsTier(counter.stats.tier)} />
+            <PanelStat label="Guide" value={counter.href ? "Ready" : "Soon"} />
+          </div>
+        ) : (
+          <div className="border-y border-white/10 py-3 text-center text-sm text-zinc-400">
+            No matchup data yet
+          </div>
+        )}
 
         <div className="mt-5 border-y border-white/10 py-4">
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-cyan-200/80">
@@ -1227,14 +1236,19 @@ function CounterBuildPath({ buildPath }: { buildPath: CounterPickBuildPath | nul
 }
 
 function PrepBulletList({ items }: { items: string[] }) {
-  if (items.length === 0) {
+  const uniqueItems = dedupePrepBullets(items);
+
+  if (uniqueItems.length === 0) {
     return <PrepPlaceholder />;
   }
 
   return (
     <ul className="space-y-4">
-      {items.map((item) => (
-        <li className="flex gap-3 text-sm leading-6 text-zinc-300" key={item}>
+      {uniqueItems.map((item) => (
+        <li
+          className="flex gap-3 text-sm leading-6 text-zinc-300"
+          key={normalizePrepBulletKey(item)}
+        >
           <span className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border border-amber-300/25 bg-amber-400/10 text-amber-100">
             <Crosshair className="size-3.5" aria-hidden="true" />
           </span>
@@ -1248,7 +1262,7 @@ function PrepBulletList({ items }: { items: string[] }) {
 function PrepPlaceholder() {
   return (
     <p className="border-y border-dashed border-white/10 py-4 text-sm leading-6 text-zinc-400">
-      Detailed preparation coming soon.
+      Detailed prep coming soon.
     </p>
   );
 }
@@ -1288,7 +1302,7 @@ function getLanePrepNotes(profile: ReturnType<typeof getChampionCombatProfile>) 
     notes.push(condition);
   }
 
-  return notes.slice(0, 5);
+  return dedupePrepBullets(notes).slice(0, 5);
 }
 
 function RolePill({ label, tone }: { label: string; tone: "cyan" | "zinc" }) {
@@ -1367,9 +1381,9 @@ function buildCounterRowsFromRelationships({
       key: `${direction}-${normalizeChampionLookupKey(relationship.champion)}`,
       matchupHref,
       matchupLabel,
-      reasons: [...relationship.reasons],
+      reasons: dedupePrepBullets(relationship.reasons),
       roleLabel,
-      stats: pendingStats,
+      stats: emptyCounterPickStatistics,
     } satisfies CounterRowModel;
   });
 }
@@ -1427,13 +1441,9 @@ function buildCounterRowsFromCounterPicks({
         key: `${direction}-${normalizeChampionLookupKey(counterPick.counter_champion_id)}-${counterPick.id}`,
         matchupHref,
         matchupLabel,
-        reasons: combatRelationship ? [...combatRelationship.reasons] : [],
+        reasons: buildCounterPickReasonList(counterPick, combatRelationship),
         roleLabel: getLeagueRoleLabel(counterPick.role),
-        stats: {
-          delta: null,
-          games: counterPick.games,
-          winRate: counterPick.win_rate,
-        },
+        stats: getCounterPickStatisticsFromCounterPick(counterPick),
       } satisfies CounterRowModel;
     });
 }
@@ -1446,6 +1456,16 @@ function buildCombatRelationshipLookup(relationships: readonly LeagueChampionCou
   }
 
   return lookup;
+}
+
+function buildCounterPickReasonList(
+  counterPick: LeagueCounterPick,
+  combatRelationship: LeagueChampionCounterRelationship | undefined,
+) {
+  return dedupePrepBullets([
+    counterPick.reason ?? "",
+    ...(combatRelationship?.reasons ?? []),
+  ]);
 }
 
 async function fetchReviewedGuideKeys(requestedGuideKeys: string[]) {
@@ -1536,18 +1556,42 @@ function normalizeChampionLookupKey(value: string) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
+function dedupePrepBullets(items: readonly string[]) {
+  const uniqueItems: string[] = [];
+  const seenKeys = new Set<string>();
+
+  for (const item of items) {
+    const trimmedItem = item.trim();
+
+    if (!trimmedItem) {
+      continue;
+    }
+
+    const key = normalizePrepBulletKey(trimmedItem);
+
+    if (!key || seenKeys.has(key)) {
+      continue;
+    }
+
+    seenKeys.add(key);
+    uniqueItems.push(trimmedItem);
+  }
+
+  return uniqueItems;
+}
+
+function normalizePrepBulletKey(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ").replace(/\.+$/g, "");
+}
+
 function formatWinRate(value: number | null) {
-  return value === null ? "Pending" : `${value.toFixed(1)}%`;
+  return value === null ? "No matchup data yet" : `${value.toFixed(1)}%`;
 }
 
 function formatGames(value: number | null) {
-  return value === null ? "Pending" : new Intl.NumberFormat("en").format(value);
+  return value === null ? "No matchup data yet" : new Intl.NumberFormat("en").format(value);
 }
 
-function formatDelta(value: number | null) {
-  if (value === null) {
-    return "Pending";
-  }
-
-  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+function formatStatisticsTier(value: string | null) {
+  return value ?? "No matchup data yet";
 }

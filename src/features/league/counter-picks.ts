@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { supabase } from "@/src/lib/supabase";
 
+import {
+  compareCounterPickStatistics,
+  getCounterPickStatisticsFromCounterPick,
+} from "./counter-pick-statistics";
 import type { LeagueRole } from "./roles";
 
 export type LeagueCounterPickType = "best_counter" | "countered_by";
@@ -293,21 +297,14 @@ function sortCounterPicksByWinRate(counterPicks: LeagueCounterPick[]) {
       return counterTypeOrder;
     }
 
-    const leftWinRate = left.win_rate;
-    const rightWinRate = right.win_rate;
+    const statisticsSort = compareCounterPickStatistics(
+      getCounterPickStatisticsFromCounterPick(left),
+      getCounterPickStatisticsFromCounterPick(right),
+      left.counter_type === "best_counter" ? "desc" : "asc",
+    );
 
-    if (leftWinRate !== null && rightWinRate !== null && leftWinRate !== rightWinRate) {
-      return left.counter_type === "best_counter"
-        ? rightWinRate - leftWinRate
-        : leftWinRate - rightWinRate;
-    }
-
-    if (leftWinRate !== null) {
-      return -1;
-    }
-
-    if (rightWinRate !== null) {
-      return 1;
+    if (statisticsSort !== 0) {
+      return statisticsSort;
     }
 
     return left.counter_champion_id.localeCompare(right.counter_champion_id);
