@@ -14,7 +14,7 @@ import { ArrowLeftRight, ChevronDown, Search, Swords } from "lucide-react";
 
 import { navigationPillClassName } from "@/src/components/back-button";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
-import type { LeagueChampion } from "@/src/features/league/champions";
+import { getChampionIconPath, type LeagueChampion } from "@/src/features/league/champions";
 import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
 import { getLeagueRoleLabel, leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
@@ -386,7 +386,7 @@ function MatchupChampionPicker({
               aria-hidden="true"
               className="size-7 shrink-0 rounded-md border border-white/10 bg-[#0b1220] object-cover"
               height={28}
-              src={selectedChampion.image_url}
+              src={getChampionIconPath(selectedChampion)}
               unoptimized
               width={28}
             />
@@ -479,7 +479,7 @@ function MatchupChampionPicker({
                     className="bg-[#0b1220] object-cover"
                     fill
                     sizes="48px"
-                    src={champion.image_url}
+                    src={getChampionIconPath(champion)}
                     unoptimized
                   />
                 </button>

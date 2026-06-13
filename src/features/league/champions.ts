@@ -46,6 +46,10 @@ export function getChampionSlug(champion: Pick<LeagueChampion, "name">) {
   return slugifyChampionName(champion.name);
 }
 
+export function getChampionIconPath(champion: Pick<LeagueChampion, "id">) {
+  return `/league/champions/icons/${normalizeChampionAssetSlug(champion.id)}.png`;
+}
+
 export function getChampionSplashUrl(champion: Pick<LeagueChampion, "id">) {
   return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`;
 }
@@ -61,4 +65,12 @@ export function slugifyChampionName(name: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function normalizeChampionAssetSlug(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 }

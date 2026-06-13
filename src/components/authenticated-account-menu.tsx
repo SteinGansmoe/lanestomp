@@ -98,7 +98,7 @@ export function AuthenticatedAccountMenu({
   if (isLoading) {
     return (
       <div className={cn("w-full", className)}>
-        <div className="h-11 w-full rounded-lg border border-white/10 bg-white/[0.04]" />
+        <div className="h-11 w-full rounded-md border border-cyan-100/10 bg-white/[0.04]" />
       </div>
     );
   }
@@ -107,13 +107,13 @@ export function AuthenticatedAccountMenu({
     return (
       <div className={cn("grid w-full gap-2", className)}>
         <Link
-          className="inline-flex h-10 items-center justify-center rounded-md border border-white/10 bg-white/5 px-3 text-sm text-zinc-100 transition hover:bg-white/10"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-cyan-100/10 bg-white/[0.04] px-3 text-sm text-zinc-100 transition hover:border-cyan-300/25 hover:bg-cyan-400/[0.07] hover:text-cyan-100"
           href="/login"
         >
           Sign in
         </Link>
         <Link
-          className="inline-flex h-10 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/20 px-3 text-sm font-medium text-violet-100 transition hover:bg-violet-500/30"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-amber-300/20 bg-amber-400/10 px-3 text-sm font-medium text-amber-100 transition hover:border-amber-300/35 hover:bg-amber-400/15"
           href="/register"
         >
           Create account
@@ -129,16 +129,16 @@ export function AuthenticatedAccountMenu({
       <button
         aria-expanded={isMenuOpen}
         aria-haspopup="menu"
-        className="flex h-12 w-full items-center gap-2 rounded-lg border border-white/10 bg-[#10182b]/90 px-2.5 text-left text-sm text-zinc-100 shadow-lg shadow-black/10 transition hover:bg-white/[0.07]"
+        className="flex h-12 w-full items-center gap-2 rounded-md border border-cyan-100/10 bg-[#10182b]/85 px-2.5 text-left text-sm text-zinc-100 shadow-lg shadow-black/10 transition hover:border-cyan-300/20 hover:bg-cyan-400/[0.06]"
         onClick={() => setIsMenuOpen((current) => !current)}
         type="button"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-violet-500/20 font-mono text-xs font-semibold text-violet-100 ring-1 ring-violet-300/20">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded border border-amber-300/20 bg-amber-400/10 font-mono text-xs font-semibold text-amber-100 shadow-[0_0_18px_rgba(251,191,36,0.08)]">
           {getUserInitial(userLabel)}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{userLabel}</span>
-          <span className="block truncate text-xs text-zinc-500">
+          <span className="block truncate text-xs text-cyan-100/55">
             {isAdmin ? "Admin" : "Signed in"}
           </span>
         </span>
@@ -154,20 +154,20 @@ export function AuthenticatedAccountMenu({
       {isMenuOpen ? (
         <div
           className={cn(
-            "z-50 w-full overflow-hidden rounded-lg border border-white/10 bg-[#10182b] p-1 text-sm text-zinc-100 shadow-2xl shadow-black/30",
+            "z-50 w-full overflow-hidden rounded-md border border-cyan-100/10 bg-[linear-gradient(180deg,#10182b,#07101f)] p-1 text-sm text-zinc-100 shadow-2xl shadow-black/30",
             menuPlacement === "inline" ? "mt-2" : "absolute bottom-14 left-0 right-0",
           )}
           role="menu"
         >
-          <div className="border-b border-white/10 px-3 py-3">
+          <div className="border-b border-cyan-100/10 px-3 py-3">
             <div className="flex items-center gap-2 text-zinc-100">
-              <UserCircle className="size-4 shrink-0" aria-hidden="true" />
+              <UserCircle className="size-4 shrink-0 text-cyan-100/80" aria-hidden="true" />
               <span className="min-w-0 truncate">{userLabel}</span>
             </div>
           </div>
 
           <Link
-            className="flex items-center gap-2 rounded-md px-3 py-2 text-zinc-300 transition hover:bg-white/5 hover:text-white"
+            className="flex items-center gap-2 rounded px-3 py-2 text-zinc-300 transition hover:bg-cyan-400/[0.06] hover:text-cyan-100"
             href="/account/settings"
             onClick={() => setIsMenuOpen(false)}
             role="menuitem"
@@ -178,7 +178,7 @@ export function AuthenticatedAccountMenu({
 
           {isAdmin ? (
             <Link
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-zinc-300 transition hover:bg-white/5 hover:text-white"
+              className="flex items-center gap-2 rounded px-3 py-2 text-zinc-300 transition hover:bg-cyan-400/[0.06] hover:text-cyan-100"
               href="/admin"
               onClick={() => setIsMenuOpen(false)}
               role="menuitem"
@@ -189,7 +189,7 @@ export function AuthenticatedAccountMenu({
           ) : null}
 
           <Button
-            className="h-9 w-full justify-start border-0 bg-transparent px-3 text-zinc-300 hover:bg-white/5 hover:text-white"
+            className="h-9 w-full justify-start rounded border-0 bg-transparent px-3 text-zinc-300 hover:bg-cyan-400/[0.06] hover:text-cyan-100"
             onClick={handleSignOut}
             role="menuitem"
             type="button"

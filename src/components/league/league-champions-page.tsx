@@ -6,7 +6,7 @@ import { connection } from "next/server";
 import { BackButton } from "@/src/components/back-button";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
-import { getLeagueChampions } from "@/src/features/league/champions";
+import { getChampionIconPath, getLeagueChampions } from "@/src/features/league/champions";
 
 export async function LeagueChampionsPage() {
   await connection();
@@ -86,7 +86,7 @@ export async function LeagueChampionsPage() {
                       aria-hidden="true"
                       className="size-16 rounded-md border border-white/10 bg-[#0b1220] object-cover"
                       height={64}
-                      src={champion.image_url}
+                      src={getChampionIconPath(champion)}
                       unoptimized
                       width={64}
                     />

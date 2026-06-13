@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { ChangeMatchupPanel } from "@/src/components/league/change-matchup-panel";
-import { type LeagueChampion } from "@/src/features/league/champions";
+import { getChampionIconPath, type LeagueChampion } from "@/src/features/league/champions";
 import type { LeagueMatchupCoverageSummary } from "@/src/features/league/matchups";
 import {
   getChampionRoles,
@@ -387,7 +387,7 @@ function ChampionButton({
         className="bg-[#0b1220] object-cover transition duration-200 group-hover:scale-105"
         fill
         sizes="72px"
-        src={champion.image_url}
+        src={getChampionIconPath(champion)}
         unoptimized
       />
       <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
@@ -434,7 +434,7 @@ function SelectionSlot({
             className="bg-[#0b1220] object-cover"
             fill
             sizes="48px"
-            src={champion.image_url}
+            src={getChampionIconPath(champion)}
             unoptimized
           />
         ) : (

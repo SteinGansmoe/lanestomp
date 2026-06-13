@@ -11,6 +11,7 @@ import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import {
   findChampionBySlug,
+  getChampionIconPath,
   getLeagueChampions,
   getChampionSplashUrl,
   type LeagueChampion,
@@ -537,7 +538,7 @@ function ChampionIcon({ champion }: { champion: LeagueChampion }) {
       aria-hidden="true"
       className="size-12 rounded-lg border border-white/15 bg-[#0b1220] object-cover shadow-lg shadow-black/30 sm:size-14"
       height={56}
-      src={champion.image_url}
+      src={getChampionIconPath(champion)}
       unoptimized
       width={56}
     />

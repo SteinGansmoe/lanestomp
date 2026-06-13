@@ -24,6 +24,7 @@ import {
 } from "@/src/features/league/champion-roles";
 import {
   getChampionSplashUrl,
+  getChampionIconPath,
   slugifyChampionName,
   type LeagueChampion,
 } from "@/src/features/league/champions";
@@ -288,7 +289,7 @@ function ChampionHero({
                 className="object-cover"
                 fill
                 sizes="128px"
-                src={champion.image_url}
+                src={getChampionIconPath(champion)}
                 unoptimized
               />
             ) : (
@@ -445,7 +446,7 @@ function CounterMatchupRow({
             className="object-cover transition duration-200 group-hover:scale-105"
             fill
             sizes="56px"
-            src={row.champion.image_url}
+            src={getChampionIconPath(row.champion)}
             unoptimized
           />
         ) : (
@@ -559,7 +560,7 @@ function CounterAnalysisPanel({
                   className="object-cover"
                   fill
                   sizes="64px"
-                  src={counter.champion.image_url}
+                  src={getChampionIconPath(counter.champion)}
                   unoptimized
                 />
               ) : (
@@ -787,7 +788,7 @@ function ChampionTile({
         className="bg-[#0b1220] object-cover transition duration-200 group-hover:scale-105"
         fill
         sizes="80px"
-        src={champion.image_url}
+        src={getChampionIconPath(champion)}
         unoptimized
       />
       <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />

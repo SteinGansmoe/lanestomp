@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/ca
 import { Input } from "@/src/components/ui/input";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
+import { getChampionIconPath } from "@/src/features/league/champions";
 import { leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 import { supabase } from "@/src/lib/supabase";
@@ -482,7 +483,7 @@ export function AdminLeagueCounterPicksSection({
                 alt=""
                 className="size-10 rounded-md bg-white/10 object-cover"
                 height={40}
-                src={selectedChampion.image_url}
+                src={getChampionIconPath(selectedChampion)}
                 width={40}
               />
               <div>
@@ -938,7 +939,7 @@ function CounterPickRow({
               alt=""
               className="size-11 rounded-md bg-white/10 object-cover"
               height={44}
-              src={counterChampion.image_url}
+              src={getChampionIconPath(counterChampion)}
               width={44}
             />
           ) : (
