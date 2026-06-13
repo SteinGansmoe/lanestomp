@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "cache:lol-data-dragon": "node scripts/cache-lol-data-dragon.mjs",
     "dev": "next dev",
     "build": "next build",
     "download:lol-champion-icons": "node scripts/download-lol-champion-icons.mjs",

@@ -400,12 +400,12 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
                 title="Best Counters"
               />
               <CounterMatchupList
-                emptyText={`No champions are listed as countered by ${selectedChampion.name} yet.`}
+                emptyText={`No risky picks into ${selectedChampion.name} are listed yet.`}
                 onSelect={handleCounterSelect}
                 rows={counteredByRows}
                 selectedKey={selectedCounter?.key ?? null}
-                subtitle={`Champions ${selectedChampion.name} can punish`}
-                title="Countered By"
+                subtitle={`Champions that struggle when picked into ${selectedChampion.name}`}
+                title={`Bad Into ${selectedChampion.name}`}
               />
               <CounterPreparationSection
                 onSectionToggle={handlePrepSectionToggle}
@@ -712,10 +712,7 @@ function CounterAnalysisPanel({
   }
 
   const counterName = counter.champion?.name ?? counter.fallbackName;
-  const matchupTitle =
-    counter.direction === "best-counter"
-      ? `${counterName} into ${selectedChampion.name}`
-      : `${selectedChampion.name} into ${counterName}`;
+  const matchupTitle = `${counterName} into ${selectedChampion.name}`;
   const quickSummary = counter.reasons[0] ?? "Matchup summary is still being reviewed.";
 
   return (
@@ -848,12 +845,15 @@ function CounterPreparationSection({
     {
       content: <PrepBulletList items={selectedCounter.reasons} />,
       key: "why",
-      title: `Why ${counterName} Works`,
+      title:
+        selectedCounter.direction === "best-counter"
+          ? `Why ${counterName} Works Into ${selectedChampion.name}`
+          : `Why ${counterName} Struggles Into ${selectedChampion.name}`,
     },
     {
       content: <PrepBulletList items={lanePrepNotes} />,
       key: "lane",
-      title: `How ${selectedChampion.name} Should Play Lane`,
+      title: `How ${counterName} Should Play the Lane`,
     },
     {
       content: <PrepPlaceholder />,
@@ -1285,8 +1285,8 @@ function buildCounterRowsFromRelationships({
       championRoles.length > 0
         ? championRoles.map(getLeagueRoleLabel).join(", ")
         : getLeagueRoleLabel(role);
-    const championA = direction === "best-counter" ? champion : selectedChampion;
-    const championB = direction === "best-counter" ? selectedChampion : champion;
+    const championA = champion;
+    const championB = selectedChampion;
     const matchupHref =
       championA && championB
         ? getLeagueMatchupHref({
@@ -1297,10 +1297,7 @@ function buildCounterRowsFromRelationships({
         : null;
     const guideKey = championA && championB ? getMatchupGuideKey(championA, championB, role) : null;
     const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
-    const matchupLabel =
-      direction === "best-counter"
-        ? `${championName} vs ${selectedChampion.name}`
-        : `${selectedChampion.name} vs ${championName}`;
+    const matchupLabel = `${championName} vs ${selectedChampion.name}`;
 
     return {
       champion,
@@ -1347,8 +1344,8 @@ function buildCounterRowsFromCounterPicks({
       const combatRelationship = combatRelationshipsByChampion.get(
         normalizeChampionLookupKey(counterPick.counter_champion_id),
       );
-      const championA = direction === "best-counter" ? champion : selectedChampion;
-      const championB = direction === "best-counter" ? selectedChampion : champion;
+      const championA = champion;
+      const championB = selectedChampion;
       const matchupHref =
         championA && championB
           ? getLeagueMatchupHref({
@@ -1360,10 +1357,7 @@ function buildCounterRowsFromCounterPicks({
       const guideKey =
         championA && championB ? getMatchupGuideKey(championA, championB, counterPick.role) : null;
       const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
-      const matchupLabel =
-        direction === "best-counter"
-          ? `${championName} vs ${selectedChampion.name}`
-          : `${selectedChampion.name} vs ${championName}`;
+      const matchupLabel = `${championName} vs ${selectedChampion.name}`;
 
       return {
         champion,
