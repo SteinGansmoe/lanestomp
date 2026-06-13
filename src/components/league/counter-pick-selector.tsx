@@ -84,6 +84,7 @@ type CounterRowModel = {
 
 type CounterPrepSectionItem = {
   content: ReactNode;
+  description?: string;
   key: CounterPrepSectionKey;
   title: string;
 };
@@ -107,6 +108,7 @@ const emptyGuideAvailabilityState: GuideAvailabilityState = {
 };
 
 const emptyCounterRelationships: readonly LeagueChampionCounterRelationship[] = [];
+const defaultOpenPrepSections: CounterPrepSectionKey[] = ["build"];
 
 const roleOptions = [
   { iconSrc: "/images/Top_icon.png", label: "Top", value: "top" },
@@ -134,7 +136,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [selectedCounterKey, setSelectedCounterKey] = useState<string | null>(null);
-  const [openPrepSections, setOpenPrepSections] = useState<CounterPrepSectionKey[]>(["why"]);
+  const [openPrepSections, setOpenPrepSections] =
+    useState<CounterPrepSectionKey[]>(defaultOpenPrepSections);
   const [reviewedCounterPickState, setReviewedCounterPickState] =
     useState<ReviewedCounterPickState>(emptyReviewedCounterPickState);
   const [guideAvailabilityState, setGuideAvailabilityState] = useState<GuideAvailabilityState>(
@@ -345,7 +348,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     setSelectedChampionId(champion.id);
     setSelectorQuery("");
     setSelectedCounterKey(null);
-    setOpenPrepSections(["why"]);
+    setOpenPrepSections(defaultOpenPrepSections);
     setIsSelectorOpen(false);
   }
 
@@ -353,12 +356,12 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     setSelectedRole(role);
     setSelectorRole(role);
     setSelectedCounterKey(null);
-    setOpenPrepSections(["why"]);
+    setOpenPrepSections(defaultOpenPrepSections);
   }
 
   function handleCounterSelect(counterKey: string) {
     setSelectedCounterKey(counterKey);
-    setOpenPrepSections(["why"]);
+    setOpenPrepSections(defaultOpenPrepSections);
   }
 
   function handlePrepSectionToggle(section: CounterPrepSectionKey) {
@@ -868,19 +871,6 @@ function CounterPreparationSection({
     : null;
   const sectionItems: CounterPrepSectionItem[] = [
     {
-      content: <PrepBulletList items={selectedCounter.reasons} />,
-      key: "why",
-      title:
-        selectedCounter.direction === "best-counter"
-          ? `Why ${counterName} Works Into ${selectedChampion.name}`
-          : `Why ${counterName} Struggles Into ${selectedChampion.name}`,
-    },
-    {
-      content: <PrepBulletList items={lanePrepNotes} />,
-      key: "lane",
-      title: `How ${counterName} Should Play the Lane`,
-    },
-    {
       content: <CounterBuildPath buildPath={buildGuide?.build ?? null} />,
       key: "build",
       title: `Build ${counterName}`,
@@ -892,32 +882,37 @@ function CounterPreparationSection({
     },
     {
       content: <CounterBuildPath buildPath={buildGuide?.["ad-heavy"] ?? null} />,
+      description:
+        "Consider building these items when facing multiple AD threats, strong physical damage dealers, or heavy auto-attack champions.",
       key: "ad-heavy",
-      title: "If Enemy Team Is AD Heavy",
+      title: "Build vs Heavy AD",
     },
     {
       content: <CounterBuildPath buildPath={buildGuide?.["ap-heavy"] ?? null} />,
+      description:
+        "Consider building these items when facing multiple AP threats, burst mages, or heavy magic damage compositions.",
       key: "ap-heavy",
-      title: "If Enemy Team Is AP Heavy",
+      title: "Build vs Heavy AP",
     },
     {
-      content: selectedCounter.href ? (
-        <Button
-          asChild
-          className="h-12 rounded-md bg-cyan-200 px-5 font-semibold text-[#04111f] shadow-lg shadow-cyan-950/30 hover:bg-cyan-100"
-        >
-          <Link href={selectedCounter.href}>
-            Open Full Matchup Guide
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
-      ) : (
-        <div className="border-y border-white/10 py-4 text-sm leading-6 text-zinc-400">
-          Guide coming soon
-        </div>
-      ),
+      content: <PrepBulletList items={selectedCounter.reasons} />,
+      key: "why",
+      title:
+        selectedCounter.direction === "best-counter"
+          ? `Why ${counterName} Works Into ${selectedChampion.name}`
+          : `Why ${counterName} Struggles Into ${selectedChampion.name}`,
+    },
+    {
+      content: <PrepBulletList items={lanePrepNotes} />,
+      key: "lane",
+      title: `How ${counterName} Should Play The Lane`,
+    },
+    {
+      content: <FullMatchupGuideCallout href={selectedCounter.href} />,
+      description:
+        "Want detailed lane strategy, trading patterns, power spikes, danger windows, and win conditions? Open the full matchup guide.",
       key: "guide",
-      title: "Full Matchup Guide",
+      title: `Open Full ${counterName} vs ${selectedChampion.name} Matchup Guide`,
     },
   ];
 
@@ -1198,10 +1193,37 @@ function CounterPrepAccordionItem({
         )}
       >
         <div className={cn("min-h-0", isOpen ? "overflow-visible" : "overflow-hidden")}>
-          <div className="pb-5">{item.content}</div>
+          <div className="grid gap-4 pb-5">
+            {item.description ? (
+              <p className="max-w-3xl text-sm leading-6 text-zinc-400">{item.description}</p>
+            ) : null}
+            {item.content}
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function FullMatchupGuideCallout({ href }: { href: string | null }) {
+  if (!href) {
+    return (
+      <p className="border-y border-white/10 py-4 text-sm leading-6 text-zinc-400">
+        Guide coming soon
+      </p>
+    );
+  }
+
+  return (
+    <Button
+      asChild
+      className="h-12 w-fit rounded-md bg-cyan-200 px-5 font-semibold text-[#04111f] shadow-lg shadow-cyan-950/30 hover:bg-cyan-100"
+    >
+      <Link href={href}>
+        Open Full Matchup Guide
+        <ArrowRight className="size-4" aria-hidden="true" />
+      </Link>
+    </Button>
   );
 }
 
