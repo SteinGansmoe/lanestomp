@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Clipboard, Loader2, Play, RefreshCw, Search, UserPlus, X } from "lucide-react";
 
 import {
@@ -35,6 +35,8 @@ import type { AdminLeagueChampion, FormStatus } from "../types";
 const maxMatchCount = 50;
 const maxDisplayedResults = 100;
 const maxRiotIdsPerBatch = 20;
+const maxSeedCandidatesPerScan = 20;
+const recentSeedCandidateScanHours = 24;
 const seedCandidateStatuses: Array<RiotSeedCandidateStatus | "all"> = [
   "all",
   "candidate",
@@ -56,11 +58,21 @@ const seedCandidateSorts: Array<{
   label: string;
   value: RiotSeedCandidateSort;
 }> = [
-  { label: "Last seen", value: "last_seen_at" },
   { label: "Observed games", value: "observed_games" },
+  { label: "Last seen", value: "last_seen_at" },
+  { label: "Last scanned", value: "last_scanned_at" },
   { label: "Primary role share", value: "primary_role_share" },
   { label: "Primary champion share", value: "primary_champion_share" },
   { label: "Created", value: "created_at" },
+];
+const seedCandidateLastScannedFilters: Array<{
+  label: string;
+  value: NonNullable<RiotSeedCandidateFilters["lastScanned"]>;
+}> = [
+  { label: "All", value: "all" },
+  { label: "Never scanned", value: "never" },
+  { label: "Scanned within 24h", value: "recent" },
+  { label: "Not scanned within 24h", value: "older" },
 ];
 type LeagueChampionRegistryStatus = Extract<
   LeagueChampionRegistryAdminStatusResult,
@@ -68,6 +80,7 @@ type LeagueChampionRegistryStatus = Extract<
 >["status"];
 
 export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueChampion[] }) {
+  const scannerCardRef = useRef<HTMLDivElement | null>(null);
   const [mode, setMode] = useState<RiotScanMode>("target");
   const [seedText, setSeedText] = useState("");
   const [role, setRole] = useState<LeagueRole>("mid");
@@ -211,6 +224,15 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
       return;
     }
 
+    if (uniqueSeedPuuids.length > maxSeedCandidatesPerScan) {
+      setFormStatus({
+        error: `You selected ${uniqueSeedPuuids.length} seed candidates. The maximum per scan job is ${maxSeedCandidatesPerScan}.`,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
     if (
       !Number.isInteger(parsedMatchCount) ||
       parsedMatchCount < 1 ||
@@ -264,6 +286,7 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
       accessToken: tokenResult.accessToken,
       counterChampion,
       currentPatchOnly,
+      discoveryFocusChampion: null,
       enemyChampion,
       matchCount: parsedMatchCount,
       maxDisplayedResults: parsedDisplayLimit,
@@ -298,6 +321,20 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
           ? `${addedCount} ${addedCount === 1 ? "PUUID" : "PUUIDs"} added to scanner.`
           : "Those PUUIDs are already in the scanner.",
     });
+    return addedCount;
+  }
+
+  function focusScanner() {
+    scannerCardRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  function handleSelectedScanStarted(job: RiotScanJobView) {
+    setActiveJob(job);
+    setRecentJobs((currentJobs) => [job, ...currentJobs.filter((item) => item.id !== job.id)]);
+    void refreshRecentJobs();
   }
 
   return (
@@ -305,11 +342,18 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
       <LeagueChampionRegistryStatusPanel getAccessToken={getAccessToken} />
       <RiotIdResolverPanel getAccessToken={getAccessToken} onAddPuuids={addPuuidsToScanner} />
       <RiotSeedCandidatesPanel
+        champions={championOptions}
         championDisplayNamesById={championDisplayNamesById}
         getAccessToken={getAccessToken}
+        onAddPuuids={addPuuidsToScanner}
+        onFocusScanner={focusScanner}
+        onScanStarted={handleSelectedScanStarted}
       />
 
-      <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <Card
+        className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15"
+        ref={scannerCardRef}
+      >
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -897,9 +941,14 @@ function RiotIdResolverPanel({
 }
 
 function RiotSeedCandidatesPanel({
+  champions,
   championDisplayNamesById,
   getAccessToken,
+  onAddPuuids,
+  onFocusScanner,
+  onScanStarted,
 }: {
+  champions: AdminLeagueChampion[];
   championDisplayNamesById: Map<string, string>;
   getAccessToken: () => Promise<
     | {
@@ -911,6 +960,9 @@ function RiotSeedCandidatesPanel({
         ok: false;
       }
   >;
+  onAddPuuids: (puuids: string[]) => number;
+  onFocusScanner: () => void;
+  onScanStarted: (job: RiotScanJobView) => void;
 }) {
   const [candidates, setCandidates] = useState<RiotSeedCandidateView[]>([]);
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
@@ -920,13 +972,38 @@ function RiotSeedCandidatesPanel({
   const [primaryRoleFilter, setPrimaryRoleFilter] = useState<LeagueRole | "all">("all");
   const [primaryChampionFilter, setPrimaryChampionFilter] = useState("");
   const [minimumObservedGames, setMinimumObservedGames] = useState("");
-  const [sort, setSort] = useState<RiotSeedCandidateSort>("last_seen_at");
+  const [minimumPrimaryRoleShare, setMinimumPrimaryRoleShare] = useState("");
+  const [minimumPrimaryChampionShare, setMinimumPrimaryChampionShare] = useState("");
+  const [lastScannedFilter, setLastScannedFilter] =
+    useState<NonNullable<RiotSeedCandidateFilters["lastScanned"]>>("all");
+  const [sort, setSort] = useState<RiotSeedCandidateSort>("observed_games");
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(() => new Set());
+  const [showScanPanel, setShowScanPanel] = useState(false);
+  const [bulkMode, setBulkMode] = useState<RiotScanMode>("discovery");
+  const [bulkRole, setBulkRole] = useState<LeagueRole>("mid");
+  const [bulkMatchCount, setBulkMatchCount] = useState("20");
+  const [bulkCurrentPatchOnly, setBulkCurrentPatchOnly] = useState(true);
+  const [bulkMinimumGames, setBulkMinimumGames] = useState("2");
+  const [bulkDisplayLimit, setBulkDisplayLimit] = useState("20");
+  const [bulkDiscoveryFocusChampion, setBulkDiscoveryFocusChampion] = useState("");
+  const [bulkEnemyChampionInput, setBulkEnemyChampionInput] = useState("Ahri");
+  const [bulkCounterChampionInput, setBulkCounterChampionInput] = useState("Yasuo");
   const [status, setStatus] = useState<FormStatus>({
     error: null,
     isLoading: false,
     success: null,
   });
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const selectedCandidates = useMemo(
+    () => candidates.filter((candidate) => selectedCandidateIds.has(candidate.id)),
+    [candidates, selectedCandidateIds],
+  );
+  const selectedRecentScanCount = selectedCandidates.filter((candidate) =>
+    wasCandidateScannedRecently(candidate.last_scanned_at),
+  ).length;
+  const allVisibleSelected =
+    candidates.length > 0 &&
+    candidates.every((candidate) => selectedCandidateIds.has(candidate.id));
 
   useEffect(() => {
     void loadCandidates();
@@ -944,7 +1021,10 @@ function RiotSeedCandidatesPanel({
     setStatus({ error: null, isLoading: true, success: null });
 
     const parsedMinimumGames = Number(minimumObservedGames);
+    const parsedMinimumPrimaryRoleShare = Number(minimumPrimaryRoleShare);
+    const parsedMinimumPrimaryChampionShare = Number(minimumPrimaryChampionShare);
     const filters: RiotSeedCandidateFilters = {
+      lastScanned: lastScannedFilter,
       platformRegion,
       primaryChampion: primaryChampionFilter,
       primaryRole: primaryRoleFilter,
@@ -954,6 +1034,17 @@ function RiotSeedCandidatesPanel({
 
     if (Number.isInteger(parsedMinimumGames) && parsedMinimumGames > 0) {
       filters.minObservedGames = parsedMinimumGames;
+    }
+
+    if (Number.isFinite(parsedMinimumPrimaryRoleShare) && parsedMinimumPrimaryRoleShare > 0) {
+      filters.minPrimaryRoleShare = parsedMinimumPrimaryRoleShare;
+    }
+
+    if (
+      Number.isFinite(parsedMinimumPrimaryChampionShare) &&
+      parsedMinimumPrimaryChampionShare > 0
+    ) {
+      filters.minPrimaryChampionShare = parsedMinimumPrimaryChampionShare;
     }
 
     const result = await getRiotSeedCandidates({
@@ -969,6 +1060,13 @@ function RiotSeedCandidatesPanel({
     }
 
     setCandidates(result.candidates);
+    setSelectedCandidateIds((currentSelection) => {
+      const visibleCandidateIds = new Set(result.candidates.map((candidate) => candidate.id));
+
+      return new Set(
+        [...currentSelection].filter((candidateId) => visibleCandidateIds.has(candidateId)),
+      );
+    });
     setStatus({
       error: null,
       isLoading: false,
@@ -983,6 +1081,159 @@ function RiotSeedCandidatesPanel({
     } catch {
       setCopyStatus("Copy failed.");
     }
+  }
+
+  function toggleCandidateSelection(candidateId: string) {
+    setSelectedCandidateIds((currentSelection) => {
+      const nextSelection = new Set(currentSelection);
+
+      if (nextSelection.has(candidateId)) {
+        nextSelection.delete(candidateId);
+      } else {
+        nextSelection.add(candidateId);
+      }
+
+      return nextSelection;
+    });
+  }
+
+  function selectAllVisibleCandidates() {
+    setSelectedCandidateIds(new Set(candidates.map((candidate) => candidate.id)));
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${candidates.length} visible ${candidates.length === 1 ? "candidate" : "candidates"} selected.`,
+    });
+  }
+
+  function clearSelectedCandidates() {
+    setSelectedCandidateIds(new Set());
+    setShowScanPanel(false);
+    setStatus({ error: null, isLoading: false, success: "Selection cleared." });
+  }
+
+  function addSelectedToScanner() {
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    const addedCount = onAddPuuids(selectedCandidates.map((candidate) => candidate.puuid));
+
+    onFocusScanner();
+    setStatus({
+      error: null,
+      isLoading: false,
+      success:
+        addedCount > 0
+          ? `${addedCount} seed ${addedCount === 1 ? "candidate" : "candidates"} added to the scanner.`
+          : "Selected candidates were already in the scanner.",
+    });
+  }
+
+  async function scanSelectedCandidates() {
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    if (selectedCandidates.length > maxSeedCandidatesPerScan) {
+      setStatus({
+        error: `You selected ${selectedCandidates.length} candidates. The maximum per scan job is ${maxSeedCandidatesPerScan}.`,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    const parsedMatchCount = Number(bulkMatchCount);
+    const parsedMinimumGames = Number(bulkMinimumGames);
+    const parsedDisplayLimit = Number(bulkDisplayLimit);
+    const enemyChampion = resolveChampionId(bulkEnemyChampionInput, champions);
+    const counterChampion = resolveChampionId(bulkCounterChampionInput, champions);
+    const discoveryFocusChampion = bulkDiscoveryFocusChampion.trim()
+      ? resolveChampionId(bulkDiscoveryFocusChampion, champions)
+      : null;
+
+    if (
+      !Number.isInteger(parsedMatchCount) ||
+      parsedMatchCount < 1 ||
+      parsedMatchCount > maxMatchCount
+    ) {
+      setStatus({
+        error: `Match count must be between 1 and ${maxMatchCount}.`,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (bulkMode === "target" && (!enemyChampion || !counterChampion)) {
+      setStatus({
+        error: "Select valid target champions.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (bulkMode === "target" && enemyChampion === counterChampion) {
+      setStatus({
+        error: "Enemy and counter champion cannot be the same.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    if (bulkMode === "discovery" && bulkDiscoveryFocusChampion.trim() && !discoveryFocusChampion) {
+      setStatus({
+        error: "Select a valid discovery focus champion.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await startRiotScanJob({
+      accessToken: tokenResult.accessToken,
+      counterChampion,
+      currentPatchOnly: bulkCurrentPatchOnly,
+      discoveryFocusChampion,
+      enemyChampion,
+      matchCount: parsedMatchCount,
+      maxDisplayedResults:
+        bulkMode === "discovery" && Number.isInteger(parsedDisplayLimit) ? parsedDisplayLimit : 20,
+      minimumGames:
+        bulkMode === "discovery" && Number.isInteger(parsedMinimumGames) ? parsedMinimumGames : 1,
+      mode: bulkMode,
+      role: bulkRole,
+      seedPuuids: selectedCandidates.map((candidate) => candidate.puuid),
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    onScanStarted(result.job);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${selectedCandidates.length} selected seed ${selectedCandidates.length === 1 ? "candidate" : "candidates"} sent to the scanner.`,
+    });
+    setShowScanPanel(false);
+    setSelectedCandidateIds(new Set());
+    await loadCandidates();
   }
 
   return (
@@ -1098,6 +1349,47 @@ function RiotSeedCandidatesPanel({
               value={minimumObservedGames}
             />
           </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Min role %</span>
+            <Input
+              className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              min={0}
+              onChange={(event) => setMinimumPrimaryRoleShare(event.target.value)}
+              type="number"
+              value={minimumPrimaryRoleShare}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Min champion %</span>
+            <Input
+              className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              min={0}
+              onChange={(event) => setMinimumPrimaryChampionShare(event.target.value)}
+              type="number"
+              value={minimumPrimaryChampionShare}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Last scanned</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setLastScannedFilter(
+                  event.target.value as NonNullable<RiotSeedCandidateFilters["lastScanned"]>,
+                )
+              }
+              value={lastScannedFilter}
+            >
+              {seedCandidateLastScannedFilters.map((filter) => (
+                <option className={selectOptionClassName} key={filter.value} value={filter.value}>
+                  {filter.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -1135,6 +1427,227 @@ function RiotSeedCandidatesPanel({
           </Button>
         </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
+          <div>
+            <p className="text-sm font-semibold text-zinc-100">
+              {selectedCandidates.length}{" "}
+              {selectedCandidates.length === 1 ? "candidate" : "candidates"} selected
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Select all applies to visible results only.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={candidates.length === 0 || allVisibleSelected}
+              onClick={selectAllVisibleCandidates}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <Check className="size-3.5" aria-hidden="true" />
+              Select all visible
+            </Button>
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={selectedCandidates.length === 0}
+              onClick={clearSelectedCandidates}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <X className="size-3.5" aria-hidden="true" />
+              Clear selection
+            </Button>
+            <Button
+              className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20"
+              disabled={selectedCandidates.length === 0}
+              onClick={addSelectedToScanner}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <UserPlus className="size-3.5" aria-hidden="true" />
+              Add selected to scanner
+            </Button>
+            <Button
+              className="bg-violet-500/80 text-white hover:bg-violet-500"
+              disabled={selectedCandidates.length === 0}
+              onClick={() => setShowScanPanel((current) => !current)}
+              size="sm"
+              type="button"
+            >
+              <Play className="size-3.5" aria-hidden="true" />
+              Scan selected
+            </Button>
+          </div>
+        </div>
+
+        {selectedCandidates.length > maxSeedCandidatesPerScan ? (
+          <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            You selected {selectedCandidates.length} candidates. The maximum per scan job is{" "}
+            {maxSeedCandidatesPerScan}.
+          </p>
+        ) : null}
+
+        {selectedRecentScanCount > 0 ? (
+          <p className="rounded-md border border-amber-400/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {selectedRecentScanCount} selected{" "}
+            {selectedRecentScanCount === 1 ? "candidate was" : "candidates were"} scanned within the
+            last {recentSeedCandidateScanHours} hours.
+          </p>
+        ) : null}
+
+        {selectedCandidates.length > 0 && selectedRecentScanCount === selectedCandidates.length ? (
+          <p className="rounded-md border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-400">
+            All visible selected candidates were scanned recently.
+          </p>
+        ) : null}
+
+        {showScanPanel ? (
+          <div className="space-y-4 rounded-lg border border-violet-300/20 bg-violet-500/10 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-violet-100">Scan selected</h4>
+                <p className="mt-1 text-xs text-zinc-400">
+                  {selectedCandidates.length} selected seed{" "}
+                  {selectedCandidates.length === 1 ? "candidate" : "candidates"}
+                </p>
+              </div>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                onClick={() => setShowScanPanel(false)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+                Close
+              </Button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <label className="block space-y-2">
+                <span className="text-sm text-zinc-300">Mode</span>
+                <select
+                  className={`${fieldClassName} h-10`}
+                  onChange={(event) => setBulkMode(event.target.value as RiotScanMode)}
+                  value={bulkMode}
+                >
+                  <option className={selectOptionClassName} value="discovery">
+                    Matchup discovery
+                  </option>
+                  <option className={selectOptionClassName} value="target">
+                    Target matchup
+                  </option>
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm text-zinc-300">Role</span>
+                <select
+                  className={`${fieldClassName} h-10`}
+                  onChange={(event) => setBulkRole(event.target.value as LeagueRole)}
+                  value={bulkRole}
+                >
+                  {leagueRoles.map((leagueRole) => (
+                    <option className={selectOptionClassName} key={leagueRole} value={leagueRole}>
+                      {getRoleLabel(leagueRole)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm text-zinc-300">Matches per seed</span>
+                <Input
+                  className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                  max={maxMatchCount}
+                  min={1}
+                  onChange={(event) => setBulkMatchCount(event.target.value)}
+                  type="number"
+                  value={bulkMatchCount}
+                />
+              </label>
+
+              <label className="flex items-center gap-3 rounded-md border border-white/10 bg-black/20 px-3 py-2">
+                <input
+                  checked={bulkCurrentPatchOnly}
+                  className="size-4 accent-cyan-400"
+                  onChange={(event) => setBulkCurrentPatchOnly(event.target.checked)}
+                  type="checkbox"
+                />
+                <span className="text-sm text-zinc-300">Current patch only</span>
+              </label>
+            </div>
+
+            {bulkMode === "discovery" ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                <ChampionSearchInput
+                  disabled={status.isLoading}
+                  label="Focus champion"
+                  onChange={setBulkDiscoveryFocusChampion}
+                  options={champions}
+                  value={bulkDiscoveryFocusChampion}
+                />
+                <label className="block space-y-2">
+                  <span className="text-sm text-zinc-300">Minimum games</span>
+                  <Input
+                    className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                    min={1}
+                    onChange={(event) => setBulkMinimumGames(event.target.value)}
+                    type="number"
+                    value={bulkMinimumGames}
+                  />
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-sm text-zinc-300">Display limit</span>
+                  <Input
+                    className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                    max={maxDisplayedResults}
+                    min={1}
+                    onChange={(event) => setBulkDisplayLimit(event.target.value)}
+                    type="number"
+                    value={bulkDisplayLimit}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                <ChampionSearchInput
+                  disabled={status.isLoading}
+                  label="Enemy champion"
+                  onChange={setBulkEnemyChampionInput}
+                  options={champions}
+                  value={bulkEnemyChampionInput}
+                />
+                <ChampionSearchInput
+                  disabled={status.isLoading}
+                  label="Counter champion"
+                  onChange={setBulkCounterChampionInput}
+                  options={champions}
+                  value={bulkCounterChampionInput}
+                />
+              </div>
+            )}
+
+            <Button
+              className="bg-violet-500/80 text-white hover:bg-violet-500"
+              disabled={status.isLoading || selectedCandidates.length > maxSeedCandidatesPerScan}
+              onClick={() => void scanSelectedCandidates()}
+              type="button"
+            >
+              {status.isLoading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Play className="size-4" aria-hidden="true" />
+              )}
+              Confirm scan selected
+            </Button>
+          </div>
+        ) : null}
+
         <StatusMessage status={status} />
         {copyStatus ? (
           <p className="rounded-md border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-100">
@@ -1155,11 +1668,13 @@ function RiotSeedCandidatesPanel({
                 expanded={expandedCandidateId === candidate.id}
                 key={candidate.id}
                 onCopy={() => void copyPuuid(candidate.puuid)}
+                onSelectionChange={() => toggleCandidateSelection(candidate.id)}
                 onToggle={() =>
                   setExpandedCandidateId((currentId) =>
                     currentId === candidate.id ? null : candidate.id,
                   )
                 }
+                selected={selectedCandidateIds.has(candidate.id)}
               />
             ))}
           </div>
@@ -1174,64 +1689,79 @@ function SeedCandidateRow({
   championDisplayNamesById,
   expanded,
   onCopy,
+  onSelectionChange,
   onToggle,
+  selected,
 }: {
   candidate: RiotSeedCandidateView;
   championDisplayNamesById: Map<string, string>;
   expanded: boolean;
   onCopy: () => void;
+  onSelectionChange: () => void;
   onToggle: () => void;
+  selected: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-white/10 bg-black/15">
-      <button
-        className="grid w-full gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
-        onClick={onToggle}
-        type="button"
-      >
-        <span className="min-w-0">
-          <span className="block truncate font-mono text-xs text-cyan-100">
-            {shortenPuuid(candidate.puuid)}
+      <div className="flex items-stretch">
+        <label className="flex items-center border-r border-white/10 px-3">
+          <input
+            checked={selected}
+            className="size-4 accent-cyan-400"
+            onChange={onSelectionChange}
+            type="checkbox"
+          />
+          <span className="sr-only">Select candidate</span>
+        </label>
+        <button
+          className="grid min-w-0 flex-1 gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
+          onClick={onToggle}
+          type="button"
+        >
+          <span className="min-w-0">
+            <span className="block truncate font-mono text-xs text-cyan-100">
+              {shortenPuuid(candidate.puuid)}
+            </span>
+            <span className="mt-1 block text-xs text-zinc-500">
+              {candidate.platform_region} - {candidate.regional_routing}
+            </span>
           </span>
-          <span className="mt-1 block text-xs text-zinc-500">
-            {candidate.platform_region} - {candidate.regional_routing}
+          <span>
+            <span className="block text-xs uppercase tracking-wide text-zinc-500">Status</span>
+            <span className="font-semibold text-zinc-100">{formatEnumLabel(candidate.status)}</span>
           </span>
-        </span>
-        <span>
-          <span className="block text-xs uppercase tracking-wide text-zinc-500">Status</span>
-          <span className="font-semibold text-zinc-100">{formatEnumLabel(candidate.status)}</span>
-        </span>
-        <span>
-          <span className="block text-xs uppercase tracking-wide text-zinc-500">Role</span>
-          <span className="font-semibold text-zinc-100">
-            {candidate.estimated_primary_role
-              ? `${getRoleLabel(candidate.estimated_primary_role)} ${formatPercent(
-                  candidate.primary_role_share,
-                )}`
-              : "Pending"}
+          <span>
+            <span className="block text-xs uppercase tracking-wide text-zinc-500">Role</span>
+            <span className="font-semibold text-zinc-100">
+              {candidate.estimated_primary_role
+                ? `${getRoleLabel(candidate.estimated_primary_role)} ${formatPercent(
+                    candidate.primary_role_share,
+                  )}`
+                : "Pending"}
+            </span>
           </span>
-        </span>
-        <span>
-          <span className="block text-xs uppercase tracking-wide text-zinc-500">Champion</span>
-          <span className="font-semibold text-zinc-100">
-            {candidate.primary_champion
-              ? `${getChampionDisplayName(
-                  championDisplayNamesById,
-                  candidate.primary_champion,
-                )} ${formatPercent(candidate.primary_champion_share)}`
-              : "Pending"}
+          <span>
+            <span className="block text-xs uppercase tracking-wide text-zinc-500">Champion</span>
+            <span className="font-semibold text-zinc-100">
+              {candidate.primary_champion
+                ? `${getChampionDisplayName(
+                    championDisplayNamesById,
+                    candidate.primary_champion,
+                  )} ${formatPercent(candidate.primary_champion_share)}`
+                : "Pending"}
+            </span>
           </span>
-        </span>
-        <span>
-          <span className="block text-xs uppercase tracking-wide text-zinc-500">Games</span>
-          <span className="font-semibold text-zinc-100">
-            {formatNumber(candidate.observed_games)}
+          <span>
+            <span className="block text-xs uppercase tracking-wide text-zinc-500">Games</span>
+            <span className="font-semibold text-zinc-100">
+              {formatNumber(candidate.observed_games)}
+            </span>
           </span>
-        </span>
-        <span className="text-xs font-semibold text-cyan-200">
-          {expanded ? "Hide details" : "Details"}
-        </span>
-      </button>
+          <span className="text-xs font-semibold text-cyan-200">
+            {expanded ? "Hide details" : "Details"}
+          </span>
+        </button>
+      </div>
 
       {expanded ? (
         <div className="space-y-4 border-t border-white/10 p-3">
@@ -2074,4 +2604,17 @@ function formatDateTime(value: string | null | undefined) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function wasCandidateScannedRecently(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const timestamp = new Date(value).getTime();
+
+  return (
+    Number.isFinite(timestamp) &&
+    Date.now() - timestamp < recentSeedCandidateScanHours * 60 * 60 * 1000
+  );
 }

@@ -183,7 +183,10 @@ export type RiotSeedCandidateView = {
 };
 
 export type RiotSeedCandidateFilters = {
+  lastScanned?: "all" | "never" | "recent" | "older";
   minObservedGames?: number;
+  minPrimaryChampionShare?: number;
+  minPrimaryRoleShare?: number;
   platformRegion?: string;
   primaryChampion?: string;
   primaryRole?: LeagueRole | "all";
@@ -193,6 +196,7 @@ export type RiotSeedCandidateFilters = {
 
 export type RiotSeedCandidateSort =
   | "created_at"
+  | "last_scanned_at"
   | "last_seen_at"
   | "observed_games"
   | "primary_champion_share"
@@ -260,6 +264,7 @@ export type StartRiotScanJobInput = {
   accessToken: string;
   counterChampion?: string | null;
   currentPatchOnly: boolean;
+  discoveryFocusChampion?: string | null;
   enemyChampion?: string | null;
   matchCount: number;
   maxDisplayedResults: number;

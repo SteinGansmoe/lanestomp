@@ -28,6 +28,8 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const maxMatchCount = 50;
 const maxDisplayedResultsLimit = 100;
 const maxRiotIdsPerBatch = 20;
+const maxSeedCandidatesPerScan = 20;
+const recentSeedCandidateScanHours = 24;
 const defaultRegionalRoute = "europe";
 const defaultPlatformRegion = "EUW1";
 const maxWarningOnlyPersistenceFailureCount = 5;
@@ -130,6 +132,7 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
       minimum_games: validation.minimumGames,
       mode: validation.mode,
       progress: {
+        discoveryFocusChampion: validation.discoveryFocusChampion,
         maxDisplayedResults: validation.maxDisplayedResults,
         seedCount: validation.seedPuuids.length,
       },
@@ -139,6 +142,7 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
       status: "queued",
       summary: {
         currentPatchOnly: validation.currentPatchOnly,
+        discoveryFocusChampion: validation.discoveryFocusChampion,
         maxDisplayedResults: validation.maxDisplayedResults,
         seedCount: validation.seedPuuids.length,
       },
@@ -155,10 +159,20 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
     };
   }
 
+  await markSeedCandidatesQueued({
+    jobId: insertedJob.id,
+    seedPuuids: validation.seedPuuids,
+    supabase: serviceClientResult.supabase,
+  });
+
   if (!process.env.RIOT_API_KEY) {
     const failedJob = await failJob({
       errorMessage: "Missing Riot API configuration.",
       jobId: insertedJob.id,
+      supabase: serviceClientResult.supabase,
+    });
+    await markSeedCandidatesScanFailed({
+      seedPuuids: validation.seedPuuids,
       supabase: serviceClientResult.supabase,
     });
 
@@ -433,12 +447,33 @@ export async function getRiotSeedCandidates({
     query = query.ilike("primary_champion", `%${filters.primaryChampion.trim()}%`);
   }
 
+  if (filters.lastScanned === "never") {
+    query = query.is("last_scanned_at", null);
+  } else if (filters.lastScanned === "recent") {
+    query = query.gte("last_scanned_at", getRecentSeedCandidateScanCutoff());
+  } else if (filters.lastScanned === "older") {
+    query = query.or(
+      `last_scanned_at.is.null,last_scanned_at.lt.${getRecentSeedCandidateScanCutoff()}`,
+    );
+  }
+
   if (filters.source && filters.source !== "all") {
     query = query.eq("source", filters.source);
   }
 
   if (filters.minObservedGames && filters.minObservedGames > 0) {
     query = query.gte("observed_games", Math.trunc(filters.minObservedGames));
+  }
+
+  const minPrimaryRoleShare = normalizeShareFilter(filters.minPrimaryRoleShare);
+  const minPrimaryChampionShare = normalizeShareFilter(filters.minPrimaryChampionShare);
+
+  if (minPrimaryRoleShare !== null) {
+    query = query.gte("primary_role_share", minPrimaryRoleShare);
+  }
+
+  if (minPrimaryChampionShare !== null) {
+    query = query.gte("primary_champion_share", minPrimaryChampionShare);
   }
 
   const orderColumn = getCandidateSortColumn(sort);
@@ -574,6 +609,10 @@ async function runRiotScanJob({
         status: "running",
       })
       .eq("id", jobId);
+    await markSeedCandidatesScanRunning({
+      seedPuuids: input.seedPuuids,
+      supabase,
+    });
 
     const patch = input.currentPatchOnly ? await fetchCurrentPatch() : null;
     const riot = new RiotApiClient({
@@ -800,10 +839,26 @@ async function runRiotScanJob({
         summary: persistedSummary,
       })
       .eq("id", jobId);
+
+    if (didPersistenceFail) {
+      await markSeedCandidatesScanFailed({
+        seedPuuids: input.seedPuuids,
+        supabase,
+      });
+    } else {
+      await markSeedCandidatesScanSucceeded({
+        seedPuuids: input.seedPuuids,
+        supabase,
+      });
+    }
   } catch (error) {
     await failJob({
       errorMessage: getScannerErrorMessage(error),
       jobId,
+      supabase,
+    });
+    await markSeedCandidatesScanFailed({
+      seedPuuids: input.seedPuuids,
       supabase,
     });
   }
@@ -859,6 +914,148 @@ function getValidationErrorMessage(summary: RiotScanSummary) {
     `${summary.candidateObservationsRejected ?? 0} candidate observations rejected`,
     `${summary.counterPickAggregateValidationFailures ?? 0} counter-pick aggregates rejected`,
   ].join(" ");
+}
+
+async function markSeedCandidatesQueued({
+  jobId,
+  seedPuuids,
+  supabase,
+}: {
+  jobId: number;
+  seedPuuids: string[];
+  supabase: SupabaseClient;
+}) {
+  const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
+
+  for (const candidate of candidates) {
+    const { error } = await supabase
+      .from("riot_seed_candidates")
+      .update({
+        first_seen_scan_job_id: candidate.first_seen_scan_job_id ?? jobId,
+        status: "queued",
+      })
+      .eq("id", candidate.id);
+
+    if (error) {
+      console.error("Seed candidate queue metadata update failed", getSafeDatabaseError(error));
+    }
+  }
+}
+
+async function markSeedCandidatesScanRunning({
+  seedPuuids,
+  supabase,
+}: {
+  seedPuuids: string[];
+  supabase: SupabaseClient;
+}) {
+  const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
+
+  for (const candidate of candidates) {
+    const { error } = await supabase
+      .from("riot_seed_candidates")
+      .update({
+        status: "active",
+      })
+      .eq("id", candidate.id);
+
+    if (error) {
+      console.error("Seed candidate running metadata update failed", getSafeDatabaseError(error));
+    }
+  }
+}
+
+async function markSeedCandidatesScanSucceeded({
+  seedPuuids,
+  supabase,
+}: {
+  seedPuuids: string[];
+  supabase: SupabaseClient;
+}) {
+  const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
+  const scannedAt = new Date().toISOString();
+
+  for (const candidate of candidates) {
+    const { error } = await supabase
+      .from("riot_seed_candidates")
+      .update({
+        consecutive_scan_failures: 0,
+        last_scanned_at: scannedAt,
+        status: "candidate",
+        successful_scan_count: Number(candidate.successful_scan_count ?? 0) + 1,
+        times_scanned: Number(candidate.times_scanned ?? 0) + 1,
+      })
+      .eq("id", candidate.id);
+
+    if (error) {
+      console.error("Seed candidate success metadata update failed", getSafeDatabaseError(error));
+    }
+  }
+}
+
+async function markSeedCandidatesScanFailed({
+  seedPuuids,
+  supabase,
+}: {
+  seedPuuids: string[];
+  supabase: SupabaseClient;
+}) {
+  const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
+
+  for (const candidate of candidates) {
+    const { error } = await supabase
+      .from("riot_seed_candidates")
+      .update({
+        consecutive_scan_failures: Number(candidate.consecutive_scan_failures ?? 0) + 1,
+        failed_scan_count: Number(candidate.failed_scan_count ?? 0) + 1,
+        status: "failed",
+      })
+      .eq("id", candidate.id);
+
+    if (error) {
+      console.error("Seed candidate failure metadata update failed", getSafeDatabaseError(error));
+    }
+  }
+}
+
+async function fetchScanSeedCandidates({
+  seedPuuids,
+  supabase,
+}: {
+  seedPuuids: string[];
+  supabase: SupabaseClient;
+}) {
+  const uniquePuuids = uniqueValues(seedPuuids);
+
+  if (uniquePuuids.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("riot_seed_candidates")
+    .select(
+      "id, puuid, platform_region, status, first_seen_scan_job_id, times_scanned, successful_scan_count, failed_scan_count, consecutive_scan_failures",
+    )
+    .eq(
+      "platform_region",
+      (process.env.RIOT_PLATFORM_REGION ?? defaultPlatformRegion).toUpperCase(),
+    )
+    .in("puuid", uniquePuuids);
+
+  if (error) {
+    console.error("Seed candidate scan metadata lookup failed", getSafeDatabaseError(error));
+    return [];
+  }
+
+  return data ?? [];
+}
+
+function getSafeDatabaseError(error: { code?: string; message?: string; status?: number }) {
+  return {
+    code: error.code ?? null,
+    message: error.message ?? "Database operation failed.",
+    status: error.status ?? null,
+  };
 }
 
 function getPersistenceRecoveryState(summary: RiotScanSummary) {
@@ -1080,6 +1277,7 @@ async function loadChampionRegistry(supabase: SupabaseClient): Promise<
 type ValidatedStartInput = {
   counterChampion: string;
   currentPatchOnly: boolean;
+  discoveryFocusChampion: string | null;
   enemyChampion: string;
   matchCount: number;
   maxDisplayedResults: number;
@@ -1154,6 +1352,7 @@ function validateStartInput(
   const maxDisplayedResults = Number(input.maxDisplayedResults);
   const enemyChampion = input.enemyChampion?.trim() ?? "";
   const counterChampion = input.counterChampion?.trim() ?? "";
+  const discoveryFocusChampionInput = input.discoveryFocusChampion?.trim() ?? "";
   const normalizedChampions =
     mode === "target"
       ? normalizeTargetChampions(
@@ -1162,6 +1361,10 @@ function validateStartInput(
           championRegistry,
           normalizeChampionIdentifier,
         )
+      : null;
+  const normalizedDiscoveryFocusChampion =
+    mode === "discovery" && discoveryFocusChampionInput
+      ? normalizeChampionIdentifier(discoveryFocusChampionInput, championRegistry)
       : null;
 
   if (mode !== "target" && mode !== "discovery") {
@@ -1181,6 +1384,13 @@ function validateStartInput(
   if (seedPuuids.length === 0) {
     return {
       error: "Add at least one Seed PUUID.",
+      ok: false,
+    };
+  }
+
+  if (seedPuuids.length > maxSeedCandidatesPerScan) {
+    return {
+      error: `You selected ${seedPuuids.length} seed candidates. The maximum per scan job is ${maxSeedCandidatesPerScan}.`,
       ok: false,
     };
   }
@@ -1221,6 +1431,13 @@ function validateStartInput(
     };
   }
 
+  if (mode === "discovery" && discoveryFocusChampionInput && !normalizedDiscoveryFocusChampion) {
+    return {
+      error: "Select a valid discovery focus champion.",
+      ok: false,
+    };
+  }
+
   if (
     mode === "target" &&
     normalizedChampions?.ok &&
@@ -1236,6 +1453,10 @@ function validateStartInput(
     counterChampion:
       mode === "target" && normalizedChampions?.ok ? normalizedChampions.counterChampion : "",
     currentPatchOnly: input.currentPatchOnly,
+    discoveryFocusChampion:
+      mode === "discovery" && normalizedDiscoveryFocusChampion
+        ? normalizedDiscoveryFocusChampion.canonicalKey
+        : null,
     enemyChampion:
       mode === "target" && normalizedChampions?.ok ? normalizedChampions.enemyChampion : "",
     matchCount,
@@ -1302,6 +1523,8 @@ function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
   switch (sort) {
     case "created_at":
       return "created_at";
+    case "last_scanned_at":
+      return "last_scanned_at";
     case "observed_games":
       return "observed_games";
     case "primary_champion_share":
@@ -1312,6 +1535,24 @@ function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
     default:
       return "last_seen_at";
   }
+}
+
+function normalizeShareFilter(value: number | undefined) {
+  const share = Number(value);
+
+  if (!Number.isFinite(share) || share <= 0) {
+    return null;
+  }
+
+  if (share > 1) {
+    return Math.min(share / 100, 1);
+  }
+
+  return Math.min(share, 1);
+}
+
+function getRecentSeedCandidateScanCutoff() {
+  return new Date(Date.now() - recentSeedCandidateScanHours * 60 * 60 * 1000).toISOString();
 }
 
 function getScannerErrorMessage(error: unknown) {
