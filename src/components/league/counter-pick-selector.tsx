@@ -23,12 +23,11 @@ import {
   fetchReviewedCounterPicksByChampionAndRole,
   type LeagueCounterPick,
 } from "@/src/features/league/counter-picks";
-import { fetchCounterPickMatchStatisticsByEnemyAndRole } from "@/src/features/league/counter-pick-match-statistics";
+import { fetchCounterPickStatsForEnemy } from "@/src/features/league/counter-pick-statistics-provider";
 import {
   compareCounterPickStatistics,
   emptyCounterPickStatistics,
   getCounterPickStatisticsFromCounterPick,
-  getCounterPickStatisticsFromMatchStatistic,
   isCounterPickStatisticsTrusted,
   type CounterPickStatistics,
 } from "@/src/features/league/counter-pick-statistics";
@@ -317,8 +316,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
         return;
       }
 
-      const result = await fetchCounterPickMatchStatisticsByEnemyAndRole({
-        enemyChampionId: selectedChampion.id,
+      const result = await fetchCounterPickStatsForEnemy({
+        enemyChampion: selectedChampion.id,
         role: selectedRole,
       });
 
@@ -328,11 +327,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
 
       setMatchStatisticsState({
         error: result.error,
-        statisticsByCounterChampion: buildCounterPickStatisticsLookup(
-          result.statistics.map(getCounterPickStatisticsFromMatchStatistic),
-          result.statistics.map((statistic) => statistic.counter_champion_id),
-          championsByLookupKey,
-        ),
+        statisticsByCounterChampion: result.statisticsByCounterChampion,
       });
     }
 
@@ -341,7 +336,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     return () => {
       isMounted = false;
     };
-  }, [championsByLookupKey, selectedChampion, selectedRole]);
+  }, [selectedChampion, selectedRole]);
 
   useEffect(() => {
     let isMounted = true;
@@ -780,7 +775,10 @@ function CounterMatchupRow({
       <div className="hidden shrink-0 grid-cols-[5rem_6rem_4rem] items-center gap-3 text-right md:grid">
         {isTrustedStatistics ? (
           <>
-            <CounterMatchupRowStat label="WR" value={formatCounterPickWinRate(row.stats)} />
+            <CounterMatchupRowStat
+              label="WR"
+              value={formatCounterPickWinRate(row.stats, { includeSuffix: false })}
+            />
             <CounterMatchupRowStat label="Games" value={formatCounterPickGames(row.stats)} />
             <CounterMatchupRowStat label="Tier" value={formatCounterPickTier(row.stats)} />
           </>
@@ -1413,10 +1411,17 @@ function getSnapshotDifficulty({
   return counterAdvantageCount >= 2 ? "Medium" : "Skill Check";
 }
 
-function formatCounterPickWinRate(statistics: CounterPickStatistics) {
-  return isCounterPickStatisticsTrusted(statistics) && statistics.winRate !== null
-    ? `${statistics.winRate.toFixed(1)}% WR`
-    : "Not enough data";
+function formatCounterPickWinRate(
+  statistics: CounterPickStatistics,
+  { includeSuffix = true }: { includeSuffix?: boolean } = {},
+) {
+  if (!isCounterPickStatisticsTrusted(statistics) || statistics.winRate === null) {
+    return "Not enough data";
+  }
+
+  const formattedWinRate = `${statistics.winRate.toFixed(1)}%`;
+
+  return includeSuffix ? `${formattedWinRate} WR` : formattedWinRate;
 }
 
 function formatCounterPickGames(statistics: CounterPickStatistics) {
@@ -2153,33 +2158,6 @@ function buildCombatRelationshipLookup(
 
   for (const relationship of relationships) {
     lookup.set(normalizeChampionLookupKey(relationship.champion), relationship);
-  }
-
-  return lookup;
-}
-
-function buildCounterPickStatisticsLookup(
-  statisticsList: CounterPickStatistics[],
-  counterChampionIds: string[],
-  championsByLookupKey: Map<string, LeagueChampion>,
-) {
-  const lookup = new Map<string, CounterPickStatistics>();
-
-  for (const [index, statistics] of statisticsList.entries()) {
-    const counterChampionId = counterChampionIds[index];
-
-    if (!counterChampionId) {
-      continue;
-    }
-
-    const champion = resolveChampion(championsByLookupKey, counterChampionId);
-    const keys = [counterChampionId, champion?.id, champion?.name].filter(
-      (key): key is string => Boolean(key),
-    );
-
-    for (const key of keys) {
-      lookup.set(normalizeChampionLookupKey(key), statistics);
-    }
   }
 
   return lookup;

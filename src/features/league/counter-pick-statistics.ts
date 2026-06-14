@@ -1,7 +1,7 @@
 import type { LeagueCounterPick } from "@/src/features/league/counter-picks";
 import type { LeagueCounterPickMatchStatistic } from "@/src/features/league/counter-pick-match-statistics";
 
-export type CounterPickStatisticsTier = "A" | "B" | "C" | "S" | "S+";
+export type CounterPickStatisticsTier = "A" | "B" | "C" | "D" | "S" | "S+";
 export type CounterPickSampleConfidence = "high" | "low" | "low_sample" | "medium";
 export type CounterPickStatisticsSource =
   | "league_counter_picks"
@@ -32,10 +32,27 @@ export const counterPickStatisticsTierThresholds: CounterPickStatisticsTierThres
   { minimumWinRate: 53, tier: "S" },
   { minimumWinRate: 51, tier: "A" },
   { minimumWinRate: 49, tier: "B" },
-  { minimumWinRate: 0, tier: "C" },
+  { minimumWinRate: 47, tier: "C" },
+  { minimumWinRate: 0, tier: "D" },
 ];
 
 export const minimumTrustedCounterPickGames = 100;
+
+const counterPickStatisticsConfidenceSortValues = {
+  high: 3,
+  medium: 2,
+  low: 1,
+  low_sample: 0,
+} as const satisfies Record<CounterPickSampleConfidence, number>;
+
+const counterPickStatisticsTierSortValues = {
+  "S+": 5,
+  S: 4,
+  A: 3,
+  B: 2,
+  C: 1,
+  D: 0,
+} as const satisfies Record<CounterPickStatisticsTier, number>;
 
 export const emptyCounterPickStatistics: CounterPickStatistics = {
   games: null,
@@ -66,7 +83,7 @@ export function getCounterPickStatisticsFromCounterPick(
     region: counterPick.region,
     sampleConfidence,
     source: "league_counter_picks",
-    tier: getCounterPickStatisticsTier(counterPick.win_rate, counterPick.games),
+    tier: getCounterPickStatisticsTier(counterPick.win_rate, counterPick.games, sampleConfidence),
     winRate: counterPick.win_rate,
     wins: null,
   };
@@ -83,7 +100,11 @@ export function getCounterPickStatisticsFromMatchStatistic(
     region: null,
     sampleConfidence: statistic.sample_confidence,
     source: "match_statistics_cache",
-    tier: getCounterPickStatisticsTier(statistic.win_rate, statistic.games),
+    tier: getCounterPickStatisticsTier(
+      statistic.win_rate,
+      statistic.games,
+      statistic.sample_confidence,
+    ),
     winRate: statistic.win_rate,
     wins: statistic.wins,
   };
@@ -105,16 +126,28 @@ export function getCounterPickSampleConfidence(games: number | null) {
   return "high";
 }
 
-export function getCounterPickStatisticsTier(winRate: number | null, games: number | null = null) {
+export function getCounterPickStatisticsTier(
+  winRate: number | null,
+  games: number | null = null,
+  sampleConfidence: CounterPickSampleConfidence | null = null,
+) {
   if (winRate === null || games === null || games < minimumTrustedCounterPickGames) {
     return null;
   }
 
-  return (
+  const tier =
     counterPickStatisticsTierThresholds.find(
       (threshold) => winRate >= threshold.minimumWinRate,
-    )?.tier ?? "C"
-  );
+    )?.tier ?? "D";
+
+  if (
+    sampleConfidence === "low" &&
+    counterPickStatisticsTierSortValues[tier] > counterPickStatisticsTierSortValues.A
+  ) {
+    return "A";
+  }
+
+  return tier;
 }
 
 export function hasCounterPickStatistics(statistics: CounterPickStatistics) {
@@ -136,8 +169,23 @@ export function compareCounterPickStatistics(
 ) {
   const isLeftTrusted = isCounterPickStatisticsTrusted(left);
   const isRightTrusted = isCounterPickStatisticsTrusted(right);
+  const confidenceSort =
+    getCounterPickStatisticsConfidenceSortValue(right) -
+    getCounterPickStatisticsConfidenceSortValue(left);
+
+  if (confidenceSort !== 0) {
+    return confidenceSort;
+  }
 
   if (isLeftTrusted && isRightTrusted) {
+    const leftTier = getCounterPickStatisticsTierSortValue(left);
+    const rightTier = getCounterPickStatisticsTierSortValue(right);
+    const tierSort = direction === "desc" ? rightTier - leftTier : leftTier - rightTier;
+
+    if (tierSort !== 0) {
+      return tierSort;
+    }
+
     const leftWinRate = left.winRate ?? 0;
     const rightWinRate = right.winRate ?? 0;
 
@@ -155,4 +203,20 @@ export function compareCounterPickStatistics(
   }
 
   return (right.games ?? 0) - (left.games ?? 0);
+}
+
+function getCounterPickStatisticsConfidenceSortValue(statistics: CounterPickStatistics) {
+  if (!isCounterPickStatisticsTrusted(statistics)) {
+    return counterPickStatisticsConfidenceSortValues.low_sample;
+  }
+
+  return statistics.sampleConfidence
+    ? counterPickStatisticsConfidenceSortValues[statistics.sampleConfidence]
+    : counterPickStatisticsConfidenceSortValues.low;
+}
+
+function getCounterPickStatisticsTierSortValue(statistics: CounterPickStatistics) {
+  return statistics.tier
+    ? counterPickStatisticsTierSortValues[statistics.tier]
+    : counterPickStatisticsTierSortValues.D;
 }
