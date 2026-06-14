@@ -128,7 +128,7 @@ export async function fetchReviewedCounterPicksByChampionAndRole({
   }
 
   return {
-    counterPicks: sortCounterPicksByWinRate(data ?? []),
+    counterPicks: sortCounterPicksByTrustedScore(data ?? []),
     error: null,
   };
 }
@@ -163,7 +163,7 @@ export async function fetchAdminCounterPicksByChampionAndRole({
   }
 
   return {
-    counterPicks: sortCounterPicksByWinRate(data ?? []),
+    counterPicks: sortCounterPicksByTrustedScore(data ?? []),
     error: null,
   };
 }
@@ -289,7 +289,7 @@ export async function deleteCounterPick({
   };
 }
 
-function sortCounterPicksByWinRate(counterPicks: LeagueCounterPick[]) {
+function sortCounterPicksByTrustedScore(counterPicks: LeagueCounterPick[]) {
   return [...counterPicks].sort((left, right) => {
     const counterTypeOrder = left.counter_type.localeCompare(right.counter_type);
 

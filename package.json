@@ -10,6 +10,7 @@
     "import:lol-champions": "node scripts/import-lol-champions.mjs",
     "scan:league-fallbacks": "node scripts/scan-league-matchup-fallbacks.mjs",
     "start": "next start",
+    "update:counter-pick-stats": "node scripts/update-counter-pick-match-statistics.mjs",
     "lint": "eslint",
     "format": "prettier --write ."
   },

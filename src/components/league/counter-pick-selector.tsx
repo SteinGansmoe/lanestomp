@@ -23,9 +23,13 @@ import {
   fetchReviewedCounterPicksByChampionAndRole,
   type LeagueCounterPick,
 } from "@/src/features/league/counter-picks";
+import { fetchCounterPickMatchStatisticsByEnemyAndRole } from "@/src/features/league/counter-pick-match-statistics";
 import {
+  compareCounterPickStatistics,
   emptyCounterPickStatistics,
   getCounterPickStatisticsFromCounterPick,
+  getCounterPickStatisticsFromMatchStatistic,
+  isCounterPickStatisticsTrusted,
   type CounterPickStatistics,
 } from "@/src/features/league/counter-pick-statistics";
 import {
@@ -96,6 +100,11 @@ type GuideAvailabilityState = {
   reviewedGuideKeys: Set<string>;
 };
 
+type MatchStatisticsState = {
+  error: string | null;
+  statisticsByCounterChampion: Map<string, CounterPickStatistics>;
+};
+
 const emptyReviewedCounterPickState: ReviewedCounterPickState = {
   counterPicks: [],
   error: null,
@@ -103,6 +112,11 @@ const emptyReviewedCounterPickState: ReviewedCounterPickState = {
 
 const emptyGuideAvailabilityState: GuideAvailabilityState = {
   reviewedGuideKeys: new Set(),
+};
+
+const emptyMatchStatisticsState: MatchStatisticsState = {
+  error: null,
+  statisticsByCounterChampion: new Map(),
 };
 
 const emptyCounterRelationships: readonly LeagueChampionCounterRelationship[] = [];
@@ -145,6 +159,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const [guideAvailabilityState, setGuideAvailabilityState] = useState<GuideAvailabilityState>(
     emptyGuideAvailabilityState,
   );
+  const [matchStatisticsState, setMatchStatisticsState] =
+    useState<MatchStatisticsState>(emptyMatchStatisticsState);
 
   const championsByLookupKey = useMemo(() => buildChampionLookup(champions), [champions]);
   const selectedChampion = champions.find((champion) => champion.id === selectedChampionId) ?? null;
@@ -181,6 +197,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     [bestCounterRelationships, counteredByRelationships],
   );
   const reviewedCounterPicks = reviewedCounterPickState.counterPicks;
+  const matchStatisticsByCounterChampion = matchStatisticsState.statisticsByCounterChampion;
   const hasRoleSpecificBestCounterPicks = reviewedCounterPicks.some(
     (counterPick) => counterPick.counter_type === "best_counter",
   );
@@ -194,6 +211,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
         combatRelationshipsByChampion,
         counterPicks: reviewedCounterPicks,
         direction: "best-counter",
+        matchStatisticsByCounterChampion,
         reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
         selectedChampion,
       });
@@ -202,6 +220,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     return buildCounterRowsFromRelationships({
       championsByLookupKey,
       direction: "best-counter",
+      matchStatisticsByCounterChampion,
       relationships: bestCounterRelationships,
       reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
       role: selectedRole,
@@ -213,6 +232,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     combatRelationshipsByChampion,
     guideAvailabilityState.reviewedGuideKeys,
     hasRoleSpecificBestCounterPicks,
+    matchStatisticsByCounterChampion,
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
@@ -224,6 +244,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
         combatRelationshipsByChampion,
         counterPicks: reviewedCounterPicks,
         direction: "countered-by",
+        matchStatisticsByCounterChampion,
         reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
         selectedChampion,
       });
@@ -232,6 +253,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     return buildCounterRowsFromRelationships({
       championsByLookupKey,
       direction: "countered-by",
+      matchStatisticsByCounterChampion,
       relationships: counteredByRelationships,
       reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
       role: selectedRole,
@@ -243,6 +265,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     counteredByRelationships,
     guideAvailabilityState.reviewedGuideKeys,
     hasRoleSpecificCounteredByPicks,
+    matchStatisticsByCounterChampion,
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
@@ -280,6 +303,45 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
       }),
     [counteredByRows, isCounteredByExpanded],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMatchStatistics() {
+      await Promise.resolve();
+
+      if (!selectedChampion) {
+        if (isMounted) {
+          setMatchStatisticsState(emptyMatchStatisticsState);
+        }
+        return;
+      }
+
+      const result = await fetchCounterPickMatchStatisticsByEnemyAndRole({
+        enemyChampionId: selectedChampion.id,
+        role: selectedRole,
+      });
+
+      if (!isMounted) {
+        return;
+      }
+
+      setMatchStatisticsState({
+        error: result.error,
+        statisticsByCounterChampion: buildCounterPickStatisticsLookup(
+          result.statistics.map(getCounterPickStatisticsFromMatchStatistic),
+          result.statistics.map((statistic) => statistic.counter_champion_id),
+          championsByLookupKey,
+        ),
+      });
+    }
+
+    void loadMatchStatistics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [championsByLookupKey, selectedChampion, selectedRole]);
 
   useEffect(() => {
     let isMounted = true;
@@ -675,6 +737,7 @@ function CounterMatchupRow({
   row: CounterRowModel;
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
+  const isTrustedStatistics = isCounterPickStatisticsTrusted(row.stats);
 
   return (
     <button
@@ -707,6 +770,23 @@ function CounterMatchupRow({
 
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-base font-semibold text-white">{championName}</h3>
+        <p className="mt-1 text-xs text-zinc-500 md:hidden">
+          {isTrustedStatistics
+            ? `${formatCounterPickWinRate(row.stats)} | ${formatCounterPickGames(row.stats)} | ${formatCounterPickTier(row.stats)}`
+            : "Not enough data"}
+        </p>
+      </div>
+
+      <div className="hidden shrink-0 grid-cols-[5rem_6rem_4rem] items-center gap-3 text-right md:grid">
+        {isTrustedStatistics ? (
+          <>
+            <CounterMatchupRowStat label="WR" value={formatCounterPickWinRate(row.stats)} />
+            <CounterMatchupRowStat label="Games" value={formatCounterPickGames(row.stats)} />
+            <CounterMatchupRowStat label="Tier" value={formatCounterPickTier(row.stats)} />
+          </>
+        ) : (
+          <p className="col-span-3 text-sm font-semibold text-zinc-500">Not enough data</p>
+        )}
       </div>
 
       <span
@@ -717,6 +797,17 @@ function CounterMatchupRow({
         aria-hidden="true"
       />
     </button>
+  );
+}
+
+function CounterMatchupRowStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-sm font-semibold text-cyan-100">{value}</p>
+      <p className="mt-0.5 truncate text-[0.62rem] uppercase tracking-[0.12em] text-zinc-500">
+        {label}
+      </p>
+    </div>
   );
 }
 
@@ -902,9 +993,9 @@ function MatchupSnapshotSidebar({
         </div>
 
         <div className="mt-4 grid grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-3">
-          <SnapshotStat label="Win Rate" value={formatSnapshotWinRate(selectedCounter.stats.winRate)} />
-          <SnapshotStat label="Games" value={formatSnapshotGames(selectedCounter.stats.games)} />
-          <SnapshotStat label="Tier" value={selectedCounter.stats.tier ?? "Pending"} />
+          <SnapshotStat label="Win Rate" value={formatCounterPickWinRate(selectedCounter.stats)} />
+          <SnapshotStat label="Games" value={formatCounterPickGames(selectedCounter.stats)} />
+          <SnapshotStat label="Tier" value={formatCounterPickTier(selectedCounter.stats)} />
         </div>
       </section>
 
@@ -1322,12 +1413,22 @@ function getSnapshotDifficulty({
   return counterAdvantageCount >= 2 ? "Medium" : "Skill Check";
 }
 
-function formatSnapshotWinRate(value: number | null) {
-  return value === null ? "Pending" : `${value.toFixed(1)}%`;
+function formatCounterPickWinRate(statistics: CounterPickStatistics) {
+  return isCounterPickStatisticsTrusted(statistics) && statistics.winRate !== null
+    ? `${statistics.winRate.toFixed(1)}% WR`
+    : "Not enough data";
 }
 
-function formatSnapshotGames(value: number | null) {
-  return value === null ? "Pending" : new Intl.NumberFormat("en").format(value);
+function formatCounterPickGames(statistics: CounterPickStatistics) {
+  return isCounterPickStatisticsTrusted(statistics) && statistics.games !== null
+    ? `${new Intl.NumberFormat("en").format(statistics.games)} games`
+    : "Not enough data";
+}
+
+function formatCounterPickTier(statistics: CounterPickStatistics) {
+  return isCounterPickStatisticsTrusted(statistics) && statistics.tier
+    ? `${statistics.tier} Tier`
+    : "Not enough data";
 }
 
 function CounterPrepAccordionItem({
@@ -1908,6 +2009,7 @@ function EmptyState({ text, title }: { text: string; title: string }) {
 function buildCounterRowsFromRelationships({
   championsByLookupKey,
   direction,
+  matchStatisticsByCounterChampion,
   relationships,
   reviewedGuideKeys,
   role,
@@ -1915,6 +2017,7 @@ function buildCounterRowsFromRelationships({
 }: {
   championsByLookupKey: Map<string, LeagueChampion>;
   direction: CounterDirection;
+  matchStatisticsByCounterChampion: Map<string, CounterPickStatistics>;
   relationships?: readonly LeagueChampionCounterRelationship[];
   reviewedGuideKeys: Set<string>;
   role: LeagueRole;
@@ -1924,36 +2027,44 @@ function buildCounterRowsFromRelationships({
     return [];
   }
 
-  return relationships.map((relationship) => {
-    const champion = resolveChampion(championsByLookupKey, relationship.champion);
-    const championName = champion?.name ?? relationship.champion;
-    const championA = champion;
-    const championB = selectedChampion;
-    const matchupHref =
-      championA && championB
-        ? getLeagueMatchupHref({
-            championA,
-            championB,
-            role,
-          })
-        : null;
-    const guideKey = championA && championB ? getMatchupGuideKey(championA, championB, role) : null;
-    const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
-    const matchupLabel = `${championName} vs ${selectedChampion.name}`;
+  return sortCounterRows(
+    relationships.map((relationship) => {
+      const champion = resolveChampion(championsByLookupKey, relationship.champion);
+      const championName = champion?.name ?? relationship.champion;
+      const championA = champion;
+      const championB = selectedChampion;
+      const matchupHref =
+        championA && championB
+          ? getLeagueMatchupHref({
+              championA,
+              championB,
+              role,
+            })
+          : null;
+      const guideKey =
+        championA && championB ? getMatchupGuideKey(championA, championB, role) : null;
+      const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
+      const matchupLabel = `${championName} vs ${selectedChampion.name}`;
 
-    return {
-      champion,
-      direction,
-      fallbackName: relationship.champion,
-      guideKey,
-      href,
-      key: `${direction}-${normalizeChampionLookupKey(relationship.champion)}`,
-      matchupHref,
-      matchupLabel,
-      reasons: dedupePrepBullets(relationship.reasons),
-      stats: emptyCounterPickStatistics,
-    } satisfies CounterRowModel;
-  });
+      return {
+        champion,
+        direction,
+        fallbackName: relationship.champion,
+        guideKey,
+        href,
+        key: `${direction}-${normalizeChampionLookupKey(relationship.champion)}`,
+        matchupHref,
+        matchupLabel,
+        reasons: dedupePrepBullets(relationship.reasons),
+        stats: getCachedCounterPickStatistics({
+          champion,
+          fallbackName: relationship.champion,
+          statisticsByCounterChampion: matchStatisticsByCounterChampion,
+        }),
+      } satisfies CounterRowModel;
+    }),
+    direction,
+  );
 }
 
 function getVisibleCounterRows({
@@ -1971,6 +2082,7 @@ function buildCounterRowsFromCounterPicks({
   combatRelationshipsByChampion,
   counterPicks,
   direction,
+  matchStatisticsByCounterChampion,
   reviewedGuideKeys,
   selectedChampion,
 }: {
@@ -1978,6 +2090,7 @@ function buildCounterRowsFromCounterPicks({
   combatRelationshipsByChampion: Map<string, LeagueChampionCounterRelationship>;
   counterPicks: LeagueCounterPick[];
   direction: CounterDirection;
+  matchStatisticsByCounterChampion: Map<string, CounterPickStatistics>;
   reviewedGuideKeys: Set<string>;
   selectedChampion: LeagueChampion | null;
 }) {
@@ -1987,7 +2100,8 @@ function buildCounterRowsFromCounterPicks({
 
   const counterType = direction === "best-counter" ? "best_counter" : "countered_by";
 
-  return counterPicks
+  return sortCounterRows(
+    counterPicks
     .filter((counterPick) => counterPick.counter_type === counterType)
     .map((counterPick) => {
       const champion = resolveChampion(championsByLookupKey, counterPick.counter_champion_id);
@@ -2020,9 +2134,16 @@ function buildCounterRowsFromCounterPicks({
         matchupHref,
         matchupLabel,
         reasons: buildCounterPickReasonList(counterPick, combatRelationship),
-        stats: getCounterPickStatisticsFromCounterPick(counterPick),
+        stats: getCachedCounterPickStatistics({
+          champion,
+          fallbackName: counterPick.counter_champion_id,
+          fallbackStatistics: getCounterPickStatisticsFromCounterPick(counterPick),
+          statisticsByCounterChampion: matchStatisticsByCounterChampion,
+        }),
       } satisfies CounterRowModel;
-    });
+    }),
+    direction,
+  );
 }
 
 function buildCombatRelationshipLookup(
@@ -2035,6 +2156,80 @@ function buildCombatRelationshipLookup(
   }
 
   return lookup;
+}
+
+function buildCounterPickStatisticsLookup(
+  statisticsList: CounterPickStatistics[],
+  counterChampionIds: string[],
+  championsByLookupKey: Map<string, LeagueChampion>,
+) {
+  const lookup = new Map<string, CounterPickStatistics>();
+
+  for (const [index, statistics] of statisticsList.entries()) {
+    const counterChampionId = counterChampionIds[index];
+
+    if (!counterChampionId) {
+      continue;
+    }
+
+    const champion = resolveChampion(championsByLookupKey, counterChampionId);
+    const keys = [counterChampionId, champion?.id, champion?.name].filter(
+      (key): key is string => Boolean(key),
+    );
+
+    for (const key of keys) {
+      lookup.set(normalizeChampionLookupKey(key), statistics);
+    }
+  }
+
+  return lookup;
+}
+
+function getCachedCounterPickStatistics({
+  champion,
+  fallbackName,
+  fallbackStatistics = emptyCounterPickStatistics,
+  statisticsByCounterChampion,
+}: {
+  champion: LeagueChampion | null;
+  fallbackName: string;
+  fallbackStatistics?: CounterPickStatistics;
+  statisticsByCounterChampion: Map<string, CounterPickStatistics>;
+}) {
+  const lookupKeys = [champion?.id, champion?.name, fallbackName].filter(
+    (key): key is string => Boolean(key),
+  );
+
+  for (const lookupKey of lookupKeys) {
+    const statistics = statisticsByCounterChampion.get(normalizeChampionLookupKey(lookupKey));
+
+    if (statistics) {
+      return statistics;
+    }
+  }
+
+  return fallbackStatistics;
+}
+
+function sortCounterRows(rows: CounterRowModel[], direction: CounterDirection) {
+  const statisticDirection = direction === "best-counter" ? "desc" : "asc";
+
+  return [...rows].sort((left, right) => {
+    const statisticsSort = compareCounterPickStatistics(
+      left.stats,
+      right.stats,
+      statisticDirection,
+    );
+
+    if (statisticsSort !== 0) {
+      return statisticsSort;
+    }
+
+    const leftName = left.champion?.name ?? left.fallbackName;
+    const rightName = right.champion?.name ?? right.fallbackName;
+
+    return leftName.localeCompare(rightName);
+  });
 }
 
 function buildCounterPickReasonList(
