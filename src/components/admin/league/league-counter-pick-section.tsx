@@ -31,6 +31,7 @@ import type {
   LeagueCounterPick,
   LeagueCounterPickType,
 } from "../types";
+import { RiotMatchScannerPanel } from "./riot-match-scanner-panel";
 
 type CounterPickStatusFilter = LeagueCounterPick["generation_status"] | "all";
 type CounterPickTypeFilter = LeagueCounterPickType | "all";
@@ -339,7 +340,9 @@ export function AdminLeagueCounterPicksSection({
     }
 
     await refreshAfterMutation(
-      generationStatus === "reviewed" ? "Counter pick reviewed." : "Counter pick reverted to draft.",
+      generationStatus === "reviewed"
+        ? "Counter pick reviewed."
+        : "Counter pick reverted to draft.",
       setBulkStatus,
     );
   }
@@ -496,6 +499,8 @@ export function AdminLeagueCounterPicksSection({
           )}
         </CardContent>
       </Card>
+
+      <RiotMatchScannerPanel champions={champions} />
 
       {selectedChampionCombatProfile ? (
         <CombatProfileCounterRelationships
@@ -1006,9 +1011,7 @@ function CounterPickRow({
       <div className="mt-4 grid gap-3 text-xs text-zinc-400 md:grid-cols-3">
         <p>Updated {formatDateTime(counterPick.updated_at)}</p>
         <p>Strength {counterPick.counter_strength ?? "Not set"}</p>
-        <p>
-          Sample {counterPick.games !== null ? counterPick.games.toLocaleString() : "Not set"}
-        </p>
+        <p>Sample {counterPick.games !== null ? counterPick.games.toLocaleString() : "Not set"}</p>
       </div>
 
       {counterPick.reason ? (

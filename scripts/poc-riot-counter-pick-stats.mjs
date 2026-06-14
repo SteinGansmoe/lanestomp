@@ -3,16 +3,22 @@ import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 import { RiotApiClient } from "./lib/riot-api-client.mjs";
+import { persistObservationsAndRebuildStats } from "./lib/riot-counter-pick-aggregation.mjs";
+import {
+  fetchCurrentPatch,
+  normalizeRole,
+  rankedSoloDuoQueueId,
+  scanRiotCounterPickMatchups,
+  uniqueValues,
+} from "./lib/riot-counter-pick-scanner.mjs";
 
-const target = {
+const defaultRegionalRoute = "europe";
+const defaultMatchCount = 20;
+const defaultTarget = {
   counterChampionId: "Yasuo",
   enemyChampionId: "Ahri",
   role: "mid",
-  teamPosition: "MIDDLE",
 };
-const rankedSoloDuoQueueId = 420;
-const defaultRegionalRoute = "europe";
-const defaultMatchCount = 20;
 
 loadEnvFile(".env.local");
 
@@ -24,10 +30,23 @@ if (args.includes("--help")) {
 }
 
 const isDryRun = args.includes("--dry-run") || process.env.npm_config_dry_run === "true";
-const regionalRoute = getArgValue("--region") ?? process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute;
-const matchCount = Number(getArgValue("--count") ?? process.env.RIOT_POC_MATCH_COUNT ?? defaultMatchCount);
+const isDiscoverMode = args.includes("--discover");
+const regionalRoute =
+  getArgValue("--region") ?? process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute;
+const matchCount = Number(
+  getArgValue("--count") ?? process.env.RIOT_POC_MATCH_COUNT ?? defaultMatchCount,
+);
 const queue = Number(getArgValue("--queue") ?? process.env.RIOT_QUEUE_ID ?? rankedSoloDuoQueueId);
-const requestDelayMs = Number(getArgValue("--delay-ms") ?? process.env.RIOT_REQUEST_DELAY_MS ?? 1200);
+const requestDelayMs = Number(
+  getArgValue("--delay-ms") ?? process.env.RIOT_REQUEST_DELAY_MS ?? 1200,
+);
+const target = {
+  counterChampionId:
+    getArgValue("--counter") ?? process.env.RIOT_POC_COUNTER ?? defaultTarget.counterChampionId,
+  enemyChampionId:
+    getArgValue("--enemy") ?? process.env.RIOT_POC_ENEMY ?? defaultTarget.enemyChampionId,
+  role: normalizeRole(getArgValue("--role") ?? process.env.RIOT_POC_ROLE ?? defaultTarget.role),
+};
 const seedPuuids = uniqueValues([
   ...getArgValues("--seed-puuid"),
   ...(process.env.RIOT_POC_SEED_PUUIDS ?? "").split(","),
@@ -53,6 +72,10 @@ if (seedPuuids.length === 0) {
   throw new Error("Provide at least one --seed-puuid value or RIOT_POC_SEED_PUUIDS.");
 }
 
+if (!target.role) {
+  throw new Error("Invalid role. Use top, jungle, mid, adc, or support.");
+}
+
 const patch = requestedPatch ?? (await fetchCurrentPatch());
 const riot = new RiotApiClient({
   apiKey: riotApiKey,
@@ -74,79 +97,51 @@ console.log(
     `queue=${queue}`,
     `patch=${patch}`,
     `target=${target.counterChampionId} ${target.role} vs ${target.enemyChampionId} ${target.role}`,
+    `discover=${isDiscoverMode}`,
     `seedPuuids=${seedPuuids.length}`,
     `matchCountPerSeed=${matchCount}`,
     `dryRun=${isDryRun}`,
   ].join(" | "),
 );
 
-const matchIds = await fetchUniqueMatchIds(seedPuuids);
-const aggregate = {
-  games: 0,
-  losses: 0,
+const scanResult = await scanRiotCounterPickMatchups({
+  discover: isDiscoverMode,
+  logger: console,
+  matchCount,
   patch,
-  scannedMatches: 0,
-  skippedPatchMatches: 0,
-  targetMatches: 0,
-  wins: 0,
-};
-
-for (const matchId of matchIds) {
-  const match = await riot.fetchMatch(matchId);
-  aggregate.scannedMatches += 1;
-
-  if (getPatchFromMatch(match) !== patch) {
-    aggregate.skippedPatchMatches += 1;
-    continue;
-  }
-
-  const result = getTargetMatchupResult(match);
-
-  if (!result) {
-    continue;
-  }
-
-  aggregate.targetMatches += 1;
-  aggregate.games += 1;
-
-  if (result.didCounterWin) {
-    aggregate.wins += 1;
-  } else {
-    aggregate.losses += 1;
-  }
-}
-
-const winRate = calculateWinRate({
-  games: aggregate.games,
-  wins: aggregate.wins,
+  queue,
+  riot,
+  role: target.role,
+  seedPuuids,
+  target,
 });
-const tier = calculateTier({
-  games: aggregate.games,
-  winRate,
-});
+const summary = scanResult.summary;
+const targetResult = scanResult.targetResult;
 
 console.log(
   [
     "Riot POC scan complete",
-    `matchIds=${matchIds.length}`,
-    `scanned=${aggregate.scannedMatches}`,
-    `patchSkipped=${aggregate.skippedPatchMatches}`,
-    `matched=${aggregate.targetMatches}`,
-    `games=${aggregate.games}`,
-    `yasuoWins=${aggregate.wins}`,
-    `yasuoLosses=${aggregate.losses}`,
-    `winRate=${winRate}%`,
-    `tier=${tier}`,
+    `totalMatchIds=${summary.fetchedMatchIds}`,
+    `uniqueMatchIds=${summary.uniqueMatchIds}`,
+    `matchesScanned=${summary.matchesScanned}`,
+    `patchSkipped=${summary.patchSkipped}`,
+    `queueSkipped=${summary.queueSkipped}`,
+    `roleSkipped=${summary.roleSkipped}`,
+    `championPairMatched=${summary.championPairMatched}`,
+    `games=${targetResult?.games ?? 0}`,
+    `${target.counterChampionId}Wins=${targetResult?.wins ?? 0}`,
+    `${target.counterChampionId}Losses=${targetResult?.losses ?? 0}`,
+    `winRate=${targetResult?.winRate ?? 0}%`,
+    `tier=${targetResult?.tier ?? "C"}`,
   ].join(" | "),
 );
 
-if (aggregate.games === 0) {
-  console.log("No Ahri mid vs Yasuo mid games found. Nothing to upsert.");
-  process.exit(0);
+if (isDiscoverMode) {
+  printDiscoveryPairs(scanResult.discoveryResults);
 }
 
 if (isDryRun) {
-  console.log("Dry run enabled. Skipping Supabase upsert.");
+  console.log("Dry run enabled. Skipping observation persistence and stats aggregation.");
   process.exit(0);
 }
 
@@ -154,139 +149,50 @@ if (!supabase) {
   throw new Error("Supabase client was not initialized.");
 }
 
-const { error } = await supabase.from("counter_pick_stats").upsert(
-  {
-    counter_champion_id: target.counterChampionId,
-    enemy_champion_id: target.enemyChampionId,
-    games: aggregate.games,
-    losses: aggregate.losses,
-    patch,
-    role: target.role,
-    tier,
-    win_rate: winRate,
-    wins: aggregate.wins,
-  },
-  {
-    onConflict: "enemy_champion_id,counter_champion_id,role,patch",
-  },
+const persistenceResult = await persistObservationsAndRebuildStats({
+  observations: scanResult.observations,
+  supabase,
+});
+
+console.log(
+  [
+    "Riot observation persistence complete",
+    `observationsFound=${persistenceResult.observationsFound}`,
+    `observationsInserted=${persistenceResult.insertedObservations}`,
+    `duplicatesSkipped=${persistenceResult.duplicateObservationsSkipped}`,
+    `insertFailures=${persistenceResult.insertFailures}`,
+    `statsRowsUpdated=${persistenceResult.statsRowsUpdated}`,
+  ].join(" | "),
 );
 
-if (error) {
-  throw new Error(`Could not upsert Riot POC counter-pick stats: ${error.message}`);
+if (isDiscoverMode) {
+  process.exit(0);
+}
+
+if (!targetResult || targetResult.games === 0) {
+  console.log(
+    `No ${target.enemyChampionId} ${target.role} vs ${target.counterChampionId} ${target.role} games found.`,
+  );
+  process.exit(0);
 }
 
 console.log(
-  `Upserted ${target.counterChampionId} ${target.role} vs ${target.enemyChampionId} ${target.role} stats into counter_pick_stats.`,
+  `Aggregated stored observations for ${target.counterChampionId} ${target.role} vs ${target.enemyChampionId} ${target.role} into counter_pick_stats.`,
 );
 
-async function fetchUniqueMatchIds(puuids) {
-  const matchIds = new Set();
+function printDiscoveryPairs(discoveryResults) {
+  console.log("Most common matchup pairs:");
 
-  for (const puuid of puuids) {
-    const ids = await riot.fetchRecentRankedMatchIdsByPuuid({
-      count: matchCount,
-      puuid,
-      queue,
-    });
-
-    if (Array.isArray(ids)) {
-      ids.forEach((id) => matchIds.add(id));
-    }
-
-    console.log(`Fetched ${Array.isArray(ids) ? ids.length : 0} match IDs for one seed PUUID.`);
+  if (discoveryResults.length === 0) {
+    console.log("No role matchup pairs found.");
+    return;
   }
 
-  return Array.from(matchIds);
-}
-
-function getTargetMatchupResult(match) {
-  const participants = match?.info?.participants;
-
-  if (!Array.isArray(participants)) {
-    return null;
-  }
-
-  const midParticipants = participants.filter(
-    (participant) =>
-      participant.teamPosition === target.teamPosition ||
-      participant.individualPosition === target.teamPosition,
-  );
-  const enemy = midParticipants.find(
-    (participant) => normalizeChampionKey(participant.championName) === normalizeChampionKey(target.enemyChampionId),
-  );
-  const counter = midParticipants.find(
-    (participant) => normalizeChampionKey(participant.championName) === normalizeChampionKey(target.counterChampionId),
-  );
-
-  if (!enemy || !counter || enemy.teamId === counter.teamId) {
-    return null;
-  }
-
-  return {
-    didCounterWin: Boolean(counter.win),
-  };
-}
-
-async function fetchCurrentPatch() {
-  const response = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
-
-  if (!response.ok) {
-    throw new Error(`Could not fetch current League patch (${response.status}).`);
-  }
-
-  const versions = await response.json();
-  const version = Array.isArray(versions) ? versions[0] : null;
-
-  if (typeof version !== "string") {
-    throw new Error("Data Dragon did not return a current patch version.");
-  }
-
-  const [major, minor] = version.split(".");
-
-  if (!major || !minor) {
-    throw new Error(`Could not parse current patch from ${version}.`);
-  }
-
-  return `${major}.${minor}`;
-}
-
-function getPatchFromMatch(match) {
-  const gameVersion = String(match?.info?.gameVersion ?? "");
-  const [major, minor] = gameVersion.split(".");
-
-  return major && minor ? `${major}.${minor}` : null;
-}
-
-function calculateWinRate({ games, wins }) {
-  if (games <= 0) {
-    return 0;
-  }
-
-  return Number(((wins / games) * 100).toFixed(2));
-}
-
-function calculateTier({ games, winRate }) {
-  if (games <= 0) {
-    return "C";
-  }
-
-  if (winRate >= 56) {
-    return "S+";
-  }
-
-  if (winRate >= 53) {
-    return "S";
-  }
-
-  if (winRate >= 51) {
-    return "A";
-  }
-
-  if (winRate >= 49) {
-    return "B";
-  }
-
-  return "C";
+  discoveryResults.slice(0, 20).forEach((pair) => {
+    console.log(
+      `${pair.championA} vs ${pair.championB} (${pair.games}) | ${pair.championA} ${pair.championAWins}-${pair.championBWins} ${pair.championB}`,
+    );
+  });
 }
 
 function getArgValue(name) {
@@ -317,19 +223,6 @@ function getArgValues(name) {
   }
 
   return values;
-}
-
-function uniqueValues(values) {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
-}
-
-function normalizeChampionKey(value) {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
 }
 
 function loadEnvFile(fileName) {
@@ -368,15 +261,19 @@ function loadEnvFile(fileName) {
 function printHelp() {
   console.log(`Riot Match Data Proof of Concept
 
-Scans recent ranked EUW/Europe match data for Ahri mid vs Yasuo mid and upserts
-the aggregate into counter_pick_stats.
+Scans recent ranked EUW/Europe match data for a target counter matchup and
+upserts the aggregate into counter_pick_stats.
 
 Usage:
-  npm run poc:riot-counter-pick -- --seed-puuid <PUUID> [--count 20] [--patch 15.12] [--dry-run]
+  npm run poc:riot-counter-pick -- --seed-puuid <PUUID> [--seed-puuid <PUUID>] [--enemy Ahri] [--counter Yasuo] [--role mid] [--count 20] [--patch 15.12] [--dry-run]
+  npm run poc:riot-counter-pick -- --discover --seed-puuid <PUUID> [--role mid] [--count 50]
 
 Environment:
   RIOT_API_KEY                Riot API key
   RIOT_POC_SEED_PUUIDS       Comma-separated seed PUUIDs
+  RIOT_POC_ENEMY             Defaults to Ahri
+  RIOT_POC_COUNTER           Defaults to Yasuo
+  RIOT_POC_ROLE              Defaults to mid
   RIOT_REGIONAL_ROUTING      Defaults to europe
   RIOT_REQUEST_DELAY_MS      Defaults to 1200
   SUPABASE_SERVICE_ROLE_KEY  Required unless --dry-run exits before upsert

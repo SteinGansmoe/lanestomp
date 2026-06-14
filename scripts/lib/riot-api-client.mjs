@@ -1,4 +1,13 @@
 // Script-only Riot client. Do not import this from public UI code.
+export class RiotApiError extends Error {
+  constructor(message, { status, url }) {
+    super(message);
+    this.name = "RiotApiError";
+    this.status = status;
+    this.url = url;
+  }
+}
+
 export class RiotApiClient {
   constructor({
     apiKey,
@@ -42,6 +51,14 @@ export class RiotApiClient {
     );
   }
 
+  async fetchAccountByRiotId({ gameName, tagLine }) {
+    return this.fetchJson(
+      `https://${this.regionalRoute}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
+        gameName,
+      )}/${encodeURIComponent(tagLine)}`,
+    );
+  }
+
   async fetchJson(url) {
     await this.waitForRateLimitSlot();
 
@@ -62,7 +79,13 @@ export class RiotApiClient {
     }
 
     if (!response.ok) {
-      throw new Error(`Riot API request failed (${response.status}) for ${redactUrl(url)}`);
+      throw new RiotApiError(
+        `Riot API request failed (${response.status}) for ${redactUrl(url)}`,
+        {
+          status: response.status,
+          url: redactUrl(url),
+        },
+      );
     }
 
     return response.json();

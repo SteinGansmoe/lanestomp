@@ -9,10 +9,13 @@
     "download:lol-champion-icons": "node scripts/download-lol-champion-icons.mjs",
     "import:lol-champions": "node scripts/import-lol-champions.mjs",
     "poc:riot-counter-pick": "node scripts/poc-riot-counter-pick-stats.mjs",
+    "rebuild:counter-pick-stats": "node scripts/rebuild-counter-pick-stats.mjs",
+    "riot:get-puuid": "node scripts/riot-get-puuid.mjs",
     "scan:league-fallbacks": "node scripts/scan-league-matchup-fallbacks.mjs",
     "start": "next start",
     "update:counter-pick-stats": "node scripts/update-counter-pick-match-statistics.mjs",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write ."
   },
   "dependencies": {
