@@ -66,6 +66,58 @@ export const yasuoCombatProfile = {
     strongInto: [],
     weakInto: [],
   },
+  counters: [
+    {
+      champion: "Ahri",
+      reasons: [
+        "Yasuo can block Ahri's charm with (W) and use minion waves to dodge her main damage.",
+      ],
+    },
+    {
+      champion: "Lux",
+      reasons: [
+        "Yasuo can deny Lux's binding or follow-up damage with Wind Wall and punish her lack of mobility after cooldowns.",
+      ],
+    },
+    {
+      champion: "Orianna",
+      reasons: [
+        "Yasuo can dash through waves to avoid Orianna's ball control and pressure her before she scales.",
+      ],
+    },
+    {
+      champion: "Xerath",
+      reasons: [
+        "Yasuo can use mobility and Wind Wall to reduce Xerath's poke windows and force him to respect all-in range.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can stop Yasuo's dash-heavy engages with reliable lockdown and force him into bad all-ins.",
+      ],
+    },
+    {
+      champion: "Renekton",
+      reasons: [
+        "Renekton can punish Yasuo's melee trades with point-and-click stun and stronger early burst.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: [
+        "Pantheon can stun Yasuo before he dashes out and win short trades before Yasuo reaches item spikes.",
+      ],
+    },
+    {
+      champion: "Malphite",
+      reasons: [
+        "Malphite can stack armor, slow Yasuo's attack pattern, and start fights with knockup threat Yasuo cannot ignore.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Yasuo",
   offMetaRoles: ["adc"],

@@ -53,6 +53,58 @@ export const luxCombatProfile = {
     strongInto: [],
     weakInto: [],
   },
+  counters: [
+    {
+      champion: "Sona",
+      reasons: [
+        "Lux can outrange Sona in lane and punish her low mobility with binding into burst trades.",
+      ],
+    },
+    {
+      champion: "Soraka",
+      reasons: [
+        "Lux can pressure Soraka from outside her preferred sustain trades and punish her if silence is unavailable.",
+      ],
+    },
+    {
+      champion: "Braum",
+      reasons: [
+        "Lux can poke Braum before he reaches engage range and punish his lane if he cannot force contact.",
+      ],
+    },
+    {
+      champion: "Taric",
+      reasons: [
+        "Lux can control Taric with range and binding threat before his melee follow-up becomes reliable.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Yasuo",
+      reasons: [
+        "Yasuo can block Lux's key projectiles and punish her immobility when (Q) is down.",
+      ],
+    },
+    {
+      champion: "Nautilus",
+      reasons: [
+        "Nautilus can force all-ins through Lux's poke and punish her if she loses wave or brush control.",
+      ],
+    },
+    {
+      champion: "Blitzcrank",
+      reasons: [
+        "Blitzcrank can threaten hooks through lane fog and punish Lux's low mobility before she can kite.",
+      ],
+    },
+    {
+      champion: "Leona",
+      reasons: [
+        "Leona can start direct all-ins that make Lux spend (Q) defensively instead of controlling lane.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Lux",
   offMetaRoles: [],

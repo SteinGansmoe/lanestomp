@@ -91,9 +91,25 @@ export const ahriCombatProfile = {
     {
       champion: "Akali",
       reasons: [
-        "Ahri can hold (E) for Akali's (E) recast or (R) commit instead of throwing it early.",
-        "(Q) waveclear lets Ahri move before Akali has reliable ranged shove.",
-        "After level 6, Ahri can use (R) charges to kite through Akali's all-in windows.",
+        "Ahri can hold (E) for Akali's recast or ultimate commit and kite the follow-up with (R).",
+      ],
+    },
+    {
+      champion: "Katarina",
+      reasons: [
+        "Ahri can interrupt Katarina's dagger commits with (E) and push waves before Katarina can roam freely.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Ahri can pressure Twisted Fate before his side-lane roams and threaten charm when he walks up to card the wave.",
+      ],
+    },
+    {
+      champion: "Veigar",
+      reasons: [
+        "Ahri can dodge around Veigar's cage with (R) and punish him before his scaling damage stabilizes.",
       ],
     },
   ],
@@ -101,9 +117,25 @@ export const ahriCombatProfile = {
     {
       champion: "Yasuo",
       reasons: [
-        "Yasuo can block Ahri's (E) and return damage when her charm is unavailable.",
-        "Minion waves give Yasuo dash paths that make Ahri's skillshots harder to line up.",
-        "If Ahri spends (R) defensively, Yasuo can keep lane pressure with lower cooldown trading.",
+        "Yasuo can block Ahri's (E) with Wind Wall and use minion dashes to make her skillshots unreliable.",
+      ],
+    },
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can lock Ahri down through her mobility and punish charm misses with reliable crowd control.",
+      ],
+    },
+    {
+      champion: "Malzahar",
+      reasons: [
+        "Malzahar can neutralize Ahri's lane pressure with waveclear and suppress her before she can reposition with (R).",
+      ],
+    },
+    {
+      champion: "Syndra",
+      reasons: [
+        "Syndra outranges Ahri in trades and can punish her forward charm angles with stronger burst windows.",
       ],
     },
   ],

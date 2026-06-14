@@ -57,6 +57,58 @@ export const zedCombatProfile = {
     strongInto: [],
     weakInto: [],
   },
+  counters: [
+    {
+      champion: "Lux",
+      reasons: [
+        "Zed can punish Lux's low mobility after she misses (Q) and force lethal trades with level 6 burst.",
+      ],
+    },
+    {
+      champion: "Xerath",
+      reasons: [
+        "Zed can dodge Xerath's key poke with shadows and threaten all-ins when Xerath oversteps for waveclear.",
+      ],
+    },
+    {
+      champion: "Veigar",
+      reasons: [
+        "Zed can pressure Veigar before he scales and use shadow mobility to play around cage placement.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Zed can punish Twisted Fate's weak dueling windows and threaten him whenever gold card is unavailable.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can deny Zed's death mark with self-peel and lock him down after he commits.",
+      ],
+    },
+    {
+      champion: "Malzahar",
+      reasons: [
+        "Malzahar can push safely, block poke with passive, and suppress Zed when he dives in.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: [
+        "Pantheon can punish Zed's early melee windows with stun and block burst during short trades.",
+      ],
+    },
+    {
+      champion: "Anivia",
+      reasons: [
+        "Anivia can control the wave, punish Zed's return shadow location, and survive burst through egg pressure.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Zed",
   offMetaRoles: [],

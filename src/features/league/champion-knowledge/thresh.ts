@@ -75,6 +75,58 @@ export const threshCombatProfile = {
       "Minion cover lanes.",
   ],
   },
+  counters: [
+    {
+      champion: "Leona",
+      reasons: [
+        "Thresh can Flay Leona's engage and turn her predictable all-in path into a losing trade.",
+      ],
+    },
+    {
+      champion: "Rell",
+      reasons: [
+        "Thresh can interrupt Rell's engage timing with Flay and lantern his ADC out of follow-up range.",
+      ],
+    },
+    {
+      champion: "Nautilus",
+      reasons: [
+        "Thresh can punish Nautilus after missed hook and use lantern to reduce his point-and-click follow-up value.",
+      ],
+    },
+    {
+      champion: "Jinx",
+      reasons: [
+        "Thresh can punish Jinx's low mobility with hook threat and force her to spend summoners before resets matter.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Morgana",
+      reasons: [
+        "Morgana can block Thresh hook or Flay follow-up with Black Shield and punish missed engages.",
+      ],
+    },
+    {
+      champion: "Zyra",
+      reasons: [
+        "Zyra can control brush with plants and punish Thresh when he steps up for hook angles.",
+      ],
+    },
+    {
+      champion: "Brand",
+      reasons: [
+        "Brand can chip Thresh down before engage windows and punish him if he misses hook.",
+      ],
+    },
+    {
+      champion: "Janna",
+      reasons: [
+        "Janna can deny Thresh's engage follow-up with disengage tools and keep carries out of hook punish range.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Thresh",
   offMetaRoles: [],

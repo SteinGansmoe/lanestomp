@@ -99,8 +99,24 @@ export const caitlynCombatProfile = {
       champion: "Vayne",
       reasons: [
         "Caitlyn's range lets her punish Vayne before Vayne has enough items to fight back.",
-        "(W) traps can punish Vayne when she tumbles forward or gets crowd controlled by support.",
-        "Caitlyn can use early wave control to take plates before Vayne reaches scaling thresholds.",
+      ],
+    },
+    {
+      champion: "Jinx",
+      reasons: [
+        "Caitlyn can win early wave control and plate pressure before Jinx reaches her reset-focused item spikes.",
+      ],
+    },
+    {
+      champion: "Kaisa",
+      reasons: [
+        "Caitlyn can punish Kai'Sa's shorter range and force her to farm under trap pressure.",
+      ],
+    },
+    {
+      champion: "Samira",
+      reasons: [
+        "Caitlyn can chip Samira before all-in range and hold (E) to deny direct engage attempts.",
       ],
     },
   ],
@@ -108,9 +124,25 @@ export const caitlynCombatProfile = {
     {
       champion: "Sivir",
       reasons: [
-        "Sivir can spell shield Caitlyn trap follow-up or ultimate pressure.",
-        "Sivir's waveclear can neutralize Caitlyn's normal push-and-plate lane pattern.",
-        "Once Sivir has items, team speed can force fights where Caitlyn has less time to set traps.",
+        "Sivir's spell shield and waveclear can neutralize Caitlyn's trap follow-up and plate pressure.",
+      ],
+    },
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can punish Caitlyn if he gets into axe trade range before she builds a wave advantage.",
+      ],
+    },
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can force explosive all-ins that bypass Caitlyn's preferred short-range poke pattern.",
+      ],
+    },
+    {
+      champion: "Ashe",
+      reasons: [
+        "Ashe can match lane range well enough to slow Caitlyn's push and punish her with repeated slows.",
       ],
     },
   ],

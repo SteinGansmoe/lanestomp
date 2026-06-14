@@ -26,7 +26,6 @@ import {
 import {
   emptyCounterPickStatistics,
   getCounterPickStatisticsFromCounterPick,
-  hasCounterPickStatistics,
   type CounterPickStatistics,
 } from "@/src/features/league/counter-pick-statistics";
 import {
@@ -78,7 +77,6 @@ type CounterRowModel = {
   matchupHref: string | null;
   matchupLabel: string;
   reasons: string[];
-  roleLabel: string;
   stats: CounterPickStatistics;
 };
 
@@ -109,6 +107,8 @@ const emptyGuideAvailabilityState: GuideAvailabilityState = {
 
 const emptyCounterRelationships: readonly LeagueChampionCounterRelationship[] = [];
 const defaultOpenPrepSections: CounterPrepSectionKey[] = ["build"];
+const defaultVisibleCounterCount = 3;
+const maxVisibleCounterCount = 5;
 
 const roleOptions = [
   { iconSrc: "/images/Top_icon.png", label: "Top", value: "top" },
@@ -136,6 +136,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [selectedCounterKey, setSelectedCounterKey] = useState<string | null>(null);
+  const [isBestCountersExpanded, setIsBestCountersExpanded] = useState(false);
+  const [isCounteredByExpanded, setIsCounteredByExpanded] = useState(false);
   const [openPrepSections, setOpenPrepSections] =
     useState<CounterPrepSectionKey[]>(defaultOpenPrepSections);
   const [reviewedCounterPickState, setReviewedCounterPickState] =
@@ -145,11 +147,10 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   );
 
   const championsByLookupKey = useMemo(() => buildChampionLookup(champions), [champions]);
-  const selectedChampion =
-    champions.find((champion) => champion.id === selectedChampionId) ?? null;
+  const selectedChampion = champions.find((champion) => champion.id === selectedChampionId) ?? null;
   const selectedProfile = selectedChampion
-    ? getChampionCombatProfile(selectedChampion.id) ??
-      getChampionCombatProfile(selectedChampion.name)
+    ? (getChampionCombatProfile(selectedChampion.id) ??
+      getChampionCombatProfile(selectedChampion.name))
     : null;
   const selectedChampionRoles = selectedChampion ? getChampionRoles(selectedChampion) : [];
   const primaryRole =
@@ -169,20 +170,14 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     }
 
     return sortChampionsForRole(
-      champions.filter((champion) =>
-        isChampionInRole(champion, selectorRole, { includeOffMeta }),
-      ),
+      champions.filter((champion) => isChampionInRole(champion, selectorRole, { includeOffMeta })),
       selectorRole,
     );
   }, [champions, includeOffMeta, selectorQuery, selectorRole]);
   const bestCounterRelationships = selectedProfile?.counteredBy ?? emptyCounterRelationships;
   const counteredByRelationships = selectedProfile?.counters ?? emptyCounterRelationships;
   const combatRelationshipsByChampion = useMemo(
-    () =>
-      buildCombatRelationshipLookup([
-        ...bestCounterRelationships,
-        ...counteredByRelationships,
-      ]),
+    () => buildCombatRelationshipLookup([...bestCounterRelationships, ...counteredByRelationships]),
     [bestCounterRelationships, counteredByRelationships],
   );
   const reviewedCounterPicks = reviewedCounterPickState.counterPicks;
@@ -192,72 +187,66 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const hasRoleSpecificCounteredByPicks = reviewedCounterPicks.some(
     (counterPick) => counterPick.counter_type === "countered_by",
   );
-  const bestCounterRows = useMemo(
-    () => {
-      if (hasRoleSpecificBestCounterPicks) {
-        return buildCounterRowsFromCounterPicks({
-          championsByLookupKey,
-          combatRelationshipsByChampion,
-          counterPicks: reviewedCounterPicks,
-          direction: "best-counter",
-          reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-          selectedChampion,
-        });
-      }
-
-      return buildCounterRowsFromRelationships({
+  const bestCounterRows = useMemo(() => {
+    if (hasRoleSpecificBestCounterPicks) {
+      return buildCounterRowsFromCounterPicks({
         championsByLookupKey,
+        combatRelationshipsByChampion,
+        counterPicks: reviewedCounterPicks,
         direction: "best-counter",
-        relationships: bestCounterRelationships,
         reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-        role: selectedRole,
         selectedChampion,
       });
-    },
-    [
-      bestCounterRelationships,
-      championsByLookupKey,
-      combatRelationshipsByChampion,
-      guideAvailabilityState.reviewedGuideKeys,
-      hasRoleSpecificBestCounterPicks,
-      reviewedCounterPicks,
-      selectedChampion,
-      selectedRole,
-    ],
-  );
-  const counteredByRows = useMemo(
-    () => {
-      if (hasRoleSpecificCounteredByPicks) {
-        return buildCounterRowsFromCounterPicks({
-          championsByLookupKey,
-          combatRelationshipsByChampion,
-          counterPicks: reviewedCounterPicks,
-          direction: "countered-by",
-          reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-          selectedChampion,
-        });
-      }
+    }
 
-      return buildCounterRowsFromRelationships({
+    return buildCounterRowsFromRelationships({
+      championsByLookupKey,
+      direction: "best-counter",
+      relationships: bestCounterRelationships,
+      reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
+      role: selectedRole,
+      selectedChampion,
+    });
+  }, [
+    bestCounterRelationships,
+    championsByLookupKey,
+    combatRelationshipsByChampion,
+    guideAvailabilityState.reviewedGuideKeys,
+    hasRoleSpecificBestCounterPicks,
+    reviewedCounterPicks,
+    selectedChampion,
+    selectedRole,
+  ]);
+  const counteredByRows = useMemo(() => {
+    if (hasRoleSpecificCounteredByPicks) {
+      return buildCounterRowsFromCounterPicks({
         championsByLookupKey,
+        combatRelationshipsByChampion,
+        counterPicks: reviewedCounterPicks,
         direction: "countered-by",
-        relationships: counteredByRelationships,
         reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-        role: selectedRole,
         selectedChampion,
       });
-    },
-    [
+    }
+
+    return buildCounterRowsFromRelationships({
       championsByLookupKey,
-      combatRelationshipsByChampion,
-      counteredByRelationships,
-      guideAvailabilityState.reviewedGuideKeys,
-      hasRoleSpecificCounteredByPicks,
-      reviewedCounterPicks,
+      direction: "countered-by",
+      relationships: counteredByRelationships,
+      reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
+      role: selectedRole,
       selectedChampion,
-      selectedRole,
-    ],
-  );
+    });
+  }, [
+    championsByLookupKey,
+    combatRelationshipsByChampion,
+    counteredByRelationships,
+    guideAvailabilityState.reviewedGuideKeys,
+    hasRoleSpecificCounteredByPicks,
+    reviewedCounterPicks,
+    selectedChampion,
+    selectedRole,
+  ]);
   const allCounterRows = useMemo(
     () => [...bestCounterRows, ...counteredByRows],
     [bestCounterRows, counteredByRows],
@@ -275,6 +264,22 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     allCounterRows.find((counter) => counter.key === selectedCounterKey) ??
     allCounterRows[0] ??
     null;
+  const visibleBestCounterRows = useMemo(
+    () =>
+      getVisibleCounterRows({
+        isExpanded: isBestCountersExpanded,
+        rows: bestCounterRows,
+      }),
+    [bestCounterRows, isBestCountersExpanded],
+  );
+  const visibleCounteredByRows = useMemo(
+    () =>
+      getVisibleCounterRows({
+        isExpanded: isCounteredByExpanded,
+        rows: counteredByRows,
+      }),
+    [counteredByRows, isCounteredByExpanded],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -348,6 +353,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     setSelectedChampionId(champion.id);
     setSelectorQuery("");
     setSelectedCounterKey(null);
+    setIsBestCountersExpanded(false);
+    setIsCounteredByExpanded(false);
     setOpenPrepSections(defaultOpenPrepSections);
     setIsSelectorOpen(false);
   }
@@ -356,6 +363,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     setSelectedRole(role);
     setSelectorRole(role);
     setSelectedCounterKey(null);
+    setIsBestCountersExpanded(false);
+    setIsCounteredByExpanded(false);
     setOpenPrepSections(defaultOpenPrepSections);
   }
 
@@ -379,6 +388,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
         onOpenSelector={() => setIsSelectorOpen(true)}
         onRoleChange={handleRoleChange}
         primaryRole={primaryRole}
+        selectedProfile={selectedProfile}
         selectedRole={selectedRole}
       />
 
@@ -394,39 +404,40 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
             text="No counter data available yet for this champion."
           />
         ) : (
-          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
-            <div className="grid min-w-0 gap-10">
+          <div className="grid min-w-0 gap-8">
+            <div className="grid gap-5 lg:grid-cols-2">
               <CounterMatchupList
                 emptyText={`No champions are listed as counters into ${selectedChampion.name} yet.`}
+                isExpanded={isBestCountersExpanded}
+                onExpandedChange={setIsBestCountersExpanded}
                 onSelect={handleCounterSelect}
-                rows={bestCounterRows}
+                rows={visibleBestCounterRows}
                 selectedKey={selectedCounter?.key ?? null}
+                showToggle={bestCounterRows.length > defaultVisibleCounterCount}
                 subtitle={`Champions that perform well into ${selectedChampion.name}`}
                 title="Best Counters"
+                totalRows={bestCounterRows.length}
               />
               <CounterMatchupList
                 emptyText={`No risky picks into ${selectedChampion.name} are listed yet.`}
+                isExpanded={isCounteredByExpanded}
+                onExpandedChange={setIsCounteredByExpanded}
                 onSelect={handleCounterSelect}
-                rows={counteredByRows}
+                rows={visibleCounteredByRows}
                 selectedKey={selectedCounter?.key ?? null}
+                showToggle={counteredByRows.length > defaultVisibleCounterCount}
                 subtitle={`Champions that struggle when picked into ${selectedChampion.name}`}
                 title={`Bad Into ${selectedChampion.name}`}
-              />
-              <CounterPreparationSection
-                onSectionToggle={handlePrepSectionToggle}
-                openSections={openPrepSections}
-                selectedChampion={selectedChampion}
-                selectedCounter={selectedCounter}
-              />
-              <CounterPickTip champion={selectedChampion} />
-            </div>
-
-            <div className="xl:sticky xl:top-6 xl:self-start">
-              <CounterAnalysisPanel
-                counter={selectedCounter}
-                selectedChampion={selectedChampion}
+                totalRows={counteredByRows.length}
               />
             </div>
+            <CounterPreparationSection
+              onSectionToggle={handlePrepSectionToggle}
+              openSections={openPrepSections}
+              selectedChampion={selectedChampion}
+              selectedCounter={selectedCounter}
+            />
+            <CounterPickTip champion={selectedChampion} />
           </div>
         )}
       </div>
@@ -454,14 +465,18 @@ function ChampionHero({
   onOpenSelector,
   onRoleChange,
   primaryRole,
+  selectedProfile,
   selectedRole,
 }: {
   champion: LeagueChampion | null;
   onOpenSelector: () => void;
   onRoleChange: (role: LeagueRole) => void;
   primaryRole: LeagueRole;
+  selectedProfile: ReturnType<typeof getChampionCombatProfile> | null;
   selectedRole: LeagueRole;
 }) {
+  const championClassLabel = getChampionClassLabel(selectedProfile, champion);
+
   return (
     <section className="relative min-h-[420px] overflow-hidden border-b border-white/10 bg-[#07101f] sm:min-h-[480px]">
       {champion ? (
@@ -519,7 +534,7 @@ function ChampionHero({
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <RolePill label={getLeagueRoleLabel(primaryRole)} tone="cyan" />
-              <RolePill label={getLeagueRoleLabel(selectedRole)} tone="zinc" />
+              <RolePill label={championClassLabel} tone="zinc" />
             </div>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-zinc-200 sm:text-base sm:leading-7">
               {champion
@@ -573,50 +588,66 @@ function ChampionHero({
 
 function CounterMatchupList({
   emptyText,
+  isExpanded,
+  onExpandedChange,
   onSelect,
   rows,
   selectedKey,
+  showToggle,
   subtitle,
   title,
+  totalRows,
 }: {
   emptyText: string;
+  isExpanded: boolean;
+  onExpandedChange: (value: boolean) => void;
   onSelect: (key: string) => void;
   rows: CounterRowModel[];
   selectedKey: string | null;
+  showToggle: boolean;
   subtitle: string;
   title: string;
+  totalRows: number;
 }) {
   return (
-    <section className="min-w-0">
-      <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/10 pb-3">
+    <section className="min-w-0 border-y border-white/10 py-4">
+      <div className="mb-3 flex items-end justify-between gap-4">
         <div>
-          <h2 className="font-mono text-2xl font-semibold uppercase tracking-normal text-white">
+          <h2 className="font-mono text-xl font-semibold uppercase tracking-normal text-white">
             {title}
           </h2>
           <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
         </div>
-        <span className="font-mono text-sm text-cyan-200">{rows.length}</span>
+        <span className="font-mono text-sm text-cyan-200">
+          {Math.min(totalRows, maxVisibleCounterCount)}
+        </span>
       </div>
 
       {rows.length > 0 ? (
-        <div className="divide-y divide-white/10 border-y border-white/10">
-          <div className="hidden grid-cols-[3.75rem_minmax(0,1fr)_6rem_6.5rem_5.5rem_2rem] items-center gap-4 border-b border-white/10 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:grid">
-            <span />
-            <span>Champion</span>
-            <span>Win Rate</span>
-            <span>Games</span>
-            <span>Tier</span>
-            <span />
+        <>
+          <div className="grid gap-2">
+            {rows.map((row) => (
+              <CounterMatchupRow
+                isSelected={row.key === selectedKey}
+                key={row.key}
+                onSelect={() => onSelect(row.key)}
+                row={row}
+              />
+            ))}
           </div>
-          {rows.map((row) => (
-            <CounterMatchupRow
-              isSelected={row.key === selectedKey}
-              key={row.key}
-              onSelect={() => onSelect(row.key)}
-              row={row}
-            />
-          ))}
-        </div>
+          {showToggle ? (
+            <div className="mt-4 flex justify-center">
+              <Button
+                className="h-9 rounded-md border border-cyan-300/25 bg-cyan-400/10 px-4 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/15"
+                onClick={() => onExpandedChange(!isExpanded)}
+                type="button"
+                variant="ghost"
+              >
+                {isExpanded ? "Show Less" : "Show More"}
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <div className="border-y border-dashed border-white/10 py-8 text-sm leading-6 text-zinc-400">
           {emptyText}
@@ -636,26 +667,26 @@ function CounterMatchupRow({
   row: CounterRowModel;
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
-  const hasStats = hasCounterPickStatistics(row.stats);
 
   return (
     <button
       aria-pressed={isSelected}
       className={cn(
-        "group grid w-full grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-4 py-4 text-left transition hover:bg-cyan-400/[0.045] sm:grid-cols-[3.75rem_minmax(0,1fr)_6rem_6.5rem_5.5rem_2rem]",
-        isSelected && "bg-cyan-400/[0.07] shadow-[inset_3px_0_0_rgba(34,211,238,0.75)]",
+        "group flex w-full items-center gap-3 border border-white/10 bg-white/[0.025] p-3 text-left transition hover:border-cyan-300/35 hover:bg-cyan-400/[0.055]",
+        isSelected &&
+          "border-cyan-300/65 bg-cyan-400/[0.09] shadow-[inset_3px_0_0_rgba(34,211,238,0.85)]",
       )}
       onClick={onSelect}
       type="button"
     >
-      <div className="relative ml-1 size-14 overflow-hidden rounded-md border border-white/10 bg-black/30">
+      <div className="relative size-12 shrink-0 overflow-hidden rounded-md border border-white/10 bg-black/30">
         {row.champion ? (
           <Image
             alt=""
             aria-hidden="true"
             className="object-cover transition duration-200 group-hover:scale-105"
             fill
-            sizes="56px"
+            sizes="48px"
             src={getChampionIconPath(row.champion)}
             unoptimized
           />
@@ -666,173 +697,18 @@ function CounterMatchupRow({
         )}
       </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <h3 className="truncate text-base font-semibold text-white">{championName}</h3>
-        <p className="mt-1 truncate text-sm text-zinc-400">{row.roleLabel}</p>
-        {hasStats ? (
-          <div className="mt-3 grid grid-cols-3 gap-2 text-xs sm:hidden">
-            <MobileRowStat label="Win" value={formatWinRate(row.stats.winRate)} />
-            <MobileRowStat label="Games" value={formatGames(row.stats.games)} />
-            <MobileRowStat label="Tier" value={formatStatisticsTier(row.stats.tier)} />
-          </div>
-        ) : (
-          <p className="mt-3 text-xs text-zinc-500 sm:hidden">No matchup data yet</p>
-        )}
       </div>
 
-      {hasStats ? (
-        <>
-          <div className="hidden text-sm sm:block">
-            <p className="font-semibold text-cyan-200">{formatWinRate(row.stats.winRate)}</p>
-            <p className="mt-1 text-xs text-zinc-500">Win Rate</p>
-          </div>
-
-          <div className="hidden text-sm sm:block">
-            <p className="font-semibold text-zinc-200">{formatGames(row.stats.games)}</p>
-            <p className="mt-1 text-xs text-zinc-500">Games</p>
-          </div>
-
-          <div className="hidden text-sm sm:block">
-            <p className="font-semibold text-zinc-200">{formatStatisticsTier(row.stats.tier)}</p>
-            <p className="mt-1 text-xs text-zinc-500">Tier</p>
-          </div>
-        </>
-      ) : (
-        <div className="hidden text-sm text-zinc-500 sm:col-span-3 sm:block">
-          No matchup data yet
-        </div>
-      )}
-
-      <ChevronRight
+      <span
         className={cn(
-          "hidden size-5 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-cyan-200 sm:block",
-          isSelected && "text-cyan-200",
+          "size-2.5 shrink-0 rounded-full border border-white/15 bg-white/10 transition",
+          isSelected && "border-cyan-200 bg-cyan-200 shadow-[0_0_14px_rgba(103,232,249,0.6)]",
         )}
         aria-hidden="true"
       />
     </button>
-  );
-}
-
-function CounterAnalysisPanel({
-  counter,
-  selectedChampion,
-}: {
-  counter: CounterRowModel | null;
-  selectedChampion: LeagueChampion | null;
-}) {
-  if (!selectedChampion || !counter) {
-    return (
-      <aside className="border-y border-white/10 py-8 text-sm text-zinc-400">
-        Select a counter to read the LaneStomp analysis.
-      </aside>
-    );
-  }
-
-  const counterName = counter.champion?.name ?? counter.fallbackName;
-  const matchupTitle = `${counterName} into ${selectedChampion.name}`;
-  const quickSummary = counter.reasons[0] ?? "Matchup summary is still being reviewed.";
-  const hasStats = hasCounterPickStatistics(counter.stats);
-
-  return (
-    <aside className="overflow-hidden border border-white/10 bg-[#07101f]/90 shadow-2xl shadow-black/25">
-      <div className="relative min-h-56 border-b border-white/10 p-5">
-        {counter.champion ? (
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="object-cover opacity-[0.48]"
-            fill
-            sizes="384px"
-            src={getChampionSplashUrl(counter.champion)}
-            unoptimized
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#07101f_0%,rgba(7,16,31,0.7)_58%,rgba(7,16,31,0.48)_100%)]" />
-        <div className="relative z-10 flex min-h-[11.5rem] flex-col justify-between gap-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                Selected Counter
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold uppercase tracking-normal text-white">
-                {matchupTitle}
-              </h2>
-              <p className="mt-1 text-sm text-zinc-300">{counter.roleLabel}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-semibold text-cyan-100">
-                {formatWinRate(counter.stats.winRate)}
-              </p>
-              <p className="mt-1 text-xs text-zinc-400">Win Rate</p>
-            </div>
-          </div>
-
-          <div className="flex min-w-0 items-end gap-3">
-            <div className="relative size-16 shrink-0 overflow-hidden rounded-md border border-amber-300/40 bg-black/35 shadow-lg shadow-black/25">
-              {counter.champion ? (
-                <Image
-                  alt=""
-                  aria-hidden="true"
-                  className="object-cover"
-                  fill
-                  sizes="64px"
-                  src={getChampionIconPath(counter.champion)}
-                  unoptimized
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-cyan-100">
-                  <Swords className="size-6" aria-hidden="true" />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Counter Champion</p>
-              <h3 className="mt-1 truncate text-xl font-semibold uppercase tracking-normal text-white">
-                {counterName}
-              </h3>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-5">
-        {hasStats ? (
-          <div className="grid grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-3">
-            <PanelStat label="Games" value={formatGames(counter.stats.games)} />
-            <PanelStat label="Tier" value={formatStatisticsTier(counter.stats.tier)} />
-            <PanelStat label="Guide" value={counter.href ? "Ready" : "Soon"} />
-          </div>
-        ) : (
-          <div className="border-y border-white/10 py-3 text-center text-sm text-zinc-400">
-            No matchup data yet
-          </div>
-        )}
-
-        <div className="mt-5 border-y border-white/10 py-4">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-cyan-200/80">
-            Quick matchup summary
-          </p>
-          <p className="mt-3 text-sm leading-6 text-zinc-300">{quickSummary}</p>
-        </div>
-
-        {counter.href ? (
-          <Button
-            asChild
-            className="mt-5 h-12 w-full rounded-md bg-cyan-200 font-semibold text-[#04111f] shadow-lg shadow-cyan-950/30 hover:bg-cyan-100"
-          >
-            <Link href={counter.href}>
-              Open Matchup Guide
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        ) : (
-          <div className="mt-5 border-y border-white/10 py-3 text-center text-sm text-zinc-400">
-            Guide coming soon
-          </div>
-        )}
-      </div>
-    </aside>
   );
 }
 
@@ -862,10 +738,23 @@ function CounterPreparationSection({
 
   const counterName = selectedCounter.champion?.name ?? selectedCounter.fallbackName;
   const counterProfile = selectedCounter.champion
-    ? getChampionCombatProfile(selectedCounter.champion.id) ??
-      getChampionCombatProfile(selectedCounter.champion.name)
+    ? (getChampionCombatProfile(selectedCounter.champion.id) ??
+      getChampionCombatProfile(selectedCounter.champion.name))
     : null;
-  const lanePrepNotes = getLanePrepNotes(counterProfile);
+  const selectedProfile = getChampionCombatProfile(selectedChampion.id) ??
+    getChampionCombatProfile(selectedChampion.name);
+  const whyPrepNotes = getMatchupPrepReasons({
+    counterProfile,
+    counterRow: selectedCounter,
+    selectedChampion,
+    selectedProfile,
+  });
+  const lanePrepNotes = getLanePrepNotes({
+    counterProfile,
+    counterRow: selectedCounter,
+    selectedChampion,
+    selectedProfile,
+  });
   const buildGuide = selectedCounter.champion
     ? getCounterPickBuildGuide(selectedCounter.champion.id, selectedCounter.champion.name)
     : null;
@@ -895,7 +784,7 @@ function CounterPreparationSection({
       title: "Build vs Heavy AP",
     },
     {
-      content: <PrepBulletList items={selectedCounter.reasons} />,
+      content: <PrepBulletList items={whyPrepNotes} />,
       key: "why",
       title:
         selectedCounter.direction === "best-counter"
@@ -977,7 +866,9 @@ function ChampionSelectorOverlay({
             <h2 className="font-mono text-xl font-semibold uppercase tracking-normal text-white">
               Change Champion
             </h2>
-            <p className="mt-1 text-sm text-zinc-400">Search and filter without taking over the page.</p>
+            <p className="mt-1 text-sm text-zinc-400">
+              Search and filter without taking over the page.
+            </p>
           </div>
           <button
             aria-label="Close champion selector"
@@ -1058,8 +949,7 @@ function RoleSelector({
             aria-label={`${option.label} role`}
             className={cn(
               "flex h-10 min-w-10 items-center justify-center rounded-md border border-white/10 bg-black/25 px-2 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
-              isActive &&
-                "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 ring-1 ring-cyan-300/25",
+              isActive && "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 ring-1 ring-cyan-300/25",
             )}
             key={option.value}
             onClick={() => onChange(option.value)}
@@ -1138,26 +1028,6 @@ function CounterPickTip({ champion }: { champion: LeagueChampion }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function PanelStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="px-2 text-center">
-      <p className="text-sm font-semibold text-white">{value}</p>
-      <p className="mt-1 text-[0.65rem] uppercase tracking-[0.12em] text-zinc-500">{label}</p>
-    </div>
-  );
-}
-
-function MobileRowStat({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="min-w-0 border-l border-white/10 pl-2 first:border-l-0 first:pl-0">
-      <span className="block truncate font-semibold text-zinc-200">{value}</span>
-      <span className="mt-0.5 block text-[0.65rem] uppercase tracking-[0.12em] text-zinc-500">
-        {label}
-      </span>
-    </span>
   );
 }
 
@@ -1297,34 +1167,374 @@ function BuildGuidancePlaceholder() {
   );
 }
 
-function getLanePrepNotes(profile: ReturnType<typeof getChampionCombatProfile>) {
-  const notes: string[] = [];
+function getMatchupPrepReasons({
+  counterProfile,
+  counterRow,
+  selectedChampion,
+  selectedProfile,
+}: {
+  counterProfile: ReturnType<typeof getChampionCombatProfile>;
+  counterRow: CounterRowModel;
+  selectedChampion: LeagueChampion;
+  selectedProfile: ReturnType<typeof getChampionCombatProfile>;
+}) {
+  const counterName = counterRow.champion?.name ?? counterRow.fallbackName;
+  const selectedName = selectedChampion.name;
+  const selectedDanger = getPrimaryThreatLabel(selectedProfile);
+  const counterControl = getPrimaryControlLabel(counterProfile);
+  const selectedWeakness = selectedProfile?.commonWeaknesses?.[0];
+  const counterMobility = counterProfile?.mobilityLevel;
+  const selectedMobility = selectedProfile?.mobilityLevel;
+  const isBadMatchup = counterRow.direction === "countered-by";
+  const candidates: PrepCandidate[] = counterRow.reasons.map((reason) => ({
+    concept: inferPrepConcept(reason),
+    text: reason,
+  }));
 
-  if (!profile) {
-    return notes;
+  if (isBadMatchup) {
+    if (selectedDanger) {
+      candidates.push({
+        concept: "cooldown",
+        text: `${counterName} has to track ${selectedName}'s ${selectedDanger} before stepping forward, because that cooldown decides whether the trade is playable.`,
+      });
+    }
+
+    if (counterProfile?.commonWeaknesses?.[0]) {
+      candidates.push({
+        concept: "punish",
+        text: `${selectedName} can keep attacking ${counterName}'s weak point: ${formatEmbeddedAdvice(counterProfile.commonWeaknesses[0])}.`,
+      });
+    }
+
+    if (selectedProfile?.hardCrowdControl?.[0] || selectedProfile?.softCrowdControl?.[0]) {
+      candidates.push({
+        concept: "lockdown",
+        text: `${selectedName}'s ${selectedProfile.hardCrowdControl?.[0] ?? selectedProfile.softCrowdControl?.[0]} makes ${counterName}'s commit windows easier to punish.`,
+      });
+    }
+
+    if (selectedProfile?.laneIdentity && typeof selectedProfile.laneIdentity !== "string") {
+      candidates.push({
+        concept: "wave",
+        text: `${selectedName} can use lane tempo to make ${counterName} choose between contesting the wave and taking an unsafe trade.`,
+      });
+    }
+  } else {
+    if (selectedDanger) {
+      candidates.push({
+        concept: "cooldown",
+        text: `${counterName} can pressure ${selectedName} harder whenever ${selectedName}'s ${selectedDanger} is unavailable.`,
+      });
+    }
+
+    if (counterControl) {
+      candidates.push({
+        concept: "lockdown",
+        text: `${counterName}'s ${counterControl} creates reliable punish windows before ${selectedName} can reset spacing.`,
+      });
+    }
+
+    if (selectedWeakness) {
+      candidates.push({
+        concept: "punish",
+        text: `${counterName} can repeatedly attack ${selectedName}'s weak point: ${formatEmbeddedAdvice(selectedWeakness)}.`,
+      });
+    }
+
+    if (
+      (counterMobility === "high" || counterMobility === "very_high") &&
+      (selectedMobility === "none" || selectedMobility === "low" || selectedMobility === "medium")
+    ) {
+      candidates.push({
+        concept: "mobility",
+        text: `${counterName}'s mobility lets them choose trade angles that ${selectedName} cannot easily match.`,
+      });
+    }
   }
 
-  if (profile.lanePlan?.idealLaneState) {
-    notes.push(profile.lanePlan.idealLaneState);
+  candidates.push({
+    concept: "trading",
+    text: `${counterName} should win this matchup by turning ${selectedName}'s missed or spent cooldowns into immediate trade pressure.`,
+  });
+
+  return pickPrepCandidates(candidates, 3);
+}
+
+function getLanePrepNotes({
+  counterProfile,
+  counterRow,
+  selectedChampion,
+  selectedProfile,
+}: {
+  counterProfile: ReturnType<typeof getChampionCombatProfile>;
+  counterRow: CounterRowModel;
+  selectedChampion: LeagueChampion;
+  selectedProfile: ReturnType<typeof getChampionCombatProfile>;
+}) {
+  if (!counterProfile) {
+    return [];
   }
 
-  for (const want of profile.lanePlan?.wants.slice(0, 2) ?? []) {
-    notes.push(want);
+  const selectedName = selectedChampion.name;
+  const selectedDanger = getPrimaryThreatLabel(selectedProfile);
+  const counterControl = getPrimaryControlLabel(counterProfile);
+  const counterDefensiveTool = getDefensiveToolLabel(counterProfile);
+  const candidates: PrepCandidate[] = [];
+
+  if (counterProfile.primaryTradingPattern) {
+    candidates.push({
+      concept: "trading",
+      text: toActionInstruction(counterProfile.primaryTradingPattern),
+    });
   }
 
-  if (profile.primaryTradingPattern) {
-    notes.push(profile.primaryTradingPattern);
+  if (selectedDanger) {
+    candidates.push({
+      concept: "cooldown",
+      text: `Track ${selectedName}'s ${selectedDanger} before committing to a forward trade.`,
+    });
   }
 
-  if (profile.trading?.primaryPattern) {
-    notes.push(profile.trading.primaryPattern);
+  if (counterDefensiveTool && selectedDanger) {
+    candidates.push({
+      concept: "ability",
+      text: `Save ${counterDefensiveTool} for ${selectedName}'s ${selectedDanger} instead of spending it on low-value poke.`,
+    });
+  } else if (counterControl) {
+    candidates.push({
+      concept: "ability",
+      text: `Use ${counterControl} when ${selectedName} has already spent mobility or walked into a narrow angle.`,
+    });
   }
 
-  for (const condition of profile.trading?.goodTradeConditions.slice(0, 2) ?? []) {
-    notes.push(condition);
+  if (usesMinionWave(counterProfile)) {
+    candidates.push({
+      concept: "positioning",
+      text: "Fight around minion waves so you have both engage angles and a way back out.",
+    });
+  } else if (counterProfile.mobilityLevel === "high" || counterProfile.mobilityLevel === "very_high") {
+    candidates.push({
+      concept: "positioning",
+      text: `Plan the exit before using mobility forward into ${selectedName}.`,
+    });
+  } else {
+    candidates.push({
+      concept: "positioning",
+      text: `Hold spacing so ${selectedName} has to spend a key cooldown before reaching you.`,
+    });
   }
 
-  return dedupePrepBullets(notes).slice(0, 5);
+  candidates.push({
+    concept: "wave",
+    text:
+      counterRow.direction === "countered-by"
+        ? "Keep the wave closer to safety until the dangerous cooldowns are down."
+        : "Thin large waves before trading so the all-in is decided by cooldowns, not minion damage.",
+  });
+
+  const levelSixSpike = counterProfile.powerSpikes?.major.find((spike) =>
+    spike.timing.toLowerCase().includes("level 6"),
+  );
+
+  if (levelSixSpike) {
+    candidates.push({
+      concept: "kill-window",
+      text: `Look for all-ins after ${levelSixSpike.timing.toLowerCase()} when ${selectedName}'s escape or peel tools are unavailable.`,
+    });
+  } else {
+    candidates.push({
+      concept: "kill-window",
+      text: `Turn ${selectedName}'s missed defensive cooldown into your main kill window instead of forcing blind engages.`,
+    });
+  }
+
+  for (const condition of counterProfile.trading?.goodTradeConditions ?? []) {
+    candidates.push({
+      concept: inferPrepConcept(condition),
+      text: toActionInstruction(condition),
+    });
+  }
+
+  for (const action of counterProfile.powerSpikes?.major.map((spike) => spike.playerAction) ?? []) {
+    candidates.push({
+      concept: inferPrepConcept(action),
+      text: toActionInstruction(action),
+    });
+  }
+
+  return pickPrepCandidates(candidates, 5);
+}
+
+type PrepConcept =
+  | "ability"
+  | "cooldown"
+  | "kill-window"
+  | "lockdown"
+  | "mobility"
+  | "positioning"
+  | "punish"
+  | "range"
+  | "scaling"
+  | "trading"
+  | "wave";
+
+type PrepCandidate = {
+  concept: PrepConcept;
+  text: string;
+};
+
+function pickPrepCandidates(candidates: PrepCandidate[], limit: number) {
+  const picked: string[] = [];
+  const usedConcepts = new Set<PrepConcept>();
+  const usedKeys = new Set<string>();
+
+  for (const candidate of candidates) {
+    const text = normalizePrepSentence(candidate.text);
+    const key = normalizePrepBulletKey(text);
+
+    if (!text || usedConcepts.has(candidate.concept) || usedKeys.has(key)) {
+      continue;
+    }
+
+    usedConcepts.add(candidate.concept);
+    usedKeys.add(key);
+    picked.push(text);
+
+    if (picked.length === limit) {
+      return picked;
+    }
+  }
+
+  for (const candidate of candidates) {
+    const text = normalizePrepSentence(candidate.text);
+    const key = normalizePrepBulletKey(text);
+
+    if (!text || usedKeys.has(key)) {
+      continue;
+    }
+
+    usedKeys.add(key);
+    picked.push(text);
+
+    if (picked.length === limit) {
+      return picked;
+    }
+  }
+
+  return picked;
+}
+
+function inferPrepConcept(text: string): PrepConcept {
+  const normalizedText = text.toLowerCase();
+
+  if (/(wave|push|shove|crash|thin|minion|farm|last hit)/.test(normalizedText)) {
+    return "wave";
+  }
+
+  if (/(cooldown|down|available|spent|misses|missed|unavailable|track)/.test(normalizedText)) {
+    return "cooldown";
+  }
+
+  if (/(stun|root|knock|suppress|lock|crowd control|cc|charm|binding|taunt)/.test(normalizedText)) {
+    return "lockdown";
+  }
+
+  if (/(dash|mobility|blink|kite|reposition|escape|spacing|angle|range)/.test(normalizedText)) {
+    return normalizedText.includes("range") ? "range" : "mobility";
+  }
+
+  if (/(level 6|ultimate|all-in|lethal|kill|burst|execute)/.test(normalizedText)) {
+    return "kill-window";
+  }
+
+  if (/(scale|scaling|stack|item)/.test(normalizedText)) {
+    return "scaling";
+  }
+
+  if (/(punish|weak|vulnerable|pressure)/.test(normalizedText)) {
+    return "punish";
+  }
+
+  if (/(hold|save|use|cast|ability|tool)/.test(normalizedText)) {
+    return "ability";
+  }
+
+  if (/(position|forward|backward|side|flank)/.test(normalizedText)) {
+    return "positioning";
+  }
+
+  return "trading";
+}
+
+function getPrimaryThreatLabel(profile: ReturnType<typeof getChampionCombatProfile>) {
+  return (
+    profile?.dangerAbilities?.[0] ??
+    profile?.hardCrowdControl?.[0] ??
+    profile?.importantAbilityNotes?.[0]?.match(/\([QWER]\)/)?.[0] ??
+    null
+  );
+}
+
+function getPrimaryControlLabel(profile: ReturnType<typeof getChampionCombatProfile>) {
+  return profile?.hardCrowdControl?.[0] ?? profile?.softCrowdControl?.[0] ?? null;
+}
+
+function getDefensiveToolLabel(profile: ReturnType<typeof getChampionCombatProfile>) {
+  const notes = [
+    ...(profile?.importantAbilityNotes ?? []),
+    ...(profile?.trading?.badTradeConditions ?? []),
+    profile?.primaryTradingPattern ?? "",
+  ];
+  const defensiveNote = notes.find((note) =>
+    /(block|shield|shroud|wall|dodge|escape|snapback|disengage|peel|defensive)/i.test(note),
+  );
+
+  return defensiveNote?.match(/\([QWER]\)/)?.[0] ?? null;
+}
+
+function usesMinionWave(profile: ReturnType<typeof getChampionCombatProfile>) {
+  const notes = [
+    profile?.lanePlan?.idealLaneState ?? "",
+    profile?.primaryTradingPattern ?? "",
+    ...(profile?.lanePlan?.wants ?? []),
+    ...(profile?.commonWeaknesses ?? []),
+  ];
+
+  return notes.some((note) => /(minion|wave|dash through wave|waves)/i.test(note));
+}
+
+function toActionInstruction(text: string) {
+  const normalizedText = normalizePrepSentence(text);
+
+  if (
+    /^(use|hold|save|track|fight|thin|keep|look|force|plan|respect|trade|poke|stack|dash|crash|push|freeze|bait|wait)\b/i.test(
+      normalizedText,
+    )
+  ) {
+    return normalizedText;
+  }
+
+  if (/^(the enemy|enemy|target|targets|opponent|opponents)\b/i.test(normalizedText)) {
+    return `Punish when ${normalizedText.charAt(0).toLowerCase()}${normalizedText.slice(1)}`;
+  }
+
+  return `Play around this rule: ${normalizedText.charAt(0).toLowerCase()}${normalizedText.slice(1)}`;
+}
+
+function formatEmbeddedAdvice(text: string) {
+  const formattedText = normalizePrepSentence(text);
+
+  return formattedText.charAt(0).toLowerCase() + formattedText.slice(1);
+}
+
+function normalizePrepSentence(text: string) {
+  const trimmedText = text.trim().replace(/\s+/g, " ");
+
+  if (!trimmedText) {
+    return "";
+  }
+
+  return /[.!?]$/.test(trimmedText) ? trimmedText : `${trimmedText}.`;
 }
 
 function RolePill({ label, tone }: { label: string; tone: "cyan" | "zinc" }) {
@@ -1340,6 +1550,49 @@ function RolePill({ label, tone }: { label: string; tone: "cyan" | "zinc" }) {
       {label}
     </span>
   );
+}
+
+function getChampionClassLabel(
+  profile: ReturnType<typeof getChampionCombatProfile> | null,
+  champion: LeagueChampion | null,
+) {
+  const championTag = champion?.tags.find((tag) => tag.trim());
+
+  if (championTag) {
+    return formatChampionClassLabel(championTag);
+  }
+
+  const archetypes = profile?.archetype ?? [];
+  const classKeywords = [
+    "assassin",
+    "mage",
+    "marksman",
+    "fighter",
+    "tank",
+    "support",
+    "enchanter",
+    "skirmisher",
+    "juggernaut",
+    "bruiser",
+    "carry",
+  ];
+  const classKeyword = classKeywords.find((keyword) =>
+    archetypes.some((archetype) => archetype.toLowerCase().includes(keyword)),
+  );
+
+  if (classKeyword) {
+    return formatChampionClassLabel(classKeyword);
+  }
+
+  return archetypes[0] ? formatChampionClassLabel(archetypes[0]) : "Champion";
+}
+
+function formatChampionClassLabel(label: string) {
+  return label
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function EmptyState({ text, title }: { text: string; title: string }) {
@@ -1375,11 +1628,6 @@ function buildCounterRowsFromRelationships({
   return relationships.map((relationship) => {
     const champion = resolveChampion(championsByLookupKey, relationship.champion);
     const championName = champion?.name ?? relationship.champion;
-    const championRoles = champion ? getChampionRoles(champion) : [];
-    const roleLabel =
-      championRoles.length > 0
-        ? championRoles.map(getLeagueRoleLabel).join(", ")
-        : getLeagueRoleLabel(role);
     const championA = champion;
     const championB = selectedChampion;
     const matchupHref =
@@ -1404,10 +1652,19 @@ function buildCounterRowsFromRelationships({
       matchupHref,
       matchupLabel,
       reasons: dedupePrepBullets(relationship.reasons),
-      roleLabel,
       stats: emptyCounterPickStatistics,
     } satisfies CounterRowModel;
   });
+}
+
+function getVisibleCounterRows({
+  isExpanded,
+  rows,
+}: {
+  isExpanded: boolean;
+  rows: CounterRowModel[];
+}) {
+  return rows.slice(0, isExpanded ? maxVisibleCounterCount : defaultVisibleCounterCount);
 }
 
 function buildCounterRowsFromCounterPicks({
@@ -1464,13 +1721,14 @@ function buildCounterRowsFromCounterPicks({
         matchupHref,
         matchupLabel,
         reasons: buildCounterPickReasonList(counterPick, combatRelationship),
-        roleLabel: getLeagueRoleLabel(counterPick.role),
         stats: getCounterPickStatisticsFromCounterPick(counterPick),
       } satisfies CounterRowModel;
     });
 }
 
-function buildCombatRelationshipLookup(relationships: readonly LeagueChampionCounterRelationship[]) {
+function buildCombatRelationshipLookup(
+  relationships: readonly LeagueChampionCounterRelationship[],
+) {
   const lookup = new Map<string, LeagueChampionCounterRelationship>();
 
   for (const relationship of relationships) {
@@ -1484,10 +1742,7 @@ function buildCounterPickReasonList(
   counterPick: LeagueCounterPick,
   combatRelationship: LeagueChampionCounterRelationship | undefined,
 ) {
-  return dedupePrepBullets([
-    counterPick.reason ?? "",
-    ...(combatRelationship?.reasons ?? []),
-  ]);
+  return dedupePrepBullets([counterPick.reason ?? "", ...(combatRelationship?.reasons ?? [])]);
 }
 
 async function fetchReviewedGuideKeys(requestedGuideKeys: string[]) {
@@ -1604,16 +1859,4 @@ function dedupePrepBullets(items: readonly string[]) {
 
 function normalizePrepBulletKey(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ").replace(/\.+$/g, "");
-}
-
-function formatWinRate(value: number | null) {
-  return value === null ? "No matchup data yet" : `${value.toFixed(1)}%`;
-}
-
-function formatGames(value: number | null) {
-  return value === null ? "No matchup data yet" : new Intl.NumberFormat("en").format(value);
-}
-
-function formatStatisticsTier(value: string | null) {
-  return value ?? "No matchup data yet";
 }

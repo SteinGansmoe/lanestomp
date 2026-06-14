@@ -86,6 +86,58 @@ export const dariusCombatProfile = {
       "Champions that can stay close without getting hit by outer (Q).",
     ],
   },
+  counters: [
+    {
+      champion: "Garen",
+      reasons: [
+        "Darius can force extended trades that outdamage Garen before Garen can reset with passive.",
+      ],
+    },
+    {
+      champion: "Nasus",
+      reasons: [
+        "Darius can deny Nasus early stacks by freezing near his side and threatening pull on every last hit.",
+      ],
+    },
+    {
+      champion: "Sion",
+      reasons: [
+        "Darius can punish Sion's slow animations and stack passive through extended melee trades.",
+      ],
+    },
+    {
+      champion: "DrMundo",
+      reasons: [
+        "Darius can pressure Dr. Mundo before durability items and punish him when cleavers do not create enough space.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Vayne",
+      reasons: [
+        "Vayne can kite outside Darius pull range and punish his low mobility with repeated short trades.",
+      ],
+    },
+    {
+      champion: "Quinn",
+      reasons: [
+        "Quinn can deny Darius contact with range, blind, and disengage before passive stacks become threatening.",
+      ],
+    },
+    {
+      champion: "Kayle",
+      reasons: [
+        "Kayle can scale past Darius if she avoids early pull windows and later fights from outside his reach.",
+      ],
+    },
+    {
+      champion: "Teemo",
+      reasons: [
+        "Teemo can blind Darius during key trade windows and chip him down before he can force an all-in.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Darius",
   offMetaRoles: ["mid"],

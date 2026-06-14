@@ -86,8 +86,24 @@ export const veigarCombatProfile = {
       champion: "Akali",
       reasons: [
         "Veigar can punish Akali's dash paths by holding (E) until she commits.",
-        "Burst threat after level 6 makes Akali think twice before using (R) aggressively.",
-        "Early defensive items make it easier for Veigar to survive Akali's first all-in and scale.",
+      ],
+    },
+    {
+      champion: "Katarina",
+      reasons: [
+        "Veigar's cage can interrupt Katarina's jump and reset pattern if held for her commit.",
+      ],
+    },
+    {
+      champion: "Yone",
+      reasons: [
+        "Veigar can punish Yone's return path with cage and scale past his early trade pressure.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Veigar can outscale Twisted Fate and punish predictable card-walk patterns with cage.",
       ],
     },
   ],
@@ -96,8 +112,24 @@ export const veigarCombatProfile = {
       champion: "Xerath",
       reasons: [
         "Xerath outranges Veigar and can poke without entering cage range.",
-        "Long-range waveclear can keep Veigar from freely stacking under safe conditions.",
-        "If Veigar misses (E), Xerath can continue harassing before Veigar can threaten burst.",
+      ],
+    },
+    {
+      champion: "Zed",
+      reasons: [
+        "Zed can pressure Veigar before he scales and use shadow mobility to play around cage.",
+      ],
+    },
+    {
+      champion: "Fizz",
+      reasons: [
+        "Fizz can dodge cage or burst with (E) and force all-ins onto Veigar's low mobility.",
+      ],
+    },
+    {
+      champion: "Kassadin",
+      reasons: [
+        "Kassadin can absorb Veigar's magic lane and later dodge cage angles with repeated (R).",
       ],
     },
   ],

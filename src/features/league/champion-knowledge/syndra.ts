@@ -62,6 +62,58 @@ export const syndraCombatProfile = {
     strongInto: [],
     weakInto: [],
   },
+  counters: [
+    {
+      champion: "Ahri",
+      reasons: [
+        "Syndra can outrange Ahri's short trade windows and punish charm attempts with stronger burst.",
+      ],
+    },
+    {
+      champion: "Katarina",
+      reasons: [
+        "Syndra can hold (E) for Katarina's jump and stop her reset setup before she channels (R).",
+      ],
+    },
+    {
+      champion: "Akali",
+      reasons: [
+        "Syndra can punish Akali before shroud and use knockback to interrupt her committed dash windows.",
+      ],
+    },
+    {
+      champion: "Veigar",
+      reasons: [
+        "Syndra can pressure Veigar's weak early lane and contest space before his cage and stacks scale.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Yasuo",
+      reasons: [
+        "Yasuo can block Syndra's stun setup with Wind Wall and pressure her immobility through the wave.",
+      ],
+    },
+    {
+      champion: "Fizz",
+      reasons: [
+        "Fizz can dodge Syndra's key stun or burst with (E) and threaten her once Scatter is down.",
+      ],
+    },
+    {
+      champion: "Kassadin",
+      reasons: [
+        "Kassadin can absorb Syndra's magic poke and later outscale her with repeated mobility.",
+      ],
+    },
+    {
+      champion: "Zed",
+      reasons: [
+        "Zed can punish Syndra's immobility after (E) is down and threaten lethal side-lane pressure.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Syndra",
   offMetaRoles: [],

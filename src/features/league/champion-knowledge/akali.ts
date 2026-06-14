@@ -61,9 +61,25 @@ export const akaliCombatProfile = {
     {
       champion: "Veigar",
       reasons: [
-        "Akali can use (W) to delay Veigar's target access and make his burst window awkward.",
-        "(E) and (R) let Akali threaten Veigar after his (E) cage is down.",
-        "Veigar's early lane gives Akali time to reach level 6 and start forcing all-ins.",
+        "Akali can use shroud and mobility to force onto Veigar after cage is down.",
+      ],
+    },
+    {
+      champion: "Syndra",
+      reasons: [
+        "Akali can dodge around Syndra's sphere setup and punish her immobility once (E) is unavailable.",
+      ],
+    },
+    {
+      champion: "Lux",
+      reasons: [
+        "Akali can survive Lux poke with careful spacing and punish her hard after binding is missed.",
+      ],
+    },
+    {
+      champion: "Kassadin",
+      reasons: [
+        "Akali can pressure Kassadin before he has repeated (R) mobility and punish his weak early wave control.",
       ],
     },
   ],
@@ -71,9 +87,25 @@ export const akaliCombatProfile = {
     {
       champion: "Lissandra",
       reasons: [
-        "Lissandra can hold (W) for Akali's dash-in timing and stop the follow-up trade.",
-        "After level 6, Lissandra can use (R) to deny Akali's burst or lock Akali down.",
-        "Early defensive items and waveclear make it harder for Akali to snowball the lane.",
+        "Lissandra can lock Akali down through shroud timing and deny her burst with ultimate.",
+      ],
+    },
+    {
+      champion: "Galio",
+      reasons: [
+        "Galio can survive Akali's burst with magic resistance and punish her dashes with taunt.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: [
+        "Pantheon can point-and-click stun Akali before shroud buys enough time.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Twisted Fate can reveal and lock Akali with gold card when she tries to enter fights.",
       ],
     },
   ],

@@ -128,6 +128,58 @@ export const leeSinCombatProfile = {
     ]),
   },
   majorPowerSpikes: ["Level 3", "Level 6 (R)", "Early damage item"],
+  counters: [
+    {
+      champion: "Karthus",
+      reasons: [
+        "Lee Sin can invade Karthus before repeated full clears stack up and force fights around early camps.",
+      ],
+    },
+    {
+      champion: "Master Yi",
+      reasons: [
+        "Lee Sin can punish Master Yi's weaker early skirmishes before Yi reaches item-based cleanup fights.",
+      ],
+    },
+    {
+      champion: "Nunu",
+      reasons: [
+        "Lee Sin can contest Nunu's predictable objective starts and kick him away before secure windows.",
+      ],
+    },
+    {
+      champion: "Sejuani",
+      reasons: [
+        "Lee Sin can pressure Sejuani before her teamfight durability and punish slow early river movement.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Poppy",
+      reasons: [
+        "Poppy can deny Lee Sin's dash paths and punish his ward-hop or (Q) follow-up attempts.",
+      ],
+    },
+    {
+      champion: "Trundle",
+      reasons: [
+        "Trundle can duel Lee Sin through early skirmishes and punish him if his first burst fails.",
+      ],
+    },
+    {
+      champion: "Warwick",
+      reasons: [
+        "Warwick can match Lee Sin's early fight tempo and sustain through extended river trades.",
+      ],
+    },
+    {
+      champion: "Elise",
+      reasons: [
+        "Elise can match Lee Sin's early gank pressure and punish him with cocoon before he gets clean kick angles.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Lee Sin",
   powerSpikes: {

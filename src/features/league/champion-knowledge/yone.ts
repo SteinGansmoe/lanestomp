@@ -58,6 +58,58 @@ export const yoneCombatProfile = {
     strongInto: [],
     weakInto: [],
   },
+  counters: [
+    {
+      champion: "Syndra",
+      reasons: [
+        "Yone can use (E) to pressure Syndra after her (E) is down and snap back before her burst fully lands.",
+      ],
+    },
+    {
+      champion: "Lux",
+      reasons: [
+        "Yone can threaten Lux's low mobility after she misses (Q) and punish her before she resets spacing.",
+      ],
+    },
+    {
+      champion: "Veigar",
+      reasons: [
+        "Yone can use (E) and (R) to force through Veigar's range once cage is unavailable.",
+      ],
+    },
+    {
+      champion: "Kassadin",
+      reasons: [
+        "Yone can punish Kassadin's weaker early lane before Kassadin reaches higher-level mobility.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can lock Yone down when he enters with (E) and punish his predictable snapback position.",
+      ],
+    },
+    {
+      champion: "Renekton",
+      reasons: [
+        "Renekton can win early melee trades with stun and burst before Yone scales into item fights.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: [
+        "Pantheon can stop Yone's engage with point-and-click stun and punish his low early durability.",
+      ],
+    },
+    {
+      champion: "Malphite",
+      reasons: [
+        "Malphite can stack armor, slow Yone's attack pattern, and force fights with reliable knockup.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Yone",
   offMetaRoles: [],

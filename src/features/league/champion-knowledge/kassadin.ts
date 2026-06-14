@@ -85,6 +85,58 @@ export const kassadinCombatProfile = {
       "Crowd control that locks him after (R).",
     ],
   },
+  counters: [
+    {
+      champion: "Syndra",
+      reasons: [
+        "Kassadin can reduce Syndra's magic poke and outscale her once Riftwalk is available.",
+      ],
+    },
+    {
+      champion: "Veigar",
+      reasons: [
+        "Kassadin can survive Veigar's early magic pressure and later dodge cage angles with repeated (R).",
+      ],
+    },
+    {
+      champion: "Lux",
+      reasons: [
+        "Kassadin can absorb Lux poke and punish her immobility after level 6.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Kassadin can survive Twisted Fate's lane pressure and outscale his direct dueling.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Yone",
+      reasons: [
+        "Yone can punish Kassadin's weak early lane before Riftwalk becomes reliable.",
+      ],
+    },
+    {
+      champion: "Zed",
+      reasons: [
+        "Zed deals physical burst that bypasses Kassadin's anti-magic strengths and pressures him early.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: [
+        "Pantheon can punish Kassadin's early melee farming with stun and strong short trades.",
+      ],
+    },
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can shove Kassadin under tower and threaten all-ins before he scales.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Kassadin",
   offMetaRoles: [],

@@ -91,9 +91,25 @@ export const jinxCombatProfile = {
     {
       champion: "KogMaw",
       reasons: [
-        "Jinx can use rocket range and wave pressure to hit Kog'Maw before he has full item uptime.",
-        "Chompers punish Kog'Maw's low mobility if he is forced to walk through narrow fights.",
-        "Once Jinx gets a reset, Kog'Maw has limited tools to escape her chase range.",
+        "Jinx can use rocket range and wave pressure to punish Kog'Maw before he has full item uptime.",
+      ],
+    },
+    {
+      champion: "Vayne",
+      reasons: [
+        "Jinx can control early waves with rockets and punish Vayne before Vayne reaches her stronger dueling items.",
+      ],
+    },
+    {
+      champion: "Aphelios",
+      reasons: [
+        "Jinx can outrange Aphelios in many lane states and punish him hard if he lacks the right weapon setup.",
+      ],
+    },
+    {
+      champion: "Sivir",
+      reasons: [
+        "Jinx can match Sivir's waveclear after items and threaten stronger reset cleanup in front-to-back fights.",
       ],
     },
   ],
@@ -102,8 +118,24 @@ export const jinxCombatProfile = {
       champion: "Draven",
       reasons: [
         "Draven can punish Jinx before she has attack speed and rocket range items.",
-        "Jinx has no dash, so axe trades and support CC can force her flash early.",
-        "If Draven snowballs, Jinx struggles to safely reach the reset fights she wants.",
+      ],
+    },
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can outrange Jinx early and turn wave control into plate pressure before Jinx scales.",
+      ],
+    },
+    {
+      champion: "Lucian",
+      reasons: [
+        "Lucian can force short burst trades before Jinx has the items or peel to answer extended fights.",
+      ],
+    },
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can jump onto Jinx's low mobility lane phase and snowball before reset fights become safe.",
       ],
     },
   ],
