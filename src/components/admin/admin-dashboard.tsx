@@ -399,6 +399,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         supabase
           .from("league_champions")
           .select("id, name, title, image_url")
+          .eq("is_active", true)
           .order("name", { ascending: true }),
         fetchAllLeagueCounterPicks(),
         fetchAllLeagueMatchups(),
@@ -566,6 +567,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       supabase
         .from("league_champions")
         .select("id, name, title, image_url")
+        .eq("is_active", true)
         .order("name", { ascending: true }),
       fetchAllLeagueCounterPicks(),
       fetchAllLeagueMatchups(),

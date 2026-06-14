@@ -8,13 +8,23 @@ export const roleToTeamPosition = {
   top: "TOP",
 };
 
+export const positionToRole = {
+  BOTTOM: "adc",
+  JUNGLE: "jungle",
+  MIDDLE: "mid",
+  TOP: "top",
+  UTILITY: "support",
+};
+
 export async function scanRiotCounterPickMatchups({
   discover = false,
   logger = null,
   matchCount = 20,
   onProgress = null,
   patch = null,
+  platformRegion = "EUW1",
   queue = rankedSoloDuoQueueId,
+  regionalRouting = "EUROPE",
   riot,
   role,
   seedPuuids,
@@ -49,7 +59,10 @@ export async function scanRiotCounterPickMatchups({
     riot,
   });
   const matchIds = matchIdResult.uniqueMatchIds;
+  const candidateObservations = [];
   const aggregate = {
+    candidateDiscoverySkipped: 0,
+    candidateObservationsFound: 0,
     championPairMatched: 0,
     discoveryPairs: new Map(),
     fetchedMatchIds: matchIdResult.totalFetched,
@@ -84,6 +97,18 @@ export async function scanRiotCounterPickMatchups({
       await emitProgress(onProgress, getSummary(aggregate));
       continue;
     }
+
+    const candidateObservationResult = getCandidateObservationsFromMatch({
+      match,
+      matchId,
+      patch: getPatchFromMatch(match),
+      platformRegion,
+      queue,
+      regionalRouting,
+    });
+    candidateObservations.push(...candidateObservationResult.observations);
+    aggregate.candidateDiscoverySkipped += candidateObservationResult.skipped;
+    aggregate.candidateObservationsFound = candidateObservations.length;
 
     const roleMatchups = getRoleMatchups(match, normalizedRole);
 
@@ -152,6 +177,7 @@ export async function scanRiotCounterPickMatchups({
           role: normalizedRole,
         })
       : [],
+    candidateObservations,
     observations,
     summary,
     targetResult,
@@ -243,6 +269,14 @@ export function normalizeChampionKey(value) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
+export function getParticipantRole(participant) {
+  const position = String(participant?.teamPosition || participant?.individualPosition || "")
+    .trim()
+    .toUpperCase();
+
+  return positionToRole[position] ?? null;
+}
+
 async function fetchUniqueMatchIds({ count, logger, onProgress, puuids, queue, riot }) {
   const matchIds = new Set();
   let totalFetched = 0;
@@ -330,6 +364,64 @@ function getRoleMatchups(match, role) {
       right,
     },
   ];
+}
+
+function getCandidateObservationsFromMatch({
+  match,
+  matchId,
+  patch,
+  platformRegion,
+  queue,
+  regionalRouting,
+}) {
+  const participants = match?.info?.participants;
+
+  if (!Array.isArray(participants)) {
+    return {
+      observations: [],
+      skipped: 0,
+    };
+  }
+
+  const observations = [];
+  const seenPuuids = new Set();
+  const gameStartTimestamp = Number(match?.info?.gameStartTimestamp);
+  const gameDurationSeconds = Number(match?.info?.gameDuration);
+  let skipped = 0;
+
+  for (const participant of participants) {
+    const puuid = typeof participant?.puuid === "string" ? participant.puuid.trim() : "";
+    const champion =
+      typeof participant?.championName === "string" ? participant.championName.trim() : "";
+    const role = getParticipantRole(participant);
+
+    if (!puuid || !champion || !role || seenPuuids.has(puuid)) {
+      skipped += 1;
+      continue;
+    }
+
+    seenPuuids.add(puuid);
+    observations.push({
+      champion,
+      game_duration_seconds: Number.isFinite(gameDurationSeconds) ? gameDurationSeconds : null,
+      game_start_at: Number.isFinite(gameStartTimestamp)
+        ? new Date(gameStartTimestamp).toISOString()
+        : null,
+      match_id: matchId,
+      patch,
+      platform_region: platformRegion,
+      puuid,
+      queue_id: queue,
+      regional_routing: regionalRouting,
+      role,
+      won: Boolean(participant.win),
+    });
+  }
+
+  return {
+    observations,
+    skipped,
+  };
 }
 
 function addDiscoveryPair(discoveryPairs, matchup) {
@@ -464,6 +556,8 @@ function getTargetResult({ aggregate, target }) {
 
 function getSummary(aggregate) {
   return {
+    candidateDiscoverySkipped: aggregate.candidateDiscoverySkipped ?? 0,
+    candidateObservationsFound: aggregate.candidateObservationsFound ?? 0,
     championPairMatched: aggregate.championPairMatched,
     fetchedMatchIds: aggregate.fetchedMatchIds,
     games: aggregate.games,

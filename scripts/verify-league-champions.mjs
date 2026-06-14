@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   defaultDataDragonLocale,
-  syncLeagueChampionRegistry,
+  verifyLeagueChampionRegistry,
 } from "./lib/league-champion-registry.mjs";
 
 loadEnvFile(".env.local");
@@ -16,22 +16,44 @@ if (args.includes("--help")) {
   process.exit(0);
 }
 
-const isDryRun = args.includes("--dry-run") || process.env.npm_config_dry_run === "true";
 const locale =
   getArgValue("--locale") ?? process.env.RIOT_DDRAGON_LOCALE ?? defaultDataDragonLocale;
 const requestedVersion = getArgValue("--version") ?? process.env.RIOT_DDRAGON_VERSION ?? null;
-const supabase = isDryRun ? null : getSupabaseClient();
-const result = await syncLeagueChampionRegistry({
-  dryRun: isDryRun,
+const supabase = getSupabaseClient();
+const result = await verifyLeagueChampionRegistry({
   locale,
   supabase,
   version: requestedVersion,
 });
 
-printSyncSummary(result, {
-  dryRun: isDryRun,
-  locale,
-});
+console.log(
+  [
+    `Registry complete: ${result.ok ? "Yes" : "No"}`,
+    `Source champions: ${result.sourceChampionCount}`,
+    `Database champions: ${result.databaseChampionCount}`,
+    `Database active champions: ${result.activeDatabaseChampionCount}`,
+    `Missing: ${result.missing.length}`,
+    `Unknown: ${result.unknown.length}`,
+    `Conflicts: ${result.conflicts.length}`,
+    `Name mismatches: ${result.nameMismatches.length}`,
+    `Inactive returned by Riot: ${result.inactiveReturnedByRiot.length}`,
+    `Source version: ${result.sourceVersion}`,
+  ].join(" | "),
+);
+
+printRows("Missing champions", result.missing, (row) => `${row.id} (${row.name})`);
+printRows("Unknown active database champions", result.unknown, (row) => `${row.id} (${row.name})`);
+printRows("Identifier conflicts", result.conflicts, (value) => value);
+printRows(
+  "Inactive champions still returned by Riot",
+  result.inactiveReturnedByRiot,
+  (row) => `${row.id} (${row.name})`,
+);
+printRows(
+  "Name mismatches",
+  result.nameMismatches,
+  (row) => `${row.id}: db=${row.databaseName} source=${row.sourceName}`,
+);
 
 if (!result.ok) {
   process.exit(1);
@@ -43,7 +65,7 @@ function getSupabaseClient() {
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
-      "Missing Supabase import credentials. Set NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL, plus SUPABASE_SERVICE_ROLE_KEY.",
+      "Missing Supabase verification credentials. Set NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL, plus SUPABASE_SERVICE_ROLE_KEY.",
     );
   }
 
@@ -54,26 +76,16 @@ function getSupabaseClient() {
   });
 }
 
-function printSyncSummary(result, { dryRun, locale }) {
-  console.log(
-    [
-      dryRun
-        ? "League champion registry dry run complete"
-        : "League champion registry sync complete",
-      `status=${result.status}`,
-      `locale=${locale}`,
-      `sourceVersion=${result.sourceVersion}`,
-      `championsReceived=${result.championsReceived}`,
-      `inserted=${result.championsInserted}`,
-      `updated=${result.championsUpdated}`,
-      `unchanged=${result.championsUnchanged}`,
-      `deactivated=${result.championsDeactivated}`,
-      `failed=${result.failed}`,
-    ].join(" | "),
-  );
+function printRows(label, rows, formatRow) {
+  if (rows.length === 0) {
+    return;
+  }
 
-  if (result.failures.length > 0) {
-    result.failures.forEach((failure) => console.error(`- ${failure}`));
+  console.log(`${label}:`);
+  rows.slice(0, 25).forEach((row) => console.log(`- ${formatRow(row)}`));
+
+  if (rows.length > 25) {
+    console.log(`- ... ${rows.length - 25} more`);
   }
 }
 
@@ -123,20 +135,18 @@ function loadEnvFile(fileName) {
 }
 
 function printHelp() {
-  console.log(`League Champion Registry Sync
+  console.log(`League Champion Registry Verification
 
-Fetches the full current champion registry from Riot Data Dragon and upserts
-source-managed champion metadata into league_champions.
+Compares the Riot Data Dragon champion source against league_champions.
 
 Usage:
-  npm run sync:league-champions
-  npm run sync:league-champions -- --dry-run
-  npm run sync:league-champions -- --version 15.12.1
-  npm run sync:league-champions -- --locale en_US
+  npm run verify:league-champions
+  npm run verify:league-champions -- --version 15.12.1
+  npm run verify:league-champions -- --locale en_US
 
 Environment:
   RIOT_DDRAGON_LOCALE       Defaults to en_US
   RIOT_DDRAGON_VERSION      Optional explicit Data Dragon version
-  SUPABASE_SERVICE_ROLE_KEY Required unless --dry-run
+  SUPABASE_SERVICE_ROLE_KEY Required
 `);
 }

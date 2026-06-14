@@ -11,6 +11,11 @@ import {
   scanRiotCounterPickMatchups,
   uniqueValues,
 } from "./lib/riot-counter-pick-scanner.mjs";
+import {
+  defaultPlatformRegion,
+  defaultRegionalRouting,
+  persistSeedCandidatesFromObservations,
+} from "./lib/riot-seed-candidates.mjs";
 
 const defaultRegionalRoute = "europe";
 const defaultMatchCount = 20;
@@ -33,6 +38,8 @@ const isDryRun = args.includes("--dry-run") || process.env.npm_config_dry_run ==
 const isDiscoverMode = args.includes("--discover");
 const regionalRoute =
   getArgValue("--region") ?? process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute;
+const platformRegion =
+  getArgValue("--platform") ?? process.env.RIOT_PLATFORM_REGION ?? defaultPlatformRegion;
 const matchCount = Number(
   getArgValue("--count") ?? process.env.RIOT_POC_MATCH_COUNT ?? defaultMatchCount,
 );
@@ -94,6 +101,7 @@ console.log(
   [
     "Starting Riot counter-pick POC",
     `region=${regionalRoute}`,
+    `platform=${platformRegion}`,
     `queue=${queue}`,
     `patch=${patch}`,
     `target=${target.counterChampionId} ${target.role} vs ${target.enemyChampionId} ${target.role}`,
@@ -109,7 +117,9 @@ const scanResult = await scanRiotCounterPickMatchups({
   logger: console,
   matchCount,
   patch,
+  platformRegion,
   queue,
+  regionalRouting: regionalRoute ?? defaultRegionalRouting,
   riot,
   role: target.role,
   seedPuuids,
@@ -153,6 +163,11 @@ const persistenceResult = await persistObservationsAndRebuildStats({
   observations: scanResult.observations,
   supabase,
 });
+const candidatePersistenceResult = await persistSeedCandidatesFromObservations({
+  observations: scanResult.candidateObservations,
+  source: "match_discovery",
+  supabase,
+});
 
 console.log(
   [
@@ -162,6 +177,18 @@ console.log(
     `duplicatesSkipped=${persistenceResult.duplicateObservationsSkipped}`,
     `insertFailures=${persistenceResult.insertFailures}`,
     `statsRowsUpdated=${persistenceResult.statsRowsUpdated}`,
+    `participantPuuidsObserved=${candidatePersistenceResult.participantPuuidsObserved}`,
+    `uniqueCandidatesEncountered=${candidatePersistenceResult.uniqueCandidatesEncountered}`,
+    `newCandidatesCreated=${candidatePersistenceResult.newCandidatesCreated}`,
+    `existingCandidatesUpdated=${candidatePersistenceResult.existingCandidatesUpdated}`,
+    `candidateIdsResolved=${candidatePersistenceResult.candidateIdsResolved}`,
+    `candidateUniqueIdResolutionFailures=${candidatePersistenceResult.candidateUniqueIdResolutionFailures}`,
+    `candidateObservationResolutionFailures=${candidatePersistenceResult.candidateObservationResolutionFailures}`,
+    `candidateIdResolutionFailures=${candidatePersistenceResult.candidateIdResolutionFailures}`,
+    `candidateIdLookupChunks=${candidatePersistenceResult.candidateIdLookupChunks}`,
+    `candidateIdLookupChunkFailures=${candidatePersistenceResult.candidateIdLookupChunkFailures}`,
+    `candidateObservationsInserted=${candidatePersistenceResult.candidateObservationsInserted}`,
+    `candidateProfilesRebuilt=${candidatePersistenceResult.candidateProfilesRebuilt}`,
   ].join(" | "),
 );
 
@@ -265,7 +292,7 @@ Scans recent ranked EUW/Europe match data for a target counter matchup and
 upserts the aggregate into counter_pick_stats.
 
 Usage:
-  npm run poc:riot-counter-pick -- --seed-puuid <PUUID> [--seed-puuid <PUUID>] [--enemy Ahri] [--counter Yasuo] [--role mid] [--count 20] [--patch 15.12] [--dry-run]
+  npm run poc:riot-counter-pick -- --seed-puuid <PUUID> [--seed-puuid <PUUID>] [--enemy Ahri] [--counter Yasuo] [--role mid] [--count 20] [--patch 15.12] [--platform EUW1] [--dry-run]
   npm run poc:riot-counter-pick -- --discover --seed-puuid <PUUID> [--role mid] [--count 50]
 
 Environment:
@@ -274,6 +301,7 @@ Environment:
   RIOT_POC_ENEMY             Defaults to Ahri
   RIOT_POC_COUNTER           Defaults to Yasuo
   RIOT_POC_ROLE              Defaults to mid
+  RIOT_PLATFORM_REGION       Defaults to EUW1
   RIOT_REGIONAL_ROUTING      Defaults to europe
   RIOT_REQUEST_DELAY_MS      Defaults to 1200
   SUPABASE_SERVICE_ROLE_KEY  Required unless --dry-run exits before upsert

@@ -2,16 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Clipboard, Loader2, Play, RefreshCw, Search, UserPlus, X } from "lucide-react";
 
 import {
+  getLeagueChampionRegistryAdminStatus,
   getRecentRiotScanJobs,
+  getRiotSeedCandidates,
   getRiotScanJob,
   resolveRiotIdsToPuuids,
   startRiotScanJob,
+  type LeagueChampionRegistryAdminStatusResult,
 } from "@/src/app/admin/league/counter-picks/actions";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import type {
   RiotIdResolverRow,
+  RiotSeedCandidateFilters,
+  RiotSeedCandidateSort,
+  RiotSeedCandidateSource,
+  RiotSeedCandidateStatus,
+  RiotSeedCandidateTopChampion,
+  RiotSeedCandidateView,
   RiotScanDiscoveryResult,
   RiotScanJobView,
   RiotScanMode,
@@ -26,6 +35,37 @@ import type { AdminLeagueChampion, FormStatus } from "../types";
 const maxMatchCount = 50;
 const maxDisplayedResults = 100;
 const maxRiotIdsPerBatch = 20;
+const seedCandidateStatuses: Array<RiotSeedCandidateStatus | "all"> = [
+  "all",
+  "candidate",
+  "approved",
+  "queued",
+  "active",
+  "cooldown",
+  "ignored",
+  "failed",
+];
+const seedCandidateSources: Array<RiotSeedCandidateSource | "all"> = [
+  "all",
+  "match_discovery",
+  "riot_id_resolver",
+  "manual",
+  "ladder_import",
+];
+const seedCandidateSorts: Array<{
+  label: string;
+  value: RiotSeedCandidateSort;
+}> = [
+  { label: "Last seen", value: "last_seen_at" },
+  { label: "Observed games", value: "observed_games" },
+  { label: "Primary role share", value: "primary_role_share" },
+  { label: "Primary champion share", value: "primary_champion_share" },
+  { label: "Created", value: "created_at" },
+];
+type LeagueChampionRegistryStatus = Extract<
+  LeagueChampionRegistryAdminStatusResult,
+  { ok: true }
+>["status"];
 
 export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueChampion[] }) {
   const [mode, setMode] = useState<RiotScanMode>("target");
@@ -258,7 +298,9 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
 
   return (
     <div className="space-y-6">
+      <LeagueChampionRegistryStatusPanel getAccessToken={getAccessToken} />
       <RiotIdResolverPanel getAccessToken={getAccessToken} onAddPuuids={addPuuidsToScanner} />
+      <RiotSeedCandidatesPanel getAccessToken={getAccessToken} />
 
       <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
         <CardHeader>
@@ -466,6 +508,175 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
   );
 }
 
+function LeagueChampionRegistryStatusPanel({
+  getAccessToken,
+}: {
+  getAccessToken: () => Promise<
+    | {
+        accessToken: string;
+        ok: true;
+      }
+    | {
+        error: string;
+        ok: false;
+      }
+  >;
+}) {
+  const [registryStatus, setRegistryStatus] = useState<LeagueChampionRegistryStatus | null>(null);
+  const [status, setStatus] = useState<FormStatus>({
+    error: null,
+    isLoading: false,
+    success: null,
+  });
+
+  useEffect(() => {
+    void loadRegistryStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadRegistryStatus() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await getLeagueChampionRegistryAdminStatus({
+      accessToken: tokenResult.accessToken,
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setRegistryStatus(result.status);
+    setStatus({ error: null, isLoading: false, success: null });
+  }
+
+  const issueCount =
+    (registryStatus?.missingCount ?? 0) +
+    (registryStatus?.unknownCount ?? 0) +
+    (registryStatus?.conflictCount ?? 0) +
+    (registryStatus?.inactiveReturnedByRiotCount ?? 0) +
+    (registryStatus?.nameMismatchCount ?? 0);
+
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="font-mono text-xl">League Champion Registry</CardTitle>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+              Read-only health check for the canonical Data Dragon champion registry.
+            </p>
+          </div>
+          <Button
+            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+            disabled={status.isLoading}
+            onClick={() => void loadRegistryStatus()}
+            type="button"
+            variant="ghost"
+          >
+            {status.isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            )}
+            Refresh registry
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <StatusMessage status={status} />
+
+        {registryStatus ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Metric
+                label="Registry"
+                value={registryStatus.registryOk ? "Healthy" : "Needs sync"}
+              />
+              <Metric label="Patch" value={registryStatus.sourceVersion} />
+              <Metric label="Source champions" value={registryStatus.sourceChampionCount} />
+              <Metric label="Active champions" value={registryStatus.activeDatabaseChampionCount} />
+              <Metric label="Database rows" value={registryStatus.databaseChampionCount} />
+              <Metric label="Missing" value={registryStatus.missingCount} />
+              <Metric label="Unknown active" value={registryStatus.unknownCount} />
+              <Metric label="Last sync" value={formatDateTime(registryStatus.lastSyncedAt)} />
+            </div>
+
+            <div
+              className={cn(
+                "rounded-lg border p-4 text-sm",
+                registryStatus.registryOk
+                  ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
+                  : "border-amber-300/20 bg-amber-500/10 text-amber-100",
+              )}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="font-semibold">
+                  {registryStatus.registryOk
+                    ? "Registry matches Riot Data Dragon."
+                    : `${issueCount} registry ${issueCount === 1 ? "issue" : "issues"} detected.`}
+                </span>
+                <span className="text-xs">
+                  Sync status: {formatEnumLabel(registryStatus.lastSyncStatus)}
+                </span>
+              </div>
+              {registryStatus.lastSyncError ? (
+                <p className="mt-2 text-xs">{registryStatus.lastSyncError}</p>
+              ) : null}
+            </div>
+
+            {!registryStatus.registryOk ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                <RegistryIssueList label="Missing champions" values={registryStatus.missing} />
+                <RegistryIssueList
+                  label="Unknown active champions"
+                  values={registryStatus.unknown}
+                />
+                <RegistryIssueList label="Conflicts" values={registryStatus.conflicts} />
+                <RegistryIssueList label="Name mismatches" values={registryStatus.nameMismatches} />
+                <RegistryIssueList
+                  label="Inactive but returned by Riot"
+                  values={registryStatus.inactiveReturnedByRiot}
+                />
+              </div>
+            ) : null}
+          </>
+        ) : status.isLoading ? (
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
+            Checking registry status...
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RegistryIssueList({ label, values }: { label: string; values: string[] }) {
+  if (values.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/15 p-3">
+      <h3 className="text-sm font-semibold text-white">{label}</h3>
+      <ul className="mt-2 space-y-1 text-xs text-zinc-400">
+        {values.map((value) => (
+          <li className="break-words" key={value}>
+            {value}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function RiotIdResolverPanel({
   getAccessToken,
   onAddPuuids,
@@ -562,7 +773,7 @@ function RiotIdResolverPanel({
   return (
     <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
       <CardHeader>
-        <CardTitle className="font-mono text-xl">Riot ID → PUUID Resolver</CardTitle>
+        <CardTitle className="font-mono text-xl">Riot ID to PUUID Resolver</CardTitle>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
           Resolve Riot IDs into seed PUUIDs before starting a scan.
         </p>
@@ -675,6 +886,436 @@ function RiotIdResolverPanel({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RiotSeedCandidatesPanel({
+  getAccessToken,
+}: {
+  getAccessToken: () => Promise<
+    | {
+        accessToken: string;
+        ok: true;
+      }
+    | {
+        error: string;
+        ok: false;
+      }
+  >;
+}) {
+  const [candidates, setCandidates] = useState<RiotSeedCandidateView[]>([]);
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
+  const [platformRegion, setPlatformRegion] = useState("EUW1");
+  const [statusFilter, setStatusFilter] = useState<RiotSeedCandidateStatus | "all">("all");
+  const [sourceFilter, setSourceFilter] = useState<RiotSeedCandidateSource | "all">("all");
+  const [primaryRoleFilter, setPrimaryRoleFilter] = useState<LeagueRole | "all">("all");
+  const [primaryChampionFilter, setPrimaryChampionFilter] = useState("");
+  const [minimumObservedGames, setMinimumObservedGames] = useState("");
+  const [sort, setSort] = useState<RiotSeedCandidateSort>("last_seen_at");
+  const [status, setStatus] = useState<FormStatus>({
+    error: null,
+    isLoading: false,
+    success: null,
+  });
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadCandidates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadCandidates() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const parsedMinimumGames = Number(minimumObservedGames);
+    const filters: RiotSeedCandidateFilters = {
+      platformRegion,
+      primaryChampion: primaryChampionFilter,
+      primaryRole: primaryRoleFilter,
+      source: sourceFilter,
+      status: statusFilter,
+    };
+
+    if (Number.isInteger(parsedMinimumGames) && parsedMinimumGames > 0) {
+      filters.minObservedGames = parsedMinimumGames;
+    }
+
+    const result = await getRiotSeedCandidates({
+      accessToken: tokenResult.accessToken,
+      filters,
+      limit: 50,
+      sort,
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setCandidates(result.candidates);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${result.candidates.length} seed ${result.candidates.length === 1 ? "candidate" : "candidates"} loaded.`,
+    });
+  }
+
+  async function copyPuuid(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyStatus("PUUID copied.");
+    } catch {
+      setCopyStatus("Copy failed.");
+    }
+  }
+
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="font-mono text-xl">Riot Seed Candidates</CardTitle>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+              Read-only candidate pool built from resolved Riot IDs and processed Riot matches.
+            </p>
+          </div>
+          <Button
+            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+            disabled={status.isLoading}
+            onClick={() => void loadCandidates()}
+            type="button"
+            variant="ghost"
+          >
+            {status.isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            )}
+            Refresh candidates
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Platform</span>
+            <Input
+              className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              onChange={(event) => setPlatformRegion(event.target.value)}
+              value={platformRegion}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Status</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as RiotSeedCandidateStatus | "all")
+              }
+              value={statusFilter}
+            >
+              {seedCandidateStatuses.map((candidateStatus) => (
+                <option
+                  className={selectOptionClassName}
+                  key={candidateStatus}
+                  value={candidateStatus}
+                >
+                  {formatEnumLabel(candidateStatus)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Source</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setSourceFilter(event.target.value as RiotSeedCandidateSource | "all")
+              }
+              value={sourceFilter}
+            >
+              {seedCandidateSources.map((source) => (
+                <option className={selectOptionClassName} key={source} value={source}>
+                  {formatEnumLabel(source)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Primary role</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) => setPrimaryRoleFilter(event.target.value as LeagueRole | "all")}
+              value={primaryRoleFilter}
+            >
+              <option className={selectOptionClassName} value="all">
+                All
+              </option>
+              {leagueRoles.map((leagueRole) => (
+                <option className={selectOptionClassName} key={leagueRole} value={leagueRole}>
+                  {getRoleLabel(leagueRole)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Champion</span>
+            <Input
+              className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              onChange={(event) => setPrimaryChampionFilter(event.target.value)}
+              placeholder="Ahri"
+              value={primaryChampionFilter}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Min games</span>
+            <Input
+              className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              min={0}
+              onChange={(event) => setMinimumObservedGames(event.target.value)}
+              type="number"
+              value={minimumObservedGames}
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <label className="block w-full space-y-2 sm:w-64">
+            <span className="text-sm text-zinc-300">Sort</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) => setSort(event.target.value as RiotSeedCandidateSort)}
+              value={sort}
+            >
+              {seedCandidateSorts.map((candidateSort) => (
+                <option
+                  className={selectOptionClassName}
+                  key={candidateSort.value}
+                  value={candidateSort.value}
+                >
+                  {candidateSort.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <Button
+            className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+            disabled={status.isLoading}
+            onClick={() => void loadCandidates()}
+            type="button"
+          >
+            {status.isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Search className="size-4" aria-hidden="true" />
+            )}
+            Apply filters
+          </Button>
+        </div>
+
+        <StatusMessage status={status} />
+        {copyStatus ? (
+          <p className="rounded-md border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-100">
+            {copyStatus}
+          </p>
+        ) : null}
+
+        {candidates.length === 0 ? (
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
+            No seed candidates matched the current filters.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {candidates.map((candidate) => (
+              <SeedCandidateRow
+                candidate={candidate}
+                expanded={expandedCandidateId === candidate.id}
+                key={candidate.id}
+                onCopy={() => void copyPuuid(candidate.puuid)}
+                onToggle={() =>
+                  setExpandedCandidateId((currentId) =>
+                    currentId === candidate.id ? null : candidate.id,
+                  )
+                }
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SeedCandidateRow({
+  candidate,
+  expanded,
+  onCopy,
+  onToggle,
+}: {
+  candidate: RiotSeedCandidateView;
+  expanded: boolean;
+  onCopy: () => void;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-white/10 bg-black/15">
+      <button
+        className="grid w-full gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="min-w-0">
+          <span className="block truncate font-mono text-xs text-cyan-100">
+            {shortenPuuid(candidate.puuid)}
+          </span>
+          <span className="mt-1 block text-xs text-zinc-500">
+            {candidate.platform_region} - {candidate.regional_routing}
+          </span>
+        </span>
+        <span>
+          <span className="block text-xs uppercase tracking-wide text-zinc-500">Status</span>
+          <span className="font-semibold text-zinc-100">{formatEnumLabel(candidate.status)}</span>
+        </span>
+        <span>
+          <span className="block text-xs uppercase tracking-wide text-zinc-500">Role</span>
+          <span className="font-semibold text-zinc-100">
+            {candidate.estimated_primary_role
+              ? `${getRoleLabel(candidate.estimated_primary_role)} ${formatPercent(
+                  candidate.primary_role_share,
+                )}`
+              : "Pending"}
+          </span>
+        </span>
+        <span>
+          <span className="block text-xs uppercase tracking-wide text-zinc-500">Champion</span>
+          <span className="font-semibold text-zinc-100">
+            {candidate.primary_champion
+              ? `${candidate.primary_champion} ${formatPercent(candidate.primary_champion_share)}`
+              : "Pending"}
+          </span>
+        </span>
+        <span>
+          <span className="block text-xs uppercase tracking-wide text-zinc-500">Games</span>
+          <span className="font-semibold text-zinc-100">
+            {formatNumber(candidate.observed_games)}
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-cyan-200">
+          {expanded ? "Hide details" : "Details"}
+        </span>
+      </button>
+
+      {expanded ? (
+        <div className="space-y-4 border-t border-white/10 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="break-all font-mono text-xs text-zinc-300">{candidate.puuid}</p>
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              onClick={onCopy}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <Clipboard className="size-3.5" aria-hidden="true" />
+              Copy PUUID
+            </Button>
+          </div>
+
+          <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label="Source" value={formatEnumLabel(candidate.source)} />
+            <Metric label="First seen" value={formatDateTime(candidate.first_seen_at)} />
+            <Metric label="Last seen" value={formatDateTime(candidate.last_seen_at)} />
+            <Metric label="Latest match" value={formatDateTime(candidate.latest_match_seen_at)} />
+            <Metric label="First match" value={candidate.first_seen_match_id} />
+            <Metric label="First scan job" value={candidate.first_seen_scan_job_id} />
+            <Metric label="Last profiled" value={formatDateTime(candidate.last_profiled_at)} />
+            <Metric label="Last scanned" value={formatDateTime(candidate.last_scanned_at)} />
+            <Metric label="Times scanned" value={candidate.times_scanned} />
+            <Metric label="Successful scans" value={candidate.successful_scan_count} />
+            <Metric label="Failed scans" value={candidate.failed_scan_count} />
+            <Metric label="Consecutive failures" value={candidate.consecutive_scan_failures} />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <CandidateRoleDistribution candidate={candidate} />
+            <CandidateTopChampions champions={candidate.top_champions ?? []} />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CandidateRoleDistribution({ candidate }: { candidate: RiotSeedCandidateView }) {
+  const entries = leagueRoles
+    .map((leagueRole) => ({
+      role: leagueRole,
+      value: candidate.role_distribution?.[leagueRole],
+    }))
+    .filter((entry) => entry.value);
+
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+      <h4 className="text-sm font-semibold text-white">Role distribution</h4>
+      {entries.length === 0 ? (
+        <p className="mt-2 text-sm text-zinc-500">Pending</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {entries.map((entry) => (
+            <div
+              className="flex items-center justify-between gap-3 text-xs text-zinc-300"
+              key={entry.role}
+            >
+              <span>{getRoleLabel(entry.role)}</span>
+              <span>
+                {entry.value?.games ?? 0} games - {formatPercent(entry.value?.share)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CandidateTopChampions({ champions }: { champions: RiotSeedCandidateTopChampion[] }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+      <h4 className="text-sm font-semibold text-white">Top champions</h4>
+      {champions.length === 0 ? (
+        <p className="mt-2 text-sm text-zinc-500">Pending</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {champions.map((champion) => (
+            <div
+              className="grid grid-cols-[1fr_auto] gap-3 text-xs text-zinc-300"
+              key={`${champion.champion}-${champion.role}`}
+            >
+              <span className="font-semibold text-zinc-100">
+                {champion.champion} {getRoleLabel(champion.role)}
+              </span>
+              <span>
+                {champion.games} games - {champion.wins}W {champion.losses}L -{" "}
+                {formatPercent(champion.share)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -863,28 +1504,96 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
         </p>
       ) : null}
 
-      <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
-        <Metric label="Fetched match IDs" value={job.progress.fetchedMatchIds} />
-        <Metric label="Unique match IDs" value={job.progress.uniqueMatchIds} />
-        <Metric label="Scanned matches" value={job.progress.matchesScanned} />
-        <Metric label="Patch skipped" value={job.progress.patchSkipped} />
-        <Metric label="Queue skipped" value={job.progress.queueSkipped} />
-        <Metric label="Role skipped" value={job.progress.roleSkipped} />
-        <Metric label="Champion pair matched" value={job.progress.championPairMatched} />
-        <Metric label="Matchup pairs discovered" value={job.progress.matchupPairsDiscovered} />
-        <Metric label="Observations found" value={job.progress.observationsFound} />
-        <Metric label="New observations saved" value={job.progress.observationsInserted} />
-        <Metric
-          label="Duplicate observations skipped"
-          value={job.progress.observationDuplicatesSkipped}
-        />
-        <Metric
-          label="Observation insert failures"
-          value={job.progress.observationInsertFailures}
-        />
-        <Metric label="Counter pick stat rows updated" value={job.progress.statsRowsUpdated} />
-        <Metric label="Started" value={formatDateTime(job.started_at)} />
-        <Metric label="Completed" value={formatDateTime(job.completed_at)} />
+      <div className="space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Matchup data collection
+        </h4>
+        <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
+          <Metric label="Fetched match IDs" value={job.progress.fetchedMatchIds} />
+          <Metric label="Unique match IDs" value={job.progress.uniqueMatchIds} />
+          <Metric label="Scanned matches" value={job.progress.matchesScanned} />
+          <Metric label="Patch skipped" value={job.progress.patchSkipped} />
+          <Metric label="Queue skipped" value={job.progress.queueSkipped} />
+          <Metric label="Role skipped" value={job.progress.roleSkipped} />
+          <Metric label="Champion pair matched" value={job.progress.championPairMatched} />
+          <Metric label="Matchup pairs discovered" value={job.progress.matchupPairsDiscovered} />
+          <Metric label="Observations found" value={job.progress.observationsFound} />
+          <Metric label="New observations saved" value={job.progress.observationsInserted} />
+          <Metric
+            label="Duplicate observations skipped"
+            value={job.progress.observationDuplicatesSkipped}
+          />
+          <Metric
+            label="Observation insert failures"
+            value={job.progress.observationInsertFailures}
+          />
+          <Metric label="Counter pick stat rows updated" value={job.progress.statsRowsUpdated} />
+          <Metric label="Started" value={formatDateTime(job.started_at)} />
+          <Metric label="Completed" value={formatDateTime(job.completed_at)} />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Seed candidate discovery
+        </h4>
+        <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
+          <Metric
+            label="Participant PUUIDs observed"
+            value={job.progress.participantPuuidsObserved}
+          />
+          <Metric
+            label="Unique candidates encountered"
+            value={job.progress.uniqueCandidatesEncountered}
+          />
+          <Metric label="New candidates created" value={job.progress.newCandidatesCreated} />
+          <Metric
+            label="Existing candidates updated"
+            value={job.progress.existingCandidatesUpdated}
+          />
+          <Metric label="Candidate IDs resolved" value={job.progress.candidateIdsResolved} />
+          <Metric
+            label="Unique candidate ID resolution failures"
+            value={job.progress.candidateUniqueIdResolutionFailures}
+          />
+          <Metric
+            label="Candidate observation resolution failures"
+            value={job.progress.candidateObservationResolutionFailures}
+          />
+          <Metric
+            label="Candidate observations found"
+            value={job.progress.candidateObservationsFound}
+          />
+          <Metric
+            label="Candidate observations inserted"
+            value={job.progress.candidateObservationsInserted}
+          />
+          <Metric
+            label="Candidate observation duplicates skipped"
+            value={job.progress.candidateObservationDuplicatesSkipped}
+          />
+          <Metric
+            label="Candidate observation insert failures"
+            value={job.progress.candidateObservationInsertFailures}
+          />
+          <Metric
+            label="Candidate profiles rebuilt"
+            value={job.progress.candidateProfilesRebuilt}
+          />
+          <Metric
+            label="Candidate profile failures"
+            value={job.progress.candidateProfileFailures}
+          />
+          <Metric label="Candidate ID lookup chunks" value={job.progress.candidateIdLookupChunks} />
+          <Metric
+            label="Candidate ID lookup chunk failures"
+            value={job.progress.candidateIdLookupChunkFailures}
+          />
+          <Metric
+            label="Candidate discovery skipped"
+            value={job.progress.candidateDiscoverySkipped}
+          />
+        </div>
       </div>
 
       {targetResult ? <TargetResult result={targetResult as RiotScanTargetResult} /> : null}
@@ -1025,6 +1734,29 @@ function getStatusLabel(status: RiotScanJobView["status"]) {
 
 function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function shortenPuuid(value: string) {
+  if (value.length <= 18) {
+    return value;
+  }
+
+  return `${value.slice(0, 8)}...${value.slice(-8)}`;
+}
+
+function formatPercent(value: number | null | undefined) {
+  if (typeof value !== "number") {
+    return "Pending";
+  }
+
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatEnumLabel(value: string) {
+  return value
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
 }
 
 function formatNumber(value: number | undefined) {

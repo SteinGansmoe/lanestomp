@@ -6,6 +6,10 @@ import type {
   RiotIdResolverInput,
   RiotIdResolverResult,
   RiotIdResolverRow,
+  RiotSeedCandidateFilters,
+  RiotSeedCandidateSort,
+  RiotSeedCandidatesResult,
+  RiotSeedCandidateView,
   RiotScanDiscoveryResult,
   RiotScanJobResult,
   RiotScanJobsResult,
@@ -25,6 +29,7 @@ const maxMatchCount = 50;
 const maxDisplayedResultsLimit = 100;
 const maxRiotIdsPerBatch = 20;
 const defaultRegionalRoute = "europe";
+const defaultPlatformRegion = "EUW1";
 
 type AuthorizedClientResult =
   | {
@@ -54,6 +59,35 @@ type RiotScanJobRow = {
   status: RiotScanStatus;
   summary: RiotScanSummary | null;
 };
+
+export type LeagueChampionRegistryAdminStatusResult =
+  | {
+      ok: true;
+      status: {
+        activeDatabaseChampionCount: number;
+        conflictCount: number;
+        conflicts: string[];
+        databaseChampionCount: number;
+        inactiveReturnedByRiotCount: number;
+        inactiveReturnedByRiot: string[];
+        lastSyncedAt: string | null;
+        lastSyncError: string | null;
+        lastSyncStatus: string;
+        missing: string[];
+        missingCount: number;
+        nameMismatchCount: number;
+        nameMismatches: string[];
+        registryOk: boolean;
+        sourceChampionCount: number;
+        sourceVersion: string;
+        unknown: string[];
+        unknownCount: number;
+      };
+    }
+  | {
+      error: string;
+      ok: false;
+    };
 
 export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<RiotScanJobResult> {
   const authResult = await getAuthorizedAdmin(input.accessToken, "run Riot match scans");
@@ -134,6 +168,66 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
   };
 }
 
+export async function getLeagueChampionRegistryAdminStatus({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<LeagueChampionRegistryAdminStatusResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "view League champion registry status");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  try {
+    const { getLeagueChampionRegistryStatus } =
+      await import("@/scripts/lib/league-champion-registry.mjs");
+    const status = await getLeagueChampionRegistryStatus({
+      supabase: serviceClientResult.supabase,
+    });
+
+    return {
+      ok: true,
+      status: {
+        activeDatabaseChampionCount: status.activeDatabaseChampionCount,
+        conflictCount: status.conflicts.length,
+        conflicts: status.conflicts.slice(0, 8),
+        databaseChampionCount: status.databaseChampionCount,
+        inactiveReturnedByRiot: status.inactiveReturnedByRiot.slice(0, 8).map(getRegistryRowLabel),
+        inactiveReturnedByRiotCount: status.inactiveReturnedByRiot.length,
+        lastSyncedAt: status.lastSyncedAt,
+        lastSyncError: status.lastSyncError,
+        lastSyncStatus: status.lastSyncStatus,
+        missing: status.missing.slice(0, 8).map(getRegistryRowLabel),
+        missingCount: status.missing.length,
+        nameMismatchCount: status.nameMismatches.length,
+        nameMismatches: status.nameMismatches.slice(0, 8).map((mismatch) => {
+          return `${mismatch.id}: ${mismatch.databaseName} -> ${mismatch.sourceName}`;
+        }),
+        registryOk: status.ok,
+        sourceChampionCount: status.sourceChampionCount,
+        sourceVersion: status.sourceVersion,
+        unknown: status.unknown.slice(0, 8).map(getRegistryRowLabel),
+        unknownCount: status.unknown.length,
+      },
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "League champion registry status could not be loaded.",
+      ok: false,
+    };
+  }
+}
+
 export async function resolveRiotIdsToPuuids(
   input: RiotIdResolverInput,
 ): Promise<RiotIdResolverResult> {
@@ -146,6 +240,7 @@ export async function resolveRiotIdsToPuuids(
   const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
   const { parseRiotId, resolveRiotAccountByRiotId, uniqueRiotIds } =
     await import("@/scripts/lib/riot-account-lookup.mjs");
+  const { upsertSeedCandidatesFromPuuids } = await import("@/scripts/lib/riot-seed-candidates.mjs");
   const uniqueRiotIdsToResolve = uniqueRiotIds(input.riotIds ?? []);
 
   if (uniqueRiotIdsToResolve.length === 0) {
@@ -221,12 +316,135 @@ export async function resolveRiotIdsToPuuids(
     }
   }
 
+  const resolvedPuuids = results.filter((result) => result.ok).map((result) => result.puuid);
+
+  if (resolvedPuuids.length > 0) {
+    const serviceClientResult = getServiceSupabaseClient();
+
+    if (serviceClientResult.ok) {
+      try {
+        await upsertSeedCandidatesFromPuuids({
+          platformRegion: process.env.RIOT_PLATFORM_REGION ?? defaultPlatformRegion,
+          puuids: resolvedPuuids,
+          regionalRouting: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
+          source: "riot_id_resolver",
+          supabase: serviceClientResult.supabase,
+        });
+      } catch (error) {
+        console.error("Riot ID resolver seed candidate persistence failed", error);
+      }
+    }
+  }
+
   return {
     failedCount: results.filter((result) => !result.ok).length,
     ok: true,
     results,
     successCount: results.filter((result) => result.ok).length,
     uniqueCount: uniqueRiotIdsToResolve.length,
+  };
+}
+
+export async function getRiotSeedCandidates({
+  accessToken,
+  filters = {},
+  limit = 25,
+  sort = "last_seen_at",
+}: {
+  accessToken: string;
+  filters?: RiotSeedCandidateFilters;
+  limit?: number;
+  sort?: RiotSeedCandidateSort;
+}): Promise<RiotSeedCandidatesResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "view Riot seed candidates");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  let query = serviceClientResult.supabase
+    .from("riot_seed_candidates")
+    .select(
+      [
+        "id",
+        "puuid",
+        "platform_region",
+        "regional_routing",
+        "source",
+        "status",
+        "first_seen_match_id",
+        "first_seen_scan_job_id",
+        "first_seen_at",
+        "last_seen_at",
+        "observed_games",
+        "estimated_primary_role",
+        "estimated_secondary_role",
+        "primary_role_share",
+        "secondary_role_share",
+        "primary_champion",
+        "primary_champion_role",
+        "primary_champion_games",
+        "primary_champion_share",
+        "role_distribution",
+        "top_champions",
+        "last_profiled_at",
+        "last_scanned_at",
+        "next_eligible_scan_at",
+        "times_scanned",
+        "successful_scan_count",
+        "failed_scan_count",
+        "consecutive_scan_failures",
+        "latest_match_seen_at",
+        "created_at",
+      ].join(", "),
+    );
+
+  if (filters.platformRegion?.trim()) {
+    query = query.eq("platform_region", filters.platformRegion.trim().toUpperCase());
+  }
+
+  if (filters.status && filters.status !== "all") {
+    query = query.eq("status", filters.status);
+  }
+
+  if (filters.primaryRole && filters.primaryRole !== "all") {
+    query = query.eq("estimated_primary_role", filters.primaryRole);
+  }
+
+  if (filters.primaryChampion?.trim()) {
+    query = query.ilike("primary_champion", `%${filters.primaryChampion.trim()}%`);
+  }
+
+  if (filters.source && filters.source !== "all") {
+    query = query.eq("source", filters.source);
+  }
+
+  if (filters.minObservedGames && filters.minObservedGames > 0) {
+    query = query.gte("observed_games", Math.trunc(filters.minObservedGames));
+  }
+
+  const orderColumn = getCandidateSortColumn(sort);
+  const { data, error } = await query
+    .order(orderColumn, { ascending: false, nullsFirst: false })
+    .limit(Math.min(Math.max(limit, 1), 100))
+    .returns<RiotSeedCandidateView[]>();
+
+  if (error) {
+    return {
+      error: "Seed candidates could not be loaded.",
+      ok: false,
+    };
+  }
+
+  return {
+    candidates: data ?? [],
+    ok: true,
   };
 }
 
@@ -325,6 +543,8 @@ async function runRiotScanJob({
     await import("@/scripts/lib/riot-counter-pick-scanner.mjs");
   const { persistObservationsAndRebuildStats } =
     await import("@/scripts/lib/riot-counter-pick-aggregation.mjs");
+  const { persistSeedCandidatesFromObservations } =
+    await import("@/scripts/lib/riot-seed-candidates.mjs");
   const startedAt = new Date().toISOString();
 
   try {
@@ -342,6 +562,8 @@ async function runRiotScanJob({
       regionalRoute: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
       requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
     });
+    const platformRegion = process.env.RIOT_PLATFORM_REGION ?? defaultPlatformRegion;
+    const regionalRouting = process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute;
     const progressBase = {
       currentPatchOnly: input.currentPatchOnly,
       maxDisplayedResults: input.maxDisplayedResults,
@@ -362,7 +584,9 @@ async function runRiotScanJob({
           .eq("id", jobId);
       },
       patch,
+      platformRegion,
       queue: rankedSoloDuoQueueId,
+      regionalRouting,
       riot,
       role: input.role,
       seedPuuids: input.seedPuuids,
@@ -383,13 +607,39 @@ async function runRiotScanJob({
       scanJobId: jobId,
       supabase,
     });
+    const candidatePersistenceResult = await persistSeedCandidatesFromObservations({
+      observations: scanResult.candidateObservations,
+      scanJobId: jobId,
+      source: "match_discovery",
+      supabase,
+    });
     const persistedSummary = {
       ...summary,
+      candidateIdLookupChunkFailures: candidatePersistenceResult.candidateIdLookupChunkFailures,
+      candidateIdLookupChunks: candidatePersistenceResult.candidateIdLookupChunks,
+      candidateIdResolutionFailures: candidatePersistenceResult.candidateIdResolutionFailures,
+      candidateIdsResolved: candidatePersistenceResult.candidateIdsResolved,
+      candidateObservationDuplicatesSkipped:
+        candidatePersistenceResult.candidateObservationDuplicatesSkipped,
+      candidateObservationInsertFailures:
+        candidatePersistenceResult.candidateObservationInsertFailures,
+      candidateObservationResolutionFailures:
+        candidatePersistenceResult.candidateObservationResolutionFailures,
+      candidateObservationsFound: candidatePersistenceResult.candidateObservationsFound,
+      candidateObservationsInserted: candidatePersistenceResult.candidateObservationsInserted,
+      candidateProfileFailures: candidatePersistenceResult.candidateProfileFailures,
+      candidateProfilesRebuilt: candidatePersistenceResult.candidateProfilesRebuilt,
+      candidateUniqueIdResolutionFailures:
+        candidatePersistenceResult.candidateUniqueIdResolutionFailures,
+      existingCandidatesUpdated: candidatePersistenceResult.existingCandidatesUpdated,
+      newCandidatesCreated: candidatePersistenceResult.newCandidatesCreated,
       observationDuplicatesSkipped: persistenceResult.duplicateObservationsSkipped,
       observationInsertFailures: persistenceResult.insertFailures,
       observationsFound: persistenceResult.observationsFound,
       observationsInserted: persistenceResult.insertedObservations,
+      participantPuuidsObserved: candidatePersistenceResult.participantPuuidsObserved,
       statsRowsUpdated: persistenceResult.statsRowsUpdated,
+      uniqueCandidatesEncountered: candidatePersistenceResult.uniqueCandidatesEncountered,
     };
     const discoveryResults = scanResult.discoveryResults as RiotScanDiscoveryResult[];
     const results =
@@ -405,18 +655,27 @@ async function runRiotScanJob({
             result: scanResult.targetResult as RiotScanTargetResult | null,
             updatedStats: persistenceResult.updatedStats,
           });
+    const didCandidatePersistenceFail =
+      candidatePersistenceResult.candidateIdLookupChunkFailures > 0 ||
+      candidatePersistenceResult.candidateUniqueIdResolutionFailures > 0 ||
+      candidatePersistenceResult.candidateObservationResolutionFailures > 0 ||
+      candidatePersistenceResult.candidateObservationInsertFailures > 0 ||
+      candidatePersistenceResult.candidateProfileFailures > 0;
+    const didPersistenceFail = persistenceResult.insertFailures > 0 || didCandidatePersistenceFail;
+    const persistenceErrorMessage = didCandidatePersistenceFail
+      ? getCandidatePersistenceErrorMessage(persistedSummary)
+      : persistenceResult.insertFailures > 0
+        ? "One or more persistence steps failed. Saved data was preserved where possible."
+        : null;
 
     await supabase
       .from("riot_scan_jobs")
       .update({
         completed_at: new Date().toISOString(),
-        error_message:
-          persistenceResult.insertFailures > 0
-            ? "Observation insert failed for one or more matchups."
-            : null,
+        error_message: persistenceErrorMessage,
         progress: persistedSummary,
         results,
-        status: persistenceResult.insertFailures > 0 ? "failed" : "completed",
+        status: didPersistenceFail ? "failed" : "completed",
         summary: persistedSummary,
       })
       .eq("id", jobId);
@@ -457,6 +716,19 @@ function getPersistedTargetResult({
     storedGamesAfterAggregation: storedStat?.games ?? 0,
     wasWrittenToStats: Boolean(storedStat),
   };
+}
+
+function getCandidatePersistenceErrorMessage(summary: RiotScanSummary) {
+  return [
+    "Candidate persistence partially failed:",
+    `${summary.uniqueCandidatesEncountered ?? 0} unique candidates encountered`,
+    `${summary.candidateIdsResolved ?? 0} candidate IDs resolved`,
+    `${summary.candidateUniqueIdResolutionFailures ?? 0} identities unresolved`,
+    `${summary.candidateObservationResolutionFailures ?? 0} participant observations skipped`,
+    `${summary.candidateIdLookupChunkFailures ?? 0} lookup chunks failed`,
+    `${summary.candidateObservationInsertFailures ?? 0} observation insert failures`,
+    `${summary.candidateProfileFailures ?? 0} profile rebuild failures`,
+  ].join(" ");
 }
 
 async function failJob({
@@ -737,6 +1009,22 @@ function normalizeChampionId(value: string) {
     .replace(/[^a-z0-9]+/g, "");
 }
 
+function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
+  switch (sort) {
+    case "created_at":
+      return "created_at";
+    case "observed_games":
+      return "observed_games";
+    case "primary_champion_share":
+      return "primary_champion_share";
+    case "primary_role_share":
+      return "primary_role_share";
+    case "last_seen_at":
+    default:
+      return "last_seen_at";
+  }
+}
+
 function getScannerErrorMessage(error: unknown) {
   if (error instanceof Error) {
     if (error.message.includes("401") || error.message.includes("403")) {
@@ -784,4 +1072,10 @@ function getRiotIdLookupErrorMessage(error: unknown) {
   }
 
   return "Riot account lookup failed.";
+}
+
+function getRegistryRowLabel(row: { id?: string | null; name?: string | null }) {
+  const id = row.id ?? "unknown";
+
+  return row.name ? `${row.name} (${id})` : id;
 }

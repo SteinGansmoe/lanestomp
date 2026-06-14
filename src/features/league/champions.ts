@@ -2,9 +2,13 @@ import { supabase } from "@/src/lib/supabase";
 
 export type LeagueChampion = {
   id: string;
+  image_filename: string | null;
   image_url: string;
+  is_active: boolean;
   name: string;
+  riot_data_key: string | null;
   riot_key: string;
+  slug: string | null;
   tags: string[];
   title: string;
   version: string;
@@ -26,7 +30,10 @@ export async function getLeagueChampions(): Promise<LeagueChampionsResult> {
 
   const { data, error } = await supabase
     .from("league_champions")
-    .select("id, riot_key, name, title, image_url, tags, version")
+    .select(
+      "id, riot_key, riot_data_key, name, title, image_url, image_filename, slug, tags, version, is_active",
+    )
+    .eq("is_active", true)
     .order("name", { ascending: true });
 
   if (error) {
