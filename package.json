@@ -8,6 +8,7 @@
     "build": "next build",
     "download:lol-champion-icons": "node scripts/download-lol-champion-icons.mjs",
     "import:lol-champions": "node scripts/import-lol-champions.mjs",
+    "poc:riot-counter-pick": "node scripts/poc-riot-counter-pick-stats.mjs",
     "scan:league-fallbacks": "node scripts/scan-league-matchup-fallbacks.mjs",
     "start": "next start",
     "update:counter-pick-stats": "node scripts/update-counter-pick-match-statistics.mjs",
