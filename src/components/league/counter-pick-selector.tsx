@@ -431,13 +431,21 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
                 totalRows={counteredByRows.length}
               />
             </div>
-            <CounterPreparationSection
-              onSectionToggle={handlePrepSectionToggle}
-              openSections={openPrepSections}
-              selectedChampion={selectedChampion}
-              selectedCounter={selectedCounter}
-            />
-            <CounterPickTip champion={selectedChampion} />
+            <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+              <div className="grid min-w-0 gap-8">
+                <CounterPreparationSection
+                  onSectionToggle={handlePrepSectionToggle}
+                  openSections={openPrepSections}
+                  selectedChampion={selectedChampion}
+                  selectedCounter={selectedCounter}
+                />
+                <CounterPickTip champion={selectedChampion} />
+              </div>
+              <MatchupSnapshotSidebar
+                selectedChampion={selectedChampion}
+                selectedCounter={selectedCounter}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -835,6 +843,109 @@ function CounterPreparationSection({
   );
 }
 
+function MatchupSnapshotSidebar({
+  selectedChampion,
+  selectedCounter,
+}: {
+  selectedChampion: LeagueChampion;
+  selectedCounter: CounterRowModel | null;
+}) {
+  if (!selectedCounter) {
+    return (
+      <aside className="grid gap-4 xl:sticky xl:top-6 xl:self-start">
+        <section className="border-y border-white/10 py-6">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+            Matchup Snapshot
+          </p>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">
+            Select a counter to see the quick matchup read.
+          </p>
+        </section>
+        <ReservedAdContainer />
+      </aside>
+    );
+  }
+
+  const counterName = selectedCounter.champion?.name ?? selectedCounter.fallbackName;
+  const counterProfile = selectedCounter.champion
+    ? (getChampionCombatProfile(selectedCounter.champion.id) ??
+      getChampionCombatProfile(selectedCounter.champion.name))
+    : null;
+  const selectedProfile =
+    getChampionCombatProfile(selectedChampion.id) ?? getChampionCombatProfile(selectedChampion.name);
+  const snapshot = getMatchupSnapshot({
+    counterName,
+    counterProfile,
+    counterRow: selectedCounter,
+    selectedChampion,
+    selectedProfile,
+  });
+
+  return (
+    <aside className="grid gap-4 xl:sticky xl:top-6 xl:self-start">
+      <section className="border border-white/10 bg-[#07101f]/90 p-4 shadow-2xl shadow-black/25">
+        <div className="border-b border-white/10 pb-4">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+            Matchup Snapshot
+          </p>
+          <h2 className="mt-2 font-mono text-xl font-semibold uppercase tracking-normal text-white">
+            {counterName} vs {selectedChampion.name}
+          </h2>
+        </div>
+
+        <div className="divide-y divide-white/10">
+          <SnapshotRow label="Counter Type" value={snapshot.counterType} />
+          <SnapshotRow label="Lane Phase Winner" value={snapshot.lanePhaseWinner} />
+          <SnapshotRow label="Mid Game Advantage" value={snapshot.midGameAdvantage} />
+          <SnapshotRow label="Late Game Advantage" value={snapshot.lateGameAdvantage} />
+          <SnapshotRow label="Difficulty" value={snapshot.difficulty} />
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-3">
+          <SnapshotStat label="Win Rate" value={formatSnapshotWinRate(selectedCounter.stats.winRate)} />
+          <SnapshotStat label="Games" value={formatSnapshotGames(selectedCounter.stats.games)} />
+          <SnapshotStat label="Tier" value={selectedCounter.stats.tier ?? "Pending"} />
+        </div>
+      </section>
+
+      <ReservedAdContainer />
+    </aside>
+  );
+}
+
+function SnapshotRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <span className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</span>
+      <span className="text-right text-sm font-semibold text-zinc-100">{value}</span>
+    </div>
+  );
+}
+
+function SnapshotStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 px-2 text-center">
+      <p className="truncate text-sm font-semibold text-cyan-100">{value}</p>
+      <p className="mt-1 truncate text-[0.65rem] uppercase tracking-[0.12em] text-zinc-500">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function ReservedAdContainer() {
+  return (
+    <section className="flex min-h-40 items-center justify-center border border-dashed border-white/10 bg-white/[0.02] p-4 text-center">
+      <div>
+        <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
+          Reserved Ad Container
+        </p>
+        <p className="mt-2 text-xs leading-5 text-zinc-600">Future ad slot</p>
+      </div>
+    </section>
+  );
+}
+
 function ChampionSelectorOverlay({
   champions,
   includeOffMeta,
@@ -1029,6 +1140,194 @@ function CounterPickTip({ champion }: { champion: LeagueChampion }) {
       </div>
     </section>
   );
+}
+
+type MatchupSnapshot = {
+  counterType: string;
+  difficulty: string;
+  lanePhaseWinner: string;
+  lateGameAdvantage: string;
+  midGameAdvantage: string;
+};
+
+function getMatchupSnapshot({
+  counterName,
+  counterProfile,
+  counterRow,
+  selectedChampion,
+  selectedProfile,
+}: {
+  counterName: string;
+  counterProfile: ReturnType<typeof getChampionCombatProfile>;
+  counterRow: CounterRowModel;
+  selectedChampion: LeagueChampion;
+  selectedProfile: ReturnType<typeof getChampionCombatProfile>;
+}): MatchupSnapshot {
+  const selectedName = selectedChampion.name;
+  const fallbackWinner = counterRow.direction === "best-counter" ? counterName : selectedName;
+  const lanePhaseWinner = getProfileAdvantageLabel({
+    counterName,
+    counterProfile,
+    fallbackWinner,
+    scoreProfile: getLanePhaseScore,
+    selectedName,
+    selectedProfile,
+  });
+  const midGameAdvantage = getProfileAdvantageLabel({
+    counterName,
+    counterProfile,
+    fallbackWinner,
+    scoreProfile: getMidGameScore,
+    selectedName,
+    selectedProfile,
+  });
+  const lateGameAdvantage = getProfileAdvantageLabel({
+    counterName,
+    counterProfile,
+    fallbackWinner,
+    scoreProfile: getLateGameScore,
+    selectedName,
+    selectedProfile,
+  });
+
+  return {
+    counterType: counterRow.direction === "best-counter" ? "Best Counter" : "Bad Matchup",
+    difficulty: getSnapshotDifficulty({
+      counterName,
+      counterRow,
+      lanePhaseWinner,
+      lateGameAdvantage,
+      midGameAdvantage,
+    }),
+    lanePhaseWinner,
+    lateGameAdvantage,
+    midGameAdvantage,
+  };
+}
+
+function getProfileAdvantageLabel({
+  counterName,
+  counterProfile,
+  fallbackWinner,
+  scoreProfile,
+  selectedName,
+  selectedProfile,
+}: {
+  counterName: string;
+  counterProfile: ReturnType<typeof getChampionCombatProfile>;
+  fallbackWinner: string;
+  scoreProfile: (profile: ReturnType<typeof getChampionCombatProfile>) => number;
+  selectedName: string;
+  selectedProfile: ReturnType<typeof getChampionCombatProfile>;
+}) {
+  const counterScore = scoreProfile(counterProfile);
+  const selectedScore = scoreProfile(selectedProfile);
+  const scoreDifference = counterScore - selectedScore;
+
+  if (Math.abs(scoreDifference) < 0.75) {
+    return fallbackWinner;
+  }
+
+  return scoreDifference > 0 ? counterName : selectedName;
+}
+
+function getLanePhaseScore(profile: ReturnType<typeof getChampionCombatProfile>) {
+  const laneIdentity = profile?.laneIdentity;
+
+  if (!laneIdentity || typeof laneIdentity === "string") {
+    return 0;
+  }
+
+  return (
+    getLaneIdentityScore(laneIdentity.earlyGameAgency) * 2 +
+    getLaneIdentityScore(laneIdentity.lanePressure) * 1.5
+  );
+}
+
+function getMidGameScore(profile: ReturnType<typeof getChampionCombatProfile>) {
+  const laneIdentity = profile?.laneIdentity;
+  const lanePressure =
+    laneIdentity && typeof laneIdentity !== "string"
+      ? getLaneIdentityScore(laneIdentity.lanePressure)
+      : 0;
+
+  return getStrategicScalingScore(profile?.strategicIdentity.scalingProfile, "mid") + lanePressure;
+}
+
+function getLateGameScore(profile: ReturnType<typeof getChampionCombatProfile>) {
+  const laneIdentity = profile?.laneIdentity;
+  const scalingPriority =
+    laneIdentity && typeof laneIdentity !== "string"
+      ? getLaneIdentityScore(laneIdentity.scalingPriority)
+      : 0;
+
+  return (
+    getStrategicScalingScore(profile?.strategicIdentity.scalingProfile, "late") +
+    scalingPriority * 1.5
+  );
+}
+
+function getLaneIdentityScore(value: string) {
+  if (value === "very_high") {
+    return 4;
+  }
+
+  if (value === "high") {
+    return 3;
+  }
+
+  if (value === "medium") {
+    return 2;
+  }
+
+  if (value === "low") {
+    return 1;
+  }
+
+  return 0;
+}
+
+function getStrategicScalingScore(
+  value: "early" | "late" | "mid" | undefined,
+  phase: "late" | "mid",
+) {
+  if (phase === "mid") {
+    return value === "mid" ? 4 : value === "early" ? 3 : value === "late" ? 2 : 0;
+  }
+
+  return value === "late" ? 4 : value === "mid" ? 2 : value === "early" ? 1 : 0;
+}
+
+function getSnapshotDifficulty({
+  counterName,
+  counterRow,
+  lanePhaseWinner,
+  lateGameAdvantage,
+  midGameAdvantage,
+}: {
+  counterName: string;
+  counterRow: CounterRowModel;
+  lanePhaseWinner: string;
+  lateGameAdvantage: string;
+  midGameAdvantage: string;
+}) {
+  if (counterRow.direction === "countered-by") {
+    return "High";
+  }
+
+  const counterAdvantageCount = [lanePhaseWinner, midGameAdvantage, lateGameAdvantage].filter(
+    (winner) => winner === counterName,
+  ).length;
+
+  return counterAdvantageCount >= 2 ? "Medium" : "Skill Check";
+}
+
+function formatSnapshotWinRate(value: number | null) {
+  return value === null ? "Pending" : `${value.toFixed(1)}%`;
+}
+
+function formatSnapshotGames(value: number | null) {
+  return value === null ? "Pending" : new Intl.NumberFormat("en").format(value);
 }
 
 function CounterPrepAccordionItem({
