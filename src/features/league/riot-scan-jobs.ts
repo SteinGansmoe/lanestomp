@@ -11,13 +11,44 @@ export type RiotScanSummary = {
   candidateIdsResolved?: number;
   candidateObservationDuplicatesSkipped?: number;
   candidateObservationInsertFailures?: number;
+  candidateObservationBatchAttempts?: number;
+  candidateObservationSuccessfulBatches?: number;
+  candidateObservationFailedBatchAttempts?: number;
+  candidateObservationBatchSplits?: number;
+  candidateObservationTransientRetries?: number;
+  candidateObservationIsolatedFailures?: number;
+  candidateObservationUnresolvedBatchFailures?: number;
+  candidateObservationPersistenceFailureSamples?: RiotPersistenceFailureSample[];
+  candidateObservationPersistenceErrorGroups?: RiotPersistenceErrorGroup[];
   candidateObservationResolutionFailures?: number;
+  candidateObservationValidationFailures?: number;
+  candidateObservationValidationSummary?: RiotValidationIssueSummary;
   candidateObservationsFound?: number;
   candidateObservationsInserted?: number;
+  candidateObservationsRejected?: number;
+  candidateObservationsValidated?: number;
   candidateProfileFailures?: number;
   candidateProfilesRebuilt?: number;
   candidateUniqueIdResolutionFailures?: number;
   championPairMatched?: number;
+  champion_aliases_resolved?: number;
+  champion_identifier_conflicts?: number;
+  champion_identifiers_normalized?: number;
+  champion_identifiers_processed?: number;
+  champion_normalization_failures?: number;
+  counterPickAggregateValidationFailures?: number;
+  counterPickAggregateValidationSummary?: RiotValidationIssueSummary;
+  counterPickAggregatesValidated?: number;
+  counterPickAggregateInsertFailures?: number;
+  counterPickAggregateBatchAttempts?: number;
+  counterPickAggregateSuccessfulBatches?: number;
+  counterPickAggregateFailedBatchAttempts?: number;
+  counterPickAggregateBatchSplits?: number;
+  counterPickAggregateTransientRetries?: number;
+  counterPickAggregateIsolatedFailures?: number;
+  counterPickAggregateUnresolvedBatchFailures?: number;
+  counterPickAggregatePersistenceFailureSamples?: RiotPersistenceFailureSample[];
+  counterPickAggregatePersistenceErrorGroups?: RiotPersistenceErrorGroup[];
   existingCandidatesUpdated?: number;
   fetchedMatchIds?: number;
   games?: number;
@@ -36,11 +67,52 @@ export type RiotScanSummary = {
   observationInsertFailures?: number;
   observationsFound?: number;
   observationsInserted?: number;
+  matchupObservationBatchAttempts?: number;
+  matchupObservationSuccessfulBatches?: number;
+  matchupObservationFailedBatchAttempts?: number;
+  matchupObservationBatchSplits?: number;
+  matchupObservationTransientRetries?: number;
+  matchupObservationIsolatedFailures?: number;
+  matchupObservationUnresolvedBatchFailures?: number;
+  matchupObservationPersistenceFailureSamples?: RiotPersistenceFailureSample[];
+  matchupObservationPersistenceErrorGroups?: RiotPersistenceErrorGroup[];
+  matchupObservationValidationFailures?: number;
+  matchupObservationValidationSummary?: RiotValidationIssueSummary;
+  matchupObservationsRejected?: number;
+  matchupObservationsValidated?: number;
   statsRowsUpdated?: number;
   targetMatches?: number;
   uniqueCandidatesEncountered?: number;
   uniqueMatchIds?: number;
   wins?: number;
+};
+
+export type RiotValidationIssueSummary = {
+  issuesByCode: Record<string, number>;
+  samples: Array<{
+    code: string;
+    field: string;
+    matchId: string | null;
+    safeValue: string | null;
+  }>;
+  totalRejected: number;
+};
+
+export type RiotPersistenceFailureSample = {
+  errorClass: string;
+  errorCode: string | null;
+  message: string;
+  rowIdentity: string;
+  safeFields: Record<string, string | number | boolean | null>;
+  table: string;
+};
+
+export type RiotPersistenceErrorGroup = {
+  errorClass: string;
+  errorCode: string | null;
+  failureCount: number;
+  httpStatus: number | null;
+  messageFingerprint: string;
 };
 
 export type RiotSeedCandidateSource =
@@ -138,7 +210,9 @@ export type RiotSeedCandidatesResult =
 
 export type RiotScanTargetResult = {
   counterChampion: string;
+  counterChampionDisplayName?: string;
   enemyChampion: string;
+  enemyChampionDisplayName?: string;
   games: number;
   losses: number;
   role: LeagueRole;
@@ -151,9 +225,11 @@ export type RiotScanTargetResult = {
 
 export type RiotScanDiscoveryResult = {
   championA: string;
+  championADisplayName?: string;
   championAWins: number;
   championAWinRate: number;
   championB: string;
+  championBDisplayName?: string;
   championBWins: number;
   championBWinRate: number;
   games: number;

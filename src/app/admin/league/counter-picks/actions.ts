@@ -30,6 +30,8 @@ const maxDisplayedResultsLimit = 100;
 const maxRiotIdsPerBatch = 20;
 const defaultRegionalRoute = "europe";
 const defaultPlatformRegion = "EUW1";
+const maxWarningOnlyPersistenceFailureCount = 5;
+const maxWarningOnlyPersistenceFailureRate = 0.01;
 
 type AuthorizedClientResult =
   | {
@@ -102,7 +104,17 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
     return serviceClientResult;
   }
 
-  const validation = validateStartInput(input);
+  const registryResult = await loadChampionRegistry(serviceClientResult.supabase);
+
+  if (!registryResult.ok) {
+    return registryResult;
+  }
+
+  const validation = validateStartInput(
+    input,
+    registryResult.registry,
+    registryResult.normalizeChampionIdentifier,
+  );
 
   if (!validation.ok) {
     return validation;
@@ -539,6 +551,13 @@ async function runRiotScanJob({
   supabase: SupabaseClient;
 }) {
   const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
+  const { loadActiveChampionRegistry } =
+    await import("@/scripts/lib/league-champion-normalizer.mjs");
+  const {
+    createObservationValidationContext,
+    exceedsValidationFailureRate,
+    validateRoutingConfiguration,
+  } = await import("@/scripts/lib/riot-observation-validation.mjs");
   const { fetchCurrentPatch, rankedSoloDuoQueueId, scanRiotCounterPickMatchups } =
     await import("@/scripts/lib/riot-counter-pick-scanner.mjs");
   const { persistObservationsAndRebuildStats } =
@@ -562,14 +581,34 @@ async function runRiotScanJob({
       regionalRoute: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
       requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
     });
+    const championRegistry = await loadActiveChampionRegistry({
+      supabase,
+    });
+    const validationContext = createObservationValidationContext({
+      championRegistry,
+    });
     const platformRegion = process.env.RIOT_PLATFORM_REGION ?? defaultPlatformRegion;
     const regionalRouting = process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute;
+    const routingValidation = validateRoutingConfiguration({
+      context: validationContext,
+      platformRegion,
+      regionalRouting,
+    });
+
+    if (!routingValidation.ok) {
+      throw new Error(
+        `Invalid Riot routing configuration: ${routingValidation.issues
+          .map((issue) => issue.code)
+          .join(", ")}`,
+      );
+    }
     const progressBase = {
       currentPatchOnly: input.currentPatchOnly,
       maxDisplayedResults: input.maxDisplayedResults,
       seedCount: input.seedPuuids.length,
     };
     const scanResult = await scanRiotCounterPickMatchups({
+      championRegistry,
       discover: input.mode === "discovery",
       matchCount: input.matchCount,
       onProgress: async (progress) => {
@@ -603,15 +642,19 @@ async function runRiotScanJob({
       ...scanResult.summary,
     };
     const persistenceResult = await persistObservationsAndRebuildStats({
+      championRegistry,
       observations: scanResult.observations,
       scanJobId: jobId,
       supabase,
+      validationContext,
     });
     const candidatePersistenceResult = await persistSeedCandidatesFromObservations({
+      championRegistry,
       observations: scanResult.candidateObservations,
       scanJobId: jobId,
       source: "match_discovery",
       supabase,
+      validationContext,
     });
     const persistedSummary = {
       ...summary,
@@ -623,10 +666,33 @@ async function runRiotScanJob({
         candidatePersistenceResult.candidateObservationDuplicatesSkipped,
       candidateObservationInsertFailures:
         candidatePersistenceResult.candidateObservationInsertFailures,
+      candidateObservationBatchAttempts:
+        candidatePersistenceResult.candidateObservationBatchAttempts,
+      candidateObservationSuccessfulBatches:
+        candidatePersistenceResult.candidateObservationSuccessfulBatches,
+      candidateObservationFailedBatchAttempts:
+        candidatePersistenceResult.candidateObservationFailedBatchAttempts,
+      candidateObservationBatchSplits: candidatePersistenceResult.candidateObservationBatchSplits,
+      candidateObservationTransientRetries:
+        candidatePersistenceResult.candidateObservationTransientRetries,
+      candidateObservationIsolatedFailures:
+        candidatePersistenceResult.candidateObservationIsolatedFailures,
+      candidateObservationUnresolvedBatchFailures:
+        candidatePersistenceResult.candidateObservationUnresolvedBatchFailures,
+      candidateObservationPersistenceFailureSamples:
+        candidatePersistenceResult.candidateObservationPersistenceFailureSamples,
+      candidateObservationPersistenceErrorGroups:
+        candidatePersistenceResult.candidateObservationPersistenceErrorGroups,
       candidateObservationResolutionFailures:
         candidatePersistenceResult.candidateObservationResolutionFailures,
       candidateObservationsFound: candidatePersistenceResult.candidateObservationsFound,
       candidateObservationsInserted: candidatePersistenceResult.candidateObservationsInserted,
+      candidateObservationValidationFailures:
+        candidatePersistenceResult.candidateObservationValidationFailures,
+      candidateObservationValidationSummary:
+        candidatePersistenceResult.candidateObservationValidationSummary,
+      candidateObservationsRejected: candidatePersistenceResult.candidateObservationsRejected,
+      candidateObservationsValidated: candidatePersistenceResult.candidateObservationsValidated,
       candidateProfileFailures: candidatePersistenceResult.candidateProfileFailures,
       candidateProfilesRebuilt: candidatePersistenceResult.candidateProfilesRebuilt,
       candidateUniqueIdResolutionFailures:
@@ -635,8 +701,45 @@ async function runRiotScanJob({
       newCandidatesCreated: candidatePersistenceResult.newCandidatesCreated,
       observationDuplicatesSkipped: persistenceResult.duplicateObservationsSkipped,
       observationInsertFailures: persistenceResult.insertFailures,
+      matchupObservationBatchAttempts: persistenceResult.matchupObservationBatchAttempts,
+      matchupObservationSuccessfulBatches: persistenceResult.matchupObservationSuccessfulBatches,
+      matchupObservationFailedBatchAttempts:
+        persistenceResult.matchupObservationFailedBatchAttempts,
+      matchupObservationBatchSplits: persistenceResult.matchupObservationBatchSplits,
+      matchupObservationTransientRetries: persistenceResult.matchupObservationTransientRetries,
+      matchupObservationIsolatedFailures: persistenceResult.matchupObservationIsolatedFailures,
+      matchupObservationUnresolvedBatchFailures:
+        persistenceResult.matchupObservationUnresolvedBatchFailures,
+      matchupObservationPersistenceFailureSamples:
+        persistenceResult.matchupObservationPersistenceFailureSamples,
+      matchupObservationPersistenceErrorGroups:
+        persistenceResult.matchupObservationPersistenceErrorGroups,
       observationsFound: persistenceResult.observationsFound,
       observationsInserted: persistenceResult.insertedObservations,
+      matchupObservationValidationFailures: persistenceResult.matchupObservationValidationFailures,
+      matchupObservationValidationSummary: persistenceResult.matchupObservationValidationSummary,
+      matchupObservationsRejected: persistenceResult.matchupObservationsRejected,
+      matchupObservationsValidated: persistenceResult.matchupObservationsValidated,
+      counterPickAggregateValidationFailures:
+        persistenceResult.counterPickAggregateValidationFailures,
+      counterPickAggregateValidationSummary:
+        persistenceResult.counterPickAggregateValidationSummary,
+      counterPickAggregatesValidated: persistenceResult.counterPickAggregatesValidated,
+      counterPickAggregateInsertFailures: persistenceResult.counterPickAggregateInsertFailures,
+      counterPickAggregateBatchAttempts: persistenceResult.counterPickAggregateBatchAttempts,
+      counterPickAggregateSuccessfulBatches:
+        persistenceResult.counterPickAggregateSuccessfulBatches,
+      counterPickAggregateFailedBatchAttempts:
+        persistenceResult.counterPickAggregateFailedBatchAttempts,
+      counterPickAggregateBatchSplits: persistenceResult.counterPickAggregateBatchSplits,
+      counterPickAggregateTransientRetries: persistenceResult.counterPickAggregateTransientRetries,
+      counterPickAggregateIsolatedFailures: persistenceResult.counterPickAggregateIsolatedFailures,
+      counterPickAggregateUnresolvedBatchFailures:
+        persistenceResult.counterPickAggregateUnresolvedBatchFailures,
+      counterPickAggregatePersistenceFailureSamples:
+        persistenceResult.counterPickAggregatePersistenceFailureSamples,
+      counterPickAggregatePersistenceErrorGroups:
+        persistenceResult.counterPickAggregatePersistenceErrorGroups,
       participantPuuidsObserved: candidatePersistenceResult.participantPuuidsObserved,
       statsRowsUpdated: persistenceResult.statsRowsUpdated,
       uniqueCandidatesEncountered: candidatePersistenceResult.uniqueCandidatesEncountered,
@@ -659,14 +762,32 @@ async function runRiotScanJob({
       candidatePersistenceResult.candidateIdLookupChunkFailures > 0 ||
       candidatePersistenceResult.candidateUniqueIdResolutionFailures > 0 ||
       candidatePersistenceResult.candidateObservationResolutionFailures > 0 ||
-      candidatePersistenceResult.candidateObservationInsertFailures > 0 ||
       candidatePersistenceResult.candidateProfileFailures > 0;
-    const didPersistenceFail = persistenceResult.insertFailures > 0 || didCandidatePersistenceFail;
+    const persistenceRecoveryState = getPersistenceRecoveryState(persistedSummary);
+    const didValidationFail =
+      exceedsValidationFailureRate({
+        rejected: persistenceResult.matchupObservationsRejected,
+        validated: persistenceResult.matchupObservationsValidated,
+      }) ||
+      exceedsValidationFailureRate({
+        rejected: candidatePersistenceResult.candidateObservationsRejected,
+        validated: candidatePersistenceResult.candidateObservationsValidated,
+      }) ||
+      exceedsValidationFailureRate({
+        rejected: persistenceResult.counterPickAggregateValidationFailures,
+        validated: persistenceResult.counterPickAggregatesValidated,
+      });
+    const didPersistenceFail =
+      didCandidatePersistenceFail || didValidationFail || persistenceRecoveryState.shouldFail;
     const persistenceErrorMessage = didCandidatePersistenceFail
       ? getCandidatePersistenceErrorMessage(persistedSummary)
-      : persistenceResult.insertFailures > 0
-        ? "One or more persistence steps failed. Saved data was preserved where possible."
-        : null;
+      : didValidationFail
+        ? getValidationErrorMessage(persistedSummary)
+        : persistenceRecoveryState.shouldFail
+          ? getPersistenceRecoveryErrorMessage(persistedSummary)
+          : persistenceRecoveryState.hasWarnings
+            ? getPersistenceRecoveryWarningMessage(persistedSummary)
+            : null;
 
     await supabase
       .from("riot_scan_jobs")
@@ -728,6 +849,84 @@ function getCandidatePersistenceErrorMessage(summary: RiotScanSummary) {
     `${summary.candidateIdLookupChunkFailures ?? 0} lookup chunks failed`,
     `${summary.candidateObservationInsertFailures ?? 0} observation insert failures`,
     `${summary.candidateProfileFailures ?? 0} profile rebuild failures`,
+  ].join(" ");
+}
+
+function getValidationErrorMessage(summary: RiotScanSummary) {
+  return [
+    "Riot observation validation rejected too many rows:",
+    `${summary.matchupObservationsRejected ?? 0} matchup observations rejected`,
+    `${summary.candidateObservationsRejected ?? 0} candidate observations rejected`,
+    `${summary.counterPickAggregateValidationFailures ?? 0} counter-pick aggregates rejected`,
+  ].join(" ");
+}
+
+function getPersistenceRecoveryState(summary: RiotScanSummary) {
+  const states = [
+    getPersistenceStageState({
+      attempted:
+        (summary.candidateObservationsValidated ?? 0) -
+        (summary.candidateObservationsRejected ?? 0),
+      failures: summary.candidateObservationInsertFailures ?? 0,
+      unresolved: summary.candidateObservationUnresolvedBatchFailures ?? 0,
+    }),
+    getPersistenceStageState({
+      attempted:
+        (summary.matchupObservationsValidated ?? 0) - (summary.matchupObservationsRejected ?? 0),
+      failures: summary.observationInsertFailures ?? 0,
+      unresolved: summary.matchupObservationUnresolvedBatchFailures ?? 0,
+    }),
+    getPersistenceStageState({
+      attempted: summary.counterPickAggregatesValidated ?? 0,
+      failures: summary.counterPickAggregateInsertFailures ?? 0,
+      unresolved: summary.counterPickAggregateUnresolvedBatchFailures ?? 0,
+    }),
+  ];
+
+  return {
+    hasWarnings: states.some((state) => state.hasWarnings),
+    shouldFail: states.some((state) => state.shouldFail),
+  };
+}
+
+function getPersistenceStageState({
+  attempted,
+  failures,
+  unresolved,
+}: {
+  attempted: number;
+  failures: number;
+  unresolved: number;
+}) {
+  const failureRate = attempted > 0 ? failures / attempted : 0;
+  const hasWarnings = failures > 0 || unresolved > 0;
+
+  return {
+    hasWarnings,
+    shouldFail:
+      unresolved > 0 ||
+      failures > maxWarningOnlyPersistenceFailureCount ||
+      failureRate > maxWarningOnlyPersistenceFailureRate,
+  };
+}
+
+function getPersistenceRecoveryErrorMessage(summary: RiotScanSummary) {
+  return [
+    "Riot persistence recovery could not save enough valid rows:",
+    `${summary.candidateObservationInsertFailures ?? 0} candidate observation failures`,
+    `${summary.observationInsertFailures ?? 0} matchup observation failures`,
+    `${summary.counterPickAggregateInsertFailures ?? 0} aggregate write failures`,
+    `${summary.candidateObservationUnresolvedBatchFailures ?? 0} candidate rows unresolved`,
+    `${summary.matchupObservationUnresolvedBatchFailures ?? 0} matchup rows unresolved`,
+  ].join(" ");
+}
+
+function getPersistenceRecoveryWarningMessage(summary: RiotScanSummary) {
+  return [
+    "Completed with Riot persistence recovery warnings:",
+    `${summary.candidateObservationIsolatedFailures ?? 0} candidate rows isolated`,
+    `${summary.matchupObservationIsolatedFailures ?? 0} matchup rows isolated`,
+    `${summary.counterPickAggregateIsolatedFailures ?? 0} aggregate rows isolated`,
   ].join(" ");
 }
 
@@ -841,6 +1040,43 @@ function getServiceSupabaseClient():
   };
 }
 
+async function loadChampionRegistry(supabase: SupabaseClient): Promise<
+  | {
+      normalizeChampionIdentifier: (
+        value: unknown,
+        registry: unknown,
+      ) => { canonicalKey: string } | null;
+      ok: true;
+      registry: unknown;
+    }
+  | {
+      error: string;
+      ok: false;
+    }
+> {
+  try {
+    const { loadActiveChampionRegistry, normalizeChampionIdentifier } =
+      await import("@/scripts/lib/league-champion-normalizer.mjs");
+    const registry = await loadActiveChampionRegistry({
+      supabase,
+    });
+
+    return {
+      normalizeChampionIdentifier,
+      ok: true,
+      registry,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "League champion registry could not be initialized.",
+      ok: false,
+    };
+  }
+}
+
 type ValidatedStartInput = {
   counterChampion: string;
   currentPatchOnly: boolean;
@@ -853,7 +1089,56 @@ type ValidatedStartInput = {
   seedPuuids: string[];
 };
 
-function validateStartInput(input: StartRiotScanJobInput):
+function normalizeTargetChampions(
+  enemyChampion: string,
+  counterChampion: string,
+  championRegistry: unknown,
+  normalizeChampionIdentifier: (
+    value: unknown,
+    registry: unknown,
+  ) => { canonicalKey: string } | null,
+):
+  | {
+      counterChampion: string;
+      enemyChampion: string;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  if (!enemyChampion || !counterChampion) {
+    return {
+      error: "Target scans require enemy and counter champions.",
+      ok: false,
+    };
+  }
+
+  const enemy = normalizeChampionIdentifier(enemyChampion, championRegistry);
+  const counter = normalizeChampionIdentifier(counterChampion, championRegistry);
+
+  if (!enemy || !counter) {
+    return {
+      error: "Select valid enemy and counter champions.",
+      ok: false,
+    };
+  }
+
+  return {
+    counterChampion: counter.canonicalKey,
+    enemyChampion: enemy.canonicalKey,
+    ok: true,
+  };
+}
+
+function validateStartInput(
+  input: StartRiotScanJobInput,
+  championRegistry: unknown,
+  normalizeChampionIdentifier: (
+    value: unknown,
+    registry: unknown,
+  ) => { canonicalKey: string } | null,
+):
   | ({
       ok: true;
     } & ValidatedStartInput)
@@ -869,6 +1154,15 @@ function validateStartInput(input: StartRiotScanJobInput):
   const maxDisplayedResults = Number(input.maxDisplayedResults);
   const enemyChampion = input.enemyChampion?.trim() ?? "";
   const counterChampion = input.counterChampion?.trim() ?? "";
+  const normalizedChampions =
+    mode === "target"
+      ? normalizeTargetChampions(
+          enemyChampion,
+          counterChampion,
+          championRegistry,
+          normalizeChampionIdentifier,
+        )
+      : null;
 
   if (mode !== "target" && mode !== "discovery") {
     return {
@@ -919,16 +1213,18 @@ function validateStartInput(input: StartRiotScanJobInput):
     };
   }
 
-  if (mode === "target" && (!enemyChampion || !counterChampion)) {
+  if (mode === "target" && !normalizedChampions?.ok) {
     return {
-      error: "Target scans require enemy and counter champions.",
+      error:
+        normalizedChampions?.error ?? "Target scans require valid enemy and counter champions.",
       ok: false,
     };
   }
 
   if (
     mode === "target" &&
-    normalizeChampionId(enemyChampion) === normalizeChampionId(counterChampion)
+    normalizedChampions?.ok &&
+    normalizedChampions.enemyChampion === normalizedChampions.counterChampion
   ) {
     return {
       error: "Enemy and counter champion cannot be the same.",
@@ -937,9 +1233,11 @@ function validateStartInput(input: StartRiotScanJobInput):
   }
 
   return {
-    counterChampion,
+    counterChampion:
+      mode === "target" && normalizedChampions?.ok ? normalizedChampions.counterChampion : "",
     currentPatchOnly: input.currentPatchOnly,
-    enemyChampion,
+    enemyChampion:
+      mode === "target" && normalizedChampions?.ok ? normalizedChampions.enemyChampion : "",
     matchCount,
     maxDisplayedResults: mode === "discovery" ? maxDisplayedResults : 20,
     minimumGames: mode === "discovery" ? minimumGames : 1,
@@ -998,15 +1296,6 @@ function normalizeRole(value: unknown): LeagueRole | null {
 
 function uniqueValues(values: unknown[]) {
   return Array.from(new Set(values.map((value) => String(value).trim()).filter(Boolean)));
-}
-
-function normalizeChampionId(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
 }
 
 function getCandidateSortColumn(sort: RiotSeedCandidateSort) {

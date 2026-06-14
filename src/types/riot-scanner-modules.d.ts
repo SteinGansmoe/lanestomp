@@ -1,3 +1,31 @@
+type RiotObservationValidationIssueSummary = {
+  issuesByCode: Record<string, number>;
+  samples: Array<{
+    code: string;
+    field: string;
+    matchId: string | null;
+    safeValue: string | null;
+  }>;
+  totalRejected: number;
+};
+
+type RiotPersistenceFailureSample = {
+  errorClass: string;
+  errorCode: string | null;
+  message: string;
+  rowIdentity: string;
+  safeFields: Record<string, string | number | boolean | null>;
+  table: string;
+};
+
+type RiotPersistenceErrorGroup = {
+  errorClass: string;
+  errorCode: string | null;
+  failureCount: number;
+  httpStatus: number | null;
+  messageFingerprint: string;
+};
+
 declare module "@/scripts/lib/riot-api-client.mjs" {
   export class RiotApiError extends Error {
     status?: number;
@@ -20,6 +48,7 @@ declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
     value: unknown,
   ): "top" | "jungle" | "mid" | "adc" | "support" | null;
   export function scanRiotCounterPickMatchups(options: {
+    championRegistry: unknown;
     discover?: boolean;
     logger?: { log: (message: string) => void } | null;
     matchCount?: number;
@@ -52,10 +81,12 @@ declare module "@/scripts/lib/riot-seed-candidates.mjs" {
   export function normalizePlatformRegion(value: unknown): string;
   export function normalizeRegionalRouting(value: unknown): string;
   export function persistSeedCandidatesFromObservations(options: {
+    championRegistry?: unknown;
     observations: Record<string, unknown>[];
     scanJobId?: number | null;
     source?: string;
     supabase: unknown;
+    validationContext?: unknown;
   }): Promise<{
     candidateIdLookupChunkFailures: number;
     candidateIdLookupChunks: number;
@@ -63,9 +94,22 @@ declare module "@/scripts/lib/riot-seed-candidates.mjs" {
     candidateIdsResolved: number;
     candidateObservationDuplicatesSkipped: number;
     candidateObservationInsertFailures: number;
+    candidateObservationBatchAttempts: number;
+    candidateObservationSuccessfulBatches: number;
+    candidateObservationFailedBatchAttempts: number;
+    candidateObservationBatchSplits: number;
+    candidateObservationTransientRetries: number;
+    candidateObservationIsolatedFailures: number;
+    candidateObservationUnresolvedBatchFailures: number;
+    candidateObservationPersistenceFailureSamples: RiotPersistenceFailureSample[];
+    candidateObservationPersistenceErrorGroups: RiotPersistenceErrorGroup[];
     candidateObservationResolutionFailures: number;
+    candidateObservationValidationFailures: number;
+    candidateObservationValidationSummary: RiotObservationValidationIssueSummary;
     candidateObservationsFound: number;
     candidateObservationsInserted: number;
+    candidateObservationsRejected: number;
+    candidateObservationsValidated: number;
     candidateProfileFailures: number;
     candidateProfilesRebuilt: number;
     candidateUniqueIdResolutionFailures: number;
@@ -99,14 +143,42 @@ declare module "@/scripts/lib/riot-seed-candidates.mjs" {
 declare module "@/scripts/lib/riot-counter-pick-aggregation.mjs" {
   export function getDirectedAggregateRows(observations: unknown[]): unknown[];
   export function persistObservationsAndRebuildStats(options: {
+    championRegistry?: unknown;
     observations: Record<string, unknown>[];
     scanJobId?: number | null;
     supabase: unknown;
+    validationContext?: unknown;
   }): Promise<{
     affectedGroups: Record<string, unknown>[];
+    counterPickAggregateValidationFailures: number;
+    counterPickAggregateValidationSummary: RiotObservationValidationIssueSummary;
+    counterPickAggregatesValidated: number;
+    counterPickAggregateInsertFailures: number;
+    counterPickAggregateBatchAttempts: number;
+    counterPickAggregateSuccessfulBatches: number;
+    counterPickAggregateFailedBatchAttempts: number;
+    counterPickAggregateBatchSplits: number;
+    counterPickAggregateTransientRetries: number;
+    counterPickAggregateIsolatedFailures: number;
+    counterPickAggregateUnresolvedBatchFailures: number;
+    counterPickAggregatePersistenceFailureSamples: RiotPersistenceFailureSample[];
+    counterPickAggregatePersistenceErrorGroups: RiotPersistenceErrorGroup[];
     duplicateObservationsSkipped: number;
     insertedObservations: number;
     insertFailures: number;
+    matchupObservationBatchAttempts: number;
+    matchupObservationSuccessfulBatches: number;
+    matchupObservationFailedBatchAttempts: number;
+    matchupObservationBatchSplits: number;
+    matchupObservationTransientRetries: number;
+    matchupObservationIsolatedFailures: number;
+    matchupObservationUnresolvedBatchFailures: number;
+    matchupObservationPersistenceFailureSamples: RiotPersistenceFailureSample[];
+    matchupObservationPersistenceErrorGroups: RiotPersistenceErrorGroup[];
+    matchupObservationValidationFailures: number;
+    matchupObservationValidationSummary: RiotObservationValidationIssueSummary;
+    matchupObservationsRejected: number;
+    matchupObservationsValidated: number;
     observationsFound: number;
     statsRowsUpdated: number;
     updatedStats: Array<{
@@ -123,10 +195,25 @@ declare module "@/scripts/lib/riot-counter-pick-aggregation.mjs" {
   }>;
   export function rebuildCounterPickStatsFromObservations(options: {
     champion?: string | null;
+    championRegistry?: unknown;
     patch?: string | null;
     role?: string | null;
     supabase: unknown;
+    validationContext?: unknown;
   }): Promise<{
+    counterPickAggregateValidationFailures: number;
+    counterPickAggregateValidationSummary: RiotObservationValidationIssueSummary;
+    counterPickAggregatesValidated: number;
+    counterPickAggregateInsertFailures: number;
+    counterPickAggregateBatchAttempts: number;
+    counterPickAggregateSuccessfulBatches: number;
+    counterPickAggregateFailedBatchAttempts: number;
+    counterPickAggregateBatchSplits: number;
+    counterPickAggregateTransientRetries: number;
+    counterPickAggregateIsolatedFailures: number;
+    counterPickAggregateUnresolvedBatchFailures: number;
+    counterPickAggregatePersistenceFailureSamples: RiotPersistenceFailureSample[];
+    counterPickAggregatePersistenceErrorGroups: RiotPersistenceErrorGroup[];
     statsRowsUpdated: number;
     updatedStats: unknown[];
   }>;
@@ -193,4 +280,52 @@ declare module "@/scripts/lib/league-champion-registry.mjs" {
       name: string;
     }>;
   }>;
+}
+
+declare module "@/scripts/lib/league-champion-normalizer.mjs" {
+  export type ChampionRegistryEntry = {
+    canonicalKey: string;
+    displayName: string;
+    riotDataKey: string | null;
+    riotNumericKey: string | null;
+    slug: string | null;
+  };
+
+  export type ChampionRegistry = {
+    byCanonicalKey: Map<string, ChampionRegistryEntry>;
+    entries: ChampionRegistryEntry[];
+  };
+
+  export function loadActiveChampionRegistry(options: {
+    supabase: unknown;
+  }): Promise<ChampionRegistry>;
+  export function normalizeChampionIdentifier(
+    value: unknown,
+    registry: ChampionRegistry | unknown,
+  ): ChampionRegistryEntry | null;
+}
+
+declare module "@/scripts/lib/riot-observation-validation.mjs" {
+  export function createObservationValidationContext(options?: {
+    activeChampionIds?: string[] | Set<string> | null;
+    candidateIds?: string[] | Set<string> | null;
+    championRegistry?: unknown;
+    platformRouting?: Record<string, string>;
+    queues?: number[];
+  }): unknown;
+  export function exceedsValidationFailureRate(options: {
+    rejected: number | undefined;
+    validated: number | undefined;
+  }): boolean;
+  export function validateRoutingConfiguration(options: {
+    context: unknown;
+    platformRegion: string;
+    regionalRouting: string;
+  }): {
+    issues: Array<{
+      code: string;
+      field: string;
+    }>;
+    ok: boolean;
+  };
 }

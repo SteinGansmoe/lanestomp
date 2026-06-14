@@ -1,9 +1,41 @@
 import assert from "node:assert/strict";
 
+import { buildChampionRegistry } from "./lib/league-champion-normalizer.mjs";
+import { createObservationValidationContext } from "./lib/riot-observation-validation.mjs";
 import {
   createCandidateIdentityKey,
-  persistSeedCandidatesFromObservations,
+  persistSeedCandidatesFromObservations as persistSeedCandidatesFromObservationsBase,
 } from "./lib/riot-seed-candidates.mjs";
+
+const testValidationContext = createObservationValidationContext({
+  championRegistry: buildChampionRegistry([
+    {
+      id: "Ahri",
+      name: "Ahri",
+      riot_data_key: "Ahri",
+      riot_key: "103",
+      slug: "ahri",
+    },
+    {
+      id: "Yasuo",
+      name: "Yasuo",
+      riot_data_key: "Yasuo",
+      riot_key: "157",
+      slug: "yasuo",
+    },
+  ]),
+  platformRouting: {
+    EUW1: "EUROPE",
+    NA1: "AMERICAS",
+  },
+});
+
+function persistSeedCandidatesFromObservations(options) {
+  return persistSeedCandidatesFromObservationsBase({
+    validationContext: testValidationContext,
+    ...options,
+  });
+}
 
 async function testMostlyNewCandidates() {
   const puuids = Array.from({ length: 805 }, (_, index) => `puuid-${index}`);
@@ -129,7 +161,7 @@ async function testRerunRecovery() {
     }),
   ];
 
-  const firstRun = await withSilencedConsoleError(() =>
+  const firstRun = await withSilencedConsoleWarningsAndErrors(() =>
     persistSeedCandidatesFromObservations({
       observations,
       supabase,
@@ -283,6 +315,7 @@ async function testMultiRegionCandidates() {
       matchId: "multi-region-na",
       platformRegion: "NA1",
       puuid: "same-puuid",
+      regionalRouting: "AMERICAS",
     }),
   ];
 
@@ -324,6 +357,36 @@ async function testConcurrentUpsertShape() {
   );
 }
 
+async function testInvalidObservationSkippedBeforeUpsert() {
+  const supabase = createFakeSupabase();
+  const observations = [
+    makeObservation({ index: 0, matchId: "validation-valid", puuid: "valid-candidate" }),
+    {
+      ...makeObservation({
+        index: 1,
+        matchId: "validation-invalid",
+        puuid: "invalid-candidate",
+      }),
+      champion: "DefinitelyNotAChampion",
+    },
+  ];
+
+  const result = await withSilencedConsoleWarningsAndErrors(() =>
+    persistSeedCandidatesFromObservations({
+      observations,
+      supabase,
+    }),
+  );
+
+  assert.equal(result.candidateObservationsFound, 2);
+  assert.equal(result.candidateObservationsValidated, 2);
+  assert.equal(result.candidateObservationsRejected, 1);
+  assert.equal(result.candidateObservationValidationFailures, 1);
+  assert.equal(result.candidateObservationsInserted, 1);
+  assert.equal(supabase.observations.size, 1);
+  assert.equal(result.candidateObservationValidationSummary.issuesByCode.UNKNOWN_CHAMPION, 1);
+}
+
 function createFakeSupabase({
   existingPuuids = [],
   failCandidateLookupForPuuids = [],
@@ -351,7 +414,7 @@ function createFakeSupabase({
           }
         : existingCandidate;
     const candidate = getCandidateRow({
-      id: `candidate-${state.nextCandidateId}`,
+      id: getUuid(state.nextCandidateId),
       platform_region: candidateInput.platformRegion,
       puuid: candidateInput.puuid,
     });
@@ -453,7 +516,7 @@ class FakeQuery {
 
         const candidate = getCandidateRow({
           ...row,
-          id: `candidate-${this.state.nextCandidateId}`,
+          id: getUuid(this.state.nextCandidateId),
         });
 
         this.state.nextCandidateId += 1;
@@ -623,11 +686,21 @@ function getCandidateRow(overrides) {
   };
 }
 
+function getUuid(index) {
+  return `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
+}
+
 function getCandidateKey(candidate) {
   return createCandidateIdentityKey(candidate.platform_region, candidate.puuid);
 }
 
-function makeObservation({ index, matchId, platformRegion = "EUW1", puuid }) {
+function makeObservation({
+  index,
+  matchId,
+  platformRegion = "EUW1",
+  puuid,
+  regionalRouting = "EUROPE",
+}) {
   return {
     champion: index % 2 === 0 ? "Ahri" : "Yasuo",
     game_duration_seconds: 1800,
@@ -637,22 +710,10 @@ function makeObservation({ index, matchId, platformRegion = "EUW1", puuid }) {
     platform_region: platformRegion,
     puuid,
     queue_id: 420,
-    regional_routing: "EUROPE",
+    regional_routing: regionalRouting,
     role: index % 2 === 0 ? "mid" : "top",
     won: index % 3 === 0,
   };
-}
-
-async function withSilencedConsoleError(callback) {
-  const originalConsoleError = console.error;
-
-  console.error = () => {};
-
-  try {
-    return await callback();
-  } finally {
-    console.error = originalConsoleError;
-  }
 }
 
 async function withSilencedConsoleWarningsAndErrors(callback) {
@@ -681,5 +742,6 @@ await testLongPuuidLookupChunking();
 await testLookupChunkFailure();
 await testMultiRegionCandidates();
 await testConcurrentUpsertShape();
+await testInvalidObservationSkippedBeforeUpsert();
 
 console.log("Riot seed candidate regression tests passed.");

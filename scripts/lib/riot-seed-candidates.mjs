@@ -1,3 +1,13 @@
+import { writeResilientBatches } from "./riot-batch-isolation.mjs";
+import {
+  createObservationValidationContext,
+  logValidationFailures,
+  partitionValidatedRows,
+  summarizeValidationFailures,
+  validateSeedCandidateObservation,
+  withCandidateIds,
+} from "./riot-observation-validation.mjs";
+
 export const defaultPlatformRegion = "EUW1";
 export const defaultRegionalRouting = "EUROPE";
 
@@ -9,11 +19,15 @@ const profileRebuildBatchSize = 100;
 const topChampionLimit = 5;
 
 export async function persistSeedCandidatesFromObservations({
+  championRegistry = null,
   observations,
   scanJobId = null,
   source = "match_discovery",
   supabase,
+  validationContext = null,
 }) {
+  const baseValidationContext =
+    validationContext ?? createObservationValidationContext({ championRegistry });
   const validParticipantObservations = getValidCandidateObservations(observations ?? []);
   const validObservations = dedupeCandidateObservations(validParticipantObservations);
 
@@ -68,6 +82,10 @@ export async function persistSeedCandidatesFromObservations({
   const observationResult = await insertCandidateObservations({
     observations: candidateObservationRows,
     supabase,
+    validationContext: withCandidateIds(
+      baseValidationContext,
+      Array.from(candidateIdsByKey.values()).map((candidate) => candidate.id),
+    ),
   });
   const profileResult = await rebuildSeedCandidateProfiles({
     candidateIds: observationResult.insertedCandidateIds,
@@ -91,9 +109,22 @@ export async function persistSeedCandidatesFromObservations({
     candidateIdsResolved,
     candidateObservationDuplicatesSkipped: observationResult.duplicatesSkipped,
     candidateObservationInsertFailures: observationResult.insertFailures,
+    candidateObservationBatchAttempts: observationResult.batchAttempts,
+    candidateObservationSuccessfulBatches: observationResult.successfulBatches,
+    candidateObservationFailedBatchAttempts: observationResult.failedBatchAttempts,
+    candidateObservationBatchSplits: observationResult.batchSplits,
+    candidateObservationTransientRetries: observationResult.transientRetries,
+    candidateObservationIsolatedFailures: observationResult.isolatedFailures,
+    candidateObservationUnresolvedBatchFailures: observationResult.unresolvedBatchFailures,
+    candidateObservationPersistenceFailureSamples: observationResult.failureSamples,
+    candidateObservationPersistenceErrorGroups: observationResult.errorGroups,
     candidateObservationResolutionFailures,
     candidateObservationsFound: candidateObservationRows.length,
     candidateObservationsInserted: observationResult.inserted,
+    candidateObservationValidationFailures: observationResult.validationFailures,
+    candidateObservationValidationSummary: observationResult.validationSummary,
+    candidateObservationsRejected: observationResult.rejected,
+    candidateObservationsValidated: observationResult.validated,
     candidateProfileFailures: profileResult.profileFailures,
     candidateProfilesRebuilt: profileResult.profilesRebuilt,
     candidateUniqueIdResolutionFailures,
@@ -470,36 +501,71 @@ async function fetchCandidatesByPlatformAndPuuid({
   };
 }
 
-async function insertCandidateObservations({ observations, supabase }) {
+async function insertCandidateObservations({ observations, supabase, validationContext }) {
   const uniqueObservations = dedupeCandidateMatchRows(observations ?? []);
-  let inserted = 0;
-  const insertedCandidateIds = [];
-  let insertFailures = 0;
+  const validationPartition = partitionValidatedRows(
+    uniqueObservations,
+    validateSeedCandidateObservation,
+    validationContext,
+  );
+  const uniqueValidObservations = validationPartition.valid;
+  const validationSummary = summarizeValidationFailures(validationPartition.invalid);
+  logValidationFailures(
+    "Seed candidate observation validation rejected rows",
+    validationPartition.invalid,
+  );
 
-  for (const observationChunk of chunkArray(uniqueObservations, observationBatchSize)) {
-    const { data, error } = await supabase
-      .from("riot_seed_candidate_observations")
-      .upsert(observationChunk, {
-        ignoreDuplicates: true,
-        onConflict: "candidate_id,match_id",
-      })
-      .select("id, candidate_id");
+  const writeResult = await writeResilientBatches({
+    createRowIdentity: getCandidateObservationIdentity,
+    createSafeFailureFields: getSafeCandidateObservationFields,
+    initialBatchSize: observationBatchSize,
+    rows: uniqueValidObservations,
+    stage: "seed_candidate_observation_insert",
+    table: "riot_seed_candidate_observations",
+    writeBatch: async (observationChunk) => {
+      const { data, error } = await supabase
+        .from("riot_seed_candidate_observations")
+        .upsert(observationChunk, {
+          ignoreDuplicates: true,
+          onConflict: "candidate_id,match_id",
+        })
+        .select("id, candidate_id");
 
-    if (error) {
-      logDatabaseError("Seed candidate observation insert failed", error);
-      insertFailures += observationChunk.length;
-      continue;
-    }
+      if (error) {
+        return {
+          error,
+          ok: false,
+        };
+      }
 
-    inserted += data?.length ?? 0;
-    insertedCandidateIds.push(...(data ?? []).map((row) => row.candidate_id).filter(Boolean));
-  }
+      return {
+        inserted: data?.length ?? 0,
+        insertedRows: data ?? [],
+        ok: true,
+      };
+    },
+  });
 
   return {
-    duplicatesSkipped: Math.max(uniqueObservations.length - inserted - insertFailures, 0),
-    inserted,
-    insertedCandidateIds: uniqueValues(insertedCandidateIds),
-    insertFailures,
+    batchAttempts: writeResult.batchAttempts,
+    batchSplits: writeResult.splitOperations,
+    duplicatesSkipped: writeResult.duplicates,
+    errorGroups: writeResult.errorGroups,
+    failedBatchAttempts: writeResult.failedBatchAttempts,
+    failureSamples: writeResult.isolatedFailures,
+    inserted: writeResult.inserted,
+    insertedCandidateIds: uniqueValues(
+      writeResult.insertedRows.map((row) => row.candidate_id).filter(Boolean),
+    ),
+    insertFailures: writeResult.failed,
+    isolatedFailures: writeResult.isolatedFailureCount,
+    rejected: validationPartition.invalid.length,
+    successfulBatches: writeResult.successfulBatches,
+    transientRetries: writeResult.transientRetries,
+    unresolvedBatchFailures: writeResult.unresolvedBatchFailures,
+    validated: validationPartition.validated,
+    validationFailures: validationPartition.invalid.length,
+    validationSummary,
   };
 }
 
@@ -673,10 +739,23 @@ function emptyCandidatePersistenceResult() {
     candidateIdResolutionFailures: 0,
     candidateIdsResolved: 0,
     candidateObservationDuplicatesSkipped: 0,
+    candidateObservationBatchAttempts: 0,
+    candidateObservationSuccessfulBatches: 0,
+    candidateObservationFailedBatchAttempts: 0,
+    candidateObservationBatchSplits: 0,
+    candidateObservationTransientRetries: 0,
+    candidateObservationIsolatedFailures: 0,
+    candidateObservationUnresolvedBatchFailures: 0,
+    candidateObservationPersistenceFailureSamples: [],
+    candidateObservationPersistenceErrorGroups: [],
     candidateObservationInsertFailures: 0,
     candidateObservationResolutionFailures: 0,
     candidateObservationsFound: 0,
     candidateObservationsInserted: 0,
+    candidateObservationValidationFailures: 0,
+    candidateObservationValidationSummary: summarizeValidationFailures([]),
+    candidateObservationsRejected: 0,
+    candidateObservationsValidated: 0,
     candidateProfileFailures: 0,
     candidateProfilesRebuilt: 0,
     candidateUniqueIdResolutionFailures: 0,
@@ -684,6 +763,21 @@ function emptyCandidatePersistenceResult() {
     newCandidatesCreated: 0,
     participantPuuidsObserved: 0,
     uniqueCandidatesEncountered: 0,
+  };
+}
+
+function getCandidateObservationIdentity(observation) {
+  return `${observation.candidate_id}::${observation.match_id}`;
+}
+
+function getSafeCandidateObservationFields(observation) {
+  return {
+    candidateId: shortenSafeValue(observation.candidate_id, 18),
+    champion: observation.champion ?? null,
+    matchId: shortenSafeValue(observation.match_id, 48),
+    patch: observation.patch ?? null,
+    queueId: observation.queue_id ?? null,
+    role: observation.role ?? null,
   };
 }
 
@@ -749,6 +843,16 @@ function shortenPuuid(value) {
   }
 
   return `${puuid.slice(0, 8)}...${puuid.slice(-8)}`;
+}
+
+function shortenSafeValue(value, limit) {
+  const text = String(value ?? "");
+
+  if (text.length <= limit) {
+    return text || null;
+  }
+
+  return `${text.slice(0, Math.max(limit - 3, 0))}...`;
 }
 
 function groupBy(values, getKey) {

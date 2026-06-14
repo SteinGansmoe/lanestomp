@@ -97,6 +97,10 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
       }),
     [champions],
   );
+  const championDisplayNamesById = useMemo(
+    () => new Map(champions.map((champion) => [champion.id, champion.name] as const)),
+    [champions],
+  );
 
   useEffect(() => {
     void refreshRecentJobs();
@@ -300,7 +304,10 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
     <div className="space-y-6">
       <LeagueChampionRegistryStatusPanel getAccessToken={getAccessToken} />
       <RiotIdResolverPanel getAccessToken={getAccessToken} onAddPuuids={addPuuidsToScanner} />
-      <RiotSeedCandidatesPanel getAccessToken={getAccessToken} />
+      <RiotSeedCandidatesPanel
+        championDisplayNamesById={championDisplayNamesById}
+        getAccessToken={getAccessToken}
+      />
 
       <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
         <CardHeader>
@@ -890,8 +897,10 @@ function RiotIdResolverPanel({
 }
 
 function RiotSeedCandidatesPanel({
+  championDisplayNamesById,
   getAccessToken,
 }: {
+  championDisplayNamesById: Map<string, string>;
   getAccessToken: () => Promise<
     | {
         accessToken: string;
@@ -1141,6 +1150,7 @@ function RiotSeedCandidatesPanel({
           <div className="space-y-3">
             {candidates.map((candidate) => (
               <SeedCandidateRow
+                championDisplayNamesById={championDisplayNamesById}
                 candidate={candidate}
                 expanded={expandedCandidateId === candidate.id}
                 key={candidate.id}
@@ -1161,11 +1171,13 @@ function RiotSeedCandidatesPanel({
 
 function SeedCandidateRow({
   candidate,
+  championDisplayNamesById,
   expanded,
   onCopy,
   onToggle,
 }: {
   candidate: RiotSeedCandidateView;
+  championDisplayNamesById: Map<string, string>;
   expanded: boolean;
   onCopy: () => void;
   onToggle: () => void;
@@ -1203,7 +1215,10 @@ function SeedCandidateRow({
           <span className="block text-xs uppercase tracking-wide text-zinc-500">Champion</span>
           <span className="font-semibold text-zinc-100">
             {candidate.primary_champion
-              ? `${candidate.primary_champion} ${formatPercent(candidate.primary_champion_share)}`
+              ? `${getChampionDisplayName(
+                  championDisplayNamesById,
+                  candidate.primary_champion,
+                )} ${formatPercent(candidate.primary_champion_share)}`
               : "Pending"}
           </span>
         </span>
@@ -1251,7 +1266,10 @@ function SeedCandidateRow({
 
           <div className="grid gap-4 lg:grid-cols-2">
             <CandidateRoleDistribution candidate={candidate} />
-            <CandidateTopChampions champions={candidate.top_champions ?? []} />
+            <CandidateTopChampions
+              championDisplayNamesById={championDisplayNamesById}
+              champions={candidate.top_champions ?? []}
+            />
           </div>
         </div>
       ) : null}
@@ -1291,7 +1309,13 @@ function CandidateRoleDistribution({ candidate }: { candidate: RiotSeedCandidate
   );
 }
 
-function CandidateTopChampions({ champions }: { champions: RiotSeedCandidateTopChampion[] }) {
+function CandidateTopChampions({
+  championDisplayNamesById,
+  champions,
+}: {
+  championDisplayNamesById: Map<string, string>;
+  champions: RiotSeedCandidateTopChampion[];
+}) {
   return (
     <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
       <h4 className="text-sm font-semibold text-white">Top champions</h4>
@@ -1305,7 +1329,8 @@ function CandidateTopChampions({ champions }: { champions: RiotSeedCandidateTopC
               key={`${champion.champion}-${champion.role}`}
             >
               <span className="font-semibold text-zinc-100">
-                {champion.champion} {getRoleLabel(champion.role)}
+                {getChampionDisplayName(championDisplayNamesById, champion.champion)}{" "}
+                {getRoleLabel(champion.role)}
               </span>
               <span>
                 {champion.games} games - {champion.wins}W {champion.losses}L -{" "}
@@ -1516,8 +1541,36 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
           <Metric label="Queue skipped" value={job.progress.queueSkipped} />
           <Metric label="Role skipped" value={job.progress.roleSkipped} />
           <Metric label="Champion pair matched" value={job.progress.championPairMatched} />
+          <Metric
+            label="Champion identifiers processed"
+            value={job.progress.champion_identifiers_processed}
+          />
+          <Metric
+            label="Champion identifiers normalized"
+            value={job.progress.champion_identifiers_normalized}
+          />
+          <Metric
+            label="Champion aliases resolved"
+            value={job.progress.champion_aliases_resolved}
+          />
+          <Metric
+            label="Champion normalization failures"
+            value={job.progress.champion_normalization_failures}
+          />
+          <Metric
+            label="Champion identifier conflicts"
+            value={job.progress.champion_identifier_conflicts}
+          />
           <Metric label="Matchup pairs discovered" value={job.progress.matchupPairsDiscovered} />
           <Metric label="Observations found" value={job.progress.observationsFound} />
+          <Metric
+            label="Matchup observations validated"
+            value={job.progress.matchupObservationsValidated}
+          />
+          <Metric
+            label="Matchup observations rejected"
+            value={job.progress.matchupObservationsRejected}
+          />
           <Metric label="New observations saved" value={job.progress.observationsInserted} />
           <Metric
             label="Duplicate observations skipped"
@@ -1527,11 +1580,31 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
             label="Observation insert failures"
             value={job.progress.observationInsertFailures}
           />
+          <Metric label="Matchup batch splits" value={job.progress.matchupObservationBatchSplits} />
+          <Metric
+            label="Matchup isolated failures"
+            value={job.progress.matchupObservationIsolatedFailures}
+          />
           <Metric label="Counter pick stat rows updated" value={job.progress.statsRowsUpdated} />
+          <Metric
+            label="Counter pick aggregates validated"
+            value={job.progress.counterPickAggregatesValidated}
+          />
+          <Metric
+            label="Counter pick aggregate validation failures"
+            value={job.progress.counterPickAggregateValidationFailures}
+          />
+          <Metric
+            label="Counter pick aggregate insert failures"
+            value={job.progress.counterPickAggregateInsertFailures}
+          />
           <Metric label="Started" value={formatDateTime(job.started_at)} />
           <Metric label="Completed" value={formatDateTime(job.completed_at)} />
         </div>
       </div>
+
+      <ValidationIssueSummary job={job} />
+      <PersistenceRecoverySummary job={job} />
 
       <div className="space-y-3">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -1565,6 +1638,14 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
             value={job.progress.candidateObservationsFound}
           />
           <Metric
+            label="Candidate observations validated"
+            value={job.progress.candidateObservationsValidated}
+          />
+          <Metric
+            label="Candidate observations rejected"
+            value={job.progress.candidateObservationsRejected}
+          />
+          <Metric
             label="Candidate observations inserted"
             value={job.progress.candidateObservationsInserted}
           />
@@ -1575,6 +1656,14 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
           <Metric
             label="Candidate observation insert failures"
             value={job.progress.candidateObservationInsertFailures}
+          />
+          <Metric
+            label="Candidate observation batch splits"
+            value={job.progress.candidateObservationBatchSplits}
+          />
+          <Metric
+            label="Candidate isolated failures"
+            value={job.progress.candidateObservationIsolatedFailures}
           />
           <Metric
             label="Candidate profiles rebuilt"
@@ -1604,13 +1693,218 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
   );
 }
 
+function ValidationIssueSummary({ job }: { job: RiotScanJobView }) {
+  const summaries = [
+    {
+      label: "Matchup observation validation",
+      summary: job.progress.matchupObservationValidationSummary,
+    },
+    {
+      label: "Candidate observation validation",
+      summary: job.progress.candidateObservationValidationSummary,
+    },
+    {
+      label: "Counter-pick aggregate validation",
+      summary: job.progress.counterPickAggregateValidationSummary,
+    },
+  ].filter((entry) => entry.summary && entry.summary.totalRejected > 0);
+
+  if (summaries.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border border-amber-300/20 bg-amber-500/10 p-3">
+      <h4 className="text-sm font-semibold text-amber-100">Validation warnings</h4>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {summaries.map((entry) => (
+          <div className="rounded-md border border-white/10 bg-black/15 p-3" key={entry.label}>
+            <p className="text-xs font-semibold text-zinc-100">{entry.label}</p>
+            <p className="mt-1 text-xs text-zinc-400">
+              {entry.summary?.totalRejected ?? 0} rejected
+            </p>
+            <div className="mt-2 space-y-1 text-xs text-zinc-400">
+              {Object.entries(entry.summary?.issuesByCode ?? {}).map(([code, count]) => (
+                <div className="flex justify-between gap-3" key={code}>
+                  <span>{formatEnumLabel(code.toLowerCase())}</span>
+                  <span className="font-semibold text-zinc-100">{count}</span>
+                </div>
+              ))}
+            </div>
+            {entry.summary?.samples?.length ? (
+              <div className="mt-3 space-y-1 border-t border-white/10 pt-2 text-xs text-zinc-500">
+                {entry.summary.samples.slice(0, 3).map((sample) => (
+                  <p
+                    className="break-words"
+                    key={`${sample.code}-${sample.field}-${sample.safeValue}`}
+                  >
+                    {sample.field}: {sample.safeValue ?? "empty"}{" "}
+                    {sample.matchId ? `(${sample.matchId})` : ""}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PersistenceRecoverySummary({ job }: { job: RiotScanJobView }) {
+  const summaries = [
+    {
+      attempts: job.progress.candidateObservationBatchAttempts,
+      duplicates: job.progress.candidateObservationDuplicatesSkipped,
+      errorGroups: job.progress.candidateObservationPersistenceErrorGroups,
+      failedAttempts: job.progress.candidateObservationFailedBatchAttempts,
+      failures: job.progress.candidateObservationInsertFailures,
+      inserted: job.progress.candidateObservationsInserted,
+      isolated: job.progress.candidateObservationIsolatedFailures,
+      label: "Candidate observations",
+      samples: job.progress.candidateObservationPersistenceFailureSamples,
+      splits: job.progress.candidateObservationBatchSplits,
+      successful: job.progress.candidateObservationSuccessfulBatches,
+      transientRetries: job.progress.candidateObservationTransientRetries,
+      unresolved: job.progress.candidateObservationUnresolvedBatchFailures,
+    },
+    {
+      attempts: job.progress.matchupObservationBatchAttempts,
+      duplicates: job.progress.observationDuplicatesSkipped,
+      errorGroups: job.progress.matchupObservationPersistenceErrorGroups,
+      failedAttempts: job.progress.matchupObservationFailedBatchAttempts,
+      failures: job.progress.observationInsertFailures,
+      inserted: job.progress.observationsInserted,
+      isolated: job.progress.matchupObservationIsolatedFailures,
+      label: "Matchup observations",
+      samples: job.progress.matchupObservationPersistenceFailureSamples,
+      splits: job.progress.matchupObservationBatchSplits,
+      successful: job.progress.matchupObservationSuccessfulBatches,
+      transientRetries: job.progress.matchupObservationTransientRetries,
+      unresolved: job.progress.matchupObservationUnresolvedBatchFailures,
+    },
+    {
+      attempts: job.progress.counterPickAggregateBatchAttempts,
+      duplicates: 0,
+      errorGroups: job.progress.counterPickAggregatePersistenceErrorGroups,
+      failedAttempts: job.progress.counterPickAggregateFailedBatchAttempts,
+      failures: job.progress.counterPickAggregateInsertFailures,
+      inserted: job.progress.statsRowsUpdated,
+      isolated: job.progress.counterPickAggregateIsolatedFailures,
+      label: "Counter-pick aggregates",
+      samples: job.progress.counterPickAggregatePersistenceFailureSamples,
+      splits: job.progress.counterPickAggregateBatchSplits,
+      successful: job.progress.counterPickAggregateSuccessfulBatches,
+      transientRetries: job.progress.counterPickAggregateTransientRetries,
+      unresolved: job.progress.counterPickAggregateUnresolvedBatchFailures,
+    },
+  ].filter((entry) => hasPersistenceRecoveryActivity(entry));
+
+  if (summaries.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3 rounded-md border border-cyan-300/20 bg-cyan-500/10 p-3">
+      <h4 className="text-sm font-semibold text-cyan-100">Persistence recovery</h4>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {summaries.map((entry) => (
+          <div className="rounded-md border border-white/10 bg-black/15 p-3" key={entry.label}>
+            <p className="text-xs font-semibold text-zinc-100">{entry.label}</p>
+            <p className="mt-1 text-xs text-zinc-400">
+              {Number(entry.inserted ?? 0) + Number(entry.duplicates ?? 0)} rows persisted,{" "}
+              {entry.failures ?? 0} failed
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-400">
+              <Metric label="Batch attempts" value={entry.attempts} />
+              <Metric label="Successful batches" value={entry.successful} />
+              <Metric label="Failed attempts" value={entry.failedAttempts} />
+              <Metric label="Batch splits" value={entry.splits} />
+              <Metric label="Transient retries" value={entry.transientRetries} />
+              <Metric label="Isolated rows" value={entry.isolated} />
+              <Metric label="Unresolved rows" value={entry.unresolved} />
+            </div>
+            {entry.errorGroups?.length ? (
+              <div className="mt-3 space-y-1 border-t border-white/10 pt-2 text-xs text-zinc-400">
+                {entry.errorGroups.slice(0, 3).map((group) => (
+                  <div
+                    className="flex justify-between gap-3"
+                    key={`${group.errorClass}-${group.errorCode}-${group.messageFingerprint}`}
+                  >
+                    <span>{formatEnumLabel(group.errorClass)}</span>
+                    <span className="font-semibold text-zinc-100">{group.failureCount}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {entry.samples?.length ? (
+              <details className="mt-3 border-t border-white/10 pt-2 text-xs text-zinc-400">
+                <summary className="cursor-pointer font-semibold text-cyan-100">
+                  Failure samples
+                </summary>
+                <div className="mt-2 space-y-2">
+                  {entry.samples.slice(0, 5).map((sample) => (
+                    <div
+                      className="rounded-md border border-white/10 bg-black/20 p-2"
+                      key={`${sample.table}-${sample.rowIdentity}-${sample.errorClass}`}
+                    >
+                      <p className="font-semibold text-zinc-200">
+                        {sample.rowIdentity} - {formatEnumLabel(sample.errorClass)}
+                      </p>
+                      <p className="mt-1 break-words text-zinc-500">{sample.message}</p>
+                      <div className="mt-2 space-y-1">
+                        {Object.entries(sample.safeFields).map(([field, value]) => (
+                          <div className="flex justify-between gap-3" key={field}>
+                            <span>{formatEnumLabel(field)}</span>
+                            <span className="break-all text-right text-zinc-300">
+                              {String(value ?? "empty")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function hasPersistenceRecoveryActivity(entry: {
+  failedAttempts?: number;
+  failures?: number;
+  isolated?: number;
+  splits?: number;
+  transientRetries?: number;
+  unresolved?: number;
+}) {
+  return [
+    entry.failedAttempts,
+    entry.failures,
+    entry.isolated,
+    entry.splits,
+    entry.transientRetries,
+    entry.unresolved,
+  ].some((value) => Number(value ?? 0) > 0);
+}
+
 function TargetResult({ result }: { result: RiotScanTargetResult }) {
   return (
     <div className="rounded-md border border-white/10 bg-black/15 p-3">
       <h4 className="text-sm font-semibold text-white">Target scan result</h4>
       <div className="mt-3 grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
-        <Metric label="Enemy champion" value={result.enemyChampion} />
-        <Metric label="Counter champion" value={result.counterChampion} />
+        <Metric
+          label="Enemy champion"
+          value={result.enemyChampionDisplayName ?? result.enemyChampion}
+        />
+        <Metric
+          label="Counter champion"
+          value={result.counterChampionDisplayName ?? result.counterChampion}
+        />
         <Metric label="Role" value={getRoleLabel(result.role)} />
         <Metric label="Games" value={result.games} />
         <Metric label="Wins" value={result.wins} />
@@ -1642,8 +1936,12 @@ function DiscoveryResultTable({ results }: { results: RiotScanDiscoveryResult[] 
             className="grid grid-cols-[1.1fr_1.1fr_0.55fr_0.6fr_0.75fr_0.75fr_0.8fr] gap-3 border-b border-white/5 px-3 py-2 text-xs text-zinc-300 last:border-b-0"
             key={`${result.championA}-${result.championB}-${result.role}`}
           >
-            <span className="font-semibold text-white">{result.championA}</span>
-            <span className="font-semibold text-white">{result.championB}</span>
+            <span className="font-semibold text-white">
+              {result.championADisplayName ?? result.championA}
+            </span>
+            <span className="font-semibold text-white">
+              {result.championBDisplayName ?? result.championB}
+            </span>
             <span>{getRoleLabel(result.role)}</span>
             <span>{result.games}</span>
             <span>
@@ -1734,6 +2032,10 @@ function getStatusLabel(status: RiotScanJobView["status"]) {
 
 function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function getChampionDisplayName(championDisplayNamesById: Map<string, string>, championId: string) {
+  return championDisplayNamesById.get(championId) ?? championId;
 }
 
 function shortenPuuid(value: string) {

@@ -2,7 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
+import {
+  loadActiveChampionRegistry,
+  normalizeChampionIdentifier,
+} from "./lib/league-champion-normalizer.mjs";
 import { rebuildCounterPickStatsFromObservations } from "./lib/riot-counter-pick-aggregation.mjs";
+import { createObservationValidationContext } from "./lib/riot-observation-validation.mjs";
 
 loadEnvFile(".env.local");
 
@@ -30,20 +35,36 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
     persistSession: false,
   },
 });
+const championRegistry = await loadActiveChampionRegistry({ supabase });
+const validationContext = createObservationValidationContext({
+  championRegistry,
+});
+const normalizedChampion = champion
+  ? normalizeChampionIdentifier(champion, championRegistry)
+  : null;
+
+if (champion && !normalizedChampion) {
+  throw new Error(`Champion "${champion}" could not be resolved against league_champions.`);
+}
+
 const result = await rebuildCounterPickStatsFromObservations({
-  champion,
+  champion: normalizedChampion?.canonicalKey ?? null,
+  championRegistry,
   patch,
   role,
   supabase,
+  validationContext,
 });
 
 console.log(
   [
     "Counter pick stats rebuild complete",
     `statsRowsUpdated=${result.statsRowsUpdated}`,
+    `counterPickAggregatesValidated=${result.counterPickAggregatesValidated}`,
+    `counterPickAggregateValidationFailures=${result.counterPickAggregateValidationFailures}`,
     patch ? `patch=${patch}` : null,
     role ? `role=${role}` : null,
-    champion ? `champion=${champion}` : null,
+    normalizedChampion ? `champion=${normalizedChampion.canonicalKey}` : null,
   ]
     .filter(Boolean)
     .join(" | "),

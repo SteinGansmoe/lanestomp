@@ -1,3 +1,11 @@
+import {
+  createChampionNormalizationStats,
+  getChampionDisplayName,
+  getChampionNormalizationSummary,
+  normalizeChampionIdentifier,
+  normalizeParticipantChampionIdentifiers,
+} from "./league-champion-normalizer.mjs";
+
 export const rankedSoloDuoQueueId = 420;
 
 export const roleToTeamPosition = {
@@ -17,6 +25,7 @@ export const positionToRole = {
 };
 
 export async function scanRiotCounterPickMatchups({
+  championRegistry,
   discover = false,
   logger = null,
   matchCount = 20,
@@ -36,6 +45,10 @@ export async function scanRiotCounterPickMatchups({
     throw new Error("Riot API client is required.");
   }
 
+  if (!championRegistry) {
+    throw new Error("Champion registry is required before Riot scanning can start.");
+  }
+
   if (!normalizedRole) {
     throw new Error("Invalid role. Use top, jungle, mid, adc, or support.");
   }
@@ -46,8 +59,22 @@ export async function scanRiotCounterPickMatchups({
     throw new Error("Provide at least one seed PUUID.");
   }
 
-  if (!discover && (!target?.enemyChampionId || !target?.counterChampionId)) {
-    throw new Error("Target scans require enemy and counter champions.");
+  const normalizedTarget = target
+    ? {
+        counterChampion: normalizeChampionIdentifier(target.counterChampionId, championRegistry),
+        enemyChampion: normalizeChampionIdentifier(target.enemyChampionId, championRegistry),
+      }
+    : null;
+
+  if (!discover && (!normalizedTarget?.enemyChampion || !normalizedTarget?.counterChampion)) {
+    throw new Error("Target scans require valid enemy and counter champions.");
+  }
+
+  if (
+    !discover &&
+    normalizedTarget.enemyChampion.canonicalKey === normalizedTarget.counterChampion.canonicalKey
+  ) {
+    throw new Error("Enemy and counter champion cannot be the same.");
   }
 
   const matchIdResult = await fetchUniqueMatchIds({
@@ -77,6 +104,7 @@ export async function scanRiotCounterPickMatchups({
     targetMatches: 0,
     uniqueMatchIds: matchIds.length,
     wins: 0,
+    ...createChampionNormalizationStats(),
   };
   const observations = [];
 
@@ -98,11 +126,19 @@ export async function scanRiotCounterPickMatchups({
       continue;
     }
 
-    const candidateObservationResult = getCandidateObservationsFromMatch({
+    const normalizedParticipants = normalizeMatchParticipants({
+      aggregate,
       match,
       matchId,
+      participants: match?.info?.participants,
+      registry: championRegistry,
+    });
+
+    const candidateObservationResult = getCandidateObservationsFromMatch({
+      match,
       patch: getPatchFromMatch(match),
       platformRegion,
+      participants: normalizedParticipants,
       queue,
       regionalRouting,
     });
@@ -110,7 +146,7 @@ export async function scanRiotCounterPickMatchups({
     aggregate.candidateDiscoverySkipped += candidateObservationResult.skipped;
     aggregate.candidateObservationsFound = candidateObservations.length;
 
-    const roleMatchups = getRoleMatchups(match, normalizedRole);
+    const roleMatchups = getRoleMatchups(normalizedParticipants, normalizedRole);
 
     if (roleMatchups.length === 0) {
       aggregate.roleSkipped += 1;
@@ -134,13 +170,15 @@ export async function scanRiotCounterPickMatchups({
     }
 
     if (discover) {
-      roleMatchups.forEach((matchup) => addDiscoveryPair(aggregate.discoveryPairs, matchup));
+      roleMatchups.forEach((matchup) =>
+        addDiscoveryPair(aggregate.discoveryPairs, matchup, championRegistry),
+      );
       aggregate.observationsFound = observations.length;
       await emitProgress(onProgress, getSummary(aggregate));
       continue;
     }
 
-    const result = getTargetMatchupResult(roleMatchups, target);
+    const result = getTargetMatchupResult(roleMatchups, normalizedTarget);
 
     if (!result) {
       aggregate.observationsFound = observations.length;
@@ -167,7 +205,8 @@ export async function scanRiotCounterPickMatchups({
     ? null
     : getTargetResult({
         aggregate,
-        target,
+        registry: championRegistry,
+        target: normalizedTarget,
       });
 
   return {
@@ -311,10 +350,10 @@ async function fetchUniqueMatchIds({ count, logger, onProgress, puuids, queue, r
 
 function getTargetMatchupResult(roleMatchups, target) {
   for (const matchup of roleMatchups) {
-    const leftChampionKey = normalizeChampionKey(matchup.left.championName);
-    const rightChampionKey = normalizeChampionKey(matchup.right.championName);
-    const enemyChampionKey = normalizeChampionKey(target.enemyChampionId);
-    const counterChampionKey = normalizeChampionKey(target.counterChampionId);
+    const leftChampionKey = matchup.left.canonicalChampionId;
+    const rightChampionKey = matchup.right.canonicalChampionId;
+    const enemyChampionKey = target.enemyChampion.canonicalKey;
+    const counterChampionKey = target.counterChampion.canonicalKey;
     const isLeftTarget =
       leftChampionKey === counterChampionKey && rightChampionKey === enemyChampionKey;
     const isRightTarget =
@@ -336,13 +375,7 @@ function getTargetMatchupResult(roleMatchups, target) {
   return null;
 }
 
-function getRoleMatchups(match, role) {
-  const participants = match?.info?.participants;
-
-  if (!Array.isArray(participants)) {
-    return [];
-  }
-
+function getRoleMatchups(participants, role) {
   const teamPosition = roleToTeamPosition[role];
   const roleParticipants = participants.filter(
     (participant) =>
@@ -366,33 +399,75 @@ function getRoleMatchups(match, role) {
   ];
 }
 
+function normalizeMatchParticipants({ aggregate, match, matchId, participants, registry }) {
+  if (!Array.isArray(participants)) {
+    return [];
+  }
+
+  const normalizedParticipants = [];
+  const gameStartTimestamp = Number(match?.info?.gameStartTimestamp);
+  const gameDurationSeconds = Number(match?.info?.gameDuration);
+
+  for (const participant of participants) {
+    const result = normalizeParticipantChampionIdentifiers(participant, registry);
+
+    aggregate.processed += 1;
+
+    if (result.conflict) {
+      aggregate.conflicts += 1;
+      logChampionNormalizationIssue("Champion identifier conflict", {
+        matchId,
+        ...result.inputs,
+        role: getParticipantRole(participant),
+      });
+      continue;
+    }
+
+    if (result.failure || !result.entry) {
+      aggregate.failures += 1;
+      logChampionNormalizationIssue("Champion identifier could not be normalized", {
+        matchId,
+        ...result.inputs,
+        role: getParticipantRole(participant),
+      });
+      continue;
+    }
+
+    aggregate.normalized += 1;
+
+    if (result.usedAlias) {
+      aggregate.aliasesResolved += 1;
+    }
+
+    normalizedParticipants.push({
+      ...participant,
+      canonicalChampionId: result.entry.canonicalKey,
+      championDisplayName: result.entry.displayName,
+      gameDurationSeconds: Number.isFinite(gameDurationSeconds) ? gameDurationSeconds : null,
+      gameStartAt: Number.isFinite(gameStartTimestamp)
+        ? new Date(gameStartTimestamp).toISOString()
+        : null,
+      matchId,
+    });
+  }
+
+  return normalizedParticipants;
+}
+
 function getCandidateObservationsFromMatch({
-  match,
-  matchId,
   patch,
   platformRegion,
+  participants,
   queue,
   regionalRouting,
 }) {
-  const participants = match?.info?.participants;
-
-  if (!Array.isArray(participants)) {
-    return {
-      observations: [],
-      skipped: 0,
-    };
-  }
-
   const observations = [];
   const seenPuuids = new Set();
-  const gameStartTimestamp = Number(match?.info?.gameStartTimestamp);
-  const gameDurationSeconds = Number(match?.info?.gameDuration);
   let skipped = 0;
 
   for (const participant of participants) {
     const puuid = typeof participant?.puuid === "string" ? participant.puuid.trim() : "";
-    const champion =
-      typeof participant?.championName === "string" ? participant.championName.trim() : "";
+    const champion = participant.canonicalChampionId;
     const role = getParticipantRole(participant);
 
     if (!puuid || !champion || !role || seenPuuids.has(puuid)) {
@@ -403,11 +478,11 @@ function getCandidateObservationsFromMatch({
     seenPuuids.add(puuid);
     observations.push({
       champion,
-      game_duration_seconds: Number.isFinite(gameDurationSeconds) ? gameDurationSeconds : null,
-      game_start_at: Number.isFinite(gameStartTimestamp)
-        ? new Date(gameStartTimestamp).toISOString()
+      game_duration_seconds: Number.isFinite(Number(participant.gameDurationSeconds))
+        ? Number(participant.gameDurationSeconds)
         : null,
-      match_id: matchId,
+      game_start_at: participant.gameStartAt ?? null,
+      match_id: participant.matchId,
       patch,
       platform_region: platformRegion,
       puuid,
@@ -424,20 +499,20 @@ function getCandidateObservationsFromMatch({
   };
 }
 
-function addDiscoveryPair(discoveryPairs, matchup) {
-  const champions = [matchup.left.championName, matchup.right.championName].sort((left, right) =>
-    left.localeCompare(right),
+function addDiscoveryPair(discoveryPairs, matchup, registry) {
+  const champions = [matchup.left.canonicalChampionId, matchup.right.canonicalChampionId].sort(
+    (left, right) => left.localeCompare(right),
   );
-  const championAKey = normalizeChampionKey(champions[0]);
-  const championBKey = normalizeChampionKey(champions[1]);
-  const key = `${championAKey}::${championBKey}`;
+  const key = `${champions[0]}::${champions[1]}`;
   const championAParticipant =
-    normalizeChampionKey(matchup.left.championName) === championAKey ? matchup.left : matchup.right;
+    matchup.left.canonicalChampionId === champions[0] ? matchup.left : matchup.right;
   const championBParticipant = championAParticipant === matchup.left ? matchup.right : matchup.left;
   const currentPair = discoveryPairs.get(key) ?? {
     championA: champions[0],
+    championADisplayName: getChampionDisplayName(registry, champions[0]),
     championAWins: 0,
     championB: champions[1],
+    championBDisplayName: getChampionDisplayName(registry, champions[1]),
     championBWins: 0,
     games: 0,
   };
@@ -454,20 +529,16 @@ function addDiscoveryPair(discoveryPairs, matchup) {
 }
 
 function getMatchupObservation({ match, matchId, matchup, patch, queue, role }) {
-  const leftChampion = matchup.left.championName;
-  const rightChampion = matchup.right.championName;
+  const leftChampion = matchup.left.canonicalChampionId;
+  const rightChampion = matchup.right.canonicalChampionId;
 
-  if (
-    !leftChampion ||
-    !rightChampion ||
-    normalizeChampionKey(leftChampion) === normalizeChampionKey(rightChampion)
-  ) {
+  if (!leftChampion || !rightChampion || leftChampion === rightChampion) {
     return null;
   }
 
   const orderedParticipants = [matchup.left, matchup.right].sort((left, right) => {
-    const leftKey = normalizeChampionKey(left.championName);
-    const rightKey = normalizeChampionKey(right.championName);
+    const leftKey = left.canonicalChampionId;
+    const rightKey = right.canonicalChampionId;
     const keyOrder = leftKey.localeCompare(rightKey);
 
     if (keyOrder !== 0) {
@@ -478,16 +549,18 @@ function getMatchupObservation({ match, matchId, matchup, patch, queue, role }) 
   });
   const [championA, championB] = orderedParticipants;
   const championAWon = Boolean(championA.win);
-  const winnerChampion = championAWon ? championA.championName : championB.championName;
+  const winnerChampion = championAWon
+    ? championA.canonicalChampionId
+    : championB.canonicalChampionId;
   const gameStartTimestamp = Number(match?.info?.gameStartTimestamp);
   const gameDurationSeconds = Number(match?.info?.gameDuration);
 
   return {
-    champion_a: championA.championName,
+    champion_a: championA.canonicalChampionId,
     champion_a_puuid: championA.puuid ?? null,
     champion_a_tier: null,
     champion_a_won: championAWon,
-    champion_b: championB.championName,
+    champion_b: championB.canonicalChampionId,
     champion_b_puuid: championB.puuid ?? null,
     champion_b_tier: null,
     game_duration_seconds: Number.isFinite(gameDurationSeconds) ? gameDurationSeconds : null,
@@ -507,12 +580,14 @@ function getDiscoveryResults({ discoveryPairs, role }) {
   return Array.from(discoveryPairs.values())
     .map((pair) => ({
       championA: pair.championA,
+      championADisplayName: pair.championADisplayName,
       championAWins: pair.championAWins,
       championAWinRate: calculateWinRate({
         games: pair.games,
         wins: pair.championAWins,
       }),
       championB: pair.championB,
+      championBDisplayName: pair.championBDisplayName,
       championBWins: pair.championBWins,
       championBWinRate: calculateWinRate({
         games: pair.games,
@@ -532,15 +607,20 @@ function getDiscoveryResults({ discoveryPairs, role }) {
     });
 }
 
-function getTargetResult({ aggregate, target }) {
+function getTargetResult({ aggregate, registry, target }) {
   const winRate = calculateWinRate({
     games: aggregate.games,
     wins: aggregate.wins,
   });
 
   return {
-    counterChampion: target.counterChampionId,
-    enemyChampion: target.enemyChampionId,
+    counterChampion: target.counterChampion.canonicalKey,
+    counterChampionDisplayName: getChampionDisplayName(
+      registry,
+      target.counterChampion.canonicalKey,
+    ),
+    enemyChampion: target.enemyChampion.canonicalKey,
+    enemyChampionDisplayName: getChampionDisplayName(registry, target.enemyChampion.canonicalKey),
     games: aggregate.games,
     losses: aggregate.losses,
     role: aggregate.role,
@@ -573,6 +653,7 @@ function getSummary(aggregate) {
     observationsFound: aggregate.observationsFound ?? 0,
     matchupPairsDiscovered: aggregate.discoveryPairs.size,
     wins: aggregate.wins,
+    ...getChampionNormalizationSummary(aggregate),
   };
 }
 
@@ -582,4 +663,14 @@ async function emitProgress(onProgress, progress) {
   }
 
   await onProgress(progress);
+}
+
+function logChampionNormalizationIssue(label, context) {
+  console.warn(label, {
+    championId: context.championId ?? null,
+    championKey: context.championKey ?? null,
+    championName: context.championName ?? null,
+    matchId: context.matchId,
+    role: context.role,
+  });
 }

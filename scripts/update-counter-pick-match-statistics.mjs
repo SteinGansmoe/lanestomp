@@ -2,6 +2,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
+import {
+  loadActiveChampionRegistry,
+  normalizeParticipantChampionIdentifiers,
+} from "./lib/league-champion-normalizer.mjs";
+
 loadEnvFile(".env.local");
 
 const args = process.argv.slice(2);
@@ -38,7 +43,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
     persistSession: false,
   },
 });
-const championLookup = await fetchChampionLookup();
+const championRegistry = await loadActiveChampionRegistry({ supabase });
 const matchIds = await fetchSeedMatchIds(seedPuuids);
 const aggregates = new Map();
 
@@ -49,13 +54,15 @@ for (const matchId of matchIds) {
     )}`,
   );
 
-  addMatchToAggregates(match, aggregates, championLookup, requestedPatch);
+  addMatchToAggregates(match, aggregates, championRegistry, requestedPatch);
 }
 
 const rows = Array.from(aggregates.values()).map(toStatisticRow);
 
 if (isDryRun) {
-  console.log(`Prepared ${rows.length} counter-pick statistic rows from ${matchIds.length} matches.`);
+  console.log(
+    `Prepared ${rows.length} counter-pick statistic rows from ${matchIds.length} matches.`,
+  );
   process.exit(0);
 }
 
@@ -92,24 +99,7 @@ async function fetchSeedMatchIds(puuids) {
   return Array.from(matchIds);
 }
 
-async function fetchChampionLookup() {
-  const { data, error } = await supabase.from("league_champions").select("id, name");
-
-  if (error) {
-    throw new Error(`Could not load League champions: ${error.message}`);
-  }
-
-  const lookup = new Map();
-
-  for (const champion of data ?? []) {
-    lookup.set(normalizeChampionKey(champion.id), champion.id);
-    lookup.set(normalizeChampionKey(champion.name), champion.id);
-  }
-
-  return lookup;
-}
-
-function addMatchToAggregates(match, aggregateLookup, championLookup, patchOverride) {
+function addMatchToAggregates(match, aggregateLookup, championRegistry, patchOverride) {
   const participants = match?.info?.participants;
 
   if (!Array.isArray(participants)) {
@@ -126,9 +116,10 @@ function addMatchToAggregates(match, aggregateLookup, championLookup, patchOverr
 
   for (const participant of participants) {
     const role = toLeagueRole(participant.teamPosition);
-    const championId = resolveChampionId(championLookup, participant.championName);
+    const championResult = normalizeParticipantChampionIdentifiers(participant, championRegistry);
+    const championId = championResult.entry?.canonicalKey ?? null;
 
-    if (!role || !championId) {
+    if (!role || !championId || championResult.conflict || championResult.failure) {
       continue;
     }
 
@@ -159,22 +150,15 @@ function addParticipantMatchup(aggregateLookup, patch, role, counterParticipant,
     return;
   }
 
-  const key = [
+  const key = [patch, role, enemyParticipant.championId, counterParticipant.championId].join("::");
+  const aggregate = aggregateLookup.get(key) ?? {
+    counterChampionId: counterParticipant.championId,
+    enemyChampionId: enemyParticipant.championId,
+    games: 0,
     patch,
     role,
-    enemyParticipant.championId,
-    counterParticipant.championId,
-  ].join("::");
-  const aggregate =
-    aggregateLookup.get(key) ??
-    {
-      counterChampionId: counterParticipant.championId,
-      enemyChampionId: enemyParticipant.championId,
-      games: 0,
-      patch,
-      role,
-      wins: 0,
-    };
+    wins: 0,
+  };
 
   aggregate.games += 1;
   aggregate.wins += counterParticipant.win ? 1 : 0;
@@ -238,10 +222,6 @@ function toLeagueRole(teamPosition) {
   }
 }
 
-function resolveChampionId(championLookup, riotChampionName) {
-  return championLookup.get(normalizeChampionKey(riotChampionName)) ?? null;
-}
-
 async function fetchRiotJson(url) {
   const response = await fetch(url, {
     headers: {
@@ -288,15 +268,6 @@ function getArgValues(name) {
 
 function uniqueValues(values) {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
-}
-
-function normalizeChampionKey(value) {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
 }
 
 function loadEnvFile(fileName) {

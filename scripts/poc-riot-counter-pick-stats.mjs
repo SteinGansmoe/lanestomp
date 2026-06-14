@@ -3,6 +3,14 @@ import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 import { RiotApiClient } from "./lib/riot-api-client.mjs";
+import {
+  loadActiveChampionRegistry,
+  normalizeChampionIdentifier,
+} from "./lib/league-champion-normalizer.mjs";
+import {
+  createObservationValidationContext,
+  validateRoutingConfiguration,
+} from "./lib/riot-observation-validation.mjs";
 import { persistObservationsAndRebuildStats } from "./lib/riot-counter-pick-aggregation.mjs";
 import {
   fetchCurrentPatch,
@@ -69,7 +77,7 @@ if (!riotApiKey) {
   throw new Error("Missing RIOT_API_KEY.");
 }
 
-if (!isDryRun && (!supabaseUrl || !serviceRoleKey)) {
+if (!supabaseUrl || !serviceRoleKey) {
   throw new Error(
     "Missing Supabase credentials. Set NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL, plus SUPABASE_SERVICE_ROLE_KEY.",
   );
@@ -89,13 +97,33 @@ const riot = new RiotApiClient({
   regionalRoute,
   requestDelayMs,
 });
-const supabase = isDryRun
-  ? null
-  : createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-      },
-    });
+const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  auth: {
+    persistSession: false,
+  },
+});
+const championRegistry = await loadActiveChampionRegistry({ supabase });
+const validationContext = createObservationValidationContext({
+  championRegistry,
+});
+const routingValidation = validateRoutingConfiguration({
+  context: validationContext,
+  platformRegion,
+  regionalRouting: regionalRoute ?? defaultRegionalRouting,
+});
+
+if (!routingValidation.ok) {
+  throw new Error(
+    `Invalid Riot routing configuration: ${routingValidation.issues
+      .map((issue) => issue.code)
+      .join(", ")}`,
+  );
+}
+const normalizedTarget = normalizeTarget({
+  championRegistry,
+  counterChampionId: target.counterChampionId,
+  enemyChampionId: target.enemyChampionId,
+});
 
 console.log(
   [
@@ -104,7 +132,7 @@ console.log(
     `platform=${platformRegion}`,
     `queue=${queue}`,
     `patch=${patch}`,
-    `target=${target.counterChampionId} ${target.role} vs ${target.enemyChampionId} ${target.role}`,
+    `target=${normalizedTarget.counterChampionId} ${target.role} vs ${normalizedTarget.enemyChampionId} ${target.role}`,
     `discover=${isDiscoverMode}`,
     `seedPuuids=${seedPuuids.length}`,
     `matchCountPerSeed=${matchCount}`,
@@ -113,6 +141,7 @@ console.log(
 );
 
 const scanResult = await scanRiotCounterPickMatchups({
+  championRegistry,
   discover: isDiscoverMode,
   logger: console,
   matchCount,
@@ -123,7 +152,7 @@ const scanResult = await scanRiotCounterPickMatchups({
   riot,
   role: target.role,
   seedPuuids,
-  target,
+  target: normalizedTarget,
 });
 const summary = scanResult.summary;
 const targetResult = scanResult.targetResult;
@@ -139,8 +168,8 @@ console.log(
     `roleSkipped=${summary.roleSkipped}`,
     `championPairMatched=${summary.championPairMatched}`,
     `games=${targetResult?.games ?? 0}`,
-    `${target.counterChampionId}Wins=${targetResult?.wins ?? 0}`,
-    `${target.counterChampionId}Losses=${targetResult?.losses ?? 0}`,
+    `${normalizedTarget.counterChampionId}Wins=${targetResult?.wins ?? 0}`,
+    `${normalizedTarget.counterChampionId}Losses=${targetResult?.losses ?? 0}`,
     `winRate=${targetResult?.winRate ?? 0}%`,
     `tier=${targetResult?.tier ?? "C"}`,
   ].join(" | "),
@@ -160,13 +189,17 @@ if (!supabase) {
 }
 
 const persistenceResult = await persistObservationsAndRebuildStats({
+  championRegistry,
   observations: scanResult.observations,
   supabase,
+  validationContext,
 });
 const candidatePersistenceResult = await persistSeedCandidatesFromObservations({
+  championRegistry,
   observations: scanResult.candidateObservations,
   source: "match_discovery",
   supabase,
+  validationContext,
 });
 
 console.log(
@@ -176,7 +209,11 @@ console.log(
     `observationsInserted=${persistenceResult.insertedObservations}`,
     `duplicatesSkipped=${persistenceResult.duplicateObservationsSkipped}`,
     `insertFailures=${persistenceResult.insertFailures}`,
+    `matchupObservationsValidated=${persistenceResult.matchupObservationsValidated}`,
+    `matchupObservationsRejected=${persistenceResult.matchupObservationsRejected}`,
     `statsRowsUpdated=${persistenceResult.statsRowsUpdated}`,
+    `counterPickAggregatesValidated=${persistenceResult.counterPickAggregatesValidated}`,
+    `counterPickAggregateValidationFailures=${persistenceResult.counterPickAggregateValidationFailures}`,
     `participantPuuidsObserved=${candidatePersistenceResult.participantPuuidsObserved}`,
     `uniqueCandidatesEncountered=${candidatePersistenceResult.uniqueCandidatesEncountered}`,
     `newCandidatesCreated=${candidatePersistenceResult.newCandidatesCreated}`,
@@ -188,7 +225,14 @@ console.log(
     `candidateIdLookupChunks=${candidatePersistenceResult.candidateIdLookupChunks}`,
     `candidateIdLookupChunkFailures=${candidatePersistenceResult.candidateIdLookupChunkFailures}`,
     `candidateObservationsInserted=${candidatePersistenceResult.candidateObservationsInserted}`,
+    `candidateObservationsValidated=${candidatePersistenceResult.candidateObservationsValidated}`,
+    `candidateObservationsRejected=${candidatePersistenceResult.candidateObservationsRejected}`,
     `candidateProfilesRebuilt=${candidatePersistenceResult.candidateProfilesRebuilt}`,
+    `championIdentifiersProcessed=${summary.champion_identifiers_processed ?? 0}`,
+    `championIdentifiersNormalized=${summary.champion_identifiers_normalized ?? 0}`,
+    `championAliasesResolved=${summary.champion_aliases_resolved ?? 0}`,
+    `championNormalizationFailures=${summary.champion_normalization_failures ?? 0}`,
+    `championIdentifierConflicts=${summary.champion_identifier_conflicts ?? 0}`,
   ].join(" | "),
 );
 
@@ -198,14 +242,33 @@ if (isDiscoverMode) {
 
 if (!targetResult || targetResult.games === 0) {
   console.log(
-    `No ${target.enemyChampionId} ${target.role} vs ${target.counterChampionId} ${target.role} games found.`,
+    `No ${normalizedTarget.enemyChampionId} ${target.role} vs ${normalizedTarget.counterChampionId} ${target.role} games found.`,
   );
   process.exit(0);
 }
 
 console.log(
-  `Aggregated stored observations for ${target.counterChampionId} ${target.role} vs ${target.enemyChampionId} ${target.role} into counter_pick_stats.`,
+  `Aggregated stored observations for ${normalizedTarget.counterChampionId} ${target.role} vs ${normalizedTarget.enemyChampionId} ${target.role} into counter_pick_stats.`,
 );
+
+function normalizeTarget({ championRegistry, counterChampionId, enemyChampionId }) {
+  const enemyChampion = normalizeChampionIdentifier(enemyChampionId, championRegistry);
+  const counterChampion = normalizeChampionIdentifier(counterChampionId, championRegistry);
+
+  if (!enemyChampion || !counterChampion) {
+    throw new Error("Target champions could not be resolved against the League champion registry.");
+  }
+
+  if (enemyChampion.canonicalKey === counterChampion.canonicalKey) {
+    throw new Error("Enemy and counter champion cannot be the same.");
+  }
+
+  return {
+    counterChampionId: counterChampion.canonicalKey,
+    enemyChampionId: enemyChampion.canonicalKey,
+    role: target.role,
+  };
+}
 
 function printDiscoveryPairs(discoveryResults) {
   console.log("Most common matchup pairs:");
@@ -304,6 +367,6 @@ Environment:
   RIOT_PLATFORM_REGION       Defaults to EUW1
   RIOT_REGIONAL_ROUTING      Defaults to europe
   RIOT_REQUEST_DELAY_MS      Defaults to 1200
-  SUPABASE_SERVICE_ROLE_KEY  Required unless --dry-run exits before upsert
+  SUPABASE_SERVICE_ROLE_KEY  Required for champion registry reads; --dry-run skips writes
 `);
 }
