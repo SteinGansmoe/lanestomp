@@ -1,5 +1,11 @@
 import type { LeagueCounterPick } from "@/src/features/league/counter-picks";
 import type { LeagueCounterPickMatchStatistic } from "@/src/features/league/counter-pick-match-statistics";
+import {
+  calculateCounterPickConfidence,
+  lowCounterPickConfidenceGames,
+  minimumPublicCounterPickGames,
+  type CounterPickConfidence,
+} from "./counter-pick-confidence.ts";
 
 export type CounterPickStatisticsTier = "A" | "B" | "C" | "D" | "S" | "S+";
 export type CounterPickSampleConfidence = "high" | "low" | "low_sample" | "medium";
@@ -10,6 +16,7 @@ export type CounterPickStatisticsSource =
   | "provider";
 
 export type CounterPickStatistics = {
+  confidence: CounterPickConfidence;
   games: number | null;
   lastUpdatedAt: string | null;
   patch: string | null;
@@ -37,7 +44,8 @@ export const counterPickStatisticsTierThresholds: CounterPickStatisticsTierThres
 ];
 
 export const minimumTrustedCounterPickGames = 100;
-export const publicCounterPickLowSampleThreshold = 20;
+export const publicCounterPickLowSampleThreshold = lowCounterPickConfidenceGames;
+export const publicCounterPickMinimumRankedGames = minimumPublicCounterPickGames;
 
 const counterPickStatisticsTierSortValues = {
   "S+": 5,
@@ -49,6 +57,7 @@ const counterPickStatisticsTierSortValues = {
 } as const satisfies Record<CounterPickStatisticsTier, number>;
 
 export const emptyCounterPickStatistics: CounterPickStatistics = {
+  confidence: calculateCounterPickConfidence(0),
   games: null,
   lastUpdatedAt: null,
   patch: null,
@@ -70,6 +79,7 @@ export function getCounterPickStatisticsFromCounterPick(
   const sampleConfidence = getCounterPickSampleConfidence(counterPick.games);
 
   return {
+    confidence: calculateCounterPickConfidence(counterPick.games ?? 0),
     games: counterPick.games,
     lastUpdatedAt: null,
     patch: counterPick.patch,
@@ -87,6 +97,7 @@ export function getCounterPickStatisticsFromMatchStatistic(
   statistic: LeagueCounterPickMatchStatistic,
 ): CounterPickStatistics {
   return {
+    confidence: calculateCounterPickConfidence(statistic.games),
     games: statistic.games,
     lastUpdatedAt: statistic.last_updated_at,
     patch: statistic.patch,
@@ -150,6 +161,18 @@ export function hasCounterPickStatistics(statistics: CounterPickStatistics) {
 
 export function isCounterPickStatisticsTrusted(statistics: CounterPickStatistics) {
   return statistics.winRate !== null && statistics.games !== null;
+}
+
+export function isCounterPickStatisticsPubliclyRanked(statistics: CounterPickStatistics) {
+  return isCounterPickStatisticsTrusted(statistics) && statistics.confidence.publiclyRanked;
+}
+
+export function getCounterPickPublicTierLabel(statistics: CounterPickStatistics) {
+  if (!isCounterPickStatisticsTrusted(statistics) || !statistics.confidence.tierVisible) {
+    return statistics.confidence.level === "very_low" ? "Preliminary" : "Not enough data";
+  }
+
+  return statistics.tier ? `${statistics.tier} Tier` : "Not enough data";
 }
 
 export function compareCounterPickStatistics(

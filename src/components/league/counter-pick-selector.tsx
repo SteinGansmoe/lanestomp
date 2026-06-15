@@ -3,11 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowRight,
   ChevronDown,
   ChevronRight,
   Crosshair,
+  Info,
   Lightbulb,
+  ShieldCheck,
   Search,
   Swords,
   Target,
@@ -22,21 +25,30 @@ import { LeagueItemTooltip } from "@/src/components/league/league-data-tooltip";
 import {
   fetchReviewedCounterPicksByChampionAndRole,
   type LeagueCounterPick,
+  type CounterPickBuildPath as StoredCounterPickBuildPath,
 } from "@/src/features/league/counter-picks";
 import { fetchCounterPickStatsForSelectedChampion } from "@/src/features/league/counter-pick-statistics-provider";
 import {
   compareCounterPickStatistics,
   emptyCounterPickStatistics,
-  getCounterPickStatisticsFromCounterPick,
+  getCounterPickPublicTierLabel,
   hasCounterPickStatistics,
+  isCounterPickStatisticsPubliclyRanked,
   isCounterPickStatisticsTrusted,
-  publicCounterPickLowSampleThreshold,
+  publicCounterPickMinimumRankedGames,
   type CounterPickStatistics,
 } from "@/src/features/league/counter-pick-statistics";
 import {
+  getCounterPickAlternativeBuildSections,
   getCounterPickBuildGuide,
+  type CounterPickAlternativeBuildSection,
   type CounterPickBuildPath,
+  type CounterPickBuildGuide,
 } from "@/src/features/league/counter-pick-builds";
+import {
+  getChampionMasteryRequirement,
+  type ChampionMasteryRequirement,
+} from "@/src/features/league/champion-mastery-requirements";
 import {
   getChampionRoles,
   isChampionInRole,
@@ -45,7 +57,6 @@ import {
 import {
   getChampionSplashUrl,
   getChampionIconPath,
-  slugifyChampionName,
   type LeagueChampion,
 } from "@/src/features/league/champions";
 import {
@@ -68,12 +79,11 @@ type CounterPickSelectorProps = {
 
 type CounterDirection = "best-counter" | "countered-by";
 type CounterPrepSectionKey =
-  | "ad-heavy"
   | "alternative-build"
-  | "ap-heavy"
   | "build"
   | "guide"
   | "lane"
+  | "mastery"
   | "why";
 
 type CounterRowModel = {
@@ -86,7 +96,15 @@ type CounterRowModel = {
   matchupHref: string | null;
   matchupLabel: string;
   reasons: string[];
+  commonBuildPath: StoredCounterPickBuildPath | null;
+  behindBuildPath: StoredCounterPickBuildPath | null;
   stats: CounterPickStatistics;
+};
+
+type CounterPickListSampleSummary = {
+  hiddenPreliminaryCount: number;
+  observedCount: number;
+  rankedCount: number;
 };
 
 type CounterPrepSectionItem = {
@@ -172,7 +190,6 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const [matchStatisticsState, setMatchStatisticsState] =
     useState<MatchStatisticsState>(emptyMatchStatisticsState);
 
-  const championsByLookupKey = useMemo(() => buildChampionLookup(champions), [champions]);
   const selectedChampion = champions.find((champion) => champion.id === selectedChampionId) ?? null;
   const selectedProfile = selectedChampion
     ? (getChampionCombatProfile(selectedChampion.id) ??
@@ -215,14 +232,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const matchStatisticsByCounterChampion = matchStatisticsState.statisticsByCounterChampion;
   const selectedChampionStatsByEnemyChampion =
     matchStatisticsState.selectedChampionStatsByEnemyChampion;
-  const hasRoleSpecificBestCounterPicks = reviewedCounterPicks.some(
-    (counterPick) => counterPick.counter_type === "best_counter",
-  );
-  const hasRoleSpecificCounteredByPicks = reviewedCounterPicks.some(
-    (counterPick) => counterPick.counter_type === "countered_by",
-  );
   const bestCounterRows = useMemo(() => {
-    const statRows = buildCounterRowsFromStatistics({
+    return buildCounterRowsFromStatistics({
       champions,
       combatRelationshipsByChampion,
       direction: "best-counter",
@@ -232,46 +243,17 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
       selectedChampion,
       statisticsByChampion: matchStatisticsByCounterChampion,
     });
-
-    if (statRows.length > 0) {
-      return statRows;
-    }
-
-    if (hasRoleSpecificBestCounterPicks) {
-      return buildCounterRowsFromCounterPicks({
-        championsByLookupKey,
-        combatRelationshipsByChampion,
-        counterPicks: reviewedCounterPicks,
-        direction: "best-counter",
-        matchStatisticsByCounterChampion,
-        reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-        selectedChampion,
-      });
-    }
-
-    return buildCounterRowsFromRelationships({
-      championsByLookupKey,
-      direction: "best-counter",
-      matchStatisticsByCounterChampion,
-      relationships: bestCounterRelationships,
-      reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-      role: selectedRole,
-      selectedChampion,
-    });
   }, [
-    bestCounterRelationships,
     champions,
-    championsByLookupKey,
     combatRelationshipsByChampion,
     guideAvailabilityState.reviewedGuideKeys,
-    hasRoleSpecificBestCounterPicks,
     matchStatisticsByCounterChampion,
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
   ]);
   const counteredByRows = useMemo(() => {
-    const statRows = buildCounterRowsFromStatistics({
+    return buildCounterRowsFromStatistics({
       champions,
       combatRelationshipsByChampion,
       direction: "countered-by",
@@ -281,40 +263,10 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
       selectedChampion,
       statisticsByChampion: selectedChampionStatsByEnemyChampion,
     });
-
-    if (statRows.length > 0) {
-      return statRows;
-    }
-
-    if (hasRoleSpecificCounteredByPicks) {
-      return buildCounterRowsFromCounterPicks({
-        championsByLookupKey,
-        combatRelationshipsByChampion,
-        counterPicks: reviewedCounterPicks,
-        direction: "countered-by",
-        matchStatisticsByCounterChampion: selectedChampionStatsByEnemyChampion,
-        reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-        selectedChampion,
-      });
-    }
-
-    return buildCounterRowsFromRelationships({
-      championsByLookupKey,
-      direction: "countered-by",
-      matchStatisticsByCounterChampion,
-      relationships: counteredByRelationships,
-      reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
-      role: selectedRole,
-      selectedChampion,
-    });
   }, [
-    championsByLookupKey,
     champions,
     combatRelationshipsByChampion,
-    counteredByRelationships,
     guideAvailabilityState.reviewedGuideKeys,
-    hasRoleSpecificCounteredByPicks,
-    matchStatisticsByCounterChampion,
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
@@ -324,6 +276,29 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     () => [...bestCounterRows, ...counteredByRows],
     [bestCounterRows, counteredByRows],
   );
+  const bestCounterSampleSummary = useMemo(
+    () =>
+      getCounterPickListSampleSummary({
+        rows: bestCounterRows,
+        statisticsByChampion: matchStatisticsByCounterChampion,
+      }),
+    [bestCounterRows, matchStatisticsByCounterChampion],
+  );
+  const counteredBySampleSummary = useMemo(
+    () =>
+      getCounterPickListSampleSummary({
+        rows: counteredByRows,
+        statisticsByChampion: selectedChampionStatsByEnemyChampion,
+      }),
+    [counteredByRows, selectedChampionStatsByEnemyChampion],
+  );
+  const totalObservedMatchups =
+    bestCounterSampleSummary.observedCount + counteredBySampleSummary.observedCount;
+  const totalHiddenPreliminaryMatchups =
+    bestCounterSampleSummary.hiddenPreliminaryCount +
+    counteredBySampleSummary.hiddenPreliminaryCount;
+  const totalRankedMatchups =
+    bestCounterSampleSummary.rankedCount + counteredBySampleSummary.rankedCount;
   const guideAvailabilityRequestKey = useMemo(
     () =>
       allCounterRows
@@ -523,14 +498,21 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
           />
         ) : bestCounterRows.length === 0 && counteredByRows.length === 0 ? (
           <NoCounterPickDataState
+            hiddenPreliminaryCount={totalHiddenPreliminaryMatchups}
+            observedCount={totalObservedMatchups}
             selectedChampion={selectedChampion}
             selectedRole={selectedRole}
           />
         ) : (
           <div className="grid min-w-0 gap-8">
+            <CounterPickConfidenceSummary
+              hiddenPreliminaryCount={totalHiddenPreliminaryMatchups}
+              rankedCount={totalRankedMatchups}
+            />
             <div className="grid gap-5 lg:grid-cols-2">
               <CounterMatchupList
                 emptyText={`No reliable worst matchups are available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}.`}
+                hiddenPreliminaryCount={bestCounterSampleSummary.hiddenPreliminaryCount}
                 isExpanded={isBestCountersExpanded}
                 onExpandedChange={setIsBestCountersExpanded}
                 onSelect={handleCounterSelect}
@@ -543,6 +525,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
               />
               <CounterMatchupList
                 emptyText={`No reliable best matchups are available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}.`}
+                hiddenPreliminaryCount={counteredBySampleSummary.hiddenPreliminaryCount}
                 isExpanded={isCounteredByExpanded}
                 onExpandedChange={setIsCounteredByExpanded}
                 onSelect={handleCounterSelect}
@@ -717,8 +700,53 @@ function ChampionHero({
   );
 }
 
+function CounterPickConfidenceSummary({
+  hiddenPreliminaryCount,
+  rankedCount,
+}: {
+  hiddenPreliminaryCount: number;
+  rankedCount: number;
+}) {
+  return (
+    <section className="border-y border-cyan-300/15 bg-cyan-400/[0.035] px-4 py-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex gap-3">
+          <Info className="mt-0.5 size-5 shrink-0 text-cyan-200" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold text-cyan-50">
+              Showing {rankedCount} ranked matchup{rankedCount === 1 ? "" : "s"}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">
+              Confidence is based on stored Riot game count for now. Small samples can change
+              significantly as more matches are collected.
+            </p>
+            {hiddenPreliminaryCount > 0 ? (
+              <p className="mt-2 text-sm leading-6 text-amber-100">
+                {hiddenPreliminaryCount} preliminary matchup
+                {hiddenPreliminaryCount === 1 ? " is" : "s are"} hidden because fewer than{" "}
+                {publicCounterPickMinimumRankedGames} stored games are not enough to rank publicly.
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <details className="group shrink-0 text-sm text-zinc-300">
+          <summary className="cursor-pointer list-none font-semibold text-cyan-100 outline-none transition hover:text-cyan-50 focus-visible:ring-2 focus-visible:ring-cyan-300/40">
+            Confidence guide
+          </summary>
+          <div className="mt-3 max-w-md border border-white/10 bg-black/30 p-3 text-xs leading-5 text-zinc-400">
+            Confidence currently reflects how many stored Riot matches each result is based on.
+            It does not yet include unique-player spread, rank diversity, specialist share, or
+            patch freshness.
+          </div>
+        </details>
+      </div>
+    </section>
+  );
+}
+
 function CounterMatchupList({
   emptyText,
+  hiddenPreliminaryCount,
   isExpanded,
   onExpandedChange,
   onSelect,
@@ -730,6 +758,7 @@ function CounterMatchupList({
   totalRows,
 }: {
   emptyText: string;
+  hiddenPreliminaryCount: number;
   isExpanded: boolean;
   onExpandedChange: (value: boolean) => void;
   onSelect: (key: string) => void;
@@ -748,6 +777,13 @@ function CounterMatchupList({
             {title}
           </h2>
           <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+          <p className="mt-2 text-xs text-zinc-500">
+            Showing {totalRows} ranked matchups
+            {hiddenPreliminaryCount > 0
+              ? `; ${hiddenPreliminaryCount} additional matchup${hiddenPreliminaryCount === 1 ? "" : "s"} below the ${publicCounterPickMinimumRankedGames}-game public threshold`
+              : ""}
+            .
+          </p>
         </div>
         <span className="font-mono text-sm text-cyan-200">
           {Math.min(totalRows, maxVisibleCounterCount)}
@@ -799,7 +835,7 @@ function CounterMatchupRow({
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
   const isTrustedStatistics = isCounterPickStatisticsTrusted(row.stats);
-  const isLowSample = isLowSampleCounterPickStatistics(row.stats);
+  const confidenceWarning = getCounterPickConfidenceWarning(row.stats);
 
   return (
     <button
@@ -834,17 +870,16 @@ function CounterMatchupRow({
         <h3 className="truncate text-base font-semibold text-white">{championName}</h3>
         <p className="mt-1 text-xs text-zinc-500 md:hidden">
           {isTrustedStatistics
-            ? `${formatCounterPickWinRate(row.stats)} | ${formatCounterPickGames(row.stats)} | ${formatCounterPickTier(row.stats)}`
+            ? `${formatCounterPickWinRate(row.stats)} | ${formatCounterPickGames(row.stats)} | ${formatCounterPickTier(row.stats)} | ${row.stats.confidence.label}`
             : "Not enough data"}
         </p>
-        {isLowSample ? (
-          <p className="mt-1 text-xs text-amber-200/85">
-            Limited sample size - results may change.
-          </p>
+        {isTrustedStatistics ? <CounterPickConfidenceBadge statistics={row.stats} /> : null}
+        {confidenceWarning ? (
+          <p className="mt-1 text-xs text-amber-200/85">{confidenceWarning}</p>
         ) : null}
       </div>
 
-      <div className="hidden shrink-0 grid-cols-[5rem_6rem_4rem] items-center gap-3 text-right md:grid">
+      <div className="hidden shrink-0 grid-cols-[5rem_6rem_5rem_8rem] items-center gap-3 text-right md:grid">
         {isTrustedStatistics ? (
           <>
             <CounterMatchupRowStat
@@ -853,14 +888,13 @@ function CounterMatchupRow({
             />
             <CounterMatchupRowStat label="Games" value={formatCounterPickGames(row.stats)} />
             <CounterMatchupRowStat label="Tier" value={formatCounterPickTier(row.stats)} />
-            {isLowSample ? (
-              <p className="col-span-3 text-xs text-amber-200/85">
-                Based on {formatCounterPickGames(row.stats)}. Limited sample size.
-              </p>
+            <CounterMatchupRowStat label="Confidence" value={row.stats.confidence.shortLabel} />
+            {confidenceWarning ? (
+              <p className="col-span-4 text-xs text-amber-200/85">{confidenceWarning}</p>
             ) : null}
           </>
         ) : (
-          <p className="col-span-3 text-sm font-semibold text-zinc-500">Not enough data</p>
+          <p className="col-span-4 text-sm font-semibold text-zinc-500">Not enough data</p>
         )}
       </div>
 
@@ -932,6 +966,9 @@ function CounterPreparationSection({
   const buildGuide = selectedCounter.champion
     ? getCounterPickBuildGuide(selectedCounter.champion.id, selectedCounter.champion.name)
     : null;
+  const masteryRequirement = getChampionMasteryRequirement(
+    selectedCounter.champion ?? selectedCounter.fallbackName,
+  );
   const sectionItems: CounterPrepSectionItem[] = [
     {
       content: <CounterBuildPath buildPath={buildGuide?.build ?? null} />,
@@ -939,23 +976,20 @@ function CounterPreparationSection({
       title: `Build ${counterName}`,
     },
     {
-      content: <CounterBuildPath buildPath={buildGuide?.["alternative-build"] ?? null} />,
+      content: (
+        <CounterAlternativeBuildPath
+          behindBuildPath={selectedCounter.behindBuildPath}
+          buildGuide={buildGuide}
+          commonBuildPath={selectedCounter.commonBuildPath}
+        />
+      ),
       key: "alternative-build",
       title: "Alternative Build Path",
     },
     {
-      content: <CounterBuildPath buildPath={buildGuide?.["ad-heavy"] ?? null} />,
-      description:
-        "Consider building these items when facing multiple AD threats, strong physical damage dealers, or heavy auto-attack champions.",
-      key: "ad-heavy",
-      title: "Build vs Heavy AD",
-    },
-    {
-      content: <CounterBuildPath buildPath={buildGuide?.["ap-heavy"] ?? null} />,
-      description:
-        "Consider building these items when facing multiple AP threats, burst mages, or heavy magic damage compositions.",
-      key: "ap-heavy",
-      title: "Build vs Heavy AP",
+      content: <ChampionMasteryRequirementPanel masteryRequirement={masteryRequirement} />,
+      key: "mastery",
+      title: "Mastery Requirement",
     },
     {
       content: <PrepBulletList items={whyPrepNotes} />,
@@ -1072,9 +1106,12 @@ function MatchupSnapshotSidebar({
           <SnapshotStat label="Games" value={formatCounterPickGames(selectedCounter.stats)} />
           <SnapshotStat label="Tier" value={formatCounterPickTier(selectedCounter.stats)} />
         </div>
-        {isLowSampleCounterPickStatistics(selectedCounter.stats) ? (
+        <div className="mt-3">
+          <CounterPickConfidenceBadge statistics={selectedCounter.stats} />
+        </div>
+        {getCounterPickConfidenceWarning(selectedCounter.stats) ? (
           <p className="mt-3 border border-amber-300/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
-            Limited sample size - results may change as more matches are collected.
+            {getCounterPickConfidenceWarning(selectedCounter.stats)}
           </p>
         ) : null}
       </section>
@@ -1323,6 +1360,25 @@ function ChampionTile({
   );
 }
 
+function CounterPickConfidenceBadge({ statistics }: { statistics: CounterPickStatistics }) {
+  return (
+    <span
+      className={cn(
+        "mt-2 inline-flex w-fit items-center gap-1.5 border px-2 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em]",
+        statistics.confidence.warningVisible
+          ? "border-amber-300/25 bg-amber-400/10 text-amber-100"
+          : "border-cyan-300/20 bg-cyan-400/10 text-cyan-100",
+      )}
+      title={statistics.confidence.description}
+    >
+      {statistics.confidence.warningVisible ? (
+        <AlertTriangle className="size-3" aria-hidden="true" />
+      ) : null}
+      {formatCounterPickGames(statistics)} · {statistics.confidence.label}
+    </span>
+  );
+}
+
 function CounterPickTip({ champion }: { champion: LeagueChampion }) {
   return (
     <section className="relative overflow-hidden border-y border-white/10 py-5">
@@ -1544,17 +1600,23 @@ function formatCounterPickGames(statistics: CounterPickStatistics) {
 }
 
 function formatCounterPickTier(statistics: CounterPickStatistics) {
-  return isCounterPickStatisticsTrusted(statistics) && statistics.tier
-    ? `${statistics.tier} Tier`
-    : "Not enough data";
+  return getCounterPickPublicTierLabel(statistics);
 }
 
-function isLowSampleCounterPickStatistics(statistics: CounterPickStatistics) {
-  return (
-    statistics.games !== null &&
-    statistics.games > 0 &&
-    statistics.games < publicCounterPickLowSampleThreshold
-  );
+function getCounterPickConfidenceWarning(statistics: CounterPickStatistics) {
+  if (!isCounterPickStatisticsTrusted(statistics) || statistics.games === null) {
+    return null;
+  }
+
+  if (statistics.confidence.level === "very_low") {
+    return `Preliminary result - this matchup is based on only ${formatCounterPickGames(statistics)} and may change significantly.`;
+  }
+
+  if (statistics.confidence.level === "low") {
+    return `Limited sample size - this result is based on ${formatCounterPickGames(statistics)} and may still change.`;
+  }
+
+  return null;
 }
 
 function CounterPrepAccordionItem({
@@ -1623,12 +1685,128 @@ function FullMatchupGuideCallout({ href }: { href: string | null }) {
   );
 }
 
+function CounterAlternativeBuildPath({
+  behindBuildPath,
+  buildGuide,
+  commonBuildPath,
+}: {
+  behindBuildPath: StoredCounterPickBuildPath | null;
+  buildGuide: CounterPickBuildGuide | null;
+  commonBuildPath: StoredCounterPickBuildPath | null;
+}) {
+  const sections = getCounterPickAlternativeBuildSections({
+    behindBuildPath,
+    commonBuildPath,
+    guide: buildGuide,
+  });
+
+  if (sections.length === 0) {
+    return <BuildGuidancePlaceholder />;
+  }
+
+  return (
+    <div className="grid gap-5">
+      {sections.map((section) => (
+        <CounterAlternativeBuildSubsection key={section.key} section={section} />
+      ))}
+    </div>
+  );
+}
+
+function CounterAlternativeBuildSubsection({
+  section,
+}: {
+  section: CounterPickAlternativeBuildSection;
+}) {
+  return (
+    <section className="grid gap-3 border-y border-white/10 py-4">
+      <div>
+        <h3 className="font-mono text-sm font-semibold uppercase tracking-[0.14em] text-cyan-100">
+          {section.title}
+        </h3>
+        {section.description ? (
+          <p className="mt-2 text-sm leading-6 text-zinc-400">{section.description}</p>
+        ) : null}
+      </div>
+      <CounterBuildPathContent itemIds={section.itemIds} note={section.note} />
+    </section>
+  );
+}
+
+function ChampionMasteryRequirementPanel({
+  masteryRequirement,
+}: {
+  masteryRequirement: ChampionMasteryRequirement;
+}) {
+  const isDemanding =
+    masteryRequirement.level === "high" || masteryRequirement.level === "very_high";
+
+  return (
+    <div
+      className={cn(
+        "grid gap-4 border-y p-4",
+        isDemanding
+          ? "border-amber-300/20 bg-amber-400/10"
+          : "border-cyan-300/15 bg-cyan-400/[0.035]",
+      )}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-full border",
+              isDemanding
+                ? "border-amber-300/25 bg-black/20 text-amber-100"
+                : "border-cyan-300/20 bg-black/20 text-cyan-100",
+            )}
+          >
+            <ShieldCheck className="size-5" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-zinc-100">
+              Mastery Requirement: {masteryRequirement.label}
+            </p>
+            <p className="mt-1 text-xs uppercase tracking-[0.12em] text-zinc-500">
+              Champion familiarity guidance
+            </p>
+          </div>
+        </div>
+        <span
+          className={cn(
+            "w-fit border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+            isDemanding
+              ? "border-amber-300/30 bg-amber-400/10 text-amber-100"
+              : "border-cyan-300/25 bg-cyan-400/10 text-cyan-100",
+          )}
+        >
+          {masteryRequirement.label}
+        </span>
+      </div>
+      <div className="grid gap-3 text-sm leading-6 text-zinc-300">
+        {masteryRequirement.description.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CounterBuildPath({ buildPath }: { buildPath: CounterPickBuildPath | null }) {
   if (!buildPath) {
     return <BuildGuidancePlaceholder />;
   }
 
-  const items = buildPath.itemIds
+  return <CounterBuildPathContent itemIds={buildPath.itemIds} note={buildPath.note} />;
+}
+
+function CounterBuildPathContent({
+  itemIds,
+  note,
+}: {
+  itemIds: Array<LeagueItemMetadata["id"]>;
+  note: string;
+}) {
+  const items = itemIds
     .map((itemId) => getLeagueItemById(itemId))
     .filter((item): item is LeagueItemMetadata => Boolean(item));
 
@@ -1648,7 +1826,7 @@ function CounterBuildPath({ buildPath }: { buildPath: CounterPickBuildPath | nul
           </div>
         ))}
       </div>
-      <p className="max-w-3xl text-sm leading-6 text-zinc-300">{buildPath.note}</p>
+      {note ? <p className="max-w-3xl text-sm leading-6 text-zinc-300">{note}</p> : null}
     </div>
   );
 }
@@ -2188,79 +2366,60 @@ function CounterPickErrorState({
 }
 
 function NoCounterPickDataState({
+  hiddenPreliminaryCount,
+  observedCount,
   selectedChampion,
   selectedRole,
 }: {
+  hiddenPreliminaryCount: number;
+  observedCount: number;
   selectedChampion: LeagueChampion;
   selectedRole: LeagueRole;
 }) {
+  if (observedCount > 0) {
+    return (
+      <EmptyState
+        title="Not enough ranked data yet"
+        text={`We have started collecting matchup data for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}, but ${hiddenPreliminaryCount || observedCount} observed matchup${(hiddenPreliminaryCount || observedCount) === 1 ? "" : "s"} are still below the ${publicCounterPickMinimumRankedGames}-game public ranking threshold.`}
+      />
+    );
+  }
+
   return (
     <EmptyState
       title="No stored counter data yet"
-      text={`We do not have enough stored matchup data for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)} yet. More Riot match data is currently being collected.`}
+      text={`No stored matchup data is available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}. More Riot match data is currently being collected.`}
     />
   );
 }
 
-function buildCounterRowsFromRelationships({
-  championsByLookupKey,
-  direction,
-  matchStatisticsByCounterChampion,
-  relationships,
-  reviewedGuideKeys,
-  role,
-  selectedChampion,
+function getCounterPickListSampleSummary({
+  rows,
+  statisticsByChampion,
 }: {
-  championsByLookupKey: Map<string, LeagueChampion>;
-  direction: CounterDirection;
-  matchStatisticsByCounterChampion: Map<string, CounterPickStatistics>;
-  relationships?: readonly LeagueChampionCounterRelationship[];
-  reviewedGuideKeys: Set<string>;
-  role: LeagueRole;
-  selectedChampion: LeagueChampion | null;
-}) {
-  if (!selectedChampion || !relationships?.length) {
-    return [];
+  rows: CounterRowModel[];
+  statisticsByChampion: Map<string, CounterPickStatistics>;
+}): CounterPickListSampleSummary {
+  let hiddenPreliminaryCount = 0;
+  let observedCount = 0;
+
+  for (const statistics of statisticsByChampion.values()) {
+    if (!hasCounterPickStatistics(statistics)) {
+      continue;
+    }
+
+    observedCount += 1;
+
+    if (!isCounterPickStatisticsPubliclyRanked(statistics)) {
+      hiddenPreliminaryCount += 1;
+    }
   }
 
-  return sortCounterRows(
-    relationships.map((relationship) => {
-      const champion = resolveChampion(championsByLookupKey, relationship.champion);
-      const championName = champion?.name ?? relationship.champion;
-      const championA = champion;
-      const championB = selectedChampion;
-      const matchupHref =
-        championA && championB
-          ? getLeagueMatchupHref({
-              championA,
-              championB,
-              role,
-            })
-          : null;
-      const guideKey =
-        championA && championB ? getMatchupGuideKey(championA, championB, role) : null;
-      const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
-      const matchupLabel = `${championName} vs ${selectedChampion.name}`;
-
-      return {
-        champion,
-        direction,
-        fallbackName: relationship.champion,
-        guideKey,
-        href,
-        key: `${direction}-${normalizeChampionLookupKey(relationship.champion)}`,
-        matchupHref,
-        matchupLabel,
-        reasons: dedupePrepBullets(relationship.reasons),
-        stats: getCachedCounterPickStatistics({
-          champion,
-          fallbackName: relationship.champion,
-          statisticsByCounterChampion: matchStatisticsByCounterChampion,
-        }),
-      } satisfies CounterRowModel;
-    }),
-    direction,
-  );
+  return {
+    hiddenPreliminaryCount,
+    observedCount,
+    rankedCount: rows.length,
+  };
 }
 
 function buildCounterRowsFromStatistics({
@@ -2315,6 +2474,10 @@ function buildCounterRowsFromStatistics({
       continue;
     }
 
+    if (!isCounterPickStatisticsPubliclyRanked(statistics)) {
+      continue;
+    }
+
     const reviewedCounterPick = reviewedCounterPickByChampion.get(
       normalizeChampionLookupKey(champion.id),
     );
@@ -2330,7 +2493,9 @@ function buildCounterRowsFromStatistics({
     const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
 
     rows.push({
+      behindBuildPath: reviewedCounterPick?.behind_build_path ?? null,
       champion,
+      commonBuildPath: reviewedCounterPick?.common_build_vs ?? null,
       direction,
       fallbackName: champion.name,
       guideKey,
@@ -2356,75 +2521,6 @@ function getVisibleCounterRows({
   rows: CounterRowModel[];
 }) {
   return rows.slice(0, isExpanded ? maxVisibleCounterCount : defaultVisibleCounterCount);
-}
-
-function buildCounterRowsFromCounterPicks({
-  championsByLookupKey,
-  combatRelationshipsByChampion,
-  counterPicks,
-  direction,
-  matchStatisticsByCounterChampion,
-  reviewedGuideKeys,
-  selectedChampion,
-}: {
-  championsByLookupKey: Map<string, LeagueChampion>;
-  combatRelationshipsByChampion: Map<string, LeagueChampionCounterRelationship>;
-  counterPicks: LeagueCounterPick[];
-  direction: CounterDirection;
-  matchStatisticsByCounterChampion: Map<string, CounterPickStatistics>;
-  reviewedGuideKeys: Set<string>;
-  selectedChampion: LeagueChampion | null;
-}) {
-  if (!selectedChampion) {
-    return [];
-  }
-
-  const counterType = direction === "best-counter" ? "best_counter" : "countered_by";
-
-  return sortCounterRows(
-    counterPicks
-    .filter((counterPick) => counterPick.counter_type === counterType)
-    .map((counterPick) => {
-      const champion = resolveChampion(championsByLookupKey, counterPick.counter_champion_id);
-      const championName = champion?.name ?? counterPick.counter_champion_id;
-      const combatRelationship = combatRelationshipsByChampion.get(
-        normalizeChampionLookupKey(counterPick.counter_champion_id),
-      );
-      const championA = champion;
-      const championB = selectedChampion;
-      const matchupHref =
-        championA && championB
-          ? getLeagueMatchupHref({
-              championA,
-              championB,
-              role: counterPick.role,
-            })
-          : null;
-      const guideKey =
-        championA && championB ? getMatchupGuideKey(championA, championB, counterPick.role) : null;
-      const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
-      const matchupLabel = `${championName} vs ${selectedChampion.name}`;
-
-      return {
-        champion,
-        direction,
-        fallbackName: championName,
-        guideKey,
-        href,
-        key: `${direction}-${normalizeChampionLookupKey(counterPick.counter_champion_id)}-${counterPick.id}`,
-        matchupHref,
-        matchupLabel,
-        reasons: buildCounterPickReasonList(counterPick, combatRelationship),
-        stats: getCachedCounterPickStatistics({
-          champion,
-          fallbackName: counterPick.counter_champion_id,
-          fallbackStatistics: getCounterPickStatisticsFromCounterPick(counterPick),
-          statisticsByCounterChampion: matchStatisticsByCounterChampion,
-        }),
-      } satisfies CounterRowModel;
-    }),
-    direction,
-  );
 }
 
 function buildCombatRelationshipLookup(
@@ -2554,32 +2650,6 @@ function parseMatchupGuideKey(guideKey: string) {
     championBId,
     role: role as LeagueRole,
   };
-}
-
-function buildChampionLookup(champions: LeagueChampion[]) {
-  const lookup = new Map<string, LeagueChampion>();
-
-  for (const champion of champions) {
-    for (const key of [
-      champion.id,
-      champion.name,
-      champion.riot_data_key ?? "",
-      champion.slug ?? "",
-      slugifyChampionName(champion.name),
-    ]) {
-      const normalizedKey = normalizeChampionLookupKey(key);
-
-      if (normalizedKey) {
-        lookup.set(normalizedKey, champion);
-      }
-    }
-  }
-
-  return lookup;
-}
-
-function resolveChampion(lookup: Map<string, LeagueChampion>, championNameOrId: string) {
-  return lookup.get(normalizeChampionLookupKey(championNameOrId)) ?? null;
 }
 
 function normalizeChampionLookupKey(value: string) {

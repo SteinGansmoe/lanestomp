@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 const optionsModule = await import("../src/features/league/public-counter-pick-options.ts");
 const statisticsModule = await import("../src/features/league/counter-pick-statistics.ts");
+const confidenceModule = await import("../src/features/league/counter-pick-confidence.ts");
 
 const {
   getPublicCounterPickChampionSearchText,
@@ -12,6 +13,7 @@ const {
   isCounterPickStatisticsTrusted,
   publicCounterPickLowSampleThreshold,
 } = statisticsModule;
+const { calculateCounterPickConfidence } = confidenceModule;
 
 const championRows = [
   champion("Ahri", "Ahri", "the Nine-Tailed Fox", ["Mage", "Assassin"], true),
@@ -105,6 +107,7 @@ function champion(id, name, title, tags, isActive) {
 function stat({ games, tier = "B", winRate }) {
   return {
     games,
+    confidence: calculateCounterPickConfidence(games),
     lastUpdatedAt: "2026-06-15T00:00:00.000Z",
     patch: "15.12",
     rankFilter: "all",

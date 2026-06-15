@@ -10,8 +10,10 @@ import {
   type CounterPickStatistics,
   type CounterPickStatisticsTier,
   minimumTrustedCounterPickGames,
-  publicCounterPickLowSampleThreshold,
 } from "@/src/features/league/counter-pick-statistics";
+import {
+  calculateCounterPickConfidence,
+} from "@/src/features/league/counter-pick-confidence";
 import type { LeagueRole } from "@/src/features/league/roles";
 
 export type CounterPickStatsConfidence = "high" | "low" | "medium" | "not_enough_data";
@@ -342,6 +344,7 @@ function getCounterPickStatisticsFromProviderStats(
   stats: CounterPickMatchupStats,
 ): CounterPickStatistics {
   return {
+    confidence: calculateCounterPickConfidence(stats.games),
     games: stats.games,
     lastUpdatedAt: stats.lastUpdatedAt,
     patch: stats.patch,
@@ -376,23 +379,21 @@ function getNotEnoughDataCounterPickStats({
 }
 
 function getCounterPickStatsConfidence(games: number): CounterPickStatsConfidence {
-  if (games <= 0) {
+  const confidence = calculateCounterPickConfidence(games);
+
+  if (confidence.level === "insufficient") {
     return "not_enough_data";
   }
 
-  if (games < publicCounterPickLowSampleThreshold) {
-    return "low";
+  if (confidence.level === "strong") {
+    return "high";
   }
 
-  if (games < 500) {
-    return "low";
-  }
-
-  if (games < 1000) {
+  if (confidence.level === "moderate") {
     return "medium";
   }
 
-  return "high";
+  return "low";
 }
 
 function getCounterPickStatsKey({

@@ -1,14 +1,37 @@
-import { type LeagueItemMetadata } from "@/src/features/league/items";
+export type CounterPickBuildItemId = number;
 
 export type CounterPickBuildPathKey = "ad-heavy" | "alternative-build" | "ap-heavy" | "build";
 
 export type CounterPickBuildPath = {
-  itemIds: Array<LeagueItemMetadata["id"]>;
+  itemIds: CounterPickBuildItemId[];
   key: CounterPickBuildPathKey;
   note: string;
 };
 
 export type CounterPickBuildGuide = Record<CounterPickBuildPathKey, CounterPickBuildPath>;
+export type CounterPickStoredBuildPath = Record<string, unknown>;
+export type CounterPickAlternativeBuildSectionKey =
+  | "ad-heavy"
+  | "alternative-build"
+  | "ap-heavy"
+  | "behind"
+  | "common"
+  | "survivability";
+
+export type CounterPickAlternativeBuildSection = {
+  description?: string;
+  itemIds: CounterPickBuildItemId[];
+  key: CounterPickAlternativeBuildSectionKey;
+  note: string;
+  title: string;
+};
+
+export type CounterPickAlternativeBuildSectionsInput = {
+  behindBuildPath?: CounterPickStoredBuildPath | null;
+  commonBuildPath?: CounterPickStoredBuildPath | null;
+  guide?: CounterPickBuildGuide | null;
+  survivabilityBuildPath?: CounterPickStoredBuildPath | null;
+};
 
 const counterPickBuildGuides: Record<string, CounterPickBuildGuide> = {
   fiora: {
@@ -87,6 +110,160 @@ export function getCounterPickBuildGuide(championId: string, championName?: stri
       : null) ??
     null
   );
+}
+
+export function getCounterPickAlternativeBuildSections({
+  behindBuildPath = null,
+  commonBuildPath = null,
+  guide = null,
+  survivabilityBuildPath = null,
+}: CounterPickAlternativeBuildSectionsInput): CounterPickAlternativeBuildSection[] {
+  const sections = [
+    getCounterPickAlternativeBuildSectionFromStoredPath({
+      buildPath: commonBuildPath,
+      key: "common",
+      title: "Against this matchup",
+    }),
+    getCounterPickAlternativeBuildSectionFromStaticPath({
+      buildPath: guide?.["alternative-build"] ?? null,
+      key: "alternative-build",
+      title: "Flexible alternative",
+    }),
+    getCounterPickAlternativeBuildSectionFromStaticPath({
+      buildPath: guide?.["ad-heavy"] ?? null,
+      description:
+        "Consider this when facing multiple AD threats, strong physical damage dealers, or heavy auto-attack champions.",
+      key: "ad-heavy",
+      title: "Against heavy AD",
+    }),
+    getCounterPickAlternativeBuildSectionFromStaticPath({
+      buildPath: guide?.["ap-heavy"] ?? null,
+      description:
+        "Consider this when facing multiple AP threats, burst mages, or heavy magic damage compositions.",
+      key: "ap-heavy",
+      title: "Against heavy AP",
+    }),
+    getCounterPickAlternativeBuildSectionFromStoredPath({
+      buildPath: behindBuildPath,
+      key: "behind",
+      title: "When behind",
+    }),
+    getCounterPickAlternativeBuildSectionFromStoredPath({
+      buildPath: survivabilityBuildPath,
+      key: "survivability",
+      title: "When early survivability is needed",
+    }),
+  ].filter((section): section is CounterPickAlternativeBuildSection => Boolean(section));
+  const seenItemPaths = new Set<string>();
+  const uniqueSections: CounterPickAlternativeBuildSection[] = [];
+
+  for (const section of sections) {
+    const itemPathKey = section.itemIds.join(">");
+
+    if (seenItemPaths.has(itemPathKey)) {
+      continue;
+    }
+
+    seenItemPaths.add(itemPathKey);
+    uniqueSections.push(section);
+  }
+
+  return uniqueSections;
+}
+
+function getCounterPickAlternativeBuildSectionFromStaticPath({
+  buildPath,
+  description,
+  key,
+  title,
+}: {
+  buildPath: CounterPickBuildPath | null;
+  description?: string;
+  key: CounterPickAlternativeBuildSectionKey;
+  title: string;
+}) {
+  if (!buildPath || buildPath.itemIds.length === 0) {
+    return null;
+  }
+
+  return {
+    description,
+    itemIds: buildPath.itemIds,
+    key,
+    note: buildPath.note,
+    title,
+  } satisfies CounterPickAlternativeBuildSection;
+}
+
+function getCounterPickAlternativeBuildSectionFromStoredPath({
+  buildPath,
+  key,
+  title,
+}: {
+  buildPath: CounterPickStoredBuildPath | null;
+  key: CounterPickAlternativeBuildSectionKey;
+  title: string;
+}) {
+  if (!buildPath) {
+    return null;
+  }
+
+  const itemIds = getStoredCounterPickBuildItemIds(buildPath);
+  const note = getStoredCounterPickBuildNote(buildPath);
+
+  if (itemIds.length === 0) {
+    return null;
+  }
+
+  return {
+    itemIds,
+    key,
+    note,
+    title,
+  } satisfies CounterPickAlternativeBuildSection;
+}
+
+function getStoredCounterPickBuildItemIds(buildPath: CounterPickStoredBuildPath) {
+  const rawItemIds = buildPath.itemIds ?? buildPath.item_ids ?? buildPath.items;
+
+  if (!Array.isArray(rawItemIds)) {
+    return [];
+  }
+
+  return rawItemIds
+    .map((item) => {
+      if (typeof item === "number") {
+        return item;
+      }
+
+      if (typeof item === "string") {
+        const parsedItemId = Number.parseInt(item, 10);
+
+        return Number.isFinite(parsedItemId) ? parsedItemId : null;
+      }
+
+      if (item && typeof item === "object" && "id" in item) {
+        const parsedItemId =
+          typeof item.id === "number" ? item.id : Number.parseInt(String(item.id), 10);
+
+        return Number.isFinite(parsedItemId) ? parsedItemId : null;
+      }
+
+      return null;
+    })
+    .filter((itemId): itemId is CounterPickBuildItemId => itemId !== null);
+}
+
+function getStoredCounterPickBuildNote(buildPath: CounterPickStoredBuildPath) {
+  for (const key of ["note", "description", "reason", "summary"]) {
+    const value = buildPath[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return "";
 }
 
 function normalizeCounterPickBuildLookupKey(value: string) {
