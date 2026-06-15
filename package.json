@@ -7,6 +7,7 @@
     "build": "next build",
     "import:lol-champions": "node scripts/import-lol-champions.mjs",
     "scan:league-fallbacks": "node scripts/scan-league-matchup-fallbacks.mjs",
+    "test:sitemap-slugs": "node --experimental-strip-types scripts/validate-sitemap-matchup-slugs.mjs",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write ."

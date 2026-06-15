@@ -1,4 +1,5 @@
-import { getChampionSlug, type LeagueChampion } from "@/src/features/league/champions";
+import type { LeagueChampion } from "@/src/features/league/champions";
+import { getLeagueMatchupPath } from "@/src/features/league/matchup-route-core";
 import type { LeagueRole } from "@/src/features/league/roles";
 
 type MatchupRouteChampion = Pick<LeagueChampion, "id" | "name">;
@@ -12,5 +13,5 @@ export function getLeagueMatchupHref({
   championB: MatchupRouteChampion;
   role: LeagueRole;
 }) {
-  return `/league/matchups/${getChampionSlug(championA)}-vs-${getChampionSlug(championB)}?role=${role}`;
+  return getLeagueMatchupPath({ championA, championB, role });
 }

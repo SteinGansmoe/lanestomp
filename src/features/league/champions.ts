@@ -1,4 +1,10 @@
 import { supabase } from "@/src/lib/supabase";
+import { getChampionSlug } from "@/src/features/league/matchup-route-core";
+
+export {
+  getChampionSlug,
+  slugifyChampionName,
+} from "@/src/features/league/matchup-route-core";
 
 export type LeagueChampion = {
   id: string;
@@ -42,23 +48,10 @@ export async function getLeagueChampions(): Promise<LeagueChampionsResult> {
   };
 }
 
-export function getChampionSlug(champion: Pick<LeagueChampion, "name">) {
-  return slugifyChampionName(champion.name);
-}
-
 export function getChampionSplashUrl(champion: Pick<LeagueChampion, "id">) {
   return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`;
 }
 
 export function findChampionBySlug(champions: LeagueChampion[], slug: string) {
   return champions.find((champion) => getChampionSlug(champion) === slug) ?? null;
-}
-
-export function slugifyChampionName(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
