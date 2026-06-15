@@ -37,13 +37,7 @@ export const counterPickStatisticsTierThresholds: CounterPickStatisticsTierThres
 ];
 
 export const minimumTrustedCounterPickGames = 100;
-
-const counterPickStatisticsConfidenceSortValues = {
-  high: 3,
-  medium: 2,
-  low: 1,
-  low_sample: 0,
-} as const satisfies Record<CounterPickSampleConfidence, number>;
+export const publicCounterPickLowSampleThreshold = 20;
 
 const counterPickStatisticsTierSortValues = {
   "S+": 5,
@@ -111,7 +105,7 @@ export function getCounterPickStatisticsFromMatchStatistic(
 }
 
 export function getCounterPickSampleConfidence(games: number | null) {
-  if (games === null || games < minimumTrustedCounterPickGames) {
+  if (games === null || games < publicCounterPickLowSampleThreshold) {
     return "low_sample";
   }
 
@@ -155,11 +149,7 @@ export function hasCounterPickStatistics(statistics: CounterPickStatistics) {
 }
 
 export function isCounterPickStatisticsTrusted(statistics: CounterPickStatistics) {
-  return (
-    statistics.winRate !== null &&
-    statistics.games !== null &&
-    statistics.games >= minimumTrustedCounterPickGames
-  );
+  return statistics.winRate !== null && statistics.games !== null;
 }
 
 export function compareCounterPickStatistics(
@@ -169,28 +159,27 @@ export function compareCounterPickStatistics(
 ) {
   const isLeftTrusted = isCounterPickStatisticsTrusted(left);
   const isRightTrusted = isCounterPickStatisticsTrusted(right);
-  const confidenceSort =
-    getCounterPickStatisticsConfidenceSortValue(right) -
-    getCounterPickStatisticsConfidenceSortValue(left);
-
-  if (confidenceSort !== 0) {
-    return confidenceSort;
-  }
 
   if (isLeftTrusted && isRightTrusted) {
+    const leftWinRate = left.winRate ?? 0;
+    const rightWinRate = right.winRate ?? 0;
+
+    if (leftWinRate !== rightWinRate) {
+      return direction === "desc" ? rightWinRate - leftWinRate : leftWinRate - rightWinRate;
+    }
+
+    const gamesSort = (right.games ?? 0) - (left.games ?? 0);
+
+    if (gamesSort !== 0) {
+      return gamesSort;
+    }
+
     const leftTier = getCounterPickStatisticsTierSortValue(left);
     const rightTier = getCounterPickStatisticsTierSortValue(right);
     const tierSort = direction === "desc" ? rightTier - leftTier : leftTier - rightTier;
 
     if (tierSort !== 0) {
       return tierSort;
-    }
-
-    const leftWinRate = left.winRate ?? 0;
-    const rightWinRate = right.winRate ?? 0;
-
-    if (leftWinRate !== rightWinRate) {
-      return direction === "desc" ? rightWinRate - leftWinRate : leftWinRate - rightWinRate;
     }
   }
 
@@ -203,16 +192,6 @@ export function compareCounterPickStatistics(
   }
 
   return (right.games ?? 0) - (left.games ?? 0);
-}
-
-function getCounterPickStatisticsConfidenceSortValue(statistics: CounterPickStatistics) {
-  if (!isCounterPickStatisticsTrusted(statistics)) {
-    return counterPickStatisticsConfidenceSortValues.low_sample;
-  }
-
-  return statistics.sampleConfidence
-    ? counterPickStatisticsConfidenceSortValues[statistics.sampleConfidence]
-    : counterPickStatisticsConfidenceSortValues.low;
 }
 
 function getCounterPickStatisticsTierSortValue(statistics: CounterPickStatistics) {

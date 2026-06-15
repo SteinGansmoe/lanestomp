@@ -12,6 +12,7 @@ export type CounterPickStat = {
   id: number;
   losses: number;
   patch: string;
+  rank_bracket: string;
   role: LeagueRole;
   tier: CounterPickStatTier;
   updated_at: string;
@@ -25,6 +26,7 @@ export type CounterPickStatRowInput = {
   games: number;
   losses?: number | null;
   patch: string;
+  rankBracket?: string | null;
   role: LeagueRole;
   tier?: CounterPickStatTier | null;
   winRate?: number | null;
@@ -47,7 +49,12 @@ type FetchCounterPickStatsInput = {
   client?: CounterPickStatsClient | null;
   enemyChampionId: string;
   patch?: string | null;
+  rankBracket?: string;
   role: LeagueRole;
+};
+
+type FetchCounterPickStatsByCounterInput = Omit<FetchCounterPickStatsInput, "enemyChampionId"> & {
+  counterChampionId: string;
 };
 
 type FetchCounterPickStatInput = FetchCounterPickStatsInput & {
@@ -74,6 +81,7 @@ const counterPickStatSelect = [
   "id",
   "losses",
   "patch",
+  "rank_bracket",
   "role",
   "tier",
   "updated_at",
@@ -96,6 +104,7 @@ export async function fetchCounterPickStatsByEnemyAndRole({
   client = supabase,
   enemyChampionId,
   patch = null,
+  rankBracket = "all",
   role,
 }: FetchCounterPickStatsInput): Promise<CounterPickStatsResult> {
   if (!client) {
@@ -109,6 +118,7 @@ export async function fetchCounterPickStatsByEnemyAndRole({
     .from("counter_pick_stats")
     .select(counterPickStatSelect)
     .eq("enemy_champion_id", enemyChampionId)
+    .eq("rank_bracket", rankBracket)
     .eq("role", role)
     .order("patch", { ascending: false })
     .order("games", { ascending: false });
@@ -132,6 +142,48 @@ export async function fetchCounterPickStatsByEnemyAndRole({
   };
 }
 
+export async function fetchCounterPickStatsByCounterAndRole({
+  client = supabase,
+  counterChampionId,
+  patch = null,
+  rankBracket = "all",
+  role,
+}: FetchCounterPickStatsByCounterInput): Promise<CounterPickStatsResult> {
+  if (!client) {
+    return {
+      error: missingSupabaseConfigMessage,
+      stats: [],
+    };
+  }
+
+  let query = client
+    .from("counter_pick_stats")
+    .select(counterPickStatSelect)
+    .eq("counter_champion_id", counterChampionId)
+    .eq("rank_bracket", rankBracket)
+    .eq("role", role)
+    .order("patch", { ascending: false })
+    .order("games", { ascending: false });
+
+  if (patch) {
+    query = query.eq("patch", patch);
+  }
+
+  const { data, error } = await query.returns<CounterPickStat[]>();
+
+  if (error) {
+    return {
+      error: error.message,
+      stats: [],
+    };
+  }
+
+  return {
+    error: null,
+    stats: keepNewestCounterPickStatPerEnemy(data ?? []),
+  };
+}
+
 export async function fetchCounterPickStat({
   client = supabase,
   counterChampionId,
@@ -151,6 +203,7 @@ export async function fetchCounterPickStat({
     .select(counterPickStatSelect)
     .eq("enemy_champion_id", enemyChampionId)
     .eq("counter_champion_id", counterChampionId)
+    .eq("rank_bracket", "all")
     .eq("role", role)
     .order("patch", { ascending: false })
     .limit(1);
@@ -202,13 +255,14 @@ export async function upsertCounterPickStat({
         games,
         losses,
         patch: stat.patch,
+        rank_bracket: stat.rankBracket ?? "all",
         role: stat.role,
         tier,
         win_rate: winRate,
         wins,
       },
       {
-        onConflict: "enemy_champion_id,counter_champion_id,role,patch",
+        onConflict: "enemy_champion_id,counter_champion_id,role,patch,rank_bracket",
       },
     )
     .select(counterPickStatSelect)
@@ -265,6 +319,18 @@ function keepNewestCounterPickStatPerCounter(stats: CounterPickStat[]) {
   }
 
   return Array.from(statsByCounterChampion.values());
+}
+
+function keepNewestCounterPickStatPerEnemy(stats: CounterPickStat[]) {
+  const statsByEnemyChampion = new Map<string, CounterPickStat>();
+
+  for (const stat of stats) {
+    if (!statsByEnemyChampion.has(stat.enemy_champion_id)) {
+      statsByEnemyChampion.set(stat.enemy_champion_id, stat);
+    }
+  }
+
+  return Array.from(statsByEnemyChampion.values());
 }
 
 function clampCount(value: number) {

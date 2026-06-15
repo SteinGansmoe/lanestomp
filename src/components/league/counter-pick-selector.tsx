@@ -23,12 +23,14 @@ import {
   fetchReviewedCounterPicksByChampionAndRole,
   type LeagueCounterPick,
 } from "@/src/features/league/counter-picks";
-import { fetchCounterPickStatsForEnemy } from "@/src/features/league/counter-pick-statistics-provider";
+import { fetchCounterPickStatsForSelectedChampion } from "@/src/features/league/counter-pick-statistics-provider";
 import {
   compareCounterPickStatistics,
   emptyCounterPickStatistics,
   getCounterPickStatisticsFromCounterPick,
+  hasCounterPickStatistics,
   isCounterPickStatisticsTrusted,
+  publicCounterPickLowSampleThreshold,
   type CounterPickStatistics,
 } from "@/src/features/league/counter-pick-statistics";
 import {
@@ -52,6 +54,10 @@ import {
 } from "@/src/features/league/champion-knowledge";
 import { getLeagueItemById, type LeagueItemMetadata } from "@/src/features/league/items";
 import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
+import {
+  matchesPublicCounterPickChampionSearch,
+  normalizePublicCounterPickSearchValue,
+} from "@/src/features/league/public-counter-pick-options";
 import { getLeagueRoleLabel, type LeagueRole } from "@/src/features/league/roles";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
@@ -101,6 +107,8 @@ type GuideAvailabilityState = {
 
 type MatchStatisticsState = {
   error: string | null;
+  isLoading: boolean;
+  selectedChampionStatsByEnemyChampion: Map<string, CounterPickStatistics>;
   statisticsByCounterChampion: Map<string, CounterPickStatistics>;
 };
 
@@ -115,6 +123,8 @@ const emptyGuideAvailabilityState: GuideAvailabilityState = {
 
 const emptyMatchStatisticsState: MatchStatisticsState = {
   error: null,
+  isLoading: false,
+  selectedChampionStatsByEnemyChampion: new Map(),
   statisticsByCounterChampion: new Map(),
 };
 
@@ -134,6 +144,7 @@ const roleOptions = [
   label: string;
   value: LeagueRole;
 }>;
+type ChampionSelectorRoleFilter = LeagueRole | "all";
 
 export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   const [selectedChampionId, setSelectedChampionId] = useState<string | null>(
@@ -145,7 +156,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   );
   const [selectedRole, setSelectedRole] = useState<LeagueRole>("mid");
   const [selectorQuery, setSelectorQuery] = useState("");
-  const [selectorRole, setSelectorRole] = useState<LeagueRole>("mid");
+  const [selectorRole, setSelectorRole] = useState<ChampionSelectorRoleFilter>("all");
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [selectedCounterKey, setSelectedCounterKey] = useState<string | null>(null);
@@ -173,15 +184,20 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     selectedChampionRoles[0] ??
     selectedRole;
   const selectableChampions = useMemo(() => {
-    const normalizedQuery = selectorQuery.trim().toLowerCase();
+    const normalizedQuery = normalizePublicCounterPickSearchValue(selectorQuery);
 
     if (normalizedQuery) {
       return champions.filter((champion) =>
-        [champion.name, champion.title, champion.tags.join(" ")]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery),
+        matchesPublicCounterPickChampionSearch(
+          champion,
+          normalizedQuery,
+          getChampionRoles(champion).map(getLeagueRoleLabel),
+        ),
       );
+    }
+
+    if (selectorRole === "all") {
+      return [...champions].sort((left, right) => left.name.localeCompare(right.name));
     }
 
     return sortChampionsForRole(
@@ -197,6 +213,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
   );
   const reviewedCounterPicks = reviewedCounterPickState.counterPicks;
   const matchStatisticsByCounterChampion = matchStatisticsState.statisticsByCounterChampion;
+  const selectedChampionStatsByEnemyChampion =
+    matchStatisticsState.selectedChampionStatsByEnemyChampion;
   const hasRoleSpecificBestCounterPicks = reviewedCounterPicks.some(
     (counterPick) => counterPick.counter_type === "best_counter",
   );
@@ -204,6 +222,21 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     (counterPick) => counterPick.counter_type === "countered_by",
   );
   const bestCounterRows = useMemo(() => {
+    const statRows = buildCounterRowsFromStatistics({
+      champions,
+      combatRelationshipsByChampion,
+      direction: "best-counter",
+      reviewedCounterPicks,
+      reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
+      role: selectedRole,
+      selectedChampion,
+      statisticsByChampion: matchStatisticsByCounterChampion,
+    });
+
+    if (statRows.length > 0) {
+      return statRows;
+    }
+
     if (hasRoleSpecificBestCounterPicks) {
       return buildCounterRowsFromCounterPicks({
         championsByLookupKey,
@@ -227,6 +260,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     });
   }, [
     bestCounterRelationships,
+    champions,
     championsByLookupKey,
     combatRelationshipsByChampion,
     guideAvailabilityState.reviewedGuideKeys,
@@ -237,13 +271,28 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     selectedRole,
   ]);
   const counteredByRows = useMemo(() => {
+    const statRows = buildCounterRowsFromStatistics({
+      champions,
+      combatRelationshipsByChampion,
+      direction: "countered-by",
+      reviewedCounterPicks,
+      reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
+      role: selectedRole,
+      selectedChampion,
+      statisticsByChampion: selectedChampionStatsByEnemyChampion,
+    });
+
+    if (statRows.length > 0) {
+      return statRows;
+    }
+
     if (hasRoleSpecificCounteredByPicks) {
       return buildCounterRowsFromCounterPicks({
         championsByLookupKey,
         combatRelationshipsByChampion,
         counterPicks: reviewedCounterPicks,
         direction: "countered-by",
-        matchStatisticsByCounterChampion,
+        matchStatisticsByCounterChampion: selectedChampionStatsByEnemyChampion,
         reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
         selectedChampion,
       });
@@ -260,6 +309,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     });
   }, [
     championsByLookupKey,
+    champions,
     combatRelationshipsByChampion,
     counteredByRelationships,
     guideAvailabilityState.reviewedGuideKeys,
@@ -268,6 +318,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
+    selectedChampionStatsByEnemyChampion,
   ]);
   const allCounterRows = useMemo(
     () => [...bestCounterRows, ...counteredByRows],
@@ -316,7 +367,12 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
         return;
       }
 
-      const result = await fetchCounterPickStatsForEnemy({
+      setMatchStatisticsState({
+        ...emptyMatchStatisticsState,
+        isLoading: true,
+      });
+
+      const result = await fetchCounterPickStatsForSelectedChampion({
         enemyChampion: selectedChampion.id,
         role: selectedRole,
       });
@@ -327,6 +383,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
 
       setMatchStatisticsState({
         error: result.error,
+        isLoading: false,
+        selectedChampionStatsByEnemyChampion: result.selectedChampionStatsByEnemyChampion,
         statisticsByCounterChampion: result.statisticsByCounterChampion,
       });
     }
@@ -455,35 +513,43 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
             title="Choose a champion"
             text="Select a champion and role to start building the counter-pick picture."
           />
+        ) : matchStatisticsState.isLoading ? (
+          <CounterPickLoadingState selectedChampion={selectedChampion} selectedRole={selectedRole} />
+        ) : matchStatisticsState.error ? (
+          <CounterPickErrorState
+            error={matchStatisticsState.error}
+            selectedChampion={selectedChampion}
+            selectedRole={selectedRole}
+          />
         ) : bestCounterRows.length === 0 && counteredByRows.length === 0 ? (
-          <EmptyState
-            title="No counter data yet"
-            text="No counter data available yet for this champion."
+          <NoCounterPickDataState
+            selectedChampion={selectedChampion}
+            selectedRole={selectedRole}
           />
         ) : (
           <div className="grid min-w-0 gap-8">
             <div className="grid gap-5 lg:grid-cols-2">
               <CounterMatchupList
-                emptyText={`No champions are listed as counters into ${selectedChampion.name} yet.`}
+                emptyText={`No reliable worst matchups are available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}.`}
                 isExpanded={isBestCountersExpanded}
                 onExpandedChange={setIsBestCountersExpanded}
                 onSelect={handleCounterSelect}
                 rows={visibleBestCounterRows}
                 selectedKey={selectedCounter?.key ?? null}
                 showToggle={bestCounterRows.length > defaultVisibleCounterCount}
-                subtitle={`Champions that perform well into ${selectedChampion.name}`}
+                subtitle={`Strong enemy counters into ${selectedChampion.name}`}
                 title="Best Counters"
                 totalRows={bestCounterRows.length}
               />
               <CounterMatchupList
-                emptyText={`No risky picks into ${selectedChampion.name} are listed yet.`}
+                emptyText={`No reliable best matchups are available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}.`}
                 isExpanded={isCounteredByExpanded}
                 onExpandedChange={setIsCounteredByExpanded}
                 onSelect={handleCounterSelect}
                 rows={visibleCounteredByRows}
                 selectedKey={selectedCounter?.key ?? null}
                 showToggle={counteredByRows.length > defaultVisibleCounterCount}
-                subtitle={`Champions that struggle when picked into ${selectedChampion.name}`}
+                subtitle={`Champions ${selectedChampion.name} performs well into`}
                 title={`Bad Into ${selectedChampion.name}`}
                 totalRows={counteredByRows.length}
               />
@@ -733,6 +799,7 @@ function CounterMatchupRow({
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
   const isTrustedStatistics = isCounterPickStatisticsTrusted(row.stats);
+  const isLowSample = isLowSampleCounterPickStatistics(row.stats);
 
   return (
     <button
@@ -770,6 +837,11 @@ function CounterMatchupRow({
             ? `${formatCounterPickWinRate(row.stats)} | ${formatCounterPickGames(row.stats)} | ${formatCounterPickTier(row.stats)}`
             : "Not enough data"}
         </p>
+        {isLowSample ? (
+          <p className="mt-1 text-xs text-amber-200/85">
+            Limited sample size - results may change.
+          </p>
+        ) : null}
       </div>
 
       <div className="hidden shrink-0 grid-cols-[5rem_6rem_4rem] items-center gap-3 text-right md:grid">
@@ -781,6 +853,11 @@ function CounterMatchupRow({
             />
             <CounterMatchupRowStat label="Games" value={formatCounterPickGames(row.stats)} />
             <CounterMatchupRowStat label="Tier" value={formatCounterPickTier(row.stats)} />
+            {isLowSample ? (
+              <p className="col-span-3 text-xs text-amber-200/85">
+                Based on {formatCounterPickGames(row.stats)}. Limited sample size.
+              </p>
+            ) : null}
           </>
         ) : (
           <p className="col-span-3 text-sm font-semibold text-zinc-500">Not enough data</p>
@@ -995,6 +1072,11 @@ function MatchupSnapshotSidebar({
           <SnapshotStat label="Games" value={formatCounterPickGames(selectedCounter.stats)} />
           <SnapshotStat label="Tier" value={formatCounterPickTier(selectedCounter.stats)} />
         </div>
+        {isLowSampleCounterPickStatistics(selectedCounter.stats) ? (
+          <p className="mt-3 border border-amber-300/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
+            Limited sample size - results may change as more matches are collected.
+          </p>
+        ) : null}
       </section>
 
       <ReservedAdContainer />
@@ -1053,10 +1135,10 @@ function ChampionSelectorOverlay({
   onClose: () => void;
   onIncludeOffMetaChange: (value: boolean) => void;
   onQueryChange: (value: string) => void;
-  onRoleChange: (role: LeagueRole) => void;
+  onRoleChange: (role: ChampionSelectorRoleFilter) => void;
   query: string;
   selectedChampionId: string | null;
-  selectedRole: LeagueRole;
+  selectedRole: ChampionSelectorRoleFilter;
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm">
@@ -1135,11 +1217,26 @@ function RoleSelector({
   onChange,
   selectedRole,
 }: {
-  onChange: (role: LeagueRole) => void;
-  selectedRole: LeagueRole;
+  onChange: (role: ChampionSelectorRoleFilter) => void;
+  selectedRole: ChampionSelectorRoleFilter;
 }) {
   return (
     <div aria-label="Role filter" className="flex flex-wrap gap-2" role="radiogroup">
+      <button
+        aria-checked={selectedRole === "all"}
+        aria-label="All roles"
+        className={cn(
+          "flex h-10 min-w-10 items-center justify-center rounded-md border border-white/10 bg-black/25 px-3 text-xs font-semibold text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+          selectedRole === "all" &&
+            "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 ring-1 ring-cyan-300/25",
+        )}
+        onClick={() => onChange("all")}
+        role="radio"
+        title="All roles"
+        type="button"
+      >
+        All
+      </button>
       {roleOptions.map((option) => {
         const isActive = selectedRole === option.value;
 
@@ -1181,6 +1278,10 @@ function ChampionTile({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const championRoles = getChampionRoles(champion).filter((role) =>
+    roleOptions.some((option) => option.value === role),
+  );
+
   return (
     <button
       aria-label={`Select ${champion.name}`}
@@ -1206,6 +1307,18 @@ function ChampionTile({
       <span className="absolute bottom-1 left-1 right-1 truncate rounded bg-black/70 px-1.5 py-0.5 text-[0.65rem] font-medium text-white opacity-0 transition group-hover:opacity-100">
         {champion.name}
       </span>
+      {championRoles.length > 0 ? (
+        <span className="absolute left-1 top-1 flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1">
+          {championRoles.slice(0, 2).map((role) => (
+            <span
+              className="rounded bg-black/70 px-1 py-0.5 text-[0.55rem] font-semibold uppercase text-cyan-100"
+              key={role}
+            >
+              {getShortRoleLabel(role)}
+            </span>
+          ))}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -1434,6 +1547,14 @@ function formatCounterPickTier(statistics: CounterPickStatistics) {
   return isCounterPickStatisticsTrusted(statistics) && statistics.tier
     ? `${statistics.tier} Tier`
     : "Not enough data";
+}
+
+function isLowSampleCounterPickStatistics(statistics: CounterPickStatistics) {
+  return (
+    statistics.games !== null &&
+    statistics.games > 0 &&
+    statistics.games < publicCounterPickLowSampleThreshold
+  );
 }
 
 function CounterPrepAccordionItem({
@@ -2000,6 +2121,10 @@ function formatChampionClassLabel(label: string) {
     .join(" ");
 }
 
+function getShortRoleLabel(role: LeagueRole) {
+  return role === "jungle" ? "JGL" : role === "support" ? "SUP" : getLeagueRoleLabel(role);
+}
+
 function EmptyState({ text, title }: { text: string; title: string }) {
   return (
     <div className="border-y border-dashed border-white/10 py-12 text-center">
@@ -2008,6 +2133,72 @@ function EmptyState({ text, title }: { text: string; title: string }) {
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-zinc-400">{text}</p>
     </div>
+  );
+}
+
+function CounterPickLoadingState({
+  selectedChampion,
+  selectedRole,
+}: {
+  selectedChampion: LeagueChampion;
+  selectedRole: LeagueRole;
+}) {
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      {[0, 1].map((index) => (
+        <section className="min-w-0 border-y border-white/10 py-4" key={index}>
+          <div className="mb-3 h-6 w-44 bg-white/10" />
+          <div className="grid gap-2">
+            {[0, 1, 2].map((rowIndex) => (
+              <div className="h-[4.625rem] animate-pulse border border-white/10 bg-white/[0.035]" key={rowIndex} />
+            ))}
+          </div>
+        </section>
+      ))}
+      <p className="lg:col-span-2 text-center text-sm text-zinc-500">
+        Loading stored matchup data for {selectedChampion.name} {getLeagueRoleLabel(selectedRole)}.
+      </p>
+    </div>
+  );
+}
+
+function CounterPickErrorState({
+  error,
+  selectedChampion,
+  selectedRole,
+}: {
+  error: string;
+  selectedChampion: LeagueChampion;
+  selectedRole: LeagueRole;
+}) {
+  return (
+    <div className="border-y border-rose-300/20 bg-rose-500/10 py-10 text-center">
+      <h2 className="font-mono text-2xl font-semibold uppercase tracking-normal text-rose-100">
+        Counter data could not load
+      </h2>
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-rose-100/80">
+        We could not load stored matchup data for {selectedChampion.name}{" "}
+        {getLeagueRoleLabel(selectedRole)}. Refresh the page or try another role.
+      </p>
+      <p className="mx-auto mt-4 max-w-2xl break-words border border-white/10 bg-black/20 p-3 font-mono text-xs text-rose-50">
+        {error}
+      </p>
+    </div>
+  );
+}
+
+function NoCounterPickDataState({
+  selectedChampion,
+  selectedRole,
+}: {
+  selectedChampion: LeagueChampion;
+  selectedRole: LeagueRole;
+}) {
+  return (
+    <EmptyState
+      title="No stored counter data yet"
+      text={`We do not have enough stored matchup data for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)} yet. More Riot match data is currently being collected.`}
+    />
   );
 }
 
@@ -2070,6 +2261,91 @@ function buildCounterRowsFromRelationships({
     }),
     direction,
   );
+}
+
+function buildCounterRowsFromStatistics({
+  champions,
+  combatRelationshipsByChampion,
+  direction,
+  reviewedCounterPicks,
+  reviewedGuideKeys,
+  role,
+  selectedChampion,
+  statisticsByChampion,
+}: {
+  champions: LeagueChampion[];
+  combatRelationshipsByChampion: Map<string, LeagueChampionCounterRelationship>;
+  direction: CounterDirection;
+  reviewedCounterPicks: LeagueCounterPick[];
+  reviewedGuideKeys: Set<string>;
+  role: LeagueRole;
+  selectedChampion: LeagueChampion | null;
+  statisticsByChampion: Map<string, CounterPickStatistics>;
+}) {
+  if (!selectedChampion || statisticsByChampion.size === 0) {
+    return [];
+  }
+
+  const reviewedCounterPickByChampion = new Map(
+    reviewedCounterPicks
+      .filter((counterPick) =>
+        direction === "best-counter"
+          ? counterPick.counter_type === "best_counter"
+          : counterPick.counter_type === "countered_by",
+      )
+      .map((counterPick) => [
+        normalizeChampionLookupKey(counterPick.counter_champion_id),
+        counterPick,
+      ]),
+  );
+  const rows: CounterRowModel[] = [];
+
+  for (const champion of champions) {
+    if (champion.id === selectedChampion.id) {
+      continue;
+    }
+
+    const statistics = getCachedCounterPickStatistics({
+      champion,
+      fallbackName: champion.id,
+      statisticsByCounterChampion: statisticsByChampion,
+    });
+
+    if (!hasCounterPickStatistics(statistics)) {
+      continue;
+    }
+
+    const reviewedCounterPick = reviewedCounterPickByChampion.get(
+      normalizeChampionLookupKey(champion.id),
+    );
+    const combatRelationship = combatRelationshipsByChampion.get(
+      normalizeChampionLookupKey(champion.id),
+    );
+    const matchupHref = getLeagueMatchupHref({
+      championA: champion,
+      championB: selectedChampion,
+      role,
+    });
+    const guideKey = getMatchupGuideKey(champion, selectedChampion, role);
+    const href = guideKey && reviewedGuideKeys.has(guideKey) ? matchupHref : null;
+
+    rows.push({
+      champion,
+      direction,
+      fallbackName: champion.name,
+      guideKey,
+      href,
+      key: `${direction}-stats-${champion.id}`,
+      matchupHref,
+      matchupLabel: `${champion.name} vs ${selectedChampion.name}`,
+      reasons: reviewedCounterPick
+        ? buildCounterPickReasonList(reviewedCounterPick, combatRelationship)
+        : dedupePrepBullets(combatRelationship?.reasons ?? []),
+      stats: statistics,
+    });
+  }
+
+  return sortCounterRows(rows, direction);
 }
 
 function getVisibleCounterRows({
@@ -2190,7 +2466,7 @@ function getCachedCounterPickStatistics({
 }
 
 function sortCounterRows(rows: CounterRowModel[], direction: CounterDirection) {
-  const statisticDirection = direction === "best-counter" ? "desc" : "asc";
+  const statisticDirection = direction === "best-counter" ? "asc" : "desc";
 
   return [...rows].sort((left, right) => {
     const statisticsSort = compareCounterPickStatistics(
@@ -2284,9 +2560,19 @@ function buildChampionLookup(champions: LeagueChampion[]) {
   const lookup = new Map<string, LeagueChampion>();
 
   for (const champion of champions) {
-    lookup.set(normalizeChampionLookupKey(champion.id), champion);
-    lookup.set(normalizeChampionLookupKey(champion.name), champion);
-    lookup.set(normalizeChampionLookupKey(slugifyChampionName(champion.name)), champion);
+    for (const key of [
+      champion.id,
+      champion.name,
+      champion.riot_data_key ?? "",
+      champion.slug ?? "",
+      slugifyChampionName(champion.name),
+    ]) {
+      const normalizedKey = normalizeChampionLookupKey(key);
+
+      if (normalizedKey) {
+        lookup.set(normalizedKey, champion);
+      }
+    }
   }
 
   return lookup;

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   calculateCounterPickStatTier,
+  fetchCounterPickStatsByCounterAndRole,
   fetchCounterPickStatsByEnemyAndRole,
   type CounterPickStat,
 } from "@/src/features/league/counter-pick-stats";
@@ -9,6 +10,7 @@ import {
   type CounterPickStatistics,
   type CounterPickStatisticsTier,
   minimumTrustedCounterPickGames,
+  publicCounterPickLowSampleThreshold,
 } from "@/src/features/league/counter-pick-statistics";
 import type { LeagueRole } from "@/src/features/league/roles";
 
@@ -45,6 +47,7 @@ type FetchCounterPickStatsInput = {
 
 type CounterPickStatsResult = {
   error: string | null;
+  selectedChampionStatsByEnemyChampion: Map<string, CounterPickStatistics>;
   statisticsByCounterChampion: Map<string, CounterPickStatistics>;
 };
 
@@ -150,44 +153,59 @@ export async function fetchCounterPickStatsForEnemy({
   role,
 }: FetchCounterPickStatsInput): Promise<CounterPickStatsResult> {
   const statisticsByCounterChampion = new Map<string, CounterPickStatistics>();
-  const result = await fetchCounterPickStatsByEnemyAndRole({
-    client,
-    enemyChampionId: enemyChampion,
-    patch,
-    role,
-  });
+  const selectedChampionStatsByEnemyChampion = new Map<string, CounterPickStatistics>();
+  const [counteredByResult, selectedCountersResult] = await Promise.all([
+    fetchCounterPickStatsByEnemyAndRole({
+      client,
+      enemyChampionId: enemyChampion,
+      patch,
+      rankBracket: "all",
+      role,
+    }),
+    fetchCounterPickStatsByCounterAndRole({
+      client,
+      counterChampionId: enemyChampion,
+      patch,
+      rankBracket: "all",
+      role,
+    }),
+  ]);
 
-  for (const stat of result.stats) {
+  for (const stat of counteredByResult.stats) {
     statisticsByCounterChampion.set(
       normalizeCounterPickStatsKey(stat.counter_champion_id),
+      getCounterPickStatisticsFromProviderStats(
+        getSelectedChampionStatisticsFromCounteredByStoredStat(stat),
+      ),
+    );
+  }
+
+  for (const stat of selectedCountersResult.stats) {
+    selectedChampionStatsByEnemyChampion.set(
+      normalizeCounterPickStatsKey(stat.enemy_champion_id),
       getCounterPickStatisticsFromProviderStats(getCounterPickStatsFromStoredStat(stat)),
     );
   }
 
-  for (const stats of mockCounterPickStats) {
-    if (
-      normalizeCounterPickStatsKey(stats.enemyChampion) !==
-        normalizeCounterPickStatsKey(enemyChampion) ||
-      stats.role !== role ||
-      (patch && stats.patch !== patch)
-    ) {
-      continue;
-    }
-
-    const counterChampionKey = normalizeCounterPickStatsKey(stats.counterChampion);
-
-    if (!statisticsByCounterChampion.has(counterChampionKey)) {
-      statisticsByCounterChampion.set(
-        counterChampionKey,
-        getCounterPickStatisticsFromProviderStats(stats),
-      );
-    }
-  }
-
   return {
-    error: result.error,
+    error: counteredByResult.error ?? selectedCountersResult.error,
+    selectedChampionStatsByEnemyChampion,
     statisticsByCounterChampion,
   };
+}
+
+export async function fetchCounterPickStatsForSelectedChampion({
+  client,
+  enemyChampion,
+  patch = null,
+  role,
+}: FetchCounterPickStatsInput): Promise<CounterPickStatsResult> {
+  return fetchCounterPickStatsForEnemy({
+    client,
+    enemyChampion,
+    patch,
+    role,
+  });
 }
 
 export function getCounterPickStats({
@@ -298,6 +316,28 @@ function getCounterPickStatsFromStoredStat(
   };
 }
 
+function getSelectedChampionStatisticsFromCounteredByStoredStat(
+  stat: CounterPickStat,
+): CounterPickMatchupStats {
+  const selectedChampionWins = stat.losses;
+  const selectedChampionWinRate =
+    stat.games > 0 ? Number((100 - Number(stat.win_rate)).toFixed(2)) : 0;
+  const confidence = getCounterPickStatsConfidence(stat.games);
+
+  return {
+    confidence,
+    counterChampion: stat.enemy_champion_id,
+    enemyChampion: stat.counter_champion_id,
+    games: stat.games,
+    lastUpdatedAt: stat.updated_at,
+    patch: stat.patch,
+    role: stat.role,
+    tier: stat.tier,
+    winRate: selectedChampionWinRate,
+    wins: selectedChampionWins,
+  };
+}
+
 function getCounterPickStatisticsFromProviderStats(
   stats: CounterPickMatchupStats,
 ): CounterPickStatistics {
@@ -336,8 +376,12 @@ function getNotEnoughDataCounterPickStats({
 }
 
 function getCounterPickStatsConfidence(games: number): CounterPickStatsConfidence {
-  if (games < minimumTrustedCounterPickGames) {
+  if (games <= 0) {
     return "not_enough_data";
+  }
+
+  if (games < publicCounterPickLowSampleThreshold) {
+    return "low";
   }
 
   if (games < 500) {
