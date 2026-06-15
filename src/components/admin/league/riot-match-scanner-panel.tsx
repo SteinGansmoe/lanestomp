@@ -6,6 +6,7 @@ import {
   getRecentRiotScanJobs,
   getRiotSeedCandidates,
   getRiotScanJob,
+  refreshRiotSeedCandidateRanks,
   resolveRiotIdsToPuuids,
   startRiotScanJob,
   type LeagueChampionRegistryAdminStatusResult,
@@ -16,6 +17,7 @@ import { Input } from "@/src/components/ui/input";
 import type {
   RiotIdResolverRow,
   RiotSeedCandidateFilters,
+  RiotSeedCandidateRankEnrichmentStatus,
   RiotSeedCandidateSort,
   RiotSeedCandidateSource,
   RiotSeedCandidateStatus,
@@ -36,7 +38,9 @@ const maxMatchCount = 50;
 const maxDisplayedResults = 100;
 const maxRiotIdsPerBatch = 20;
 const maxSeedCandidatesPerScan = 20;
+const maxSeedCandidateRankRefreshBatch = 20;
 const recentSeedCandidateScanHours = 24;
+const recentSeedCandidateRankRefreshHours = 24;
 const seedCandidateStatuses: Array<RiotSeedCandidateStatus | "all"> = [
   "all",
   "candidate",
@@ -47,6 +51,30 @@ const seedCandidateStatuses: Array<RiotSeedCandidateStatus | "all"> = [
   "ignored",
   "failed",
 ];
+const seedCandidateRankStatuses: Array<RiotSeedCandidateRankEnrichmentStatus | "all"> = [
+  "all",
+  "pending",
+  "queued",
+  "running",
+  "ranked",
+  "unranked",
+  "not_found",
+  "rate_limited",
+  "failed",
+];
+const seedCandidateRankTiers = [
+  "all",
+  "CHALLENGER",
+  "GRANDMASTER",
+  "MASTER",
+  "DIAMOND",
+  "EMERALD",
+  "PLATINUM",
+  "GOLD",
+  "SILVER",
+  "BRONZE",
+  "IRON",
+] as const;
 const seedCandidateSources: Array<RiotSeedCandidateSource | "all"> = [
   "all",
   "match_discovery",
@@ -63,6 +91,8 @@ const seedCandidateSorts: Array<{
   { label: "Last scanned", value: "last_scanned_at" },
   { label: "Primary role share", value: "primary_role_share" },
   { label: "Primary champion share", value: "primary_champion_share" },
+  { label: "Rank tier", value: "rank_tier" },
+  { label: "Rank refreshed", value: "rank_last_success_at" },
   { label: "Created", value: "created_at" },
 ];
 const seedCandidateLastScannedFilters: Array<{
@@ -73,6 +103,15 @@ const seedCandidateLastScannedFilters: Array<{
   { label: "Never scanned", value: "never" },
   { label: "Scanned within 24h", value: "recent" },
   { label: "Not scanned within 24h", value: "older" },
+];
+const seedCandidateRankRefreshFilters: Array<{
+  label: string;
+  value: NonNullable<RiotSeedCandidateFilters["rankLastRefreshed"]>;
+}> = [
+  { label: "All", value: "all" },
+  { label: "Never refreshed", value: "never" },
+  { label: "Refreshed within 24h", value: "recent" },
+  { label: "Not refreshed within 24h", value: "older" },
 ];
 type LeagueChampionRegistryStatus = Extract<
   LeagueChampionRegistryAdminStatusResult,
@@ -1001,6 +1040,13 @@ function RiotSeedCandidatesPanel({
   const [platformRegion, setPlatformRegion] = useState("EUW1");
   const [statusFilter, setStatusFilter] = useState<RiotSeedCandidateStatus | "all">("all");
   const [sourceFilter, setSourceFilter] = useState<RiotSeedCandidateSource | "all">("all");
+  const [rankStatusFilter, setRankStatusFilter] =
+    useState<RiotSeedCandidateRankEnrichmentStatus | "all">("all");
+  const [rankTierFilter, setRankTierFilter] = useState<(typeof seedCandidateRankTiers)[number]>(
+    "all",
+  );
+  const [rankedStateFilter, setRankedStateFilter] =
+    useState<NonNullable<RiotSeedCandidateFilters["rankedState"]>>("all");
   const [primaryRoleFilter, setPrimaryRoleFilter] = useState<LeagueRole | "all">("all");
   const [primaryChampionFilter, setPrimaryChampionFilter] = useState("");
   const [minimumObservedGames, setMinimumObservedGames] = useState("");
@@ -1008,6 +1054,8 @@ function RiotSeedCandidatesPanel({
   const [minimumPrimaryChampionShare, setMinimumPrimaryChampionShare] = useState("");
   const [lastScannedFilter, setLastScannedFilter] =
     useState<NonNullable<RiotSeedCandidateFilters["lastScanned"]>>("all");
+  const [rankLastRefreshedFilter, setRankLastRefreshedFilter] =
+    useState<NonNullable<RiotSeedCandidateFilters["rankLastRefreshed"]>>("all");
   const [sort, setSort] = useState<RiotSeedCandidateSort>("observed_games");
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(() => new Set());
   const [showScanPanel, setShowScanPanel] = useState(false);
@@ -1032,6 +1080,9 @@ function RiotSeedCandidatesPanel({
   );
   const selectedRecentScanCount = selectedCandidates.filter((candidate) =>
     wasCandidateScannedRecently(candidate.last_scanned_at),
+  ).length;
+  const selectedRecentRankRefreshCount = selectedCandidates.filter((candidate) =>
+    wasCandidateRankRefreshedRecently(candidate.rank_last_success_at),
   ).length;
   const allVisibleSelected =
     candidates.length > 0 &&
@@ -1060,6 +1111,10 @@ function RiotSeedCandidatesPanel({
       platformRegion,
       primaryChampion: primaryChampionFilter,
       primaryRole: primaryRoleFilter,
+      rankLastRefreshed: rankLastRefreshedFilter,
+      rankedState: rankedStateFilter,
+      rankStatus: rankStatusFilter,
+      rankTier: rankTierFilter,
       source: sourceFilter,
       status: statusFilter,
     };
@@ -1161,6 +1216,68 @@ function RiotSeedCandidatesPanel({
           ? `${addedCount} seed ${addedCount === 1 ? "candidate" : "candidates"} added to the scanner.`
           : "Selected candidates were already in the scanner.",
     });
+  }
+
+  async function refreshCandidateRank(candidateId: string) {
+    await refreshCandidateRanks([candidateId], true);
+  }
+
+  async function refreshSelectedRanks() {
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    if (selectedCandidates.length > maxSeedCandidateRankRefreshBatch) {
+      setStatus({
+        error: `Refresh rank for up to ${maxSeedCandidateRankRefreshBatch} candidates at a time.`,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await refreshCandidateRanks(
+      selectedCandidates.map((candidate) => candidate.id),
+      true,
+    );
+  }
+
+  async function refreshCandidateRanks(candidateIds: string[], force: boolean) {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await refreshRiotSeedCandidateRanks({
+      accessToken: tokenResult.accessToken,
+      candidateIds,
+      force,
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: [
+        `${result.total} rank ${result.total === 1 ? "refresh" : "refreshes"} completed.`,
+        `${result.rankedCount} ranked`,
+        `${result.unrankedCount} unranked`,
+        result.skippedCount > 0 ? `${result.skippedCount} skipped by cooldown` : null,
+        result.failedCount > 0 ? `${result.failedCount} failed` : null,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    });
+    await loadCandidates();
   }
 
   function openSelectedScanPanel() {
@@ -1358,6 +1475,65 @@ function RiotSeedCandidatesPanel({
           </label>
 
           <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Rank status</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setRankStatusFilter(
+                  event.target.value as RiotSeedCandidateRankEnrichmentStatus | "all",
+                )
+              }
+              value={rankStatusFilter}
+            >
+              {seedCandidateRankStatuses.map((rankStatus) => (
+                <option className={selectOptionClassName} key={rankStatus} value={rankStatus}>
+                  {formatEnumLabel(rankStatus)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Rank tier</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setRankTierFilter(event.target.value as (typeof seedCandidateRankTiers)[number])
+              }
+              value={rankTierFilter}
+            >
+              {seedCandidateRankTiers.map((rankTier) => (
+                <option className={selectOptionClassName} key={rankTier} value={rankTier}>
+                  {rankTier === "all" ? "All" : formatEnumLabel(rankTier)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Ranked state</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setRankedStateFilter(
+                  event.target.value as NonNullable<RiotSeedCandidateFilters["rankedState"]>,
+                )
+              }
+              value={rankedStateFilter}
+            >
+              <option className={selectOptionClassName} value="all">
+                All
+              </option>
+              <option className={selectOptionClassName} value="ranked">
+                Ranked
+              </option>
+              <option className={selectOptionClassName} value="unranked">
+                Unranked
+              </option>
+            </select>
+          </label>
+
+          <label className="block space-y-2">
             <span className="text-sm text-zinc-300">Primary role</span>
             <select
               className={`${fieldClassName} h-10`}
@@ -1430,6 +1606,25 @@ function RiotSeedCandidatesPanel({
               value={lastScannedFilter}
             >
               {seedCandidateLastScannedFilters.map((filter) => (
+                <option className={selectOptionClassName} key={filter.value} value={filter.value}>
+                  {filter.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Rank refreshed</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setRankLastRefreshedFilter(
+                  event.target.value as NonNullable<RiotSeedCandidateFilters["rankLastRefreshed"]>,
+                )
+              }
+              value={rankLastRefreshedFilter}
+            >
+              {seedCandidateRankRefreshFilters.map((filter) => (
                 <option className={selectOptionClassName} key={filter.value} value={filter.value}>
                   {filter.label}
                 </option>
@@ -1518,6 +1713,21 @@ function RiotSeedCandidatesPanel({
               Add selected to scanner
             </Button>
             <Button
+              className="border-amber-300/20 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
+              disabled={status.isLoading || selectedCandidates.length === 0}
+              onClick={() => void refreshSelectedRanks()}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              {status.isLoading ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+              )}
+              Refresh rank for selected
+            </Button>
+            <Button
               className="bg-violet-500/80 text-white hover:bg-violet-500"
               disabled={selectedCandidates.length === 0}
               onClick={openSelectedScanPanel}
@@ -1542,6 +1752,14 @@ function RiotSeedCandidatesPanel({
             {selectedRecentScanCount} selected{" "}
             {selectedRecentScanCount === 1 ? "candidate was" : "candidates were"} scanned within the
             last {recentSeedCandidateScanHours} hours.
+          </p>
+        ) : null}
+
+        {selectedRecentRankRefreshCount > 0 ? (
+          <p className="rounded-md border border-amber-400/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {selectedRecentRankRefreshCount} selected{" "}
+            {selectedRecentRankRefreshCount === 1 ? "candidate was" : "candidates were"} rank
+            refreshed within the last {recentSeedCandidateRankRefreshHours} hours.
           </p>
         ) : null}
 
@@ -1714,6 +1932,7 @@ function RiotSeedCandidatesPanel({
                 expanded={expandedCandidateId === candidate.id}
                 key={candidate.id}
                 onCopy={() => void copyPuuid(candidate.puuid)}
+                onRefreshRank={() => void refreshCandidateRank(candidate.id)}
                 onSelectionChange={() => toggleCandidateSelection(candidate.id)}
                 onToggle={() =>
                   setExpandedCandidateId((currentId) =>
@@ -1735,6 +1954,7 @@ function SeedCandidateRow({
   championDisplayNamesById,
   expanded,
   onCopy,
+  onRefreshRank,
   onSelectionChange,
   onToggle,
   selected,
@@ -1743,6 +1963,7 @@ function SeedCandidateRow({
   championDisplayNamesById: Map<string, string>;
   expanded: boolean;
   onCopy: () => void;
+  onRefreshRank: () => void;
   onSelectionChange: () => void;
   onToggle: () => void;
   selected: boolean;
@@ -1760,7 +1981,7 @@ function SeedCandidateRow({
           <span className="sr-only">Select candidate</span>
         </label>
         <button
-          className="grid min-w-0 flex-1 gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
+          className="grid min-w-0 flex-1 gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.65fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
           onClick={onToggle}
           type="button"
         >
@@ -1775,6 +1996,10 @@ function SeedCandidateRow({
           <span>
             <span className="block text-xs uppercase tracking-wide text-zinc-500">Status</span>
             <span className="font-semibold text-zinc-100">{formatEnumLabel(candidate.status)}</span>
+          </span>
+          <span>
+            <span className="block text-xs uppercase tracking-wide text-zinc-500">Rank</span>
+            <span className="font-semibold text-zinc-100">{formatCandidateRank(candidate)}</span>
           </span>
           <span>
             <span className="block text-xs uppercase tracking-wide text-zinc-500">Role</span>
@@ -1823,6 +2048,16 @@ function SeedCandidateRow({
               <Clipboard className="size-3.5" aria-hidden="true" />
               Copy PUUID
             </Button>
+            <Button
+              className="border-amber-300/20 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
+              onClick={onRefreshRank}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <RefreshCw className="size-3.5" aria-hidden="true" />
+              Refresh rank
+            </Button>
           </div>
 
           <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-4">
@@ -1838,6 +2073,17 @@ function SeedCandidateRow({
             <Metric label="Successful scans" value={candidate.successful_scan_count} />
             <Metric label="Failed scans" value={candidate.failed_scan_count} />
             <Metric label="Consecutive failures" value={candidate.consecutive_scan_failures} />
+            <Metric label="Rank status" value={formatEnumLabel(candidate.rank_enrichment_status)} />
+            <Metric label="Rank" value={formatCandidateRank(candidate)} />
+            <Metric label="Rank win rate" value={formatPercent(candidate.rank_win_rate)} />
+            <Metric label="Rank record" value={formatRankRecord(candidate)} />
+            <Metric label="Rank refreshed" value={formatDateTime(candidate.rank_last_success_at)} />
+            <Metric
+              label="Rank next eligible"
+              value={formatDateTime(candidate.rank_next_eligible_at)}
+            />
+            <Metric label="Rank attempts" value={candidate.rank_enrichment_attempts} />
+            <Metric label="Rank failures" value={candidate.rank_enrichment_failures} />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -2733,6 +2979,36 @@ function formatPercent(value: number | null | undefined) {
   return `${Math.round(value * 100)}%`;
 }
 
+function formatCandidateRank(candidate: RiotSeedCandidateView) {
+  if (candidate.rank_enrichment_status === "unranked") {
+    return "Unranked";
+  }
+
+  if (candidate.rank_enrichment_status === "not_found") {
+    return "Not found";
+  }
+
+  if (!candidate.rank_tier) {
+    return formatEnumLabel(candidate.rank_enrichment_status ?? "pending");
+  }
+
+  return [
+    formatEnumLabel(candidate.rank_tier),
+    candidate.rank_division,
+    typeof candidate.rank_league_points === "number" ? `${candidate.rank_league_points} LP` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function formatRankRecord(candidate: RiotSeedCandidateView) {
+  if (typeof candidate.rank_wins !== "number" || typeof candidate.rank_losses !== "number") {
+    return "Pending";
+  }
+
+  return `${candidate.rank_wins}W ${candidate.rank_losses}L`;
+}
+
 function formatEnumLabel(value: string) {
   return value
     .split("_")
@@ -2765,5 +3041,18 @@ function wasCandidateScannedRecently(value: string | null | undefined) {
   return (
     Number.isFinite(timestamp) &&
     Date.now() - timestamp < recentSeedCandidateScanHours * 60 * 60 * 1000
+  );
+}
+
+function wasCandidateRankRefreshedRecently(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const timestamp = new Date(value).getTime();
+
+  return (
+    Number.isFinite(timestamp) &&
+    Date.now() - timestamp < recentSeedCandidateRankRefreshHours * 60 * 60 * 1000
   );
 }

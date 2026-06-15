@@ -137,6 +137,16 @@ export type RiotSeedCandidateStatus =
   | "ignored"
   | "queued";
 
+export type RiotSeedCandidateRankEnrichmentStatus =
+  | "failed"
+  | "not_found"
+  | "pending"
+  | "queued"
+  | "ranked"
+  | "rate_limited"
+  | "running"
+  | "unranked";
+
 export type RiotSeedCandidateTopChampion = {
   champion: string;
   games: number;
@@ -180,6 +190,26 @@ export type RiotSeedCandidateView = {
   primary_champion_share: number | null;
   primary_role_share: number | null;
   puuid: string;
+  rank_division: string | null;
+  rank_enrichment_attempts: number;
+  rank_enrichment_error_code: string | null;
+  rank_enrichment_error_message: string | null;
+  rank_enrichment_failures: number;
+  rank_enrichment_status: RiotSeedCandidateRankEnrichmentStatus;
+  rank_fresh_blood: boolean | null;
+  rank_hot_streak: boolean | null;
+  rank_inactive: boolean | null;
+  rank_last_attempted_at: string | null;
+  rank_last_success_at: string | null;
+  rank_league_points: number | null;
+  rank_losses: number | null;
+  rank_next_eligible_at: string | null;
+  rank_queue_type: string | null;
+  rank_tier: string | null;
+  rank_veteran: boolean | null;
+  rank_win_rate: number | null;
+  rank_wins: number | null;
+  ranked_at: string | null;
   regional_routing: string;
   role_distribution: RiotSeedCandidateRoleDistribution;
   secondary_role_share: number | null;
@@ -198,6 +228,10 @@ export type RiotSeedCandidateFilters = {
   platformRegion?: string;
   primaryChampion?: string;
   primaryRole?: LeagueRole | "all";
+  rankLastRefreshed?: "all" | "never" | "recent" | "older";
+  rankedState?: "all" | "ranked" | "unranked";
+  rankStatus?: RiotSeedCandidateRankEnrichmentStatus | "all";
+  rankTier?: string | "all";
   source?: RiotSeedCandidateSource | "all";
   status?: RiotSeedCandidateStatus | "all";
 };
@@ -208,12 +242,37 @@ export type RiotSeedCandidateSort =
   | "last_seen_at"
   | "observed_games"
   | "primary_champion_share"
-  | "primary_role_share";
+  | "primary_role_share"
+  | "rank_last_success_at"
+  | "rank_tier";
 
 export type RiotSeedCandidatesResult =
   | {
       candidates: RiotSeedCandidateView[];
       ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type RiotSeedCandidateRankRefreshInput = {
+  accessToken: string;
+  candidateIds: string[];
+  force?: boolean;
+};
+
+export type RiotSeedCandidateRankRefreshResult =
+  | {
+      failedCount: number;
+      notFoundCount: number;
+      ok: true;
+      rankedCount: number;
+      rateLimitedCount: number;
+      skippedCount: number;
+      snapshotInsertedCount: number;
+      total: number;
+      unrankedCount: number;
     }
   | {
       error: string;

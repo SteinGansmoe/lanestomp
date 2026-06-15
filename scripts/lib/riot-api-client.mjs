@@ -12,6 +12,7 @@ export class RiotApiClient {
   constructor({
     apiKey,
     regionalRoute = "europe",
+    retryOnRateLimit = true,
     requestDelayMs = 1200,
   }) {
     if (!apiKey) {
@@ -20,6 +21,7 @@ export class RiotApiClient {
 
     this.apiKey = apiKey;
     this.regionalRoute = regionalRoute;
+    this.retryOnRateLimit = retryOnRateLimit;
     this.requestDelayMs = requestDelayMs;
     this.nextRequestAt = 0;
   }
@@ -59,7 +61,18 @@ export class RiotApiClient {
     );
   }
 
-  async fetchJson(url) {
+  async fetchLeagueEntriesByPuuid({ platformRegion, puuid }) {
+    return this.fetchJson(
+      `https://${String(platformRegion).toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(
+        puuid,
+      )}`,
+      {
+        retryOnRateLimit: false,
+      },
+    );
+  }
+
+  async fetchJson(url, { retryOnRateLimit = this.retryOnRateLimit } = {}) {
     await this.waitForRateLimitSlot();
 
     const response = await fetch(url, {
@@ -68,14 +81,14 @@ export class RiotApiClient {
       },
     });
 
-    if (response.status === 429) {
+    if (response.status === 429 && retryOnRateLimit) {
       const retryAfterSeconds = Number(response.headers.get("retry-after") ?? 2);
       const retryAfterMs = Math.max(retryAfterSeconds * 1000, this.requestDelayMs);
 
       console.log(`Riot rate limit hit. Waiting ${retryAfterMs}ms before retrying.`);
       await wait(retryAfterMs);
 
-      return this.fetchJson(url);
+      return this.fetchJson(url, { retryOnRateLimit });
     }
 
     if (!response.ok) {

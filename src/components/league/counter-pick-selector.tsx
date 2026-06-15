@@ -1318,17 +1318,21 @@ function ChampionTile({
   const championRoles = getChampionRoles(champion).filter((role) =>
     roleOptions.some((option) => option.value === role),
   );
+  const supportedRoleText = championRoles.map(getLeagueRoleLabel).join(", ");
+  const championLabel = supportedRoleText
+    ? `Select ${champion.name}. Supported roles: ${supportedRoleText}`
+    : `Select ${champion.name}`;
 
   return (
     <button
-      aria-label={`Select ${champion.name}`}
+      aria-label={championLabel}
       aria-pressed={isSelected}
       className={cn(
         "group relative aspect-square min-w-0 overflow-hidden rounded-md border border-white/10 bg-white/[0.035] shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-cyan-300/35 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
         isSelected && "border-cyan-300/80 ring-2 ring-cyan-300/30",
       )}
       onClick={onClick}
-      title={champion.name}
+      title={supportedRoleText ? `${champion.name} - ${supportedRoleText}` : champion.name}
       type="button"
     >
       <Image
@@ -1344,18 +1348,6 @@ function ChampionTile({
       <span className="absolute bottom-1 left-1 right-1 truncate rounded bg-black/70 px-1.5 py-0.5 text-[0.65rem] font-medium text-white opacity-0 transition group-hover:opacity-100">
         {champion.name}
       </span>
-      {championRoles.length > 0 ? (
-        <span className="absolute left-1 top-1 flex max-w-[calc(100%-0.5rem)] flex-wrap gap-1">
-          {championRoles.slice(0, 2).map((role) => (
-            <span
-              className="rounded bg-black/70 px-1 py-0.5 text-[0.55rem] font-semibold uppercase text-cyan-100"
-              key={role}
-            >
-              {getShortRoleLabel(role)}
-            </span>
-          ))}
-        </span>
-      ) : null}
     </button>
   );
 }
@@ -2297,10 +2289,6 @@ function formatChampionClassLabel(label: string) {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
-}
-
-function getShortRoleLabel(role: LeagueRole) {
-  return role === "jungle" ? "JGL" : role === "support" ? "SUP" : getLeagueRoleLabel(role);
 }
 
 function EmptyState({ text, title }: { text: string; title: string }) {

@@ -7,6 +7,8 @@ import type {
   RiotIdResolverResult,
   RiotIdResolverRow,
   RiotSeedCandidateFilters,
+  RiotSeedCandidateRankRefreshInput,
+  RiotSeedCandidateRankRefreshResult,
   RiotSeedCandidateSort,
   RiotSeedCandidatesResult,
   RiotSeedCandidateView,
@@ -29,7 +31,9 @@ const maxMatchCount = 50;
 const maxDisplayedResultsLimit = 100;
 const maxRiotIdsPerBatch = 20;
 const maxSeedCandidatesPerScan = 20;
+const maxSeedCandidateRankRefreshBatch = 20;
 const recentSeedCandidateScanHours = 24;
+const recentSeedCandidateRankRefreshHours = 24;
 const defaultRegionalRoute = "europe";
 const defaultPlatformRegion = "EUW1";
 const maxWarningOnlyPersistenceFailureCount = 5;
@@ -420,6 +424,26 @@ export async function getRiotSeedCandidates({
         "primary_champion_role",
         "primary_champion_games",
         "primary_champion_share",
+        "rank_queue_type",
+        "rank_tier",
+        "rank_division",
+        "rank_league_points",
+        "rank_wins",
+        "rank_losses",
+        "rank_win_rate",
+        "rank_hot_streak",
+        "rank_veteran",
+        "rank_fresh_blood",
+        "rank_inactive",
+        "ranked_at",
+        "rank_last_attempted_at",
+        "rank_last_success_at",
+        "rank_next_eligible_at",
+        "rank_enrichment_status",
+        "rank_enrichment_error_code",
+        "rank_enrichment_error_message",
+        "rank_enrichment_attempts",
+        "rank_enrichment_failures",
         "role_distribution",
         "top_champions",
         "last_profiled_at",
@@ -464,6 +488,30 @@ export async function getRiotSeedCandidates({
     query = query.eq("source", filters.source);
   }
 
+  if (filters.rankStatus && filters.rankStatus !== "all") {
+    query = query.eq("rank_enrichment_status", filters.rankStatus);
+  }
+
+  if (filters.rankTier && filters.rankTier !== "all") {
+    query = query.eq("rank_tier", filters.rankTier);
+  }
+
+  if (filters.rankedState === "ranked") {
+    query = query.eq("rank_enrichment_status", "ranked");
+  } else if (filters.rankedState === "unranked") {
+    query = query.in("rank_enrichment_status", ["unranked", "not_found"]);
+  }
+
+  if (filters.rankLastRefreshed === "never") {
+    query = query.is("rank_last_success_at", null);
+  } else if (filters.rankLastRefreshed === "recent") {
+    query = query.gte("rank_last_success_at", getRecentSeedCandidateRankRefreshCutoff());
+  } else if (filters.rankLastRefreshed === "older") {
+    query = query.or(
+      `rank_last_success_at.is.null,rank_last_success_at.lt.${getRecentSeedCandidateRankRefreshCutoff()}`,
+    );
+  }
+
   if (filters.minObservedGames && filters.minObservedGames > 0) {
     query = query.gte("observed_games", Math.trunc(filters.minObservedGames));
   }
@@ -482,7 +530,7 @@ export async function getRiotSeedCandidates({
   const orderColumn = getCandidateSortColumn(sort);
   const { data, error } = await query
     .order(orderColumn, { ascending: false, nullsFirst: false })
-    .limit(Math.min(Math.max(limit, 1), 100))
+    .limit(sort === "rank_tier" ? 100 : Math.min(Math.max(limit, 1), 100))
     .returns<RiotSeedCandidateView[]>();
 
   if (error) {
@@ -493,9 +541,88 @@ export async function getRiotSeedCandidates({
   }
 
   return {
-    candidates: data ?? [],
+    candidates: sortCandidateRows(data ?? [], sort).slice(0, Math.min(Math.max(limit, 1), 100)),
     ok: true,
   };
+}
+
+export async function refreshRiotSeedCandidateRanks(
+  input: RiotSeedCandidateRankRefreshInput,
+): Promise<RiotSeedCandidateRankRefreshResult> {
+  const authResult = await getAuthorizedAdmin(
+    input.accessToken,
+    "refresh Riot seed candidate ranks",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const candidateIds = uniqueValues(input.candidateIds ?? []);
+
+  if (candidateIds.length === 0) {
+    return {
+      error: "Select at least one seed candidate.",
+      ok: false,
+    };
+  }
+
+  if (candidateIds.length > maxSeedCandidateRankRefreshBatch) {
+    return {
+      error: `Refresh rank for up to ${maxSeedCandidateRankRefreshBatch} seed candidates at a time.`,
+      ok: false,
+    };
+  }
+
+  if (!process.env.RIOT_API_KEY) {
+    return {
+      error: "Missing Riot API configuration.",
+      ok: false,
+    };
+  }
+
+  try {
+    const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
+    const { createSupabaseRankRepository, enrichRiotSeedCandidateRanks } = await import(
+      "@/scripts/lib/riot-seed-rank-enrichment.mjs"
+    );
+    const riot = new RiotApiClient({
+      apiKey: process.env.RIOT_API_KEY,
+      regionalRoute: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
+      requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
+    });
+    const result = await enrichRiotSeedCandidateRanks({
+      candidateIds,
+      force: input.force ?? false,
+      limit: candidateIds.length,
+      repository: createSupabaseRankRepository(serviceClientResult.supabase),
+      riot,
+    });
+
+    return {
+      failedCount: result.failedCount,
+      notFoundCount: result.notFoundCount,
+      ok: true,
+      rankedCount: result.rankedCount,
+      rateLimitedCount: result.rateLimitedCount,
+      skippedCount: result.skippedCount,
+      snapshotInsertedCount: result.snapshotInsertedCount,
+      total: result.total,
+      unrankedCount: result.unrankedCount,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? getRiotRankRefreshErrorMessage(error) : "Rank refresh failed.",
+      ok: false,
+    };
+  }
 }
 
 export async function getRecentRiotScanJobs({
@@ -1668,6 +1795,10 @@ function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
       return "created_at";
     case "last_scanned_at":
       return "last_scanned_at";
+    case "rank_last_success_at":
+      return "rank_last_success_at";
+    case "rank_tier":
+      return "rank_last_success_at";
     case "observed_games":
       return "observed_games";
     case "primary_champion_share":
@@ -1678,6 +1809,47 @@ function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
     default:
       return "last_seen_at";
   }
+}
+
+function sortCandidateRows(candidates: RiotSeedCandidateView[], sort: RiotSeedCandidateSort) {
+  if (sort !== "rank_tier") {
+    return candidates;
+  }
+
+  return [...candidates].sort((left, right) => {
+    const leftWeight = getRankSortWeight(left);
+    const rightWeight = getRankSortWeight(right);
+
+    if (leftWeight !== rightWeight) {
+      return leftWeight - rightWeight;
+    }
+
+    return Number(right.rank_league_points ?? -1) - Number(left.rank_league_points ?? -1);
+  });
+}
+
+function getRankSortWeight(candidate: Pick<RiotSeedCandidateView, "rank_division" | "rank_tier">) {
+  const tierOrder = [
+    "CHALLENGER",
+    "GRANDMASTER",
+    "MASTER",
+    "DIAMOND",
+    "EMERALD",
+    "PLATINUM",
+    "GOLD",
+    "SILVER",
+    "BRONZE",
+    "IRON",
+  ];
+  const divisionOrder = ["I", "II", "III", "IV"];
+  const tierIndex = tierOrder.indexOf(candidate.rank_tier ?? "");
+  const divisionIndex = divisionOrder.indexOf(candidate.rank_division ?? "");
+
+  if (tierIndex === -1) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return tierIndex * 10 + (divisionIndex === -1 ? 0 : divisionIndex);
 }
 
 function normalizeShareFilter(value: number | undefined) {
@@ -1696,6 +1868,12 @@ function normalizeShareFilter(value: number | undefined) {
 
 function getRecentSeedCandidateScanCutoff() {
   return new Date(Date.now() - recentSeedCandidateScanHours * 60 * 60 * 1000).toISOString();
+}
+
+function getRecentSeedCandidateRankRefreshCutoff() {
+  return new Date(
+    Date.now() - recentSeedCandidateRankRefreshHours * 60 * 60 * 1000,
+  ).toISOString();
 }
 
 function getScannerErrorMessage(error: unknown) {
@@ -1745,6 +1923,24 @@ function getRiotIdLookupErrorMessage(error: unknown) {
   }
 
   return "Riot account lookup failed.";
+}
+
+function getRiotRankRefreshErrorMessage(error: Error) {
+  const errorWithStatus = error as Error & { status?: number };
+
+  if (errorWithStatus.status === 401 || errorWithStatus.status === 403) {
+    return "Riot API authentication failed. Check the Riot API key.";
+  }
+
+  if (errorWithStatus.status === 429 || error.message.toLowerCase().includes("rate limit")) {
+    return "Riot rank refresh was rate limited. Try again later.";
+  }
+
+  if (error.message.toLowerCase().includes("fetch")) {
+    return "Network error while contacting Riot rank endpoint.";
+  }
+
+  return error.message || "Riot rank refresh failed.";
 }
 
 function getRegistryRowLabel(row: { id?: string | null; name?: string | null }) {

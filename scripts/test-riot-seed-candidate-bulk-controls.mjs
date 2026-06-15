@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 
 const maxSeedCandidatesPerScan = 20;
+const maxSeedCandidateRankRefreshBatch = 20;
 const recentSeedCandidateScanHours = 24;
 
 testDuplicateProtection();
 testBatchLimit();
+testRankRefreshBatchLimit();
 testVisibleSelectionPruning();
 testRecentScanWarning();
 
@@ -21,6 +23,11 @@ function testDuplicateProtection() {
 function testBatchLimit() {
   assert.equal(isWithinBulkScanLimit(Array.from({ length: 20 })), true);
   assert.equal(isWithinBulkScanLimit(Array.from({ length: 21 })), false);
+}
+
+function testRankRefreshBatchLimit() {
+  assert.equal(isWithinRankRefreshLimit(Array.from({ length: 20 })), true);
+  assert.equal(isWithinRankRefreshLimit(Array.from({ length: 21 })), false);
 }
 
 function testVisibleSelectionPruning() {
@@ -47,6 +54,10 @@ function mergePuuids(currentPuuids, selectedPuuids) {
 
 function isWithinBulkScanLimit(values) {
   return values.length <= maxSeedCandidatesPerScan;
+}
+
+function isWithinRankRefreshLimit(values) {
+  return values.length <= maxSeedCandidateRankRefreshBatch;
 }
 
 function pruneSelectionToVisible(selectedIds, visibleIds) {

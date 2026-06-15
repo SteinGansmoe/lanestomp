@@ -33,8 +33,48 @@ declare module "@/scripts/lib/riot-api-client.mjs" {
   }
 
   export class RiotApiClient {
-    constructor(options: { apiKey: string; regionalRoute?: string; requestDelayMs?: number });
+    constructor(options: {
+      apiKey: string;
+      regionalRoute?: string;
+      requestDelayMs?: number;
+      retryOnRateLimit?: boolean;
+    });
+    fetchLeagueEntriesByPuuid(options: {
+      platformRegion: string;
+      puuid: string;
+    }): Promise<unknown[]>;
   }
+}
+
+declare module "@/scripts/lib/riot-seed-rank-enrichment.mjs" {
+  export const maxAdminRankRefreshBatchSize: number;
+  export const rankEnrichmentStatuses: string[];
+  export function createSupabaseRankRepository(supabase: unknown): unknown;
+  export function enrichRiotSeedCandidateRanks(options: {
+    candidateIds?: string[] | null;
+    force?: boolean;
+    limit?: number;
+    platformRegion?: string | null;
+    puuid?: string | null;
+    repository: unknown;
+    riot: unknown;
+    status?: string | null;
+  }): Promise<{
+    failedCount: number;
+    notFoundCount: number;
+    ok: true;
+    rankedCount: number;
+    rateLimitedCount: number;
+    results: unknown[];
+    skippedCount: number;
+    snapshotInsertedCount: number;
+    total: number;
+    unrankedCount: number;
+  }>;
+  export function getRankSortWeight(candidate: {
+    rank_division?: string | null;
+    rank_tier?: string | null;
+  }): number;
 }
 
 declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
