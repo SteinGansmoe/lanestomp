@@ -2417,6 +2417,34 @@ function RiotScanJobDetails({
             value={job.progress.observationDuplicatesSkipped}
           />
           <Metric
+            label="Rank attributions attempted"
+            value={job.progress.matchupRankAttributionsAttempted}
+          />
+          <Metric
+            label="Two-player rank attributions"
+            value={job.progress.matchupRankAttributionsTwoPlayer}
+          />
+          <Metric
+            label="Single-player rank attributions"
+            value={job.progress.matchupRankAttributionsSinglePlayer}
+          />
+          <Metric
+            label="Unknown rank attributions"
+            value={job.progress.matchupRankAttributionsUnknown}
+          />
+          <Metric
+            label="Rank snapshots too old"
+            value={job.progress.matchupRankSnapshotTooOld}
+          />
+          <Metric
+            label="Rank participants not found"
+            value={job.progress.matchupRankParticipantsNotFound}
+          />
+          <Metric
+            label="Rank attribution failures"
+            value={job.progress.matchupRankAttributionFailures}
+          />
+          <Metric
             label="Observation insert failures"
             value={job.progress.observationInsertFailures}
           />

@@ -37,6 +37,7 @@ testInvalidRole();
 testRoutingMismatch();
 testWinnerConflict();
 testSameChampionMatchup();
+testRankBracketValidation();
 testAggregateMismatch();
 testBatchPartitioning();
 testMultipleIssuesOnOneRow();
@@ -140,6 +141,26 @@ function testSameChampionMatchup() {
   );
 
   assertCodes(result, ["SAME_CHAMPION_MATCHUP"]);
+}
+
+function testRankBracketValidation() {
+  const invalidObservation = validateMatchupObservation(
+    {
+      ...validMatchupObservation(),
+      rank_bracket: "all",
+    },
+    context,
+  );
+  const invalidAggregate = validateCounterPickAggregate(
+    {
+      ...validAggregate(),
+      rank_bracket: "made-up",
+    },
+    context,
+  );
+
+  assertCodes(invalidObservation, ["INVALID_RANK_BRACKET"]);
+  assertCodes(invalidAggregate, ["INVALID_RANK_BRACKET"]);
 }
 
 function testAggregateMismatch() {

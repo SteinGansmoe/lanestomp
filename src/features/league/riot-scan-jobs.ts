@@ -88,6 +88,13 @@ export type RiotScanSummary = {
   matchupObservationValidationSummary?: RiotValidationIssueSummary;
   matchupObservationsRejected?: number;
   matchupObservationsValidated?: number;
+  matchupRankAttributionFailures?: number;
+  matchupRankAttributionsAttempted?: number;
+  matchupRankAttributionsSinglePlayer?: number;
+  matchupRankAttributionsTwoPlayer?: number;
+  matchupRankAttributionsUnknown?: number;
+  matchupRankParticipantsNotFound?: number;
+  matchupRankSnapshotTooOld?: number;
   statsRowsUpdated?: number;
   targetMatches?: number;
   uniqueCandidatesEncountered?: number;

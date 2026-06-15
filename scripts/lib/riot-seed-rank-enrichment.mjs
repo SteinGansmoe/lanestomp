@@ -1,4 +1,9 @@
 import { defaultPlatformRegion, normalizePlatformRegion } from "./riot-seed-candidates.mjs";
+import {
+  getRankSortWeight as getSharedRankSortWeight,
+  normalizeRiotRankDivision,
+  normalizeRiotRankTier,
+} from "./riot-rank-brackets.mjs";
 
 export const rankedSoloQueueType = "RANKED_SOLO_5x5";
 export const rankRefreshCooldownHours = 24;
@@ -15,20 +20,6 @@ export const rankEnrichmentStatuses = [
   "failed",
 ];
 
-export const rankTierOrder = [
-  "CHALLENGER",
-  "GRANDMASTER",
-  "MASTER",
-  "DIAMOND",
-  "EMERALD",
-  "PLATINUM",
-  "GOLD",
-  "SILVER",
-  "BRONZE",
-  "IRON",
-];
-
-const rankDivisionOrder = ["I", "II", "III", "IV"];
 const rankCandidateSelect = [
   "id",
   "puuid",
@@ -68,19 +59,11 @@ export function calculateRankWinRate({ losses, wins }) {
 }
 
 export function normalizeRankTier(value) {
-  const tier = String(value ?? "")
-    .trim()
-    .toUpperCase();
-
-  return tier || null;
+  return normalizeRiotRankTier(value);
 }
 
 export function normalizeRankDivision(value) {
-  const division = String(value ?? "")
-    .trim()
-    .toUpperCase();
-
-  return division || null;
+  return normalizeRiotRankDivision(value);
 }
 
 export function selectRankedSoloDuoEntry(entries) {
@@ -129,14 +112,7 @@ export function isRankRefreshEligible(candidate, { force = false, now = new Date
 }
 
 export function getRankSortWeight(candidate) {
-  const tierIndex = rankTierOrder.indexOf(normalizeRankTier(candidate?.rank_tier) ?? "");
-  const divisionIndex = rankDivisionOrder.indexOf(normalizeRankDivision(candidate?.rank_division) ?? "");
-
-  if (tierIndex === -1) {
-    return Number.MAX_SAFE_INTEGER;
-  }
-
-  return tierIndex * 10 + (divisionIndex === -1 ? 0 : divisionIndex);
+  return getSharedRankSortWeight(candidate);
 }
 
 export function createRankSnapshotRow({ candidate, observedAt, rank, snapshotStatus }) {

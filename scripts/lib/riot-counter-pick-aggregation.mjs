@@ -1,4 +1,10 @@
 import { calculateTier, calculateWinRate } from "./riot-counter-pick-scanner.mjs";
+import {
+  attributeMatchupRankBrackets,
+  createEmptyMatchupRankAttributionSummary,
+  createSupabaseMatchupRankAttributionRepository,
+} from "./riot-matchup-rank-attribution.mjs";
+import { getCounterPickAggregateRankBrackets } from "./riot-rank-brackets.mjs";
 import { writeResilientBatches } from "./riot-batch-isolation.mjs";
 import {
   createObservationValidationContext,
@@ -70,6 +76,13 @@ export async function persistObservationsAndRebuildStats({
       counterPickAggregateUnresolvedBatchFailures: 0,
       counterPickAggregatePersistenceFailureSamples: [],
       counterPickAggregatePersistenceErrorGroups: [],
+      matchupRankAttributionsAttempted: 0,
+      matchupRankAttributionsTwoPlayer: 0,
+      matchupRankAttributionsSinglePlayer: 0,
+      matchupRankAttributionsUnknown: 0,
+      matchupRankAttributionFailures: 0,
+      matchupRankSnapshotTooOld: 0,
+      matchupRankParticipantsNotFound: 0,
       statsRowsUpdated: 0,
       insertedObservationKeys: [],
       duplicateObservationKeys: [],
@@ -110,6 +123,13 @@ export async function persistObservationsAndRebuildStats({
       counterPickAggregateUnresolvedBatchFailures: 0,
       counterPickAggregatePersistenceFailureSamples: [],
       counterPickAggregatePersistenceErrorGroups: [],
+      matchupRankAttributionsAttempted: 0,
+      matchupRankAttributionsTwoPlayer: 0,
+      matchupRankAttributionsSinglePlayer: 0,
+      matchupRankAttributionsUnknown: 0,
+      matchupRankAttributionFailures: 0,
+      matchupRankSnapshotTooOld: 0,
+      matchupRankParticipantsNotFound: 0,
       statsRowsUpdated: 0,
       insertedObservationKeys: [],
       duplicateObservationKeys: [],
@@ -131,7 +151,20 @@ export async function persistObservationsAndRebuildStats({
           ignoreDuplicates: true,
           onConflict: observationConflictTarget,
         })
-        .select("match_id, role");
+        .select(
+          [
+            "id",
+            "match_id",
+            "patch",
+            "role",
+            "champion_a",
+            "champion_a_puuid",
+            "champion_b",
+            "champion_b_puuid",
+            "game_start_at",
+            "rank_attributed_at",
+          ].join(", "),
+        );
 
       if (error) {
         return {
@@ -153,6 +186,10 @@ export async function persistObservationsAndRebuildStats({
   const duplicateObservationKeys = writeResult.successfulRows
     .map(getMatchupObservationIdentity)
     .filter((key) => !insertedObservationKeySet.has(key));
+  const rankAttributionSummary = await attributeInsertedObservations({
+    insertedRows: writeResult.insertedRows,
+    supabase,
+  });
   const rebuildResult = await rebuildCounterPickStatsForGroups({
     groups: affectedGroups,
     supabase,
@@ -196,6 +233,14 @@ export async function persistObservationsAndRebuildStats({
       rebuildResult.counterPickAggregatePersistenceFailureSamples,
     counterPickAggregatePersistenceErrorGroups:
       rebuildResult.counterPickAggregatePersistenceErrorGroups,
+    matchupRankAttributionsAttempted:
+      rankAttributionSummary.processed + rankAttributionSummary.failures,
+    matchupRankAttributionsTwoPlayer: rankAttributionSummary.twoPlayerAverage,
+    matchupRankAttributionsSinglePlayer: rankAttributionSummary.singlePlayer,
+    matchupRankAttributionsUnknown: rankAttributionSummary.unknown,
+    matchupRankAttributionFailures: rankAttributionSummary.failures,
+    matchupRankSnapshotTooOld: rankAttributionSummary.snapshotTooOld,
+    matchupRankParticipantsNotFound: rankAttributionSummary.participantsNotFound,
     statsRowsUpdated: rebuildResult.statsRowsUpdated,
     updatedStats: rebuildResult.updatedStats,
   };
@@ -266,7 +311,7 @@ export async function rebuildCounterPickStatsForGroups({
   for (const group of groups) {
     const { data: observations, error } = await supabase
       .from("riot_matchup_observations")
-      .select("champion_a, champion_b, winner_champion, champion_a_won, role, patch")
+      .select("champion_a, champion_b, winner_champion, champion_a_won, role, patch, rank_bracket")
       .eq("champion_a", group.champion_a)
       .eq("champion_b", group.champion_b)
       .eq("role", group.role)
@@ -298,6 +343,11 @@ export async function rebuildCounterPickStatsForGroups({
     if (aggregatePartition.valid.length === 0) {
       continue;
     }
+
+    await deleteCounterPickStatsForGroup({
+      group,
+      supabase,
+    });
 
    const writeResult = await writeResilientBatches({
   createRowIdentity: getCounterPickAggregateIdentity,
@@ -379,29 +429,43 @@ export function getDirectedAggregateRows(observations) {
     return [];
   }
 
-  const firstObservation = observations[0];
-  const games = observations.length;
-  const championAWins = observations.filter((observation) => observation.champion_a_won).length;
-  const championBWins = games - championAWins;
+  const observationsByBracket = new Map();
 
-  return [
-    getDirectedAggregateRow({
-      counterChampionId: firstObservation.champion_a,
-      enemyChampionId: firstObservation.champion_b,
-      games,
-      patch: firstObservation.patch,
-      role: firstObservation.role,
-      wins: championAWins,
-    }),
-    getDirectedAggregateRow({
-      counterChampionId: firstObservation.champion_b,
-      enemyChampionId: firstObservation.champion_a,
-      games,
-      patch: firstObservation.patch,
-      role: firstObservation.role,
-      wins: championBWins,
-    }),
-  ];
+  for (const observation of observations) {
+    for (const rankBracket of getCounterPickAggregateRankBrackets(observation.rank_bracket)) {
+      const rows = observationsByBracket.get(rankBracket) ?? [];
+      rows.push(observation);
+      observationsByBracket.set(rankBracket, rows);
+    }
+  }
+
+  return Array.from(observationsByBracket.entries()).flatMap(([rankBracket, bracketRows]) => {
+    const firstObservation = bracketRows[0];
+    const games = bracketRows.length;
+    const championAWins = bracketRows.filter((observation) => observation.champion_a_won).length;
+    const championBWins = games - championAWins;
+
+    return [
+      getDirectedAggregateRow({
+        counterChampionId: firstObservation.champion_a,
+        enemyChampionId: firstObservation.champion_b,
+        games,
+        patch: firstObservation.patch,
+        rankBracket,
+        role: firstObservation.role,
+        wins: championAWins,
+      }),
+      getDirectedAggregateRow({
+        counterChampionId: firstObservation.champion_b,
+        enemyChampionId: firstObservation.champion_a,
+        games,
+        patch: firstObservation.patch,
+        rankBracket,
+        role: firstObservation.role,
+        wins: championBWins,
+      }),
+    ];
+  });
 }
 
 export function getAffectedGroups(observations) {
@@ -437,7 +501,15 @@ export function getAffectedGroups(observations) {
   return Array.from(groupsByKey.values());
 }
 
-function getDirectedAggregateRow({ counterChampionId, enemyChampionId, games, patch, role, wins }) {
+function getDirectedAggregateRow({
+  counterChampionId,
+  enemyChampionId,
+  games,
+  patch,
+  rankBracket,
+  role,
+  wins,
+}) {
   const losses = games - wins;
   const winRate = calculateWinRate({ games, wins });
 
@@ -447,6 +519,7 @@ function getDirectedAggregateRow({ counterChampionId, enemyChampionId, games, pa
     games,
     losses,
     patch,
+    rank_bracket: rankBracket,
     role,
     tier: calculateTier({ games, winRate }),
     win_rate: winRate,
@@ -483,7 +556,13 @@ function getSafeMatchupObservationFields(observation) {
 }
 
 function getCounterPickAggregateIdentity(row) {
-  return [row.enemy_champion_id, row.counter_champion_id, row.role, row.patch].join("::");
+  return [
+    row.enemy_champion_id,
+    row.counter_champion_id,
+    row.role,
+    row.patch,
+    row.rank_bracket,
+  ].join("::");
 }
 
 function getSafeCounterPickAggregateFields(row) {
@@ -492,8 +571,51 @@ function getSafeCounterPickAggregateFields(row) {
     enemyChampion: row.enemy_champion_id ?? null,
     games: row.games ?? null,
     patch: row.patch ?? null,
+    rankBracket: row.rank_bracket ?? null,
     role: row.role ?? null,
   };
+}
+
+async function attributeInsertedObservations({ insertedRows, supabase }) {
+  if (!insertedRows || insertedRows.length === 0) {
+    return createEmptyMatchupRankAttributionSummary();
+  }
+
+  try {
+    const result = await attributeMatchupRankBrackets({
+      force: false,
+      observations: insertedRows,
+      repository: createSupabaseMatchupRankAttributionRepository(supabase),
+    });
+
+    return result.summary;
+  } catch (error) {
+    console.error("Inserted matchup rank attribution batch failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      rows: insertedRows.length,
+    });
+
+    return {
+      ...createEmptyMatchupRankAttributionSummary(),
+      failures: insertedRows.length,
+      total: insertedRows.length,
+    };
+  }
+}
+
+async function deleteCounterPickStatsForGroup({ group, supabase }) {
+  const { error } = await supabase
+    .from("counter_pick_stats")
+    .delete()
+    .eq("patch", group.patch)
+    .eq("role", group.role)
+    .in("enemy_champion_id", [group.champion_a, group.champion_b])
+    .in("counter_champion_id", [group.champion_a, group.champion_b]);
+
+  if (error) {
+    logDatabaseError("Counter-pick aggregate cleanup failed", error);
+    throw new Error("Could not clear stale counter-pick aggregates before rebuild.");
+  }
 }
 
 function mergeErrorGroups(groups) {

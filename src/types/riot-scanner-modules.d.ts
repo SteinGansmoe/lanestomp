@@ -77,6 +77,33 @@ declare module "@/scripts/lib/riot-seed-rank-enrichment.mjs" {
   }): number;
 }
 
+declare module "@/scripts/lib/riot-rank-brackets.mjs" {
+  export const MAX_RANK_SNAPSHOT_DISTANCE_DAYS: number;
+  export const counterPickRankBrackets: string[];
+  export const matchupRankAttributionMethods: string[];
+  export const riotRankTiers: string[];
+  export function getCounterPickAggregateRankBrackets(rankBracket: unknown): string[];
+  export function getRankBracketFromRank(rank: {
+    division?: string | null;
+    tier?: string | null;
+  }): string;
+  export function getRankBracketFromScore(score: unknown): string;
+  export function getRankScore(rank: {
+    division?: string | null;
+    tier?: string | null;
+  }): number | null;
+  export function getRankSortWeight(candidate: {
+    division?: string | null;
+    rank_division?: string | null;
+    rank_tier?: string | null;
+    tier?: string | null;
+  }): number;
+  export function isCounterPickRankBracket(value: unknown): boolean;
+  export function isMatchupRankAttributionMethod(value: unknown): boolean;
+  export function normalizeRiotRankDivision(value: unknown): string | null;
+  export function normalizeRiotRankTier(value: unknown): string | null;
+}
+
 declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
   export const rankedSoloDuoQueueId: number;
   export function calculateTier(options: { games: number; winRate: number }): string;
@@ -227,6 +254,13 @@ declare module "@/scripts/lib/riot-counter-pick-aggregation.mjs" {
     matchupObservationValidationSummary: RiotObservationValidationIssueSummary;
     matchupObservationsRejected: number;
     matchupObservationsValidated: number;
+    matchupRankAttributionFailures: number;
+    matchupRankAttributionsAttempted: number;
+    matchupRankAttributionsSinglePlayer: number;
+    matchupRankAttributionsTwoPlayer: number;
+    matchupRankAttributionsUnknown: number;
+    matchupRankParticipantsNotFound: number;
+    matchupRankSnapshotTooOld: number;
     observationsFound: number;
     insertedObservationKeys: string[];
     duplicateObservationKeys: string[];

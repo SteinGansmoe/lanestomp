@@ -1,3 +1,9 @@
+import {
+  counterPickRankBrackets,
+  isCounterPickRankBracket,
+  isMatchupRankAttributionMethod,
+} from "./riot-rank-brackets.mjs";
+
 export const allowedLeagueRoles = ["top", "jungle", "mid", "adc", "support"];
 export const supportedQueueIds = [420];
 export const validationFailureRateThreshold = 0.05;
@@ -118,7 +124,8 @@ export function validateMatchupObservation(input, context) {
     match_id: stringValue(input?.match_id),
     patch: stringValue(input?.patch),
     queue_id: integerValue(input?.queue_id),
-    rank_bracket: nullableString(input?.rank_bracket),
+    rank_attribution_method: nullableString(input?.rank_attribution_method ?? "unknown"),
+    rank_bracket: nullableString(input?.rank_bracket ?? "unknown"),
     role: stringValue(input?.role).toLowerCase(),
     scan_job_id: nullableInteger(input?.scan_job_id),
     seen_count: integerValue(input?.seen_count ?? 1),
@@ -138,7 +145,8 @@ export function validateMatchupObservation(input, context) {
   validateScanJobId(value.scan_job_id, issues);
   validateNullablePuuid(value.champion_a_puuid, "champion_a_puuid", issues);
   validateNullablePuuid(value.champion_b_puuid, "champion_b_puuid", issues);
-  validateRankBracket(value.rank_bracket, issues);
+  validateObservationRankBracket(value.rank_bracket, issues);
+  validateRankAttributionMethod(value.rank_attribution_method, issues);
 
   if (value.champion_a && value.champion_b && value.champion_a === value.champion_b) {
     issues.push(
@@ -586,12 +594,27 @@ function validateNullablePuuid(value, field, issues) {
 }
 
 function validateRankBracket(value, issues) {
-  if (value === null) {
-    return;
-  }
-
-  if (!/^[A-Za-z0-9_ -]{1,48}$/.test(value)) {
+  if (!isCounterPickRankBracket(value)) {
     issues.push(issue("rank_bracket", "INVALID_RANK_BRACKET", "Rank bracket is invalid.", value));
+  }
+}
+
+function validateObservationRankBracket(value, issues) {
+  if (!value || value === "all" || !counterPickRankBrackets.includes(value)) {
+    issues.push(issue("rank_bracket", "INVALID_RANK_BRACKET", "Rank bracket is invalid.", value));
+  }
+}
+
+function validateRankAttributionMethod(value, issues) {
+  if (!isMatchupRankAttributionMethod(value)) {
+    issues.push(
+      issue(
+        "rank_attribution_method",
+        "INVALID_RANK_ATTRIBUTION_METHOD",
+        "Rank attribution method is invalid.",
+        value,
+      ),
+    );
   }
 }
 

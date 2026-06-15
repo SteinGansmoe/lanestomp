@@ -898,6 +898,13 @@ async function runRiotScanJob({
       matchupObservationValidationSummary: persistenceResult.matchupObservationValidationSummary,
       matchupObservationsRejected: persistenceResult.matchupObservationsRejected,
       matchupObservationsValidated: persistenceResult.matchupObservationsValidated,
+      matchupRankAttributionFailures: persistenceResult.matchupRankAttributionFailures,
+      matchupRankAttributionsAttempted: persistenceResult.matchupRankAttributionsAttempted,
+      matchupRankAttributionsSinglePlayer: persistenceResult.matchupRankAttributionsSinglePlayer,
+      matchupRankAttributionsTwoPlayer: persistenceResult.matchupRankAttributionsTwoPlayer,
+      matchupRankAttributionsUnknown: persistenceResult.matchupRankAttributionsUnknown,
+      matchupRankParticipantsNotFound: persistenceResult.matchupRankParticipantsNotFound,
+      matchupRankSnapshotTooOld: persistenceResult.matchupRankSnapshotTooOld,
       counterPickAggregateValidationFailures:
         persistenceResult.counterPickAggregateValidationFailures,
       counterPickAggregateValidationSummary:

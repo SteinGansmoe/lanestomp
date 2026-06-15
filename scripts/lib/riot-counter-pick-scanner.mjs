@@ -614,7 +614,8 @@ function getMatchupObservation({ match, matchId, matchup, patch, queue, role }) 
     match_id: matchId,
     patch,
     queue_id: queue,
-    rank_bracket: null,
+    rank_attribution_method: "unknown",
+    rank_bracket: "unknown",
     role,
     winner_champion: winnerChampion,
   };
