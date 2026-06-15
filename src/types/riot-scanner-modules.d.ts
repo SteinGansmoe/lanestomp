@@ -47,9 +47,16 @@ declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
   export function getParticipantRole(
     value: unknown,
   ): "top" | "jungle" | "mid" | "adc" | "support" | null;
+  export function getFocusedDiscoveryResultsFromObservations(options: {
+    focusChampion: string;
+    observations: Record<string, unknown>[];
+    registry: unknown;
+    role: string;
+  }): unknown[];
   export function scanRiotCounterPickMatchups(options: {
     championRegistry: unknown;
     discover?: boolean;
+    focusChampionId?: string | null;
     logger?: { log: (message: string) => void } | null;
     matchCount?: number;
     onProgress?: ((progress: Record<string, unknown>) => Promise<void> | void) | null;
@@ -67,6 +74,7 @@ declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
   }): Promise<{
     candidateObservations: Record<string, unknown>[];
     discoveryResults: unknown[];
+    focusObservationKeys: string[];
     observations: Record<string, unknown>[];
     summary: Record<string, unknown>;
     targetResult: Record<string, unknown> | null;
@@ -180,6 +188,8 @@ declare module "@/scripts/lib/riot-counter-pick-aggregation.mjs" {
     matchupObservationsRejected: number;
     matchupObservationsValidated: number;
     observationsFound: number;
+    insertedObservationKeys: string[];
+    duplicateObservationKeys: string[];
     statsRowsUpdated: number;
     updatedStats: Array<{
       counter_champion_id: string;

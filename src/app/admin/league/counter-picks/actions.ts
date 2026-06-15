@@ -34,6 +34,8 @@ const defaultRegionalRoute = "europe";
 const defaultPlatformRegion = "EUW1";
 const maxWarningOnlyPersistenceFailureCount = 5;
 const maxWarningOnlyPersistenceFailureRate = 0.01;
+const riotScanJobSelect =
+  "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, focus_champion_id, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at";
 
 type AuthorizedClientResult =
   | {
@@ -51,6 +53,7 @@ type RiotScanJobRow = {
   created_at: string;
   enemy_champion: string | null;
   error_message: string | null;
+  focus_champion_id: string | null;
   id: number;
   match_count: number;
   minimum_games: number;
@@ -128,6 +131,8 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
       counter_champion: validation.mode === "target" ? validation.counterChampion : null,
       created_by: authResult.userId,
       enemy_champion: validation.mode === "target" ? validation.enemyChampion : null,
+      focus_champion_id:
+        validation.mode === "discovery" ? validation.discoveryFocusChampion : null,
       match_count: validation.matchCount,
       minimum_games: validation.minimumGames,
       mode: validation.mode,
@@ -147,9 +152,7 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
         seedCount: validation.seedPuuids.length,
       },
     })
-    .select(
-      "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at",
-    )
+    .select(riotScanJobSelect)
     .single<RiotScanJobRow>();
 
   if (insertError || !insertedJob) {
@@ -516,9 +519,7 @@ export async function getRecentRiotScanJobs({
 
   const { data, error } = await serviceClientResult.supabase
     .from("riot_scan_jobs")
-    .select(
-      "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at",
-    )
+    .select(riotScanJobSelect)
     .order("created_at", { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 20))
     .returns<RiotScanJobRow[]>();
@@ -557,9 +558,7 @@ export async function getRiotScanJob({
 
   const { data, error } = await serviceClientResult.supabase
     .from("riot_scan_jobs")
-    .select(
-      "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at",
-    )
+    .select(riotScanJobSelect)
     .eq("id", jobId)
     .single<RiotScanJobRow>();
 
@@ -643,12 +642,14 @@ async function runRiotScanJob({
     }
     const progressBase = {
       currentPatchOnly: input.currentPatchOnly,
+      discoveryFocusChampion: input.discoveryFocusChampion,
       maxDisplayedResults: input.maxDisplayedResults,
       seedCount: input.seedPuuids.length,
     };
     const scanResult = await scanRiotCounterPickMatchups({
       championRegistry,
       discover: input.mode === "discovery",
+      focusChampionId: input.discoveryFocusChampion,
       matchCount: input.matchCount,
       onProgress: async (progress) => {
         await supabase
@@ -695,6 +696,15 @@ async function runRiotScanJob({
       supabase,
       validationContext,
     });
+    const focusObservationKeys = new Set(scanResult.focusObservationKeys ?? []);
+    const focusChampionObservationsNew = countKeyIntersections(
+      focusObservationKeys,
+      persistenceResult.insertedObservationKeys ?? [],
+    );
+    const focusChampionObservationsDuplicate = countKeyIntersections(
+      focusObservationKeys,
+      persistenceResult.duplicateObservationKeys ?? [],
+    );
     const persistedSummary = {
       ...summary,
       candidateIdLookupChunkFailures: candidatePersistenceResult.candidateIdLookupChunkFailures,
@@ -739,6 +749,8 @@ async function runRiotScanJob({
       existingCandidatesUpdated: candidatePersistenceResult.existingCandidatesUpdated,
       newCandidatesCreated: candidatePersistenceResult.newCandidatesCreated,
       observationDuplicatesSkipped: persistenceResult.duplicateObservationsSkipped,
+      focus_champion_observations_duplicate: focusChampionObservationsDuplicate,
+      focus_champion_observations_new: focusChampionObservationsNew,
       observationInsertFailures: persistenceResult.insertFailures,
       matchupObservationBatchAttempts: persistenceResult.matchupObservationBatchAttempts,
       matchupObservationSuccessfulBatches: persistenceResult.matchupObservationSuccessfulBatches,
@@ -786,13 +798,13 @@ async function runRiotScanJob({
     const discoveryResults = scanResult.discoveryResults as RiotScanDiscoveryResult[];
     const results =
       input.mode === "discovery"
-        ? discoveryResults
-            .filter((result) => result.games >= input.minimumGames)
-            .slice(0, input.maxDisplayedResults)
-            .map((result) => ({
-              ...result,
-              representedInStats: persistenceResult.statsRowsUpdated > 0,
-            }))
+        ? getRankedDiscoveryResults({
+            focusChampion: input.discoveryFocusChampion,
+            maxDisplayedResults: input.maxDisplayedResults,
+            minimumGames: input.minimumGames,
+            results: discoveryResults,
+            updatedStats: persistenceResult.updatedStats,
+          })
         : getPersistedTargetResult({
             result: scanResult.targetResult as RiotScanTargetResult | null,
             updatedStats: persistenceResult.updatedStats,
@@ -864,6 +876,61 @@ async function runRiotScanJob({
   }
 }
 
+function getRankedDiscoveryResults({
+  focusChampion,
+  maxDisplayedResults,
+  minimumGames,
+  results,
+  updatedStats,
+}: {
+  focusChampion: string | null;
+  maxDisplayedResults: number;
+  minimumGames: number;
+  results: RiotScanDiscoveryResult[];
+  updatedStats: Array<{
+    counter_champion_id: string;
+    enemy_champion_id: string;
+    games: number;
+    role: string;
+    tier?: string | null;
+  }>;
+}) {
+  return results
+    .filter((result) => result.games >= minimumGames)
+    .map((result) => ({
+      ...result,
+      ...getStoredFocusedDiscoveryStats({
+        result,
+        updatedStats,
+      }),
+      representedInStats: getDiscoveryResultStoredStatus({
+        result,
+        updatedStats,
+      }),
+    }))
+    .sort((left, right) => {
+      if (!focusChampion) {
+        return 0;
+      }
+
+      if (left.games !== right.games) {
+        return right.games - left.games;
+      }
+
+      const leftStoredGames = left.storedGamesAfterAggregation ?? 0;
+      const rightStoredGames = right.storedGamesAfterAggregation ?? 0;
+
+      if (leftStoredGames !== rightStoredGames) {
+        return rightStoredGames - leftStoredGames;
+      }
+
+      return String(left.opponentChampionDisplayName ?? left.championB).localeCompare(
+        String(right.opponentChampionDisplayName ?? right.championB),
+      );
+    })
+    .slice(0, maxDisplayedResults);
+}
+
 function getPersistedTargetResult({
   result,
   updatedStats,
@@ -892,6 +959,83 @@ function getPersistedTargetResult({
     storedGamesAfterAggregation: storedStat?.games ?? 0,
     wasWrittenToStats: Boolean(storedStat),
   };
+}
+
+function getStoredFocusedDiscoveryStats({
+  result,
+  updatedStats,
+}: {
+  result: RiotScanDiscoveryResult;
+  updatedStats: Array<{
+    counter_champion_id: string;
+    enemy_champion_id: string;
+    games: number;
+    role: string;
+    tier?: string | null;
+  }>;
+}) {
+  const focusChampion = result.focusChampion ?? result.championA;
+  const opponentChampion = result.opponentChampion ?? result.championB;
+  const storedStat = updatedStats.find(
+    (stat) =>
+      stat.enemy_champion_id === opponentChampion &&
+      stat.counter_champion_id === focusChampion &&
+      stat.role === result.role,
+  );
+
+  if (!result.focusChampion && !result.opponentChampion) {
+    return {};
+  }
+
+  return {
+    storedGamesAfterAggregation: storedStat?.games ?? 0,
+    storedTier: storedStat?.tier ?? null,
+  };
+}
+
+function getDiscoveryResultStoredStatus({
+  result,
+  updatedStats,
+}: {
+  result: RiotScanDiscoveryResult;
+  updatedStats: Array<{
+    counter_champion_id: string;
+    enemy_champion_id: string;
+    role: string;
+  }>;
+}) {
+  const focusChampion = result.focusChampion ?? result.championA;
+  const opponentChampion = result.opponentChampion ?? result.championB;
+
+  if (result.focusChampion || result.opponentChampion) {
+    return updatedStats.some(
+      (stat) =>
+        stat.enemy_champion_id === opponentChampion &&
+        stat.counter_champion_id === focusChampion &&
+        stat.role === result.role,
+    );
+  }
+
+  return updatedStats.some(
+    (stat) =>
+      stat.role === result.role &&
+      ((stat.enemy_champion_id === result.championA &&
+        stat.counter_champion_id === result.championB) ||
+        (stat.enemy_champion_id === result.championB &&
+          stat.counter_champion_id === result.championA)),
+  );
+}
+
+function countKeyIntersections(keys: Set<string>, candidates: string[]) {
+  let count = 0;
+
+  for (const candidate of candidates) {
+    if (keys.has(candidate)) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 function getCandidatePersistenceErrorMessage(summary: RiotScanSummary) {
@@ -1144,9 +1288,7 @@ async function failJob({
       status: "failed",
     })
     .eq("id", jobId)
-    .select(
-      "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at",
-    )
+    .select(riotScanJobSelect)
     .maybeSingle<RiotScanJobRow>();
 
   return data ? sanitizeJobRow(data) : null;
@@ -1479,6 +1621,7 @@ function sanitizeJobRow(row: RiotScanJobRow): RiotScanJobView {
     created_at: row.created_at,
     enemy_champion: row.enemy_champion,
     error_message: row.error_message,
+    focus_champion_id: row.focus_champion_id,
     id: row.id,
     match_count: row.match_count,
     minimum_games: row.minimum_games,

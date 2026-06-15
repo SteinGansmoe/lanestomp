@@ -88,6 +88,7 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
   const [currentPatchOnly, setCurrentPatchOnly] = useState(true);
   const [enemyChampionInput, setEnemyChampionInput] = useState("Ahri");
   const [counterChampionInput, setCounterChampionInput] = useState("Yasuo");
+  const [discoveryFocusChampionInput, setDiscoveryFocusChampionInput] = useState("");
   const [minimumGames, setMinimumGames] = useState("2");
   const [displayLimit, setDisplayLimit] = useState("20");
   const [activeJob, setActiveJob] = useState<RiotScanJobView | null>(null);
@@ -215,6 +216,10 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
 
     const enemyChampion = resolveChampionId(enemyChampionInput, champions);
     const counterChampion = resolveChampionId(counterChampionInput, champions);
+    const discoveryFocusChampion =
+      mode === "discovery" && discoveryFocusChampionInput.trim()
+        ? resolveChampionId(discoveryFocusChampionInput, champions)
+        : null;
     const parsedMatchCount = Number(matchCount);
     const parsedMinimumGames = Number(minimumGames);
     const parsedDisplayLimit = Number(displayLimit);
@@ -280,13 +285,22 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
       return;
     }
 
+    if (mode === "discovery" && discoveryFocusChampionInput.trim() && !discoveryFocusChampion) {
+      setFormStatus({
+        error: "Select a valid discovery focus champion.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
     setFormStatus({ error: null, isLoading: true, success: null });
 
     const result = await startRiotScanJob({
       accessToken: tokenResult.accessToken,
       counterChampion,
       currentPatchOnly,
-      discoveryFocusChampion: null,
+      discoveryFocusChampion,
       enemyChampion,
       matchCount: parsedMatchCount,
       maxDisplayedResults: parsedDisplayLimit,
@@ -460,7 +474,14 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
                   />
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <ChampionSearchInput
+                    disabled={formStatus.isLoading}
+                    label="Focus champion (optional)"
+                    onChange={setDiscoveryFocusChampionInput}
+                    options={championOptions}
+                    value={discoveryFocusChampionInput}
+                  />
                   <label className="block space-y-2">
                     <span className="text-sm text-zinc-300">Minimum games</span>
                     <Input
@@ -506,7 +527,10 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
 
             <div className="space-y-4">
               {activeJob ? (
-                <RiotScanJobDetails job={activeJob} />
+                <RiotScanJobDetails
+                  championDisplayNamesById={championDisplayNamesById}
+                  job={activeJob}
+                />
               ) : (
                 <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-400">
                   Start or open a scan job to see progress and results.
@@ -544,6 +568,14 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
                             Scanned {formatNumber(job.summary.matchesScanned)} -{" "}
                             {formatDateTime(job.created_at)}
                           </span>
+                          {job.focus_champion_id ? (
+                            <span className="mt-1 block text-xs text-cyan-200">
+                              Focus:{" "}
+                              {championDisplayNamesById.get(job.focus_champion_id) ??
+                                job.summary.focusChampionDisplayName ??
+                                job.focus_champion_id}
+                            </span>
+                          ) : null}
                         </span>
                         <span className="text-xs font-semibold text-cyan-200">Open details</span>
                       </button>
@@ -1131,6 +1163,20 @@ function RiotSeedCandidatesPanel({
     });
   }
 
+  function openSelectedScanPanel() {
+    if (!showScanPanel) {
+      if (primaryRoleFilter !== "all") {
+        setBulkRole(primaryRoleFilter);
+      }
+
+      if (primaryChampionFilter.trim()) {
+        setBulkDiscoveryFocusChampion(primaryChampionFilter);
+      }
+    }
+
+    setShowScanPanel((current) => !current);
+  }
+
   async function scanSelectedCandidates() {
     if (selectedCandidates.length === 0) {
       setStatus({ error: "No candidates selected.", isLoading: false, success: null });
@@ -1474,7 +1520,7 @@ function RiotSeedCandidatesPanel({
             <Button
               className="bg-violet-500/80 text-white hover:bg-violet-500"
               disabled={selectedCandidates.length === 0}
-              onClick={() => setShowScanPanel((current) => !current)}
+              onClick={openSelectedScanPanel}
               size="sm"
               type="button"
             >
@@ -1586,7 +1632,7 @@ function RiotSeedCandidatesPanel({
               <div className="grid gap-4 md:grid-cols-3">
                 <ChampionSearchInput
                   disabled={status.isLoading}
-                  label="Focus champion"
+                  label="Focus champion (optional)"
                   onChange={setBulkDiscoveryFocusChampion}
                   options={champions}
                   value={bulkDiscoveryFocusChampion}
@@ -2024,10 +2070,21 @@ function ChampionSearchInput({
   );
 }
 
-function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
+function RiotScanJobDetails({
+  championDisplayNamesById,
+  job,
+}: {
+  championDisplayNamesById: Map<string, string>;
+  job: RiotScanJobView;
+}) {
   const result = job.results;
   const targetResult = !Array.isArray(result) ? result : null;
   const discoveryResults = Array.isArray(result) ? result : [];
+  const focusChampionLabel = job.focus_champion_id
+    ? (championDisplayNamesById.get(job.focus_champion_id) ??
+      job.summary.focusChampionDisplayName ??
+      job.focus_champion_id)
+    : null;
 
   return (
     <div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-4">
@@ -2038,6 +2095,11 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
             {getModeLabel(job.mode)} - {getRoleLabel(job.role)} - {job.seed_count} seed{" "}
             {job.seed_count === 1 ? "PUUID" : "PUUIDs"}
           </p>
+          {focusChampionLabel ? (
+            <p className="mt-1 text-xs font-semibold text-cyan-200">
+              Focus champion: {focusChampionLabel}
+            </p>
+          ) : null}
         </div>
         <span
           className={cn(
@@ -2070,7 +2132,9 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
           <Metric label="Patch skipped" value={job.progress.patchSkipped} />
           <Metric label="Queue skipped" value={job.progress.queueSkipped} />
           <Metric label="Role skipped" value={job.progress.roleSkipped} />
-          <Metric label="Champion pair matched" value={job.progress.championPairMatched} />
+          {job.mode === "target" ? (
+            <Metric label="Champion pair matched" value={job.progress.championPairMatched} />
+          ) : null}
           <Metric
             label="Champion identifiers processed"
             value={job.progress.champion_identifiers_processed}
@@ -2132,6 +2196,35 @@ function RiotScanJobDetails({ job }: { job: RiotScanJobView }) {
           <Metric label="Completed" value={formatDateTime(job.completed_at)} />
         </div>
       </div>
+
+      {focusChampionLabel ? (
+        <div className="space-y-3 rounded-md border border-cyan-300/20 bg-cyan-500/10 p-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-cyan-100">
+            Focused discovery
+          </h4>
+          <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
+            <Metric label="Focus champion" value={focusChampionLabel} />
+            <Metric
+              label="Focus matches found"
+              value={job.progress.focus_champion_matches_found}
+            />
+            <Metric
+              label="Focus matchup pairs"
+              value={job.progress.focus_matchup_pairs_discovered}
+            />
+            <Metric label="Focus wins" value={job.progress.focus_champion_wins} />
+            <Metric label="Focus losses" value={job.progress.focus_champion_losses} />
+            <Metric
+              label="Focus observations new"
+              value={job.progress.focus_champion_observations_new}
+            />
+            <Metric
+              label="Focus observations duplicate"
+              value={job.progress.focus_champion_observations_duplicate}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <ValidationIssueSummary job={job} />
       <PersistenceRecoverySummary job={job} />
@@ -2449,8 +2542,16 @@ function TargetResult({ result }: { result: RiotScanTargetResult }) {
 }
 
 function DiscoveryResultTable({ results }: { results: RiotScanDiscoveryResult[] }) {
+  const hasFocusedResults = results.some(
+    (result) => result.focusChampion || result.opponentChampion,
+  );
+
+  if (hasFocusedResults) {
+    return <FocusedDiscoveryResultTable results={results} />;
+  }
+
   return (
-    <div className="overflow-hidden rounded-md border border-white/10 bg-black/15">
+    <div className="overflow-x-auto rounded-md border border-white/10 bg-black/15">
       <div className="grid grid-cols-[1.1fr_1.1fr_0.55fr_0.6fr_0.75fr_0.75fr_0.8fr] gap-3 border-b border-white/10 px-3 py-2 text-xs font-semibold text-zinc-400">
         <span>Champion A</span>
         <span>Champion B</span>
@@ -2481,6 +2582,54 @@ function DiscoveryResultTable({ results }: { results: RiotScanDiscoveryResult[] 
               {result.championBWins} - {result.championBWinRate}%
             </span>
             <span>{result.representedInStats ? "Yes" : "Pending"}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FocusedDiscoveryResultTable({ results }: { results: RiotScanDiscoveryResult[] }) {
+  return (
+    <div className="overflow-x-auto rounded-md border border-white/10 bg-black/15">
+      <div className="grid min-w-[980px] grid-cols-[1fr_1fr_0.55fr_0.65fr_0.7fr_0.75fr_0.7fr_0.85fr_0.75fr_0.55fr] gap-3 border-b border-white/10 px-3 py-2 text-xs font-semibold text-zinc-400">
+        <span>Focus champion</span>
+        <span>Opponent</span>
+        <span>Role</span>
+        <span>Scan games</span>
+        <span>Focus wins</span>
+        <span>Opponent wins</span>
+        <span>Focus WR</span>
+        <span>Total stored games</span>
+        <span>Stored status</span>
+        <span>Tier</span>
+      </div>
+      <div className="max-h-72 overflow-auto">
+        {results.map((result) => (
+          <div
+            className="grid min-w-[980px] grid-cols-[1fr_1fr_0.55fr_0.65fr_0.7fr_0.75fr_0.7fr_0.85fr_0.75fr_0.55fr] gap-3 border-b border-white/5 px-3 py-2 text-xs text-zinc-300 last:border-b-0"
+            key={`${result.focusChampion ?? result.championA}-${result.opponentChampion ?? result.championB}-${result.role}`}
+          >
+            <span className="font-semibold text-white">
+              {result.focusChampionDisplayName ??
+                result.championADisplayName ??
+                result.focusChampion ??
+                result.championA}
+            </span>
+            <span className="font-semibold text-white">
+              {result.opponentChampionDisplayName ??
+                result.championBDisplayName ??
+                result.opponentChampion ??
+                result.championB}
+            </span>
+            <span>{getRoleLabel(result.role)}</span>
+            <span>{result.games}</span>
+            <span>{result.focusChampionWins ?? result.championAWins}</span>
+            <span>{result.opponentWins ?? result.championBWins}</span>
+            <span>{result.focusChampionWinRate ?? result.championAWinRate}%</span>
+            <span>{result.storedGamesAfterAggregation ?? 0}</span>
+            <span>{result.representedInStats ? "Stored" : "Pending"}</span>
+            <span>{result.storedTier ?? "Pending"}</span>
           </div>
         ))}
       </div>

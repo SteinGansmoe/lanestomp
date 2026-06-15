@@ -37,6 +37,7 @@ export async function scanRiotCounterPickMatchups({
   riot,
   role,
   seedPuuids,
+  focusChampionId = null,
   target = null,
 }) {
   const normalizedRole = normalizeRole(role);
@@ -65,9 +66,17 @@ export async function scanRiotCounterPickMatchups({
         enemyChampion: normalizeChampionIdentifier(target.enemyChampionId, championRegistry),
       }
     : null;
+  const normalizedFocusChampion =
+    discover && focusChampionId
+      ? normalizeChampionIdentifier(focusChampionId, championRegistry)
+      : null;
 
   if (!discover && (!normalizedTarget?.enemyChampion || !normalizedTarget?.counterChampion)) {
     throw new Error("Target scans require valid enemy and counter champions.");
+  }
+
+  if (discover && focusChampionId && !normalizedFocusChampion) {
+    throw new Error("Discovery focus champion must resolve to an active champion.");
   }
 
   if (
@@ -93,6 +102,16 @@ export async function scanRiotCounterPickMatchups({
     championPairMatched: 0,
     discoveryPairs: new Map(),
     fetchedMatchIds: matchIdResult.totalFetched,
+    focusChampionDisplayName: normalizedFocusChampion
+      ? getChampionDisplayName(championRegistry, normalizedFocusChampion.canonicalKey)
+      : null,
+    focusChampionId: normalizedFocusChampion?.canonicalKey ?? null,
+    focusChampionLosses: 0,
+    focusChampionMatchesFound: 0,
+    focusChampionObservationsDuplicate: 0,
+    focusChampionObservationsNew: 0,
+    focusChampionWins: 0,
+    focusMatchupPairsDiscovered: 0,
     games: 0,
     losses: 0,
     matchesScanned: 0,
@@ -173,6 +192,12 @@ export async function scanRiotCounterPickMatchups({
       roleMatchups.forEach((matchup) =>
         addDiscoveryPair(aggregate.discoveryPairs, matchup, championRegistry),
       );
+      updateFocusedDiscoveryAggregate({
+        aggregate,
+        observations,
+        registry: championRegistry,
+        role: normalizedRole,
+      });
       aggregate.observationsFound = observations.length;
       await emitProgress(onProgress, getSummary(aggregate));
       continue;
@@ -200,6 +225,12 @@ export async function scanRiotCounterPickMatchups({
     await emitProgress(onProgress, getSummary(aggregate));
   }
 
+  updateFocusedDiscoveryAggregate({
+    aggregate,
+    observations,
+    registry: championRegistry,
+    role: normalizedRole,
+  });
   const summary = getSummary(aggregate);
   const targetResult = discover
     ? null
@@ -211,12 +242,25 @@ export async function scanRiotCounterPickMatchups({
 
   return {
     discoveryResults: discover
-      ? getDiscoveryResults({
-          discoveryPairs: aggregate.discoveryPairs,
-          role: normalizedRole,
-        })
+      ? normalizedFocusChampion
+        ? getFocusedDiscoveryResultsFromObservations({
+            focusChampion: normalizedFocusChampion.canonicalKey,
+            observations,
+            registry: championRegistry,
+            role: normalizedRole,
+          })
+        : getDiscoveryResults({
+            discoveryPairs: aggregate.discoveryPairs,
+            role: normalizedRole,
+          })
       : [],
     candidateObservations,
+    focusObservationKeys: normalizedFocusChampion
+      ? getFocusedObservationKeys({
+          focusChampion: normalizedFocusChampion.canonicalKey,
+          observations,
+        })
+      : [],
     observations,
     summary,
     targetResult,
@@ -607,6 +651,132 @@ function getDiscoveryResults({ discoveryPairs, role }) {
     });
 }
 
+export function getFocusedDiscoveryResultsFromObservations({
+  focusChampion,
+  observations,
+  registry,
+  role,
+}) {
+  const focusChampionId = String(focusChampion ?? "").trim();
+
+  if (!focusChampionId) {
+    return [];
+  }
+
+  const pairsByOpponent = new Map();
+
+  for (const observation of observations ?? []) {
+    if (observation.role !== role) {
+      continue;
+    }
+
+    const championA = observation.champion_a;
+    const championB = observation.champion_b;
+    const hasFocusAsA = championA === focusChampionId;
+    const hasFocusAsB = championB === focusChampionId;
+
+    if (!hasFocusAsA && !hasFocusAsB) {
+      continue;
+    }
+
+    const opponentChampion = hasFocusAsA ? championB : championA;
+
+    if (!opponentChampion || opponentChampion === focusChampionId) {
+      continue;
+    }
+
+    const currentPair = pairsByOpponent.get(opponentChampion) ?? {
+      championA: focusChampionId,
+      championADisplayName: getChampionDisplayName(registry, focusChampionId),
+      championAWins: 0,
+      championAWinRate: 0,
+      championB: opponentChampion,
+      championBDisplayName: getChampionDisplayName(registry, opponentChampion),
+      championBWins: 0,
+      championBWinRate: 0,
+      focusChampion: focusChampionId,
+      focusChampionDisplayName: getChampionDisplayName(registry, focusChampionId),
+      focusChampionWinRate: 0,
+      focusChampionWins: 0,
+      games: 0,
+      opponentChampion,
+      opponentChampionDisplayName: getChampionDisplayName(registry, opponentChampion),
+      opponentWins: 0,
+      role,
+    };
+    const focusWon = hasFocusAsA
+      ? Boolean(observation.champion_a_won)
+      : !Boolean(observation.champion_a_won);
+
+    currentPair.games += 1;
+
+    if (focusWon) {
+      currentPair.championAWins += 1;
+      currentPair.focusChampionWins += 1;
+    } else {
+      currentPair.championBWins += 1;
+      currentPair.opponentWins += 1;
+    }
+
+    currentPair.championAWinRate = calculateWinRate({
+      games: currentPair.games,
+      wins: currentPair.championAWins,
+    });
+    currentPair.focusChampionWinRate = currentPair.championAWinRate;
+    currentPair.championBWinRate = calculateWinRate({
+      games: currentPair.games,
+      wins: currentPair.championBWins,
+    });
+    pairsByOpponent.set(opponentChampion, currentPair);
+  }
+
+  return Array.from(pairsByOpponent.values()).sort((left, right) => {
+    if (left.games !== right.games) {
+      return right.games - left.games;
+    }
+
+    return String(left.opponentChampionDisplayName ?? left.opponentChampion).localeCompare(
+      String(right.opponentChampionDisplayName ?? right.opponentChampion),
+    );
+  });
+}
+
+function updateFocusedDiscoveryAggregate({ aggregate, observations, registry, role }) {
+  if (!aggregate.focusChampionId) {
+    return;
+  }
+
+  const focusedResults = getFocusedDiscoveryResultsFromObservations({
+    focusChampion: aggregate.focusChampionId,
+    observations,
+    registry,
+    role,
+  });
+
+  aggregate.focusChampionMatchesFound = focusedResults.reduce(
+    (total, result) => total + result.games,
+    0,
+  );
+  aggregate.focusMatchupPairsDiscovered = focusedResults.length;
+  aggregate.focusChampionWins = focusedResults.reduce(
+    (total, result) => total + result.focusChampionWins,
+    0,
+  );
+  aggregate.focusChampionLosses = focusedResults.reduce(
+    (total, result) => total + result.opponentWins,
+    0,
+  );
+}
+
+function getFocusedObservationKeys({ focusChampion, observations }) {
+  return (observations ?? [])
+    .filter(
+      (observation) =>
+        observation.champion_a === focusChampion || observation.champion_b === focusChampion,
+    )
+    .map((observation) => `${observation.match_id}::${observation.role}`);
+}
+
 function getTargetResult({ aggregate, registry, target }) {
   const winRate = calculateWinRate({
     games: aggregate.games,
@@ -640,6 +810,14 @@ function getSummary(aggregate) {
     candidateObservationsFound: aggregate.candidateObservationsFound ?? 0,
     championPairMatched: aggregate.championPairMatched,
     fetchedMatchIds: aggregate.fetchedMatchIds,
+    focusChampionDisplayName: aggregate.focusChampionDisplayName,
+    focusChampionId: aggregate.focusChampionId,
+    focus_champion_losses: aggregate.focusChampionLosses ?? 0,
+    focus_champion_matches_found: aggregate.focusChampionMatchesFound ?? 0,
+    focus_champion_observations_duplicate: aggregate.focusChampionObservationsDuplicate ?? 0,
+    focus_champion_observations_new: aggregate.focusChampionObservationsNew ?? 0,
+    focus_champion_wins: aggregate.focusChampionWins ?? 0,
+    focus_matchup_pairs_discovered: aggregate.focusMatchupPairsDiscovered ?? 0,
     games: aggregate.games,
     losses: aggregate.losses,
     matchesScanned: aggregate.matchesScanned,

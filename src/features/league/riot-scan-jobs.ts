@@ -51,6 +51,14 @@ export type RiotScanSummary = {
   counterPickAggregatePersistenceErrorGroups?: RiotPersistenceErrorGroup[];
   existingCandidatesUpdated?: number;
   fetchedMatchIds?: number;
+  focusChampionDisplayName?: string | null;
+  focusChampionId?: string | null;
+  focus_champion_losses?: number;
+  focus_champion_matches_found?: number;
+  focus_champion_observations_duplicate?: number;
+  focus_champion_observations_new?: number;
+  focus_champion_wins?: number;
+  focus_matchup_pairs_discovered?: number;
   games?: number;
   losses?: number;
   matchesScanned?: number;
@@ -236,9 +244,18 @@ export type RiotScanDiscoveryResult = {
   championBDisplayName?: string;
   championBWins: number;
   championBWinRate: number;
+  focusChampion?: string;
+  focusChampionDisplayName?: string;
+  focusChampionWinRate?: number;
+  focusChampionWins?: number;
   games: number;
+  opponentChampion?: string;
+  opponentChampionDisplayName?: string;
+  opponentWins?: number;
   representedInStats?: boolean;
   role: LeagueRole;
+  storedGamesAfterAggregation?: number;
+  storedTier?: string | null;
 };
 
 export type RiotScanJobView = {
@@ -247,6 +264,7 @@ export type RiotScanJobView = {
   created_at: string;
   enemy_champion: string | null;
   error_message: string | null;
+  focus_champion_id: string | null;
   id: number;
   match_count: number;
   minimum_games: number;

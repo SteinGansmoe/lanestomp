@@ -71,6 +71,8 @@ export async function persistObservationsAndRebuildStats({
       counterPickAggregatePersistenceFailureSamples: [],
       counterPickAggregatePersistenceErrorGroups: [],
       statsRowsUpdated: 0,
+      insertedObservationKeys: [],
+      duplicateObservationKeys: [],
       updatedStats: [],
     };
   }
@@ -109,6 +111,8 @@ export async function persistObservationsAndRebuildStats({
       counterPickAggregatePersistenceFailureSamples: [],
       counterPickAggregatePersistenceErrorGroups: [],
       statsRowsUpdated: 0,
+      insertedObservationKeys: [],
+      duplicateObservationKeys: [],
       updatedStats: [],
     };
   }
@@ -144,6 +148,11 @@ export async function persistObservationsAndRebuildStats({
     },
   });
   const affectedGroups = getAffectedGroups(writeResult.successfulRows);
+  const insertedObservationKeys = writeResult.insertedRows.map(getMatchupObservationIdentity);
+  const insertedObservationKeySet = new Set(insertedObservationKeys);
+  const duplicateObservationKeys = writeResult.successfulRows
+    .map(getMatchupObservationIdentity)
+    .filter((key) => !insertedObservationKeySet.has(key));
   const rebuildResult = await rebuildCounterPickStatsForGroups({
     groups: affectedGroups,
     supabase,
@@ -169,6 +178,8 @@ export async function persistObservationsAndRebuildStats({
     matchupObservationsRejected: validationPartition.invalid.length,
     matchupObservationsValidated: validationPartition.validated,
     observationsFound: uniqueObservations.length,
+    insertedObservationKeys,
+    duplicateObservationKeys,
     counterPickAggregateValidationFailures: rebuildResult.counterPickAggregateValidationFailures,
     counterPickAggregateValidationSummary: rebuildResult.counterPickAggregateValidationSummary,
     counterPickAggregatesValidated: rebuildResult.counterPickAggregatesValidated,
