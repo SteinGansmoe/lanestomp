@@ -1,4 +1,9 @@
 import type { LeagueRole } from "./roles";
+import type {
+  PaginatedSeedCandidates,
+  RiotSeedCandidateGroupPageRequest,
+  RiotSeedCandidateRankGroupId,
+} from "./riot-seed-candidate-rank-groups";
 
 export type RiotScanMode = "target" | "discovery";
 export type RiotScanStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
@@ -250,6 +255,7 @@ export type RiotSeedCandidateSort =
   | "observed_games"
   | "primary_champion_share"
   | "primary_role_share"
+  | "rank_league_points"
   | "rank_last_success_at"
   | "rank_tier";
 
@@ -262,6 +268,23 @@ export type RiotSeedCandidatesResult =
       error: string;
       ok: false;
     };
+
+export type RiotSeedCandidateGroupedResult =
+  | {
+      counts: Record<RiotSeedCandidateRankGroupId, number>;
+      groups: Partial<Record<RiotSeedCandidateRankGroupId, PaginatedSeedCandidates>>;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type RiotSeedCandidateGroupedQueryInput = {
+  accessToken: string;
+  filters?: RiotSeedCandidateFilters;
+  groups: RiotSeedCandidateGroupPageRequest[];
+};
 
 export type RiotSeedCandidateRankRefreshInput = {
   accessToken: string;

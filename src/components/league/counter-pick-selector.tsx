@@ -124,10 +124,10 @@ type GuideAvailabilityState = {
 };
 
 type MatchStatisticsState = {
+  countersIntoSelectedChampion: Map<string, CounterPickStatistics>;
   error: string | null;
   isLoading: boolean;
-  selectedChampionStatsByEnemyChampion: Map<string, CounterPickStatistics>;
-  statisticsByCounterChampion: Map<string, CounterPickStatistics>;
+  selectedChampionGoodInto: Map<string, CounterPickStatistics>;
 };
 
 const emptyReviewedCounterPickState: ReviewedCounterPickState = {
@@ -140,10 +140,10 @@ const emptyGuideAvailabilityState: GuideAvailabilityState = {
 };
 
 const emptyMatchStatisticsState: MatchStatisticsState = {
+  countersIntoSelectedChampion: new Map(),
   error: null,
   isLoading: false,
-  selectedChampionStatsByEnemyChampion: new Map(),
-  statisticsByCounterChampion: new Map(),
+  selectedChampionGoodInto: new Map(),
 };
 
 const emptyCounterRelationships: readonly LeagueChampionCounterRelationship[] = [];
@@ -229,9 +229,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     [bestCounterRelationships, counteredByRelationships],
   );
   const reviewedCounterPicks = reviewedCounterPickState.counterPicks;
-  const matchStatisticsByCounterChampion = matchStatisticsState.statisticsByCounterChampion;
-  const selectedChampionStatsByEnemyChampion =
-    matchStatisticsState.selectedChampionStatsByEnemyChampion;
+  const countersIntoSelectedChampion = matchStatisticsState.countersIntoSelectedChampion;
+  const selectedChampionGoodInto = matchStatisticsState.selectedChampionGoodInto;
   const bestCounterRows = useMemo(() => {
     return buildCounterRowsFromStatistics({
       champions,
@@ -241,13 +240,13 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
       reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
       role: selectedRole,
       selectedChampion,
-      statisticsByChampion: matchStatisticsByCounterChampion,
+      statisticsByChampion: countersIntoSelectedChampion,
     });
   }, [
     champions,
     combatRelationshipsByChampion,
     guideAvailabilityState.reviewedGuideKeys,
-    matchStatisticsByCounterChampion,
+    countersIntoSelectedChampion,
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
@@ -261,7 +260,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
       reviewedGuideKeys: guideAvailabilityState.reviewedGuideKeys,
       role: selectedRole,
       selectedChampion,
-      statisticsByChampion: selectedChampionStatsByEnemyChampion,
+      statisticsByChampion: selectedChampionGoodInto,
     });
   }, [
     champions,
@@ -270,7 +269,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     reviewedCounterPicks,
     selectedChampion,
     selectedRole,
-    selectedChampionStatsByEnemyChampion,
+    selectedChampionGoodInto,
   ]);
   const allCounterRows = useMemo(
     () => [...bestCounterRows, ...counteredByRows],
@@ -280,17 +279,17 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
     () =>
       getCounterPickListSampleSummary({
         rows: bestCounterRows,
-        statisticsByChampion: matchStatisticsByCounterChampion,
+        statisticsByChampion: countersIntoSelectedChampion,
       }),
-    [bestCounterRows, matchStatisticsByCounterChampion],
+    [bestCounterRows, countersIntoSelectedChampion],
   );
   const counteredBySampleSummary = useMemo(
     () =>
       getCounterPickListSampleSummary({
         rows: counteredByRows,
-        statisticsByChampion: selectedChampionStatsByEnemyChampion,
+        statisticsByChampion: selectedChampionGoodInto,
       }),
-    [counteredByRows, selectedChampionStatsByEnemyChampion],
+    [counteredByRows, selectedChampionGoodInto],
   );
   const totalObservedMatchups =
     bestCounterSampleSummary.observedCount + counteredBySampleSummary.observedCount;
@@ -359,8 +358,8 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
       setMatchStatisticsState({
         error: result.error,
         isLoading: false,
-        selectedChampionStatsByEnemyChampion: result.selectedChampionStatsByEnemyChampion,
-        statisticsByCounterChampion: result.statisticsByCounterChampion,
+        countersIntoSelectedChampion: result.countersIntoSelectedChampion,
+        selectedChampionGoodInto: result.selectedChampionGoodInto,
       });
     }
 
@@ -511,7 +510,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
             />
             <div className="grid gap-5 lg:grid-cols-2">
               <CounterMatchupList
-                emptyText={`No reliable worst matchups are available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}.`}
+                emptyText={`No reliable counters into ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)} are available yet.`}
                 hiddenPreliminaryCount={bestCounterSampleSummary.hiddenPreliminaryCount}
                 isExpanded={isBestCountersExpanded}
                 onExpandedChange={setIsBestCountersExpanded}
@@ -524,7 +523,7 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
                 totalRows={bestCounterRows.length}
               />
               <CounterMatchupList
-                emptyText={`No reliable best matchups are available yet for ${selectedChampion.name} ${getLeagueRoleLabel(selectedRole)}.`}
+                emptyText={`No reliable matchups ${selectedChampion.name} performs well into are available yet.`}
                 hiddenPreliminaryCount={counteredBySampleSummary.hiddenPreliminaryCount}
                 isExpanded={isCounteredByExpanded}
                 onExpandedChange={setIsCounteredByExpanded}
@@ -2433,6 +2432,7 @@ function buildCounterRowsFromStatistics({
     return [];
   }
 
+  // stats.winRate is always the listed champion's win rate against the selected champion.
   const reviewedCounterPickByChampion = new Map(
     reviewedCounterPicks
       .filter((counterPick) =>
@@ -2550,14 +2550,10 @@ function getCachedCounterPickStatistics({
 }
 
 function sortCounterRows(rows: CounterRowModel[], direction: CounterDirection) {
-  const statisticDirection = direction === "best-counter" ? "asc" : "desc";
+  const statisticDirection = direction === "best-counter" ? "desc" : "asc";
 
   return [...rows].sort((left, right) => {
-    const statisticsSort = compareCounterPickStatistics(
-      left.stats,
-      right.stats,
-      statisticDirection,
-    );
+    const statisticsSort = compareCounterPickStatistics(left.stats, right.stats, statisticDirection);
 
     if (statisticsSort !== 0) {
       return statisticsSort;

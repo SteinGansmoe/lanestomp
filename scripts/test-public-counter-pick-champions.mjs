@@ -10,8 +10,13 @@ const {
 } = optionsModule;
 const {
   compareCounterPickStatistics,
+  getPublicCounterResultsForSelectedChampionStats,
+  isCounterIntoSelectedChampion,
+  isCounterPickStatisticsPubliclyRanked,
   isCounterPickStatisticsTrusted,
+  isSelectedChampionGoodInto,
   publicCounterPickLowSampleThreshold,
+  toPublicCounterPickResult,
 } = statisticsModule;
 const { calculateCounterPickConfidence } = confidenceModule;
 
@@ -86,6 +91,8 @@ assert.equal(publicCounterPickLowSampleThreshold, 20);
 assert.equal(isCounterPickStatisticsTrusted(bestRows[0]), true);
 assert.equal(bestRows[0].games < publicCounterPickLowSampleThreshold, true);
 
+await testPublicCounterPickDirectionMapping();
+
 console.log("Public Counter Pick champion coverage passed.");
 
 function champion(id, name, title, tags, isActive) {
@@ -117,5 +124,152 @@ function stat({ games, tier = "B", winRate }) {
     tier,
     winRate,
     wins: Math.round(games * (winRate / 100)),
+  };
+}
+
+async function testPublicCounterPickDirectionMapping() {
+  const zed = publicResultFromStoredStat(
+    {
+      counterChampionId: "Zed",
+      enemyChampionId: "Ahri",
+      games: 10,
+      winRate: 30,
+    },
+    "Ahri",
+  );
+  const syndra = publicResultFromStoredStat(
+    {
+      counterChampionId: "Syndra",
+      enemyChampionId: "Ahri",
+      games: 8,
+      winRate: 50,
+    },
+    "Ahri",
+  );
+  const sylas = publicResultFromStoredStat(
+    {
+      counterChampionId: "Sylas",
+      enemyChampionId: "Ahri",
+      games: 5,
+      winRate: 80,
+    },
+    "Ahri",
+  );
+  const zedInverse = publicResultFromStoredStat(
+    {
+      counterChampionId: "Ahri",
+      enemyChampionId: "Zed",
+      games: 10,
+      winRate: 70,
+    },
+    "Ahri",
+  );
+  const talon = publicResultFromStoredStat(
+    {
+      counterChampionId: "Talon",
+      enemyChampionId: "Ahri",
+      games: 4,
+      winRate: 25,
+    },
+    "Ahri",
+  );
+  assert.ok(zed.result);
+  assert.ok(syndra.result);
+  assert.ok(sylas.result);
+  assert.equal(zedInverse.result, null);
+  assert.ok(talon.result);
+
+  const publicResults = [zed.result, syndra.result, sylas.result, talon.result];
+  const bestIds = publicResults
+    .filter(isCounterIntoSelectedChampion)
+    .map((result) => result.listedChampionId.toLowerCase())
+    .sort();
+  const badIds = publicResults
+    .filter(isSelectedChampionGoodInto)
+    .map((result) => result.listedChampionId.toLowerCase())
+    .sort();
+  const duplicateIds = bestIds.filter((id) => badIds.includes(id));
+  const buckets = getPublicCounterResultsForSelectedChampionStats(
+    [
+      zed.stat,
+      syndra.stat,
+      sylas.stat,
+      zedInverse.stat,
+      storedStat({
+        counterChampionId: "Ahri",
+        enemyChampionId: "Sylas",
+        games: 5,
+        winRate: 20,
+      }),
+      talon.stat,
+    ],
+    "Ahri",
+  );
+  const bucketBestIds = buckets.countersIntoSelectedChampion
+    .map((result) => result.listedChampionId.toLowerCase())
+    .sort();
+  const bucketBadIds = buckets.selectedChampionGoodInto
+    .map((result) => result.listedChampionId.toLowerCase())
+    .sort();
+  const bucketZed = buckets.countersIntoSelectedChampion.find(
+    (result) => result.listedChampionId === "Zed",
+  );
+  const bucketSylas = buckets.selectedChampionGoodInto.find(
+    (result) => result.listedChampionId === "Sylas",
+  );
+
+  assert.equal(zed.result.statistics.winRate, 70);
+  assert.equal(sylas.result.statistics.winRate, 20);
+  assert.equal(isCounterIntoSelectedChampion(zed.result), true);
+  assert.equal(isSelectedChampionGoodInto(zed.result), false);
+  assert.notEqual(zed.result.statistics.winRate, 30);
+  assert.notEqual(sylas.result.statistics.winRate, 80);
+  assert.deepEqual(bestIds, ["talon", "zed"]);
+  assert.deepEqual(badIds, ["sylas"]);
+  assert.deepEqual(duplicateIds, []);
+  assert.equal(syndra.result.statistics.winRate, 50);
+  assert.equal(isCounterIntoSelectedChampion(syndra.result), false);
+  assert.equal(isSelectedChampionGoodInto(syndra.result), false);
+  assert.equal(sylas.result.statistics.confidence.warningVisible, true);
+  assert.equal(isCounterPickStatisticsPubliclyRanked(talon.result.statistics), false);
+  assert.deepEqual(bucketBestIds, ["talon", "zed"]);
+  assert.deepEqual(bucketBadIds, ["sylas"]);
+  assert.equal(bucketZed?.statistics.winRate, 70);
+  assert.equal(bucketSylas?.statistics.winRate, 20);
+}
+
+function publicResultFromStoredStat(input, selectedChampionId) {
+  const statRow = storedStat(input);
+
+  return {
+    result: toPublicCounterPickResult(statRow, selectedChampionId),
+    stat: statRow,
+  };
+}
+
+function storedStat({
+  counterChampionId,
+  enemyChampionId,
+  games,
+  patch = "15.12",
+  role = "mid",
+  tier = "A",
+  winRate,
+}) {
+  const wins = Math.round(games * (winRate / 100));
+
+  return {
+    counter_champion_id: counterChampionId,
+    enemy_champion_id: enemyChampionId,
+    games,
+    id: `${enemyChampionId}-${counterChampionId}`,
+    losses: games - wins,
+    patch,
+    rank_bracket: "all",
+    role,
+    tier,
+    updated_at: "2026-06-15T00:00:00.000Z",
+    win_rate: winRate,
+    wins,
   };
 }

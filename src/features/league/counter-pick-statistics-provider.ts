@@ -2,19 +2,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   calculateCounterPickStatTier,
-  fetchCounterPickStatsByCounterAndRole,
   fetchCounterPickStatsByEnemyAndRole,
-  type CounterPickStat,
-} from "@/src/features/league/counter-pick-stats";
+} from "./counter-pick-stats";
 import {
+  getPublicCounterResultsForSelectedChampionStats,
   type CounterPickStatistics,
   type CounterPickStatisticsTier,
   minimumTrustedCounterPickGames,
-} from "@/src/features/league/counter-pick-statistics";
-import {
-  calculateCounterPickConfidence,
-} from "@/src/features/league/counter-pick-confidence";
-import type { LeagueRole } from "@/src/features/league/roles";
+} from "./counter-pick-statistics";
+import { calculateCounterPickConfidence } from "./counter-pick-confidence";
+import type { LeagueRole } from "./roles";
 
 export type CounterPickStatsConfidence = "high" | "low" | "medium" | "not_enough_data";
 
@@ -48,8 +45,12 @@ type FetchCounterPickStatsInput = {
 };
 
 type CounterPickStatsResult = {
+  countersIntoSelectedChampion: Map<string, CounterPickStatistics>;
   error: string | null;
+  selectedChampionGoodInto: Map<string, CounterPickStatistics>;
+  /** @deprecated Use selectedChampionGoodInto. */
   selectedChampionStatsByEnemyChampion: Map<string, CounterPickStatistics>;
+  /** @deprecated Use countersIntoSelectedChampion. */
   statisticsByCounterChampion: Map<string, CounterPickStatistics>;
 };
 
@@ -154,45 +155,60 @@ export async function fetchCounterPickStatsForEnemy({
   patch = null,
   role,
 }: FetchCounterPickStatsInput): Promise<CounterPickStatsResult> {
-  const statisticsByCounterChampion = new Map<string, CounterPickStatistics>();
-  const selectedChampionStatsByEnemyChampion = new Map<string, CounterPickStatistics>();
-  const [counteredByResult, selectedCountersResult] = await Promise.all([
-    fetchCounterPickStatsByEnemyAndRole({
-      client,
-      enemyChampionId: enemyChampion,
-      patch,
-      rankBracket: "all",
-      role,
-    }),
-    fetchCounterPickStatsByCounterAndRole({
-      client,
-      counterChampionId: enemyChampion,
-      patch,
-      rankBracket: "all",
-      role,
-    }),
-  ]);
+  const countersIntoSelectedChampion = new Map<string, CounterPickStatistics>();
+  const selectedChampionGoodInto = new Map<string, CounterPickStatistics>();
+  const counteredByResult = await fetchCounterPickStatsByEnemyAndRole({
+    client,
+    enemyChampionId: enemyChampion,
+    patch,
+    rankBracket: "all",
+    role,
+  });
+  const publicResults = getPublicCounterResultsForSelectedChampionStats(
+    counteredByResult.stats,
+    enemyChampion,
+  );
 
-  for (const stat of counteredByResult.stats) {
-    statisticsByCounterChampion.set(
-      normalizeCounterPickStatsKey(stat.counter_champion_id),
-      getCounterPickStatisticsFromProviderStats(
-        getSelectedChampionStatisticsFromCounteredByStoredStat(stat),
-      ),
+  for (const result of publicResults.countersIntoSelectedChampion) {
+    countersIntoSelectedChampion.set(
+      normalizeCounterPickStatsKey(result.listedChampionId),
+      result.statistics,
     );
   }
 
-  for (const stat of selectedCountersResult.stats) {
-    selectedChampionStatsByEnemyChampion.set(
-      normalizeCounterPickStatsKey(stat.enemy_champion_id),
-      getCounterPickStatisticsFromProviderStats(getCounterPickStatsFromStoredStat(stat)),
+  for (const result of publicResults.selectedChampionGoodInto) {
+    selectedChampionGoodInto.set(
+      normalizeCounterPickStatsKey(result.listedChampionId),
+      result.statistics,
     );
   }
 
   return {
-    error: counteredByResult.error ?? selectedCountersResult.error,
-    selectedChampionStatsByEnemyChampion,
-    statisticsByCounterChampion,
+    countersIntoSelectedChampion,
+    error: counteredByResult.error,
+    selectedChampionGoodInto,
+    selectedChampionStatsByEnemyChampion: selectedChampionGoodInto,
+    statisticsByCounterChampion: countersIntoSelectedChampion,
+  };
+}
+
+function getNotEnoughDataCounterPickStats({
+  counterChampion,
+  enemyChampion,
+  patch,
+  role,
+}: Omit<CounterPickStatsInput, "patch"> & { patch: string }): CounterPickMatchupStats {
+  return {
+    confidence: "not_enough_data",
+    counterChampion,
+    enemyChampion,
+    games: 0,
+    lastUpdatedAt: "",
+    patch,
+    role,
+    tier: "D",
+    winRate: 0,
+    wins: 0,
   };
 }
 
@@ -296,85 +312,6 @@ function createMockCounterPickStats(seed: MockCounterPickStatsSeed): CounterPick
       winRate: seed.winRate,
     }),
     wins,
-  };
-}
-
-function getCounterPickStatsFromStoredStat(
-  stat: CounterPickStat,
-): CounterPickMatchupStats {
-  const confidence = getCounterPickStatsConfidence(stat.games);
-
-  return {
-    confidence,
-    counterChampion: stat.counter_champion_id,
-    enemyChampion: stat.enemy_champion_id,
-    games: stat.games,
-    lastUpdatedAt: stat.updated_at,
-    patch: stat.patch,
-    role: stat.role,
-    tier: stat.tier,
-    winRate: stat.win_rate,
-    wins: stat.wins,
-  };
-}
-
-function getSelectedChampionStatisticsFromCounteredByStoredStat(
-  stat: CounterPickStat,
-): CounterPickMatchupStats {
-  const selectedChampionWins = stat.losses;
-  const selectedChampionWinRate =
-    stat.games > 0 ? Number((100 - Number(stat.win_rate)).toFixed(2)) : 0;
-  const confidence = getCounterPickStatsConfidence(stat.games);
-
-  return {
-    confidence,
-    counterChampion: stat.enemy_champion_id,
-    enemyChampion: stat.counter_champion_id,
-    games: stat.games,
-    lastUpdatedAt: stat.updated_at,
-    patch: stat.patch,
-    role: stat.role,
-    tier: stat.tier,
-    winRate: selectedChampionWinRate,
-    wins: selectedChampionWins,
-  };
-}
-
-function getCounterPickStatisticsFromProviderStats(
-  stats: CounterPickMatchupStats,
-): CounterPickStatistics {
-  return {
-    confidence: calculateCounterPickConfidence(stats.games),
-    games: stats.games,
-    lastUpdatedAt: stats.lastUpdatedAt,
-    patch: stats.patch,
-    rankFilter: null,
-    region: null,
-    sampleConfidence: stats.confidence === "not_enough_data" ? "low_sample" : stats.confidence,
-    source: "provider",
-    tier: stats.confidence === "not_enough_data" ? null : stats.tier,
-    winRate: stats.confidence === "not_enough_data" ? null : stats.winRate,
-    wins: stats.wins,
-  };
-}
-
-function getNotEnoughDataCounterPickStats({
-  counterChampion,
-  enemyChampion,
-  patch,
-  role,
-}: Omit<CounterPickStatsInput, "patch"> & { patch: string }): CounterPickMatchupStats {
-  return {
-    confidence: "not_enough_data",
-    counterChampion,
-    enemyChampion,
-    games: 0,
-    lastUpdatedAt: "",
-    patch,
-    role,
-    tier: "D",
-    winRate: 0,
-    wins: 0,
   };
 }
 

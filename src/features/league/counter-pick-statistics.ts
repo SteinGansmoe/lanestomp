@@ -29,6 +29,40 @@ export type CounterPickStatistics = {
   wins: number | null;
 };
 
+export type PublicCounterResult = {
+  games: number;
+  listedChampionId: string;
+  listedChampionWinRate: number;
+  losses: number;
+  selectedChampionId: string;
+  selectedChampionWinRate: number;
+  statistics: CounterPickStatistics;
+  tier: CounterPickStatisticsTier | null;
+  wins: number;
+};
+
+export type PublicCounterResultBuckets = {
+  countersIntoSelectedChampion: PublicCounterResult[];
+  selectedChampionGoodInto: PublicCounterResult[];
+};
+
+export type DirectedCounterPickAggregateForPublicResult = {
+  counter_champion_id: string;
+  enemy_champion_id: string;
+  games: number;
+  losses: number;
+  patch: string;
+  rank_bracket?: string | null;
+  role: string;
+  tier: CounterPickStatisticsTier;
+  updated_at: string;
+  win_rate: number;
+  wins: number;
+};
+
+// Stored public rows are loaded with enemy_champion_id equal to the selected champion.
+// In that orientation, wins/losses/win_rate describe the selected enemy champion,
+// so the listed counter champion's public WR is the inverse of the stored WR.
 export type CounterPickStatisticsTierThreshold = {
   minimumWinRate: number;
   tier: CounterPickStatisticsTier;
@@ -46,6 +80,8 @@ export const counterPickStatisticsTierThresholds: CounterPickStatisticsTierThres
 export const minimumTrustedCounterPickGames = 100;
 export const publicCounterPickLowSampleThreshold = lowCounterPickConfidenceGames;
 export const publicCounterPickMinimumRankedGames = minimumPublicCounterPickGames;
+export const EVEN_MATCHUP_MIN_WIN_RATE = 48;
+export const EVEN_MATCHUP_MAX_WIN_RATE = 52;
 
 const counterPickStatisticsTierSortValues = {
   "S+": 5,
@@ -165,6 +201,111 @@ export function isCounterPickStatisticsTrusted(statistics: CounterPickStatistics
 
 export function isCounterPickStatisticsPubliclyRanked(statistics: CounterPickStatistics) {
   return isCounterPickStatisticsTrusted(statistics) && statistics.confidence.publiclyRanked;
+}
+
+export function getPublicCounterResultsForSelectedChampionStats(
+  stats: DirectedCounterPickAggregateForPublicResult[],
+  selectedChampionId: string,
+): PublicCounterResultBuckets {
+  const countersIntoSelectedChampion: PublicCounterResult[] = [];
+  const selectedChampionGoodInto: PublicCounterResult[] = [];
+  const listedChampionIds = new Set<string>();
+
+  for (const stat of stats) {
+    const result = toPublicCounterPickResult(stat, selectedChampionId);
+
+    if (!result) {
+      continue;
+    }
+
+    const listedChampionKey = getPublicCounterResultIdentityKey(result.listedChampionId);
+
+    if (listedChampionIds.has(listedChampionKey)) {
+      continue;
+    }
+
+    if (isCounterIntoSelectedChampion(result)) {
+      countersIntoSelectedChampion.push(result);
+      listedChampionIds.add(listedChampionKey);
+    } else if (isSelectedChampionGoodInto(result)) {
+      selectedChampionGoodInto.push(result);
+      listedChampionIds.add(listedChampionKey);
+    }
+  }
+
+  return {
+    countersIntoSelectedChampion,
+    selectedChampionGoodInto,
+  };
+}
+
+export function toPublicCounterPickResult(
+  stat: DirectedCounterPickAggregateForPublicResult,
+  selectedChampionId: string,
+): PublicCounterResult | null {
+  if (stat.enemy_champion_id !== selectedChampionId) {
+    return null;
+  }
+
+  const listedChampionId = stat.counter_champion_id;
+  const selectedChampionWinRate = Number(stat.win_rate);
+  const listedChampionWinRate =
+    stat.games > 0 ? getReverseCounterPickWinRate(selectedChampionWinRate) : 0;
+  const wins = stat.losses;
+  const losses = stat.wins;
+  const confidence = calculateCounterPickConfidence(stat.games);
+  const sampleConfidence = getCounterPickSampleConfidence(stat.games);
+  const isRanked = confidence.publiclyRanked;
+  const tier = getCounterPickStatisticsTier(listedChampionWinRate, stat.games, sampleConfidence);
+
+  return {
+    games: stat.games,
+    listedChampionId,
+    listedChampionWinRate,
+    losses,
+    selectedChampionId,
+    selectedChampionWinRate,
+    statistics: {
+      confidence,
+      games: stat.games,
+      lastUpdatedAt: stat.updated_at,
+      patch: stat.patch,
+      rankFilter: stat.rank_bracket ?? null,
+      region: null,
+      sampleConfidence,
+      source: "provider",
+      tier,
+      winRate: isRanked ? listedChampionWinRate : null,
+      wins,
+    },
+    tier,
+    wins,
+  };
+}
+
+export function isCounterIntoSelectedChampion(
+  result: Pick<PublicCounterResult, "listedChampionWinRate">,
+) {
+  return result.listedChampionWinRate > EVEN_MATCHUP_MAX_WIN_RATE;
+}
+
+export function isSelectedChampionGoodInto(
+  result: Pick<PublicCounterResult, "listedChampionWinRate">,
+) {
+  return result.listedChampionWinRate < EVEN_MATCHUP_MIN_WIN_RATE;
+}
+
+export function getReverseCounterPickWinRate(winRate: number) {
+  return Number((100 - Number(winRate)).toFixed(2));
+}
+
+function getPublicCounterResultIdentityKey(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 export function getCounterPickPublicTierLabel(statistics: CounterPickStatistics) {

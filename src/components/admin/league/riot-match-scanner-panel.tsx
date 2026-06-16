@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Clipboard, Loader2, Play, RefreshCw, Search, UserPlus, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clipboard,
+  Loader2,
+  Play,
+  RefreshCw,
+  Search,
+  UserPlus,
+  X,
+} from "lucide-react";
 
 import {
   getLeagueChampionRegistryAdminStatus,
+  getPaginatedRiotSeedCandidates,
   getRecentRiotScanJobs,
-  getRiotSeedCandidates,
   getRiotScanJob,
   refreshRiotSeedCandidateRanks,
   resolveRiotIdsToPuuids,
@@ -28,6 +39,17 @@ import type {
   RiotScanMode,
   RiotScanTargetResult,
 } from "@/src/features/league/riot-scan-jobs";
+import {
+  createDefaultRiotSeedCandidateGroupRequest,
+  getDefaultRiotSeedCandidateSortDirection,
+  getRiotSeedCandidateRange,
+  riotSeedCandidatePageSizes,
+  riotSeedCandidateRankGroups,
+  type PaginatedSeedCandidates,
+  type RiotSeedCandidateGroupPageRequest,
+  type RiotSeedCandidateRankGroupId,
+  type RiotSeedCandidateSortDirection,
+} from "@/src/features/league/riot-seed-candidate-rank-groups";
 import { leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
@@ -92,6 +114,7 @@ const seedCandidateSorts: Array<{
   { label: "Primary role share", value: "primary_role_share" },
   { label: "Primary champion share", value: "primary_champion_share" },
   { label: "Rank tier", value: "rank_tier" },
+  { label: "League points", value: "rank_league_points" },
   { label: "Rank refreshed", value: "rank_last_success_at" },
   { label: "Created", value: "created_at" },
 ];
@@ -117,6 +140,17 @@ type LeagueChampionRegistryStatus = Extract<
   LeagueChampionRegistryAdminStatusResult,
   { ok: true }
 >["status"];
+
+type SeedCandidateGroupState = PaginatedSeedCandidates & {
+  error: string | null;
+  isExpanded: boolean;
+  isLoading: boolean;
+  loaded: boolean;
+  sort: RiotSeedCandidateSort;
+  sortDirection: RiotSeedCandidateSortDirection;
+};
+
+type SeedCandidateGroupStates = Record<RiotSeedCandidateRankGroupId, SeedCandidateGroupState>;
 
 export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueChampion[] }) {
   const scannerCardRef = useRef<HTMLDivElement | null>(null);
@@ -1035,7 +1069,9 @@ function RiotSeedCandidatesPanel({
   onFocusScanner: () => void;
   onScanStarted: (job: RiotScanJobView) => void;
 }) {
-  const [candidates, setCandidates] = useState<RiotSeedCandidateView[]>([]);
+  const [candidateGroups, setCandidateGroups] = useState<SeedCandidateGroupStates>(
+    createInitialSeedCandidateGroupStates,
+  );
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
   const [platformRegion, setPlatformRegion] = useState("EUW1");
   const [statusFilter, setStatusFilter] = useState<RiotSeedCandidateStatus | "all">("all");
@@ -1056,8 +1092,10 @@ function RiotSeedCandidatesPanel({
     useState<NonNullable<RiotSeedCandidateFilters["lastScanned"]>>("all");
   const [rankLastRefreshedFilter, setRankLastRefreshedFilter] =
     useState<NonNullable<RiotSeedCandidateFilters["rankLastRefreshed"]>>("all");
-  const [sort, setSort] = useState<RiotSeedCandidateSort>("observed_games");
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(() => new Set());
+  const [selectedCandidateCache, setSelectedCandidateCache] = useState<
+    Map<string, RiotSeedCandidateView>
+  >(() => new Map());
   const [showScanPanel, setShowScanPanel] = useState(false);
   const [bulkMode, setBulkMode] = useState<RiotScanMode>("discovery");
   const [bulkRole, setBulkRole] = useState<LeagueRole>("mid");
@@ -1075,8 +1113,18 @@ function RiotSeedCandidatesPanel({
   });
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const selectedCandidates = useMemo(
-    () => candidates.filter((candidate) => selectedCandidateIds.has(candidate.id)),
-    [candidates, selectedCandidateIds],
+    () =>
+      [...selectedCandidateIds]
+        .map((candidateId) => selectedCandidateCache.get(candidateId))
+        .filter((candidate): candidate is RiotSeedCandidateView => Boolean(candidate)),
+    [selectedCandidateCache, selectedCandidateIds],
+  );
+  const expandedRankGroupIds = useMemo(
+    () =>
+      riotSeedCandidateRankGroups
+        .filter((rankGroup) => candidateGroups[rankGroup.id].isExpanded)
+        .map((rankGroup) => rankGroup.id),
+    [candidateGroups],
   );
   const selectedRecentScanCount = selectedCandidates.filter((candidate) =>
     wasCandidateScannedRecently(candidate.last_scanned_at),
@@ -1084,25 +1132,13 @@ function RiotSeedCandidatesPanel({
   const selectedRecentRankRefreshCount = selectedCandidates.filter((candidate) =>
     wasCandidateRankRefreshedRecently(candidate.rank_last_success_at),
   ).length;
-  const allVisibleSelected =
-    candidates.length > 0 &&
-    candidates.every((candidate) => selectedCandidateIds.has(candidate.id));
 
   useEffect(() => {
-    void loadCandidates();
+    void loadCandidateGroups({ groupIds: ["master-plus"] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadCandidates() {
-    const tokenResult = await getAccessToken();
-
-    if (!tokenResult.ok) {
-      setStatus({ error: tokenResult.error, isLoading: false, success: null });
-      return;
-    }
-
-    setStatus({ error: null, isLoading: true, success: null });
-
+  function buildCandidateFilters(): RiotSeedCandidateFilters {
     const parsedMinimumGames = Number(minimumObservedGames);
     const parsedMinimumPrimaryRoleShare = Number(minimumPrimaryRoleShare);
     const parsedMinimumPrimaryChampionShare = Number(minimumPrimaryChampionShare);
@@ -1134,31 +1170,153 @@ function RiotSeedCandidatesPanel({
       filters.minPrimaryChampionShare = parsedMinimumPrimaryChampionShare;
     }
 
-    const result = await getRiotSeedCandidates({
+    return filters;
+  }
+
+  async function loadCandidateGroups({
+    groupIds = expandedRankGroupIds,
+    overrides = {},
+    resetPages = false,
+  }: {
+    groupIds?: RiotSeedCandidateRankGroupId[];
+    overrides?: Partial<Record<RiotSeedCandidateRankGroupId, Partial<SeedCandidateGroupState>>>;
+    resetPages?: boolean;
+  } = {}) {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+    setCandidateGroups((currentGroups) => {
+      const nextGroups = { ...currentGroups };
+
+      for (const groupId of groupIds) {
+        nextGroups[groupId] = {
+          ...nextGroups[groupId],
+          error: null,
+          isLoading: true,
+        };
+      }
+
+      return nextGroups;
+    });
+
+    const groups: RiotSeedCandidateGroupPageRequest[] = groupIds.map((groupId) => {
+      const currentGroup = {
+        ...candidateGroups[groupId],
+        ...(overrides[groupId] ?? {}),
+      };
+
+      return {
+        page: resetPages ? 1 : currentGroup.page,
+        pageSize: currentGroup.pageSize,
+        rankGroup: groupId,
+        sort: currentGroup.sort,
+        sortDirection: currentGroup.sortDirection,
+      };
+    });
+
+    const result = await getPaginatedRiotSeedCandidates({
       accessToken: tokenResult.accessToken,
-      filters,
-      limit: 50,
-      sort,
+      filters: buildCandidateFilters(),
+      groups,
     });
 
     if (!result.ok) {
       setStatus({ error: result.error, isLoading: false, success: null });
+      setCandidateGroups((currentGroups) => {
+        const nextGroups = { ...currentGroups };
+
+        for (const groupId of groupIds) {
+          nextGroups[groupId] = {
+            ...nextGroups[groupId],
+            error: result.error,
+            isLoading: false,
+          };
+        }
+
+        return nextGroups;
+      });
       return;
     }
 
-    setCandidates(result.candidates);
-    setSelectedCandidateIds((currentSelection) => {
-      const visibleCandidateIds = new Set(result.candidates.map((candidate) => candidate.id));
+    setCandidateGroups((currentGroups) => {
+      const nextGroups = { ...currentGroups };
 
-      return new Set(
-        [...currentSelection].filter((candidateId) => visibleCandidateIds.has(candidateId)),
-      );
+      for (const rankGroup of riotSeedCandidateRankGroups) {
+        const groupResult = result.groups[rankGroup.id];
+
+        nextGroups[rankGroup.id] = {
+          ...nextGroups[rankGroup.id],
+          error: null,
+          isLoading: false,
+          totalCount: result.counts[rankGroup.id] ?? 0,
+          ...(groupResult
+            ? {
+                candidates: groupResult.candidates,
+                loaded: true,
+                page: groupResult.page,
+                pageSize: groupResult.pageSize,
+                totalPages: groupResult.totalPages,
+              }
+            : {}),
+        };
+      }
+
+      for (const groupRequest of groups) {
+        nextGroups[groupRequest.rankGroup] = {
+          ...nextGroups[groupRequest.rankGroup],
+          isExpanded: true,
+          sort: groupRequest.sort,
+          sortDirection: groupRequest.sortDirection,
+        };
+      }
+
+      return nextGroups;
+    });
+    setSelectedCandidateCache((currentCache) => {
+      const nextCache = new Map(currentCache);
+
+      for (const groupResult of Object.values(result.groups)) {
+        for (const candidate of groupResult?.candidates ?? []) {
+          nextCache.set(candidate.id, candidate);
+        }
+      }
+
+      return nextCache;
     });
     setStatus({
       error: null,
       isLoading: false,
-      success: `${result.candidates.length} seed ${result.candidates.length === 1 ? "candidate" : "candidates"} loaded.`,
+      success: "Seed candidate groups refreshed.",
     });
+  }
+
+  function applyFilters() {
+    const groupsToLoad: RiotSeedCandidateRankGroupId[] =
+      expandedRankGroupIds.length > 0 ? expandedRankGroupIds : ["master-plus"];
+
+    setSelectedCandidateIds(new Set());
+    setSelectedCandidateCache(new Map());
+    setShowScanPanel(false);
+    setCandidateGroups((currentGroups) => {
+      const nextGroups = { ...currentGroups };
+
+      for (const rankGroup of riotSeedCandidateRankGroups) {
+        nextGroups[rankGroup.id] = {
+          ...nextGroups[rankGroup.id],
+          candidates: [],
+          loaded: false,
+          page: 1,
+        };
+      }
+
+      return nextGroups;
+    });
+    void loadCandidateGroups({ groupIds: groupsToLoad, resetPages: true });
   }
 
   async function copyPuuid(value: string) {
@@ -1170,26 +1328,51 @@ function RiotSeedCandidatesPanel({
     }
   }
 
-  function toggleCandidateSelection(candidateId: string) {
+  function toggleCandidateSelection(candidate: RiotSeedCandidateView) {
     setSelectedCandidateIds((currentSelection) => {
       const nextSelection = new Set(currentSelection);
 
-      if (nextSelection.has(candidateId)) {
-        nextSelection.delete(candidateId);
+      if (nextSelection.has(candidate.id)) {
+        nextSelection.delete(candidate.id);
       } else {
-        nextSelection.add(candidateId);
+        nextSelection.add(candidate.id);
       }
 
       return nextSelection;
     });
+    setSelectedCandidateCache((currentCache) => {
+      const nextCache = new Map(currentCache);
+      nextCache.set(candidate.id, candidate);
+
+      return nextCache;
+    });
   }
 
-  function selectAllVisibleCandidates() {
-    setSelectedCandidateIds(new Set(candidates.map((candidate) => candidate.id)));
+  function selectAllVisibleCandidates(rankGroup: RiotSeedCandidateRankGroupId) {
+    const visibleCandidates = candidateGroups[rankGroup].candidates;
+
+    setSelectedCandidateIds((currentSelection) => {
+      const nextSelection = new Set(currentSelection);
+
+      for (const candidate of visibleCandidates) {
+        nextSelection.add(candidate.id);
+      }
+
+      return nextSelection;
+    });
+    setSelectedCandidateCache((currentCache) => {
+      const nextCache = new Map(currentCache);
+
+      for (const candidate of visibleCandidates) {
+        nextCache.set(candidate.id, candidate);
+      }
+
+      return nextCache;
+    });
     setStatus({
       error: null,
       isLoading: false,
-      success: `${candidates.length} visible ${candidates.length === 1 ? "candidate" : "candidates"} selected.`,
+      success: `${visibleCandidates.length} visible ${visibleCandidates.length === 1 ? "candidate" : "candidates"} selected.`,
     });
   }
 
@@ -1197,6 +1380,90 @@ function RiotSeedCandidatesPanel({
     setSelectedCandidateIds(new Set());
     setShowScanPanel(false);
     setStatus({ error: null, isLoading: false, success: "Selection cleared." });
+  }
+
+  function toggleRankGroup(rankGroup: RiotSeedCandidateRankGroupId) {
+    const nextExpanded = !candidateGroups[rankGroup].isExpanded;
+
+    setCandidateGroups((currentGroups) => ({
+      ...currentGroups,
+      [rankGroup]: {
+        ...currentGroups[rankGroup],
+        isExpanded: nextExpanded,
+      },
+    }));
+
+    if (nextExpanded && !candidateGroups[rankGroup].loaded) {
+      void loadCandidateGroups({ groupIds: [rankGroup] });
+    }
+  }
+
+  function changeRankGroupPage(rankGroup: RiotSeedCandidateRankGroupId, page: number) {
+    const currentGroup = candidateGroups[rankGroup];
+    const nextPage = Math.min(Math.max(page, 1), currentGroup.totalPages);
+
+    setCandidateGroups((currentGroups) => ({
+      ...currentGroups,
+      [rankGroup]: {
+        ...currentGroups[rankGroup],
+        page: nextPage,
+      },
+    }));
+    void loadCandidateGroups({
+      groupIds: [rankGroup],
+      overrides: {
+        [rankGroup]: {
+          page: nextPage,
+        },
+      },
+    });
+  }
+
+  function changeRankGroupPageSize(rankGroup: RiotSeedCandidateRankGroupId, pageSize: number) {
+    setCandidateGroups((currentGroups) => ({
+      ...currentGroups,
+      [rankGroup]: {
+        ...currentGroups[rankGroup],
+        page: 1,
+        pageSize,
+      },
+    }));
+    void loadCandidateGroups({
+      groupIds: [rankGroup],
+      overrides: {
+        [rankGroup]: {
+          page: 1,
+          pageSize,
+        },
+      },
+    });
+  }
+
+  function changeRankGroupSort(
+    rankGroup: RiotSeedCandidateRankGroupId,
+    nextSort: RiotSeedCandidateSort,
+  ) {
+    const sortDirection = getDefaultRiotSeedCandidateSortDirection(nextSort);
+
+    setCandidateGroups((currentGroups) => ({
+      ...currentGroups,
+      [rankGroup]: {
+        ...currentGroups[rankGroup],
+        page: 1,
+        sort: nextSort,
+        sortDirection,
+      },
+    }));
+    void loadCandidateGroups({
+      groupIds: [rankGroup],
+      overrides: {
+        [rankGroup]: {
+          page: 1,
+          sort: nextSort,
+          sortDirection,
+        },
+      },
+    });
   }
 
   function addSelectedToScanner() {
@@ -1277,7 +1544,7 @@ function RiotSeedCandidatesPanel({
         .filter(Boolean)
         .join(" "),
     });
-    await loadCandidates();
+    await loadCandidateGroups();
   }
 
   function openSelectedScanPanel() {
@@ -1396,7 +1663,7 @@ function RiotSeedCandidatesPanel({
     });
     setShowScanPanel(false);
     setSelectedCandidateIds(new Set());
-    await loadCandidates();
+    await loadCandidateGroups();
   }
 
   return (
@@ -1412,7 +1679,7 @@ function RiotSeedCandidatesPanel({
           <Button
             className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
             disabled={status.isLoading}
-            onClick={() => void loadCandidates()}
+            onClick={() => void loadCandidateGroups()}
             type="button"
             variant="ghost"
           >
@@ -1633,30 +1900,11 @@ function RiotSeedCandidatesPanel({
           </label>
         </div>
 
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <label className="block w-full space-y-2 sm:w-64">
-            <span className="text-sm text-zinc-300">Sort</span>
-            <select
-              className={`${fieldClassName} h-10`}
-              onChange={(event) => setSort(event.target.value as RiotSeedCandidateSort)}
-              value={sort}
-            >
-              {seedCandidateSorts.map((candidateSort) => (
-                <option
-                  className={selectOptionClassName}
-                  key={candidateSort.value}
-                  value={candidateSort.value}
-                >
-                  {candidateSort.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
+        <div className="flex flex-wrap items-end justify-end gap-3">
           <Button
             className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
             disabled={status.isLoading}
-            onClick={() => void loadCandidates()}
+            onClick={applyFilters}
             type="button"
           >
             {status.isLoading ? (
@@ -1675,21 +1923,10 @@ function RiotSeedCandidatesPanel({
               {selectedCandidates.length === 1 ? "candidate" : "candidates"} selected
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Select all applies to visible results only.
+              Select all applies to the visible page inside each rank group.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-              disabled={candidates.length === 0 || allVisibleSelected}
-              onClick={selectAllVisibleCandidates}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <Check className="size-3.5" aria-hidden="true" />
-              Select all visible
-            </Button>
             <Button
               className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
               disabled={selectedCandidates.length === 0}
@@ -1765,7 +2002,7 @@ function RiotSeedCandidatesPanel({
 
         {selectedCandidates.length > 0 && selectedRecentScanCount === selectedCandidates.length ? (
           <p className="rounded-md border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-400">
-            All visible selected candidates were scanned recently.
+            All selected candidates were scanned recently.
           </p>
         ) : null}
 
@@ -1919,34 +2156,262 @@ function RiotSeedCandidatesPanel({
           </p>
         ) : null}
 
-        {candidates.length === 0 ? (
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
-            No seed candidates matched the current filters.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {candidates.map((candidate) => (
-              <SeedCandidateRow
-                championDisplayNamesById={championDisplayNamesById}
-                candidate={candidate}
-                expanded={expandedCandidateId === candidate.id}
-                key={candidate.id}
-                onCopy={() => void copyPuuid(candidate.puuid)}
-                onRefreshRank={() => void refreshCandidateRank(candidate.id)}
-                onSelectionChange={() => toggleCandidateSelection(candidate.id)}
-                onToggle={() =>
-                  setExpandedCandidateId((currentId) =>
-                    currentId === candidate.id ? null : candidate.id,
-                  )
-                }
-                selected={selectedCandidateIds.has(candidate.id)}
-              />
-            ))}
-          </div>
-        )}
+        <div className="space-y-3">
+          {riotSeedCandidateRankGroups.map((rankGroup) => (
+            <SeedCandidateRankGroupSection
+              championDisplayNamesById={championDisplayNamesById}
+              expandedCandidateId={expandedCandidateId}
+              group={rankGroup}
+              groupState={candidateGroups[rankGroup.id]}
+              key={rankGroup.id}
+              onCandidateCopy={(candidate) => void copyPuuid(candidate.puuid)}
+              onCandidateRefreshRank={(candidate) => void refreshCandidateRank(candidate.id)}
+              onCandidateSelectionChange={toggleCandidateSelection}
+              onCandidateToggle={(candidate) =>
+                setExpandedCandidateId((currentId) =>
+                  currentId === candidate.id ? null : candidate.id,
+                )
+              }
+              onPageChange={(page) => changeRankGroupPage(rankGroup.id, page)}
+              onPageSizeChange={(pageSize) => changeRankGroupPageSize(rankGroup.id, pageSize)}
+              onRetry={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
+              onSelectAllVisible={() => selectAllVisibleCandidates(rankGroup.id)}
+              onSortChange={(nextSort) => changeRankGroupSort(rankGroup.id, nextSort)}
+              onToggle={() => toggleRankGroup(rankGroup.id)}
+              selectedCandidateIds={selectedCandidateIds}
+              selectedCount={
+                candidateGroups[rankGroup.id].candidates.filter((candidate) =>
+                  selectedCandidateIds.has(candidate.id),
+                ).length
+              }
+            />
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
+}
+
+function SeedCandidateRankGroupSection({
+  championDisplayNamesById,
+  expandedCandidateId,
+  group,
+  groupState,
+  onCandidateCopy,
+  onCandidateRefreshRank,
+  onCandidateSelectionChange,
+  onCandidateToggle,
+  onPageChange,
+  onPageSizeChange,
+  onRetry,
+  onSelectAllVisible,
+  onSortChange,
+  onToggle,
+  selectedCandidateIds,
+  selectedCount,
+}: {
+  championDisplayNamesById: Map<string, string>;
+  expandedCandidateId: string | null;
+  group: (typeof riotSeedCandidateRankGroups)[number];
+  groupState: SeedCandidateGroupState;
+  onCandidateCopy: (candidate: RiotSeedCandidateView) => void;
+  onCandidateRefreshRank: (candidate: RiotSeedCandidateView) => void;
+  onCandidateSelectionChange: (candidate: RiotSeedCandidateView) => void;
+  onCandidateToggle: (candidate: RiotSeedCandidateView) => void;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  onRetry: () => void;
+  onSelectAllVisible: () => void;
+  onSortChange: (sort: RiotSeedCandidateSort) => void;
+  onToggle: () => void;
+  selectedCandidateIds: Set<string>;
+  selectedCount: number;
+}) {
+  const range = getRiotSeedCandidateRange({
+    page: groupState.page,
+    pageSize: groupState.pageSize,
+    totalCount: groupState.totalCount,
+  });
+  const visibleCandidatesSelected =
+    groupState.candidates.length > 0 &&
+    groupState.candidates.every((candidate) => selectedCandidateIds.has(candidate.id));
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10 bg-black/15">
+      <button
+        className="flex w-full items-center justify-between gap-3 p-4 text-left transition hover:bg-white/[0.04]"
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          {groupState.isExpanded ? (
+            <ChevronDown className="size-4 shrink-0 text-cyan-200" aria-hidden="true" />
+          ) : (
+            <ChevronRight className="size-4 shrink-0 text-zinc-500" aria-hidden="true" />
+          )}
+          <span>
+            <span className="block font-mono text-base text-white">{group.label}</span>
+            <span className="mt-1 block text-xs text-zinc-500">{group.description}</span>
+          </span>
+        </span>
+        <span className="shrink-0 text-right text-xs text-zinc-400">
+          <span className="block font-semibold text-cyan-100">
+            {formatNumber(groupState.totalCount)}{" "}
+            {groupState.totalCount === 1 ? "candidate" : "candidates"}
+          </span>
+          {selectedCount > 0 ? (
+            <span className="mt-1 block text-amber-100">
+              {selectedCount} selected on this page
+            </span>
+          ) : null}
+        </span>
+      </button>
+
+      {groupState.isExpanded ? (
+        <div className="space-y-4 border-t border-white/10 p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block space-y-2">
+                <span className="text-xs text-zinc-400">Sort this group</span>
+                <select
+                  className={`${fieldClassName} h-9`}
+                  disabled={groupState.isLoading}
+                  onChange={(event) => onSortChange(event.target.value as RiotSeedCandidateSort)}
+                  value={groupState.sort}
+                >
+                  {seedCandidateSorts.map((candidateSort) => (
+                    <option
+                      className={selectOptionClassName}
+                      key={candidateSort.value}
+                      value={candidateSort.value}
+                    >
+                      {candidateSort.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-2">
+                <span className="text-xs text-zinc-400">Page size</span>
+                <select
+                  className={`${fieldClassName} h-9`}
+                  disabled={groupState.isLoading}
+                  onChange={(event) => onPageSizeChange(Number(event.target.value))}
+                  value={groupState.pageSize}
+                >
+                  {riotSeedCandidatePageSizes.map((pageSize) => (
+                    <option className={selectOptionClassName} key={pageSize} value={pageSize}>
+                      {pageSize}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-zinc-500">
+                Showing {range.from}-{range.to} of {formatNumber(groupState.totalCount)}
+              </span>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={groupState.page <= 1 || groupState.isLoading}
+                onClick={() => onPageChange(groupState.page - 1)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Previous
+              </Button>
+              <span className="text-xs text-zinc-400">
+                Page {groupState.page} of {groupState.totalPages}
+              </span>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={groupState.page >= groupState.totalPages || groupState.isLoading}
+                onClick={() => onPageChange(groupState.page + 1)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Next
+              </Button>
+              <Button
+                className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+                disabled={groupState.candidates.length === 0 || visibleCandidatesSelected}
+                onClick={onSelectAllVisible}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Check className="size-3.5" aria-hidden="true" />
+                Select all visible
+              </Button>
+            </div>
+          </div>
+
+          {groupState.isLoading ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
+              Loading {group.label} candidates...
+            </div>
+          ) : groupState.error ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-100">
+              <span>Could not load candidates.</span>
+              <Button
+                className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                onClick={onRetry}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : groupState.candidates.length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
+              No {group.label} candidates match the current filters.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {groupState.candidates.map((candidate) => (
+                <SeedCandidateRow
+                  championDisplayNamesById={championDisplayNamesById}
+                  candidate={candidate}
+                  expanded={expandedCandidateId === candidate.id}
+                  key={candidate.id}
+                  onCopy={() => onCandidateCopy(candidate)}
+                  onRefreshRank={() => onCandidateRefreshRank(candidate)}
+                  onSelectionChange={() => onCandidateSelectionChange(candidate)}
+                  onToggle={() => onCandidateToggle(candidate)}
+                  selected={selectedCandidateIds.has(candidate.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function createInitialSeedCandidateGroupStates(): SeedCandidateGroupStates {
+  return riotSeedCandidateRankGroups.reduce((groups, group) => {
+    const request = createDefaultRiotSeedCandidateGroupRequest(group.id);
+
+    groups[group.id] = {
+      candidates: [],
+      error: null,
+      isExpanded: group.id === "master-plus",
+      isLoading: false,
+      loaded: false,
+      page: request.page,
+      pageSize: request.pageSize,
+      sort: request.sort,
+      sortDirection: request.sortDirection,
+      totalCount: 0,
+      totalPages: 1,
+    };
+
+    return groups;
+  }, {} as SeedCandidateGroupStates);
 }
 
 function SeedCandidateRow({

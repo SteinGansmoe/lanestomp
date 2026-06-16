@@ -28,6 +28,7 @@
     "test:riot-batch-isolation": "node scripts/test-riot-batch-isolation.mjs",
     "test:riot-observation-validation": "node scripts/test-riot-observation-validation.mjs",
     "test:riot-seed-rank-enrichment": "node scripts/test-riot-seed-rank-enrichment.mjs",
+    "test:riot-seed-candidate-pagination": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-riot-seed-candidate-pagination.mjs",
     "test:riot-seed-candidate-bulk-controls": "node scripts/test-riot-seed-candidate-bulk-controls.mjs",
     "test:riot-seed-candidates": "node scripts/test-riot-seed-candidates.mjs",
     "update:counter-pick-stats": "node scripts/update-counter-pick-match-statistics.mjs",

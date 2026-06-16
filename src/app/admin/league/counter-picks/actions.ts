@@ -6,6 +6,8 @@ import type {
   RiotIdResolverInput,
   RiotIdResolverResult,
   RiotIdResolverRow,
+  RiotSeedCandidateGroupedQueryInput,
+  RiotSeedCandidateGroupedResult,
   RiotSeedCandidateFilters,
   RiotSeedCandidateRankRefreshInput,
   RiotSeedCandidateRankRefreshResult,
@@ -22,6 +24,16 @@ import type {
   RiotScanTargetResult,
   StartRiotScanJobInput,
 } from "@/src/features/league/riot-scan-jobs";
+import {
+  getRiotSeedCandidateTotalPages,
+  normalizeRiotSeedCandidatePage,
+  normalizeRiotSeedCandidatePageSize,
+  riotSeedCandidateRankGroupIds,
+  riotSeedCandidateRankGroupsById,
+  sortRiotSeedCandidateRows,
+  type PaginatedSeedCandidates,
+  type RiotSeedCandidateRankGroupId,
+} from "@/src/features/league/riot-seed-candidate-rank-groups";
 import type { LeagueRole } from "@/src/features/league/roles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -40,6 +52,58 @@ const maxWarningOnlyPersistenceFailureCount = 5;
 const maxWarningOnlyPersistenceFailureRate = 0.01;
 const riotScanJobSelect =
   "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, focus_champion_id, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at";
+const riotSeedCandidateSelect = [
+  "id",
+  "puuid",
+  "platform_region",
+  "regional_routing",
+  "source",
+  "status",
+  "first_seen_match_id",
+  "first_seen_scan_job_id",
+  "first_seen_at",
+  "last_seen_at",
+  "observed_games",
+  "estimated_primary_role",
+  "estimated_secondary_role",
+  "primary_role_share",
+  "secondary_role_share",
+  "primary_champion",
+  "primary_champion_role",
+  "primary_champion_games",
+  "primary_champion_share",
+  "rank_queue_type",
+  "rank_tier",
+  "rank_division",
+  "rank_league_points",
+  "rank_wins",
+  "rank_losses",
+  "rank_win_rate",
+  "rank_hot_streak",
+  "rank_veteran",
+  "rank_fresh_blood",
+  "rank_inactive",
+  "ranked_at",
+  "rank_last_attempted_at",
+  "rank_last_success_at",
+  "rank_next_eligible_at",
+  "rank_enrichment_status",
+  "rank_enrichment_error_code",
+  "rank_enrichment_error_message",
+  "rank_enrichment_attempts",
+  "rank_enrichment_failures",
+  "role_distribution",
+  "top_champions",
+  "last_profiled_at",
+  "last_scanned_at",
+  "next_eligible_scan_at",
+  "times_scanned",
+  "successful_scan_count",
+  "failed_scan_count",
+  "consecutive_scan_failures",
+  "latest_match_seen_at",
+  "created_at",
+].join(", ");
 
 type AuthorizedClientResult =
   | {
@@ -401,134 +465,11 @@ export async function getRiotSeedCandidates({
     return serviceClientResult;
   }
 
-  let query = serviceClientResult.supabase
-    .from("riot_seed_candidates")
-    .select(
-      [
-        "id",
-        "puuid",
-        "platform_region",
-        "regional_routing",
-        "source",
-        "status",
-        "first_seen_match_id",
-        "first_seen_scan_job_id",
-        "first_seen_at",
-        "last_seen_at",
-        "observed_games",
-        "estimated_primary_role",
-        "estimated_secondary_role",
-        "primary_role_share",
-        "secondary_role_share",
-        "primary_champion",
-        "primary_champion_role",
-        "primary_champion_games",
-        "primary_champion_share",
-        "rank_queue_type",
-        "rank_tier",
-        "rank_division",
-        "rank_league_points",
-        "rank_wins",
-        "rank_losses",
-        "rank_win_rate",
-        "rank_hot_streak",
-        "rank_veteran",
-        "rank_fresh_blood",
-        "rank_inactive",
-        "ranked_at",
-        "rank_last_attempted_at",
-        "rank_last_success_at",
-        "rank_next_eligible_at",
-        "rank_enrichment_status",
-        "rank_enrichment_error_code",
-        "rank_enrichment_error_message",
-        "rank_enrichment_attempts",
-        "rank_enrichment_failures",
-        "role_distribution",
-        "top_champions",
-        "last_profiled_at",
-        "last_scanned_at",
-        "next_eligible_scan_at",
-        "times_scanned",
-        "successful_scan_count",
-        "failed_scan_count",
-        "consecutive_scan_failures",
-        "latest_match_seen_at",
-        "created_at",
-      ].join(", "),
-    );
-
-  if (filters.platformRegion?.trim()) {
-    query = query.eq("platform_region", filters.platformRegion.trim().toUpperCase());
-  }
-
-  if (filters.status && filters.status !== "all") {
-    query = query.eq("status", filters.status);
-  }
-
-  if (filters.primaryRole && filters.primaryRole !== "all") {
-    query = query.eq("estimated_primary_role", filters.primaryRole);
-  }
-
-  if (filters.primaryChampion?.trim()) {
-    query = query.ilike("primary_champion", `%${filters.primaryChampion.trim()}%`);
-  }
-
-  if (filters.lastScanned === "never") {
-    query = query.is("last_scanned_at", null);
-  } else if (filters.lastScanned === "recent") {
-    query = query.gte("last_scanned_at", getRecentSeedCandidateScanCutoff());
-  } else if (filters.lastScanned === "older") {
-    query = query.or(
-      `last_scanned_at.is.null,last_scanned_at.lt.${getRecentSeedCandidateScanCutoff()}`,
-    );
-  }
-
-  if (filters.source && filters.source !== "all") {
-    query = query.eq("source", filters.source);
-  }
-
-  if (filters.rankStatus && filters.rankStatus !== "all") {
-    query = query.eq("rank_enrichment_status", filters.rankStatus);
-  }
-
-  if (filters.rankTier && filters.rankTier !== "all") {
-    query = query.eq("rank_tier", filters.rankTier);
-  }
-
-  if (filters.rankedState === "ranked") {
-    query = query.eq("rank_enrichment_status", "ranked");
-  } else if (filters.rankedState === "unranked") {
-    query = query.in("rank_enrichment_status", ["unranked", "not_found"]);
-  }
-
-  if (filters.rankLastRefreshed === "never") {
-    query = query.is("rank_last_success_at", null);
-  } else if (filters.rankLastRefreshed === "recent") {
-    query = query.gte("rank_last_success_at", getRecentSeedCandidateRankRefreshCutoff());
-  } else if (filters.rankLastRefreshed === "older") {
-    query = query.or(
-      `rank_last_success_at.is.null,rank_last_success_at.lt.${getRecentSeedCandidateRankRefreshCutoff()}`,
-    );
-  }
-
-  if (filters.minObservedGames && filters.minObservedGames > 0) {
-    query = query.gte("observed_games", Math.trunc(filters.minObservedGames));
-  }
-
-  const minPrimaryRoleShare = normalizeShareFilter(filters.minPrimaryRoleShare);
-  const minPrimaryChampionShare = normalizeShareFilter(filters.minPrimaryChampionShare);
-
-  if (minPrimaryRoleShare !== null) {
-    query = query.gte("primary_role_share", minPrimaryRoleShare);
-  }
-
-  if (minPrimaryChampionShare !== null) {
-    query = query.gte("primary_champion_share", minPrimaryChampionShare);
-  }
-
   const orderColumn = getCandidateSortColumn(sort);
-  const { data, error } = await query
+  const { data, error } = await buildRiotSeedCandidateQuery({
+    filters,
+    supabase: serviceClientResult.supabase,
+  })
     .order(orderColumn, { ascending: false, nullsFirst: false })
     .limit(sort === "rank_tier" ? 100 : Math.min(Math.max(limit, 1), 100))
     .returns<RiotSeedCandidateView[]>();
@@ -542,6 +483,103 @@ export async function getRiotSeedCandidates({
 
   return {
     candidates: sortCandidateRows(data ?? [], sort).slice(0, Math.min(Math.max(limit, 1), 100)),
+    ok: true,
+  };
+}
+
+export async function getPaginatedRiotSeedCandidates({
+  accessToken,
+  filters = {},
+  groups,
+}: RiotSeedCandidateGroupedQueryInput): Promise<RiotSeedCandidateGroupedResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "view Riot seed candidates");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const supabase = serviceClientResult.supabase;
+  const counts = {} as Record<RiotSeedCandidateRankGroupId, number>;
+  const groupedResults: Partial<
+    Record<RiotSeedCandidateRankGroupId, PaginatedSeedCandidates>
+  > = {};
+
+  for (const rankGroup of riotSeedCandidateRankGroupIds) {
+    const { count, error } = await buildRiotSeedCandidateQuery({
+      filters,
+      rankGroup,
+      selectOptions: { count: "exact", head: true },
+      supabase,
+    });
+
+    if (error) {
+      return {
+        error: "Seed candidate counts could not be loaded.",
+        ok: false,
+      };
+    }
+
+    counts[rankGroup] = count ?? 0;
+  }
+
+  for (const groupRequest of groups) {
+    const pageSize = normalizeRiotSeedCandidatePageSize(groupRequest.pageSize);
+    const totalCount = counts[groupRequest.rankGroup] ?? 0;
+    const totalPages = getRiotSeedCandidateTotalPages(totalCount, pageSize);
+    const page = Math.min(normalizeRiotSeedCandidatePage(groupRequest.page), totalPages);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const orderColumn = getCandidateSortColumn(groupRequest.sort);
+    const pageResult =
+      groupRequest.sort === "rank_tier"
+        ? await fetchRankTierSortedSeedCandidatePage({
+            filters,
+            page,
+            pageSize,
+            rankGroup: groupRequest.rankGroup,
+            sortDirection: groupRequest.sortDirection,
+            supabase,
+          })
+        : await buildRiotSeedCandidateQuery({
+            filters,
+            rankGroup: groupRequest.rankGroup,
+            supabase,
+          })
+            .order(orderColumn, {
+              ascending: groupRequest.sortDirection === "asc",
+              nullsFirst: false,
+            })
+            .range(from, to)
+            .returns<RiotSeedCandidateView[]>();
+
+    if (pageResult.error) {
+      return {
+        error: `Could not load ${getRiotSeedCandidateGroupLabel(groupRequest.rankGroup)} candidates.`,
+        ok: false,
+      };
+    }
+
+    groupedResults[groupRequest.rankGroup] = {
+      candidates: sortRiotSeedCandidateRows(pageResult.data ?? [], {
+        sort: groupRequest.sort,
+        sortDirection: groupRequest.sortDirection,
+      }),
+      page,
+      pageSize,
+      totalCount,
+      totalPages,
+    };
+  }
+
+  return {
+    counts,
+    groups: groupedResults,
     ok: true,
   };
 }
@@ -1802,6 +1840,8 @@ function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
       return "created_at";
     case "last_scanned_at":
       return "last_scanned_at";
+    case "rank_league_points":
+      return "rank_league_points";
     case "rank_last_success_at":
       return "rank_last_success_at";
     case "rank_tier":
@@ -1816,6 +1856,207 @@ function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
     default:
       return "last_seen_at";
   }
+}
+
+function buildRiotSeedCandidateQuery({
+  filters,
+  rankGroup = null,
+  selectOptions,
+  supabase,
+}: {
+  filters: RiotSeedCandidateFilters;
+  rankGroup?: RiotSeedCandidateRankGroupId | null;
+  selectOptions?: {
+    count?: "exact";
+    head?: boolean;
+  };
+  supabase: SupabaseClient;
+}) {
+  let query = supabase.from("riot_seed_candidates").select(riotSeedCandidateSelect, selectOptions);
+
+  if (filters.platformRegion?.trim()) {
+    query = query.eq("platform_region", filters.platformRegion.trim().toUpperCase());
+  }
+
+  if (filters.status && filters.status !== "all") {
+    query = query.eq("status", filters.status);
+  }
+
+  if (filters.primaryRole && filters.primaryRole !== "all") {
+    query = query.eq("estimated_primary_role", filters.primaryRole);
+  }
+
+  if (filters.primaryChampion?.trim()) {
+    query = query.ilike("primary_champion", `%${filters.primaryChampion.trim()}%`);
+  }
+
+  if (filters.lastScanned === "never") {
+    query = query.is("last_scanned_at", null);
+  } else if (filters.lastScanned === "recent") {
+    query = query.gte("last_scanned_at", getRecentSeedCandidateScanCutoff());
+  } else if (filters.lastScanned === "older") {
+    query = query.or(
+      `last_scanned_at.is.null,last_scanned_at.lt.${getRecentSeedCandidateScanCutoff()}`,
+    );
+  }
+
+  if (filters.source && filters.source !== "all") {
+    query = query.eq("source", filters.source);
+  }
+
+  if (filters.rankStatus && filters.rankStatus !== "all") {
+    query = query.eq("rank_enrichment_status", filters.rankStatus);
+  }
+
+  if (filters.rankTier && filters.rankTier !== "all") {
+    query = query.eq("rank_tier", filters.rankTier);
+  }
+
+  if (filters.rankedState === "ranked") {
+    query = query.eq("rank_enrichment_status", "ranked");
+  } else if (filters.rankedState === "unranked") {
+    query = query.in("rank_enrichment_status", ["unranked", "not_found"]);
+  }
+
+  if (filters.rankLastRefreshed === "never") {
+    query = query.is("rank_last_success_at", null);
+  } else if (filters.rankLastRefreshed === "recent") {
+    query = query.gte("rank_last_success_at", getRecentSeedCandidateRankRefreshCutoff());
+  } else if (filters.rankLastRefreshed === "older") {
+    query = query.or(
+      `rank_last_success_at.is.null,rank_last_success_at.lt.${getRecentSeedCandidateRankRefreshCutoff()}`,
+    );
+  }
+
+  if (filters.minObservedGames && filters.minObservedGames > 0) {
+    query = query.gte("observed_games", Math.trunc(filters.minObservedGames));
+  }
+
+  const minPrimaryRoleShare = normalizeShareFilter(filters.minPrimaryRoleShare);
+  const minPrimaryChampionShare = normalizeShareFilter(filters.minPrimaryChampionShare);
+
+  if (minPrimaryRoleShare !== null) {
+    query = query.gte("primary_role_share", minPrimaryRoleShare);
+  }
+
+  if (minPrimaryChampionShare !== null) {
+    query = query.gte("primary_champion_share", minPrimaryChampionShare);
+  }
+
+  if (rankGroup) {
+    const group = riotSeedCandidateRankGroupsById.get(rankGroup);
+
+    if (group && group.tiers.length > 0) {
+      query = query.eq("rank_enrichment_status", "ranked").in("rank_tier", group.tiers);
+    } else {
+      query = query.or(
+        "rank_tier.is.null,rank_enrichment_status.in.(pending,unranked,not_found,failed)",
+      );
+    }
+  }
+
+  return query;
+}
+
+function getRiotSeedCandidateGroupLabel(rankGroup: RiotSeedCandidateRankGroupId) {
+  return riotSeedCandidateRankGroupsById.get(rankGroup)?.label ?? "Riot seed";
+}
+
+async function fetchRankTierSortedSeedCandidatePage({
+  filters,
+  page,
+  pageSize,
+  rankGroup,
+  sortDirection,
+  supabase,
+}: {
+  filters: RiotSeedCandidateFilters;
+  page: number;
+  pageSize: number;
+  rankGroup: RiotSeedCandidateRankGroupId;
+  sortDirection: "asc" | "desc";
+  supabase: SupabaseClient;
+}) {
+  const group = riotSeedCandidateRankGroupsById.get(rankGroup);
+
+  if (!group || group.tiers.length === 0) {
+    return buildRiotSeedCandidateQuery({
+      filters,
+      rankGroup,
+      supabase,
+    })
+      .order("observed_games", { ascending: false, nullsFirst: false })
+      .range((page - 1) * pageSize, page * pageSize - 1)
+      .returns<RiotSeedCandidateView[]>();
+  }
+
+  const tiers = sortDirection === "asc" ? group.tiers : [...group.tiers].reverse();
+  const rows: RiotSeedCandidateView[] = [];
+  let offset = (page - 1) * pageSize;
+  let remaining = pageSize;
+
+  for (const tier of tiers) {
+    if (remaining <= 0) {
+      break;
+    }
+
+    const { count, error: countError } = await buildRiotSeedCandidateQuery({
+      filters,
+      rankGroup,
+      selectOptions: { count: "exact", head: true },
+      supabase,
+    }).eq("rank_tier", tier);
+
+    if (countError) {
+      return {
+        data: null,
+        error: countError,
+      };
+    }
+
+    const tierCount = count ?? 0;
+
+    if (offset >= tierCount) {
+      offset -= tierCount;
+      continue;
+    }
+
+    const from = offset;
+    const to = Math.min(tierCount - 1, offset + remaining - 1);
+    const { data, error } = await buildRiotSeedCandidateQuery({
+      filters,
+      rankGroup,
+      supabase,
+    })
+      .eq("rank_tier", tier)
+      .order("rank_division", {
+        ascending: sortDirection === "asc",
+        nullsFirst: false,
+      })
+      .order("rank_league_points", {
+        ascending: sortDirection === "desc",
+        nullsFirst: false,
+      })
+      .order("observed_games", { ascending: false, nullsFirst: false })
+      .range(from, to)
+      .returns<RiotSeedCandidateView[]>();
+
+    if (error) {
+      return {
+        data: null,
+        error,
+      };
+    }
+
+    rows.push(...(data ?? []));
+    remaining = pageSize - rows.length;
+    offset = 0;
+  }
+
+  return {
+    data: rows,
+    error: null,
+  };
 }
 
 function sortCandidateRows(candidates: RiotSeedCandidateView[], sort: RiotSeedCandidateSort) {
