@@ -50,6 +50,7 @@ import type {
   RiotScanMode,
   RiotScanTargetResult,
 } from "@/src/features/league/riot-scan-jobs";
+import { shouldRefreshCounterPickManagementMetricsForJobTransition } from "@/src/features/league/counter-pick-management-metrics";
 import {
   seedCandidateLifecycleLabels,
   seedCandidateLifecycleReasonLabels,
@@ -160,8 +161,9 @@ const matchupCoverageAttributionFilters: Array<MatchupRankAttributionMethod | "a
   "single-player",
   "two-player-average",
 ];
-const matchupCoverageCandidateFilters: Array<NonNullable<MatchupRankCoverageFilters["hasCandidate"]>> =
-  ["all", "yes", "no"];
+const matchupCoverageCandidateFilters: Array<
+  NonNullable<MatchupRankCoverageFilters["hasCandidate"]>
+> = ["all", "yes", "no"];
 const matchupCoverageSorts: Array<{
   label: string;
   value: MatchupRankCoverageSort;
@@ -200,8 +202,15 @@ type SeedCandidateGroupState = PaginatedSeedCandidates & {
 
 type SeedCandidateGroupStates = Record<RiotSeedCandidateRankGroupId, SeedCandidateGroupState>;
 
-export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueChampion[] }) {
+export function RiotMatchScannerPanel({
+  champions,
+  onScanTerminal,
+}: {
+  champions: AdminLeagueChampion[];
+  onScanTerminal?: () => Promise<void> | void;
+}) {
   const scannerCardRef = useRef<HTMLDivElement | null>(null);
+  const terminalRefreshJobIdsRef = useRef<Set<number>>(new Set());
   const [mode, setMode] = useState<RiotScanMode>("target");
   const [seedText, setSeedText] = useState("");
   const [role, setRole] = useState<LeagueRole>("mid");
@@ -214,6 +223,7 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
   const [displayLimit, setDisplayLimit] = useState("20");
   const [activeJob, setActiveJob] = useState<RiotScanJobView | null>(null);
   const [recentJobs, setRecentJobs] = useState<RiotScanJobView[]>([]);
+  const [seedCandidateRefreshKey, setSeedCandidateRefreshKey] = useState(0);
   const [formStatus, setFormStatus] = useState<FormStatus>({
     error: null,
     isLoading: false,
@@ -321,10 +331,23 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
       return;
     }
 
+    const shouldRefreshAfterTerminalTransition =
+      activeJob?.id === result.job.id &&
+      shouldRefreshCounterPickManagementMetricsForJobTransition({
+        alreadyRefreshed: terminalRefreshJobIdsRef.current.has(result.job.id),
+        nextStatus: result.job.status,
+        previousStatus: activeJob.status,
+      });
+
     setActiveJob(result.job);
     setRecentJobs((currentJobs) =>
       [result.job, ...currentJobs.filter((job) => job.id !== result.job.id)].slice(0, 10),
     );
+
+    if (shouldRefreshAfterTerminalTransition) {
+      terminalRefreshJobIdsRef.current.add(result.job.id);
+      await refreshAfterTerminalScan();
+    }
   }
 
   async function handleSubmit() {
@@ -472,6 +495,11 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
     void refreshRecentJobs();
   }
 
+  async function refreshAfterTerminalScan() {
+    setSeedCandidateRefreshKey((currentKey) => currentKey + 1);
+    await Promise.all([onScanTerminal?.(), refreshRecentJobs()]);
+  }
+
   return (
     <div className="space-y-6">
       <LeagueChampionRegistryStatusPanel getAccessToken={getAccessToken} />
@@ -488,6 +516,7 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
         onAddPuuids={addPuuidsToScanner}
         onFocusScanner={focusScanner}
         onScanStarted={handleSelectedScanStarted}
+        refreshSignal={seedCandidateRefreshKey}
       />
 
       <Card
@@ -1119,9 +1148,7 @@ function MatchupRankCoverageQueuePanel({
   const [candidates, setCandidates] = useState<MatchupRankCoverageCandidate[]>([]);
   const [summary, setSummary] = useState<MatchupRankCoverageSummary | null>(null);
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
-  const [selectedCandidateKeys, setSelectedCandidateKeys] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [selectedCandidateKeys, setSelectedCandidateKeys] = useState<Set<string>>(() => new Set());
   const [status, setStatus] = useState<FormStatus>({
     error: null,
     isLoading: false,
@@ -1153,8 +1180,9 @@ function MatchupRankCoverageQueuePanel({
   const [championFilter, setChampionFilter] = useState("");
   const [patchFilter, setPatchFilter] = useState("");
   const [platformFilter, setPlatformFilter] = useState("EUW1");
-  const [attributionFilter, setAttributionFilter] =
-    useState<MatchupRankAttributionMethod | "all">("all");
+  const [attributionFilter, setAttributionFilter] = useState<MatchupRankAttributionMethod | "all">(
+    "all",
+  );
   const [hasCandidateFilter, setHasCandidateFilter] =
     useState<NonNullable<MatchupRankCoverageFilters["hasCandidate"]>>("all");
   const [rankStatusFilter, setRankStatusFilter] =
@@ -1172,8 +1200,7 @@ function MatchupRankCoverageQueuePanel({
     () =>
       selectedCandidates.reduce(
         (projection, candidate) => ({
-          observationsAffected:
-            projection.observationsAffected + candidate.observationsAffected,
+          observationsAffected: projection.observationsAffected + candidate.observationsAffected,
           twoPlayerUpgradePotential:
             projection.twoPlayerUpgradePotential + candidate.twoPlayerUpgradePotential,
           unknownObservationsAffected:
@@ -1271,9 +1298,7 @@ function MatchupRankCoverageQueuePanel({
   }
 
   function selectAllVisible() {
-    setSelectedCandidateKeys(
-      new Set(candidates.map((candidate) => candidate.identityKey)),
-    );
+    setSelectedCandidateKeys(new Set(candidates.map((candidate) => candidate.identityKey)));
     setStatus({
       error: null,
       isLoading: false,
@@ -1529,7 +1554,11 @@ function MatchupRankCoverageQueuePanel({
               value={sort}
             >
               {matchupCoverageSorts.map((sortOption) => (
-                <option className={selectOptionClassName} key={sortOption.value} value={sortOption.value}>
+                <option
+                  className={selectOptionClassName}
+                  key={sortOption.value}
+                  value={sortOption.value}
+                >
                   {sortOption.label}
                 </option>
               ))}
@@ -1756,10 +1785,22 @@ function MatchupRankCoverageQueuePanel({
 
                   {expanded ? (
                     <div className="grid gap-3 border-t border-white/10 p-4 text-sm text-zinc-300 lg:grid-cols-3">
-                      <Metric label="Candidate row" value={candidate.candidateId ? "Linked" : "Missing"} />
-                      <Metric label="Last refresh" value={formatDateTime(candidate.lastRankRefreshAt)} />
-                      <Metric label="Next eligible" value={formatDateTime(candidate.nextEligibleAt)} />
-                      <Metric label="Latest match seen" value={formatDateTime(candidate.latestMatchSeenAt)} />
+                      <Metric
+                        label="Candidate row"
+                        value={candidate.candidateId ? "Linked" : "Missing"}
+                      />
+                      <Metric
+                        label="Last refresh"
+                        value={formatDateTime(candidate.lastRankRefreshAt)}
+                      />
+                      <Metric
+                        label="Next eligible"
+                        value={formatDateTime(candidate.nextEligibleAt)}
+                      />
+                      <Metric
+                        label="Latest match seen"
+                        value={formatDateTime(candidate.latestMatchSeenAt)}
+                      />
                       <Metric
                         label="Rank"
                         value={
@@ -1779,9 +1820,10 @@ function MatchupRankCoverageQueuePanel({
                               className="rounded-md border border-white/10 bg-white/[0.03] p-2 text-xs text-zinc-400"
                               key={`${candidate.identityKey}-${matchup.matchIdPreview}-${matchup.championA}-${matchup.championB}`}
                             >
-                              {(championDisplayNamesById.get(matchup.championA) ?? matchup.championA)} vs{" "}
-                              {(championDisplayNamesById.get(matchup.championB) ?? matchup.championB)} ·{" "}
-                              {formatRole(matchup.role)} · {matchup.patch} ·{" "}
+                              {championDisplayNamesById.get(matchup.championA) ?? matchup.championA}{" "}
+                              vs{" "}
+                              {championDisplayNamesById.get(matchup.championB) ?? matchup.championB}{" "}
+                              · {formatRole(matchup.role)} · {matchup.patch} ·{" "}
                               {formatEnumLabel(matchup.method)}
                             </div>
                           ))}
@@ -1815,6 +1857,7 @@ function RiotSeedCandidatesPanel({
   onAddPuuids,
   onFocusScanner,
   onScanStarted,
+  refreshSignal,
 }: {
   champions: AdminLeagueChampion[];
   championDisplayNamesById: Map<string, string>;
@@ -1831,13 +1874,16 @@ function RiotSeedCandidatesPanel({
   onAddPuuids: (puuids: string[]) => number;
   onFocusScanner: () => void;
   onScanStarted: (job: RiotScanJobView) => void;
+  refreshSignal: number;
 }) {
   const [candidateGroups, setCandidateGroups] = useState<SeedCandidateGroupStates>(
     createInitialSeedCandidateGroupStates,
   );
-  const [activeRankGroup, setActiveRankGroup] = useState<RiotSeedCandidateRankGroupId>("master-plus");
-  const [lifecycleFilter, setLifecycleFilter] =
-    useState<SeedCandidateLifecycleState | "all">("ready-to-scan");
+  const [activeRankGroup, setActiveRankGroup] =
+    useState<RiotSeedCandidateRankGroupId>("master-plus");
+  const [lifecycleFilter, setLifecycleFilter] = useState<SeedCandidateLifecycleState | "all">(
+    "ready-to-scan",
+  );
   const [lifecycleCounts, setLifecycleCounts] = useState<
     Record<SeedCandidateLifecycleState, number>
   >(createEmptyLifecycleCounts);
@@ -1845,11 +1891,11 @@ function RiotSeedCandidatesPanel({
   const [platformRegion, setPlatformRegion] = useState("EUW1");
   const [statusFilter, setStatusFilter] = useState<RiotSeedCandidateStatus | "all">("all");
   const [sourceFilter, setSourceFilter] = useState<RiotSeedCandidateSource | "all">("all");
-  const [rankStatusFilter, setRankStatusFilter] =
-    useState<RiotSeedCandidateRankEnrichmentStatus | "all">("all");
-  const [rankTierFilter, setRankTierFilter] = useState<(typeof seedCandidateRankTiers)[number]>(
-    "all",
-  );
+  const [rankStatusFilter, setRankStatusFilter] = useState<
+    RiotSeedCandidateRankEnrichmentStatus | "all"
+  >("all");
+  const [rankTierFilter, setRankTierFilter] =
+    useState<(typeof seedCandidateRankTiers)[number]>("all");
   const [rankedStateFilter, setRankedStateFilter] =
     useState<NonNullable<RiotSeedCandidateFilters["rankedState"]>>("all");
   const [primaryRoleFilter, setPrimaryRoleFilter] = useState<LeagueRole | "all">("all");
@@ -1900,6 +1946,15 @@ function RiotSeedCandidatesPanel({
     void loadCandidateGroups({ groupIds: [activeRankGroup] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (refreshSignal === 0) {
+      return;
+    }
+
+    void loadCandidateGroups({ groupIds: [activeRankGroup] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
 
   function buildCandidateFilters(): RiotSeedCandidateFilters {
     const parsedMinimumGames = Number(minimumObservedGames);
@@ -3186,33 +3241,33 @@ function RiotSeedCandidatesPanel({
           {riotSeedCandidateRankGroups
             .filter((rankGroup) => rankGroup.id === activeRankGroup)
             .map((rankGroup) => (
-            <SeedCandidateRankGroupSection
-              championDisplayNamesById={championDisplayNamesById}
-              expandedCandidateId={expandedCandidateId}
-              group={rankGroup}
-              groupState={candidateGroups[rankGroup.id]}
-              key={rankGroup.id}
-              onCandidateCopy={(candidate) => void copyPuuid(candidate.puuid)}
-              onCandidateRefreshRank={(candidate) => void refreshCandidateRank(candidate.id)}
-              onCandidateSelectionChange={toggleCandidateSelection}
-              onCandidateToggle={(candidate) =>
-                setExpandedCandidateId((currentId) =>
-                  currentId === candidate.id ? null : candidate.id,
-                )
-              }
-              onPageChange={(page) => changeRankGroupPage(rankGroup.id, page)}
-              onPageSizeChange={(pageSize) => changeRankGroupPageSize(rankGroup.id, pageSize)}
-              onRetry={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
-              onSelectAllVisible={() => selectAllVisibleCandidates(rankGroup.id)}
-              onSortChange={(nextSort) => changeRankGroupSort(rankGroup.id, nextSort)}
-              onToggle={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
-              selectedCandidateIds={selectedCandidateIds}
-              selectedCount={
-                candidateGroups[rankGroup.id].candidates.filter((candidate) =>
-                  selectedCandidateIds.has(candidate.id),
-                ).length
-              }
-            />
+              <SeedCandidateRankGroupSection
+                championDisplayNamesById={championDisplayNamesById}
+                expandedCandidateId={expandedCandidateId}
+                group={rankGroup}
+                groupState={candidateGroups[rankGroup.id]}
+                key={rankGroup.id}
+                onCandidateCopy={(candidate) => void copyPuuid(candidate.puuid)}
+                onCandidateRefreshRank={(candidate) => void refreshCandidateRank(candidate.id)}
+                onCandidateSelectionChange={toggleCandidateSelection}
+                onCandidateToggle={(candidate) =>
+                  setExpandedCandidateId((currentId) =>
+                    currentId === candidate.id ? null : candidate.id,
+                  )
+                }
+                onPageChange={(page) => changeRankGroupPage(rankGroup.id, page)}
+                onPageSizeChange={(pageSize) => changeRankGroupPageSize(rankGroup.id, pageSize)}
+                onRetry={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
+                onSelectAllVisible={() => selectAllVisibleCandidates(rankGroup.id)}
+                onSortChange={(nextSort) => changeRankGroupSort(rankGroup.id, nextSort)}
+                onToggle={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
+                selectedCandidateIds={selectedCandidateIds}
+                selectedCount={
+                  candidateGroups[rankGroup.id].candidates.filter((candidate) =>
+                    selectedCandidateIds.has(candidate.id),
+                  ).length
+                }
+              />
             ))}
         </div>
       </CardContent>
@@ -3291,9 +3346,7 @@ function SeedCandidateRankGroupSection({
             {groupState.totalCount === 1 ? "candidate" : "candidates"}
           </span>
           {selectedCount > 0 ? (
-            <span className="mt-1 block text-amber-100">
-              {selectedCount} selected on this page
-            </span>
+            <span className="mt-1 block text-amber-100">{selectedCount} selected on this page</span>
           ) : null}
         </span>
       </button>
@@ -3599,16 +3652,13 @@ function SeedCandidateRow({
               value={formatDateTime(candidate.lifecycle.nextEligibleAt)}
             />
             <Metric label="Lifecycle" value={seedCandidateLifecycleLabels[lifecycle.state]} />
-            <Metric label="Lifecycle reason" value={formatLifecycleReasons(lifecycle.reasonCodes)} />
+            <Metric
+              label="Lifecycle reason"
+              value={formatLifecycleReasons(lifecycle.reasonCodes)}
+            />
             <Metric label="Latest scan job" value={candidate.latest_scan_job_id} />
-            <Metric
-              label="New unique matches"
-              value={candidate.last_scan_unique_matches_found}
-            />
-            <Metric
-              label="Match IDs fetched"
-              value={candidate.last_scan_match_ids_fetched}
-            />
+            <Metric label="New unique matches" value={candidate.last_scan_unique_matches_found} />
+            <Metric label="Match IDs fetched" value={candidate.last_scan_match_ids_fetched} />
             <Metric
               label="Duplicate matches"
               value={candidate.last_scan_duplicate_matches_skipped}
@@ -3989,10 +4039,7 @@ function RiotScanJobDetails({
             label="Unknown rank attributions"
             value={job.progress.matchupRankAttributionsUnknown}
           />
-          <Metric
-            label="Rank snapshots too old"
-            value={job.progress.matchupRankSnapshotTooOld}
-          />
+          <Metric label="Rank snapshots too old" value={job.progress.matchupRankSnapshotTooOld} />
           <Metric
             label="Rank participants not found"
             value={job.progress.matchupRankParticipantsNotFound}
@@ -4035,10 +4082,7 @@ function RiotScanJobDetails({
           </h4>
           <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 lg:grid-cols-3">
             <Metric label="Focus champion" value={focusChampionLabel} />
-            <Metric
-              label="Focus matches found"
-              value={job.progress.focus_champion_matches_found}
-            />
+            <Metric label="Focus matches found" value={job.progress.focus_champion_matches_found} />
             <Metric
               label="Focus matchup pairs"
               value={job.progress.focus_matchup_pairs_discovered}

@@ -2,7 +2,13 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  createEmptyCounterPickManagementMetrics,
+  createMetricValue,
+  normalizeRiotScanJobMetrics,
+} from "@/src/features/league/counter-pick-management-metrics";
 import type {
+  CounterPickManagementMetricsResult,
   MatchupRankCoverageAttributionResult,
   MatchupRankCoverageCandidate,
   MatchupRankCoverageFilters,
@@ -166,6 +172,13 @@ type RiotScanJobRow = {
   summary: RiotScanSummary | null;
 };
 
+type RiotScanJobMetricsRow = {
+  completed_at: string | null;
+  id: number;
+  progress: RiotScanSummary | null;
+  summary: RiotScanSummary | null;
+};
+
 type RiotSeedCandidateQueryBuilder = {
   eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
@@ -176,6 +189,13 @@ type RiotSeedCandidateQueryBuilder = {
   lte: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   not: (column: string, operator: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   or: (filters: string) => RiotSeedCandidateQueryBuilder;
+};
+
+type CountQueryBuilder = PromiseLike<{
+  count: number | null;
+  error: { message?: string } | null;
+}> & {
+  eq: (column: string, value: unknown) => CountQueryBuilder;
 };
 
 export type LeagueChampionRegistryAdminStatusResult =
@@ -242,8 +262,7 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
       counter_champion: validation.mode === "target" ? validation.counterChampion : null,
       created_by: authResult.userId,
       enemy_champion: validation.mode === "target" ? validation.enemyChampion : null,
-      focus_champion_id:
-        validation.mode === "discovery" ? validation.discoveryFocusChampion : null,
+      focus_champion_id: validation.mode === "discovery" ? validation.discoveryFocusChampion : null,
       match_count: validation.matchCount,
       minimum_games: validation.minimumGames,
       mode: validation.mode,
@@ -534,6 +553,84 @@ export async function getRiotSeedCandidates({
   };
 }
 
+export async function getCounterPickManagementMetrics({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<CounterPickManagementMetricsResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "view Counter Pick management metrics");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const supabase = serviceClientResult.supabase;
+  const metrics = createEmptyCounterPickManagementMetrics();
+
+  await Promise.all([
+    loadCountMetric({
+      label: "Counter Pick guides",
+      loader: () => countRows(supabase, "league_counter_picks"),
+      onLoaded: (metric) => {
+        metrics.editorial.totalGuides = metric;
+      },
+    }),
+    loadCountMetric({
+      label: "Reviewed Counter Pick guides",
+      loader: () =>
+        countRows(supabase, "league_counter_picks", (query) =>
+          query.eq("generation_status", "reviewed"),
+        ),
+      onLoaded: (metric) => {
+        metrics.editorial.reviewedGuides = metric;
+      },
+    }),
+    loadCountMetric({
+      label: "Draft Counter Pick guides",
+      loader: () =>
+        countRows(supabase, "league_counter_picks", (query) =>
+          query.eq("generation_status", "draft"),
+        ),
+      onLoaded: (metric) => {
+        metrics.editorial.visibleDrafts = metric;
+      },
+    }),
+    loadCountMetric({
+      label: "Riot matchup observations",
+      loader: () => countRows(supabase, "riot_matchup_observations"),
+      onLoaded: (metric) => {
+        metrics.pipeline.matchupObservations = metric;
+      },
+    }),
+    loadCountMetric({
+      label: "Counter Pick stat rows",
+      loader: () => countRows(supabase, "counter_pick_stats"),
+      onLoaded: (metric) => {
+        metrics.pipeline.counterPickStatRows = metric;
+      },
+    }),
+    loadCountMetric({
+      label: "Unique matchup groups",
+      loader: () => countUniqueMatchupGroups(supabase),
+      onLoaded: (metric) => {
+        metrics.pipeline.uniqueMatchupGroups = metric;
+      },
+    }),
+    loadLatestSuccessfulScanMetric(supabase, metrics),
+  ]);
+
+  return {
+    metrics,
+    ok: true,
+  };
+}
+
 export async function getPaginatedRiotSeedCandidates({
   accessToken,
   filters = {},
@@ -554,9 +651,7 @@ export async function getPaginatedRiotSeedCandidates({
   const supabase = serviceClientResult.supabase;
   const counts = {} as Record<RiotSeedCandidateRankGroupId, number>;
   const lifecycleCounts = {} as Record<SeedCandidateLifecycleState, number>;
-  const groupedResults: Partial<
-    Record<RiotSeedCandidateRankGroupId, PaginatedSeedCandidates>
-  > = {};
+  const groupedResults: Partial<Record<RiotSeedCandidateRankGroupId, PaginatedSeedCandidates>> = {};
 
   for (const lifecycleState of seedCandidateLifecycleStates) {
     const { count, error } = await buildRiotSeedCandidateQuery({
@@ -696,9 +791,8 @@ export async function refreshRiotSeedCandidateRanks(
 
   try {
     const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
-    const { createSupabaseRankRepository, enrichRiotSeedCandidateRanks } = await import(
-      "@/scripts/lib/riot-seed-rank-enrichment.mjs"
-    );
+    const { createSupabaseRankRepository, enrichRiotSeedCandidateRanks } =
+      await import("@/scripts/lib/riot-seed-rank-enrichment.mjs");
     const riot = new RiotApiClient({
       apiKey: process.env.RIOT_API_KEY,
       regionalRoute: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
@@ -1002,13 +1096,10 @@ export async function refreshMatchupRankCoverageParticipants({
 
   try {
     const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
-    const { createSupabaseRankRepository, enrichRiotSeedCandidateRanks } = await import(
-      "@/scripts/lib/riot-seed-rank-enrichment.mjs"
-    );
-    const {
-      createSupabaseMatchupRankCoverageRepository,
-      ensureMatchupRankCoverageCandidates,
-    } = await import("@/scripts/lib/matchup-rank-coverage-queue.mjs");
+    const { createSupabaseRankRepository, enrichRiotSeedCandidateRanks } =
+      await import("@/scripts/lib/riot-seed-rank-enrichment.mjs");
+    const { createSupabaseMatchupRankCoverageRepository, ensureMatchupRankCoverageCandidates } =
+      await import("@/scripts/lib/matchup-rank-coverage-queue.mjs");
     const coverageRepository = createSupabaseMatchupRankCoverageRepository(
       serviceClientResult.supabase,
     );
@@ -1082,10 +1173,8 @@ export async function rerunMatchupRankCoverageAttribution({
   }
 
   try {
-    const {
-      attributeStoredMatchupRankBrackets,
-      createSupabaseMatchupRankAttributionRepository,
-    } = await import("@/scripts/lib/riot-matchup-rank-attribution.mjs");
+    const { attributeStoredMatchupRankBrackets, createSupabaseMatchupRankAttributionRepository } =
+      await import("@/scripts/lib/riot-matchup-rank-attribution.mjs");
     const result = await attributeStoredMatchupRankBrackets({
       filters: {
         champion: filters.champion ?? null,
@@ -2081,6 +2170,97 @@ function getPersistenceRecoveryWarningMessage(summary: RiotScanSummary) {
   ].join(" ");
 }
 
+async function loadCountMetric({
+  label,
+  loader,
+  onLoaded,
+}: {
+  label: string;
+  loader: () => Promise<{ error: string | null; value: number | null }>;
+  onLoaded: (metric: { error: string | null; value: number | null }) => void;
+}) {
+  const metric = await loader();
+
+  if (metric.error) {
+    console.error("Counter Pick management metric unavailable", {
+      error: metric.error,
+      metric: label,
+    });
+  }
+
+  onLoaded(metric);
+}
+
+async function countRows(
+  supabase: SupabaseClient,
+  table: string,
+  applyFilters?: (query: CountQueryBuilder) => CountQueryBuilder,
+) {
+  let query = supabase
+    .from(table)
+    .select("*", { count: "exact", head: true }) as unknown as CountQueryBuilder;
+
+  if (applyFilters) {
+    query = applyFilters(query);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    return createMetricValue(null, error.message ?? `${table} count could not be loaded.`);
+  }
+
+  return createMetricValue(count ?? 0);
+}
+
+async function countUniqueMatchupGroups(supabase: SupabaseClient) {
+  const { data, error } = await (supabase.rpc(
+    "get_counter_pick_unique_matchup_group_count",
+  ) as unknown as PromiseLike<{
+    data: number | string | null;
+    error: { message?: string } | null;
+  }>);
+
+  if (error) {
+    return createMetricValue(null, error.message ?? "Unique matchup groups could not be loaded.");
+  }
+
+  const value = Number(data);
+
+  return createMetricValue(Number.isFinite(value) ? value : 0);
+}
+
+async function loadLatestSuccessfulScanMetric(
+  supabase: SupabaseClient,
+  metrics: ReturnType<typeof createEmptyCounterPickManagementMetrics>,
+) {
+  const { data, error } = await supabase
+    .from("riot_scan_jobs")
+    .select("id, completed_at, summary, progress")
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle<RiotScanJobMetricsRow>();
+
+  if (error) {
+    const message = error.message ?? "Latest successful scan could not be loaded.";
+
+    console.error("Counter Pick management latest scan unavailable", {
+      error: message,
+    });
+    metrics.latestSuccessfulScan = {
+      error: message,
+      value: null,
+    };
+    return;
+  }
+
+  metrics.latestSuccessfulScan = {
+    error: null,
+    value: data ? normalizeRiotScanJobMetrics(data) : null,
+  };
+}
+
 async function failJob({
   errorMessage,
   jobId,
@@ -2482,7 +2662,9 @@ function dedupeCoverageParticipantInputs(participants: MatchupRankCoveragePartic
   const participantsByKey = new Map<string, MatchupRankCoverageParticipantInput>();
 
   for (const participant of participants ?? []) {
-    const platformRegion = String(participant.platformRegion ?? "").trim().toUpperCase();
+    const platformRegion = String(participant.platformRegion ?? "")
+      .trim()
+      .toUpperCase();
     const puuid = String(participant.puuid ?? "").trim();
 
     if (!platformRegion || !puuid) {
@@ -2658,11 +2840,15 @@ function applyRiotSeedCandidateLifecycleFilter<TQuery extends RiotSeedCandidateQ
     case "rejected":
       return query.not("manually_rejected_at", "is", null) as TQuery;
     case "low-signal":
-      return query.is("manually_rejected_at", null).lt("observed_games", MIN_SEED_OBSERVATIONS) as TQuery;
+      return query
+        .is("manually_rejected_at", null)
+        .lt("observed_games", MIN_SEED_OBSERVATIONS) as TQuery;
     case "failed":
       return query
         .is("manually_rejected_at", null)
-        .or(`consecutive_scan_failures.gte.${MAX_CONSECUTIVE_SCAN_FAILURES},status.eq.failed`) as TQuery;
+        .or(
+          `consecutive_scan_failures.gte.${MAX_CONSECUTIVE_SCAN_FAILURES},status.eq.failed`,
+        ) as TQuery;
     case "recently-scanned":
       return query
         .is("manually_rejected_at", null)
@@ -2875,9 +3061,7 @@ function getRecentSeedCandidateScanCutoff() {
 }
 
 function getRecentSeedCandidateRankRefreshCutoff() {
-  return new Date(
-    Date.now() - recentSeedCandidateRankRefreshHours * 60 * 60 * 1000,
-  ).toISOString();
+  return new Date(Date.now() - recentSeedCandidateRankRefreshHours * 60 * 60 * 1000).toISOString();
 }
 
 function getHoursAgoIso(hours: number) {

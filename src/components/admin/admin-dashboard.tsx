@@ -511,13 +511,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     [adminData.leagueMatchups],
   );
   const draftLeagueMatchupsCount = adminData.leagueMatchups.length - reviewedLeagueMatchupsCount;
-  const reviewedLeagueCounterPicksCount = useMemo(
-    () =>
-      adminData.leagueCounterPicks.filter(
-        (counterPick) => counterPick.generation_status === "reviewed",
-      ).length,
-    [adminData.leagueCounterPicks],
-  );
   const normalizedCreateResourceForm = normalizeResourceFormForSection(
     createResourceForm,
     editableLinkSection,
@@ -2444,7 +2437,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     champions={adminData.leagueChampions}
                     counterPicks={adminData.leagueCounterPicks}
                     onRefresh={reloadAdminData}
-                    reviewedCount={reviewedLeagueCounterPicksCount}
                   />
                 ) : null}
               </div>

@@ -27,6 +27,7 @@
     "test:matchup-rank-coverage-queue": "node scripts/test-matchup-rank-coverage-queue.mjs",
     "test:counter-pick-confidence": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-confidence.mjs",
     "test:counter-pick-data-pipeline": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-data-pipeline.mjs",
+    "test:counter-pick-management-metrics": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-management-metrics.mjs",
     "test:public-counter-pick-champions": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-public-counter-pick-champions.mjs",
     "test:riot-batch-isolation": "node scripts/test-riot-batch-isolation.mjs",
     "test:riot-observation-validation": "node scripts/test-riot-observation-validation.mjs",

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   CheckSquare,
@@ -14,10 +14,12 @@ import {
   X,
 } from "lucide-react";
 
+import { getCounterPickManagementMetrics } from "@/src/app/admin/league/counter-picks/actions";
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
+import type { CounterPickManagementMetrics } from "@/src/features/league/counter-pick-management-metrics";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import { getChampionIconPath } from "@/src/features/league/champions";
@@ -55,12 +57,10 @@ export function AdminLeagueCounterPicksSection({
   champions,
   counterPicks,
   onRefresh,
-  reviewedCount,
 }: {
   champions: AdminLeagueChampion[];
   counterPicks: LeagueCounterPick[];
   onRefresh: () => Promise<boolean>;
-  reviewedCount: number;
 }) {
   const [championSearch, setChampionSearch] = useState("");
   const [counterSearch, setCounterSearch] = useState("");
@@ -89,6 +89,14 @@ export function AdminLeagueCounterPicksSection({
   const [bulkStatus, setBulkStatus] = useState<FormStatus>({
     error: null,
     isLoading: false,
+    success: null,
+  });
+  const [managementMetrics, setManagementMetrics] = useState<CounterPickManagementMetrics | null>(
+    null,
+  );
+  const [metricsStatus, setMetricsStatus] = useState<FormStatus>({
+    error: null,
+    isLoading: true,
     success: null,
   });
 
@@ -180,6 +188,62 @@ export function AdminLeagueCounterPicksSection({
     (counterPick) => counterPick.generation_status === "reviewed",
   ).length;
 
+  useEffect(() => {
+    void loadManagementMetrics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function getAccessToken() {
+    if (!supabase) {
+      return {
+        error: "Supabase is not configured.",
+        ok: false as const,
+      };
+    }
+
+    const { data, error } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (error || !accessToken) {
+      return {
+        error: "Admin session is not ready.",
+        ok: false as const,
+      };
+    }
+
+    return {
+      accessToken,
+      ok: true as const,
+    };
+  }
+
+  async function loadManagementMetrics() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setMetricsStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setMetricsStatus((currentStatus) => ({
+      error: null,
+      isLoading: true,
+      success: currentStatus.success,
+    }));
+
+    const result = await getCounterPickManagementMetrics({
+      accessToken: tokenResult.accessToken,
+    });
+
+    if (!result.ok) {
+      setMetricsStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setManagementMetrics(result.metrics);
+    setMetricsStatus({ error: null, isLoading: false, success: "Metrics refreshed." });
+  }
+
   function startEditingCounterPick(counterPick: LeagueCounterPick) {
     setEditingCounterPickId(counterPick.id);
     setEditStatus({ error: null, isLoading: false, success: null });
@@ -229,6 +293,7 @@ export function AdminLeagueCounterPicksSection({
 
   async function refreshAfterMutation(success: string, setStatus: (status: FormStatus) => void) {
     const didRefresh = await onRefresh();
+    await loadManagementMetrics();
 
     setStatus({
       error: didRefresh ? null : "Saved, but the refreshed admin data could not be loaded.",
@@ -396,11 +461,12 @@ export function AdminLeagueCounterPicksSection({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <CounterPickStatCard label="Total counter picks" value={counterPicks.length} />
-        <CounterPickStatCard label="Reviewed" value={reviewedCount} />
-        <CounterPickStatCard label="Visible drafts" value={draftVisibleIds.length} />
-      </div>
+      <CounterPickManagementMetricsPanel
+        error={metricsStatus.error}
+        isLoading={metricsStatus.isLoading}
+        metrics={managementMetrics}
+        onRefresh={() => void loadManagementMetrics()}
+      />
 
       <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
         <CardHeader>
@@ -500,7 +566,7 @@ export function AdminLeagueCounterPicksSection({
         </CardContent>
       </Card>
 
-      <RiotMatchScannerPanel champions={champions} />
+      <RiotMatchScannerPanel champions={champions} onScanTerminal={loadManagementMetrics} />
 
       {selectedChampionCombatProfile ? (
         <CombatProfileCounterRelationships
@@ -1055,11 +1121,181 @@ function CounterPickRow({
   );
 }
 
-function CounterPickStatCard({ label, value }: { label: string; value: number }) {
+function CounterPickManagementMetricsPanel({
+  error,
+  isLoading,
+  metrics,
+  onRefresh,
+}: {
+  error: string | null;
+  isLoading: boolean;
+  metrics: CounterPickManagementMetrics | null;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-mono text-lg font-semibold text-white">Riot data pipeline</h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              Stored Riot evidence and aggregate rows used by public Counter Pick stats.
+            </p>
+          </div>
+          <Button
+            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+            disabled={isLoading}
+            onClick={onRefresh}
+            type="button"
+            variant="ghost"
+          >
+            {isLoading ? (
+              <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            )}
+            Refresh metrics
+          </Button>
+        </div>
+        {error ? (
+          <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            {error}
+          </p>
+        ) : null}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <CounterPickMetricCard
+            description="Validated Riot match-role observations"
+            isLoading={isLoading && !metrics}
+            label="Matchup observations"
+            metric={metrics?.pipeline.matchupObservations ?? null}
+          />
+          <CounterPickMetricCard
+            description="Aggregated champion, role, patch and rank rows"
+            isLoading={isLoading && !metrics}
+            label="Counter Pick stat rows"
+            metric={metrics?.pipeline.counterPickStatRows ?? null}
+          />
+          <CounterPickMetricCard
+            description="Sorted champion pair + role + patch"
+            isLoading={isLoading && !metrics}
+            label="Unique matchup groups"
+            metric={metrics?.pipeline.uniqueMatchupGroups ?? null}
+          />
+          <LatestSuccessfulScanCard isLoading={isLoading && !metrics} metrics={metrics} />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="font-mono text-lg font-semibold text-white">Editorial content</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Manually reviewed guide records from the editorial Counter Pick table.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <CounterPickMetricCard
+            description="Rows in league_counter_picks"
+            isLoading={isLoading && !metrics}
+            label="Counter Pick guides"
+            metric={metrics?.editorial.totalGuides ?? null}
+          />
+          <CounterPickMetricCard
+            description="Guides marked reviewed"
+            isLoading={isLoading && !metrics}
+            label="Reviewed guides"
+            metric={metrics?.editorial.reviewedGuides ?? null}
+          />
+          <CounterPickMetricCard
+            description="Guides still in draft"
+            isLoading={isLoading && !metrics}
+            label="Draft guides"
+            metric={metrics?.editorial.visibleDrafts ?? null}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CounterPickMetricCard({
+  description,
+  isLoading,
+  label,
+  metric,
+}: {
+  description: string;
+  isLoading: boolean;
+  label: string;
+  metric: CounterPickManagementMetrics["pipeline"]["matchupObservations"] | null;
+}) {
+  const isUnavailable = Boolean(metric?.error);
+  const value = isLoading
+    ? "Loading"
+    : isUnavailable
+      ? "Unavailable"
+      : metric
+        ? (metric.value?.toLocaleString() ?? "Unavailable")
+        : "Pending";
+
   return (
     <Card className="border-white/10 bg-[#10182b]/90 p-5 text-white shadow-xl shadow-black/15">
-      <p className="font-mono text-3xl font-semibold text-violet-100">{value}</p>
-      <p className="mt-1 text-sm text-zinc-400">{label}</p>
+      <p
+        className={cn(
+          "font-mono text-3xl font-semibold",
+          isUnavailable ? "text-amber-100" : "text-violet-100",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-sm font-medium text-zinc-200">{label}</p>
+      <p className="mt-2 text-xs leading-5 text-zinc-500">
+        {isUnavailable ? metric?.error : description}
+      </p>
+    </Card>
+  );
+}
+
+function LatestSuccessfulScanCard({
+  isLoading,
+  metrics,
+}: {
+  isLoading: boolean;
+  metrics: CounterPickManagementMetrics | null;
+}) {
+  const latestScan = metrics?.latestSuccessfulScan.value;
+  const error = metrics?.latestSuccessfulScan.error;
+  const title = isLoading
+    ? "Loading"
+    : error
+      ? "Unavailable"
+      : latestScan
+        ? `${formatNullableNumber(latestScan.uniqueMatches)} unique matches`
+        : "No successful scans yet";
+
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 p-5 text-white shadow-xl shadow-black/15">
+      <p
+        className={cn(
+          "font-mono text-2xl font-semibold",
+          error ? "text-amber-100" : "text-violet-100",
+        )}
+      >
+        {title}
+      </p>
+      <p className="mt-1 text-sm font-medium text-zinc-200">Latest successful scan</p>
+      {latestScan ? (
+        <div className="mt-2 space-y-1 text-xs leading-5 text-zinc-500">
+          <p>Completed {formatDateTime(latestScan.completedAt)}</p>
+          <p>
+            {formatNullableNumber(latestScan.observationsInserted)} new observations ·{" "}
+            {formatNullableNumber(latestScan.statRowsUpdated)} stat rows updated
+          </p>
+        </div>
+      ) : (
+        <p className="mt-2 text-xs leading-5 text-zinc-500">
+          {error ?? "The persisted scan job table has no completed scan yet."}
+        </p>
+      )}
     </Card>
   );
 }
@@ -1166,9 +1402,17 @@ function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function formatDateTime(value: string) {
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "—";
+  }
+
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatNullableNumber(value: number | null | undefined) {
+  return typeof value === "number" ? value.toLocaleString() : "—";
 }

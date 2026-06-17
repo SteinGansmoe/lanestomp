@@ -1,4 +1,5 @@
 import type { LeagueRole } from "./roles";
+import type { CounterPickManagementMetricsResult } from "./counter-pick-management-metrics";
 import type {
   SeedCandidateLifecycle,
   SeedCandidateLifecycleState,
@@ -318,10 +319,7 @@ export type RiotSeedCandidateLifecycleMutationResult =
       ok: false;
     };
 
-export type MatchupRankAttributionMethod =
-  | "single-player"
-  | "two-player-average"
-  | "unknown";
+export type MatchupRankAttributionMethod = "single-player" | "two-player-average" | "unknown";
 
 export type MatchupRankCoverageSort =
   | "last_rank_refresh_at"
@@ -566,6 +564,8 @@ export type RiotScanJobsResult =
       error: string;
       ok: false;
     };
+
+export type { CounterPickManagementMetricsResult };
 
 export type RiotIdResolverInput = {
   accessToken: string;
