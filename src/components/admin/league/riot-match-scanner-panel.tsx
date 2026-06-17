@@ -13,11 +13,17 @@ import {
 } from "lucide-react";
 
 import {
+  getMatchupRankCoverageQueue,
   getLeagueChampionRegistryAdminStatus,
   getPaginatedRiotSeedCandidates,
   getRecentRiotScanJobs,
   getRiotScanJob,
+  rejectRiotSeedCandidates,
   refreshRiotSeedCandidateRanks,
+  refreshMatchupRankCoverageParticipants,
+  resetRiotSeedCandidateFailures,
+  restoreRiotSeedCandidates,
+  rerunMatchupRankCoverageAttribution,
   resolveRiotIdsToPuuids,
   startRiotScanJob,
   type LeagueChampionRegistryAdminStatusResult,
@@ -26,6 +32,11 @@ import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import type {
+  MatchupRankAttributionMethod,
+  MatchupRankCoverageCandidate,
+  MatchupRankCoverageFilters,
+  MatchupRankCoverageSort,
+  MatchupRankCoverageSummary,
   RiotIdResolverRow,
   RiotSeedCandidateFilters,
   RiotSeedCandidateRankEnrichmentStatus,
@@ -39,6 +50,12 @@ import type {
   RiotScanMode,
   RiotScanTargetResult,
 } from "@/src/features/league/riot-scan-jobs";
+import {
+  seedCandidateLifecycleLabels,
+  seedCandidateLifecycleReasonLabels,
+  seedCandidateLifecycleStates,
+  type SeedCandidateLifecycleState,
+} from "@/src/features/league/riot-seed-candidate-lifecycle";
 import {
   createDefaultRiotSeedCandidateGroupRequest,
   getDefaultRiotSeedCandidateSortDirection,
@@ -100,6 +117,7 @@ const seedCandidateRankTiers = [
 const seedCandidateSources: Array<RiotSeedCandidateSource | "all"> = [
   "all",
   "match_discovery",
+  "matchup_rank_coverage",
   "riot_id_resolver",
   "manual",
   "ladder_import",
@@ -135,6 +153,36 @@ const seedCandidateRankRefreshFilters: Array<{
   { label: "Never refreshed", value: "never" },
   { label: "Refreshed within 24h", value: "recent" },
   { label: "Not refreshed within 24h", value: "older" },
+];
+const matchupCoverageAttributionFilters: Array<MatchupRankAttributionMethod | "all"> = [
+  "all",
+  "unknown",
+  "single-player",
+  "two-player-average",
+];
+const matchupCoverageCandidateFilters: Array<NonNullable<MatchupRankCoverageFilters["hasCandidate"]>> =
+  ["all", "yes", "no"];
+const matchupCoverageSorts: Array<{
+  label: string;
+  value: MatchupRankCoverageSort;
+}> = [
+  { label: "Priority score", value: "priority_score" },
+  { label: "Observations affected", value: "observations_affected" },
+  { label: "Unknown affected", value: "unknown_observations_affected" },
+  { label: "Two-player upgrades", value: "two_player_upgrade_potential" },
+  { label: "Latest match seen", value: "latest_match_seen_at" },
+  { label: "Last rank refresh", value: "last_rank_refresh_at" },
+];
+const seedCandidateLifecycleFilters: Array<SeedCandidateLifecycleState | "all"> = [
+  "ready-to-scan",
+  "recently-scanned",
+  "cooling-down",
+  "needs-rank-enrichment",
+  "failed",
+  "low-signal",
+  "observed",
+  "rejected",
+  "all",
 ];
 type LeagueChampionRegistryStatus = Extract<
   LeagueChampionRegistryAdminStatusResult,
@@ -428,6 +476,11 @@ export function RiotMatchScannerPanel({ champions }: { champions: AdminLeagueCha
     <div className="space-y-6">
       <LeagueChampionRegistryStatusPanel getAccessToken={getAccessToken} />
       <RiotIdResolverPanel getAccessToken={getAccessToken} onAddPuuids={addPuuidsToScanner} />
+      <MatchupRankCoverageQueuePanel
+        championDisplayNamesById={championDisplayNamesById}
+        champions={championOptions}
+        getAccessToken={getAccessToken}
+      />
       <RiotSeedCandidatesPanel
         champions={championOptions}
         championDisplayNamesById={championDisplayNamesById}
@@ -1045,6 +1098,716 @@ function RiotIdResolverPanel({
   );
 }
 
+function MatchupRankCoverageQueuePanel({
+  championDisplayNamesById,
+  champions,
+  getAccessToken,
+}: {
+  championDisplayNamesById: Map<string, string>;
+  champions: AdminLeagueChampion[];
+  getAccessToken: () => Promise<
+    | {
+        accessToken: string;
+        ok: true;
+      }
+    | {
+        error: string;
+        ok: false;
+      }
+  >;
+}) {
+  const [candidates, setCandidates] = useState<MatchupRankCoverageCandidate[]>([]);
+  const [summary, setSummary] = useState<MatchupRankCoverageSummary | null>(null);
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
+  const [selectedCandidateKeys, setSelectedCandidateKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [status, setStatus] = useState<FormStatus>({
+    error: null,
+    isLoading: false,
+    success: null,
+  });
+  const [refreshSummary, setRefreshSummary] = useState<{
+    candidatesRequested: number;
+    createdCandidateCount: number;
+    failedCount: number;
+    notFoundCount: number;
+    rankedCount: number;
+    rateLimitedCount: number;
+    skippedCount: number;
+    snapshotInsertedCount: number;
+    total: number;
+    unrankedCount: number;
+  } | null>(null);
+  const [attributionSummary, setAttributionSummary] = useState<{
+    failures: number;
+    participantsNotFound: number;
+    processed: number;
+    singlePlayer: number;
+    snapshotTooOld: number;
+    total: number;
+    twoPlayerAverage: number;
+    unknown: number;
+  } | null>(null);
+  const [roleFilter, setRoleFilter] = useState<LeagueRole | "all">("all");
+  const [championFilter, setChampionFilter] = useState("");
+  const [patchFilter, setPatchFilter] = useState("");
+  const [platformFilter, setPlatformFilter] = useState("EUW1");
+  const [attributionFilter, setAttributionFilter] =
+    useState<MatchupRankAttributionMethod | "all">("all");
+  const [hasCandidateFilter, setHasCandidateFilter] =
+    useState<NonNullable<MatchupRankCoverageFilters["hasCandidate"]>>("all");
+  const [rankStatusFilter, setRankStatusFilter] =
+    useState<NonNullable<MatchupRankCoverageFilters["rankStatus"]>>("all");
+  const [minimumImpact, setMinimumImpact] = useState("1");
+  const [twoPlayerUpgradeOnly, setTwoPlayerUpgradeOnly] = useState(false);
+  const [limit, setLimit] = useState("100");
+  const [sort, setSort] = useState<MatchupRankCoverageSort>("priority_score");
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const selectedCandidates = useMemo(
+    () => candidates.filter((candidate) => selectedCandidateKeys.has(candidate.identityKey)),
+    [candidates, selectedCandidateKeys],
+  );
+  const projectedImpact = useMemo(
+    () =>
+      selectedCandidates.reduce(
+        (projection, candidate) => ({
+          observationsAffected:
+            projection.observationsAffected + candidate.observationsAffected,
+          twoPlayerUpgradePotential:
+            projection.twoPlayerUpgradePotential + candidate.twoPlayerUpgradePotential,
+          unknownObservationsAffected:
+            projection.unknownObservationsAffected + candidate.unknownObservationsAffected,
+        }),
+        {
+          observationsAffected: 0,
+          twoPlayerUpgradePotential: 0,
+          unknownObservationsAffected: 0,
+        },
+      ),
+    [selectedCandidates],
+  );
+  const allVisibleSelected =
+    candidates.length > 0 &&
+    candidates.every((candidate) => selectedCandidateKeys.has(candidate.identityKey));
+
+  useEffect(() => {
+    void loadQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function buildFilters(): MatchupRankCoverageFilters {
+    const parsedMinimumImpact = Number(minimumImpact);
+
+    return {
+      attributionMethod: attributionFilter,
+      champion: championFilter || null,
+      hasCandidate: hasCandidateFilter,
+      minimumImpact:
+        Number.isFinite(parsedMinimumImpact) && parsedMinimumImpact > 0
+          ? parsedMinimumImpact
+          : undefined,
+      patch: patchFilter.trim() || null,
+      platformRegion: platformFilter.trim() || null,
+      rankStatus: rankStatusFilter,
+      role: roleFilter,
+      twoPlayerUpgradeOnly,
+    };
+  }
+
+  async function loadQueue({ preserveFeedback = false }: { preserveFeedback?: boolean } = {}) {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    if (!preserveFeedback) {
+      setStatus({ error: null, isLoading: true, success: null });
+    }
+
+    const result = await getMatchupRankCoverageQueue({
+      accessToken: tokenResult.accessToken,
+      filters: buildFilters(),
+      limit: Number(limit),
+      sort,
+      sortDirection: "desc",
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setCandidates(result.candidates);
+    setSummary(result.summary);
+    setSelectedCandidateKeys((currentSelection) => {
+      const visibleKeys = new Set(result.candidates.map((candidate) => candidate.identityKey));
+
+      return new Set([...currentSelection].filter((key) => visibleKeys.has(key)));
+    });
+    if (!preserveFeedback) {
+      setStatus({
+        error: null,
+        isLoading: false,
+        success: `${result.candidates.length} coverage ${result.candidates.length === 1 ? "candidate" : "candidates"} loaded.`,
+      });
+    }
+  }
+
+  function toggleSelection(candidate: MatchupRankCoverageCandidate) {
+    setSelectedCandidateKeys((currentSelection) => {
+      const nextSelection = new Set(currentSelection);
+
+      if (nextSelection.has(candidate.identityKey)) {
+        nextSelection.delete(candidate.identityKey);
+      } else {
+        nextSelection.add(candidate.identityKey);
+      }
+
+      return nextSelection;
+    });
+  }
+
+  function selectAllVisible() {
+    setSelectedCandidateKeys(
+      new Set(candidates.map((candidate) => candidate.identityKey)),
+    );
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${candidates.length} visible ${candidates.length === 1 ? "participant" : "participants"} selected.`,
+    });
+  }
+
+  function clearSelection() {
+    setSelectedCandidateKeys(new Set());
+    setStatus({ error: null, isLoading: false, success: "Coverage selection cleared." });
+  }
+
+  async function refreshSelectedRanks() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "Select at least one participant.", isLoading: false, success: null });
+      return;
+    }
+
+    if (selectedCandidates.length > maxSeedCandidateRankRefreshBatch) {
+      setStatus({
+        error: `Refresh rank for up to ${maxSeedCandidateRankRefreshBatch} participants at a time.`,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+    const result = await refreshMatchupRankCoverageParticipants({
+      accessToken: tokenResult.accessToken,
+      force: forceRefresh,
+      participants: selectedCandidates.map((candidate) => ({
+        platformRegion: candidate.platformRegion,
+        puuid: candidate.puuid,
+      })),
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setRefreshSummary(result);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: "Rank refresh complete.",
+    });
+    await loadQueue({ preserveFeedback: true });
+  }
+
+  async function rerunAttribution() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+    const result = await rerunMatchupRankCoverageAttribution({
+      accessToken: tokenResult.accessToken,
+      filters: buildFilters(),
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setAttributionSummary(result.summary);
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: "Rank attribution re-run complete.",
+    });
+    await loadQueue({ preserveFeedback: true });
+  }
+
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="font-mono text-xl">Rank Attribution Coverage Queue</CardTitle>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+              Prioritize matchup participants whose missing rank snapshots block stored matchup
+              attribution.
+            </p>
+          </div>
+          <Button
+            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+            disabled={status.isLoading}
+            onClick={() => void loadQueue()}
+            type="button"
+            variant="ghost"
+          >
+            {status.isLoading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            )}
+            Refresh queue
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {summary ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <Metric label="Total observations" value={formatNumber(summary.totalObservations)} />
+            <Metric label="Two-player average" value={formatNumber(summary.twoPlayerAverage)} />
+            <Metric label="Single-player" value={formatNumber(summary.singlePlayer)} />
+            <Metric label="Unknown" value={formatNumber(summary.unknown)} />
+            <Metric
+              label="Strict / any coverage"
+              value={`${summary.strictCoveragePercent}% / ${summary.anyRankCoveragePercent}%`}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Role</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) => setRoleFilter(event.target.value as LeagueRole | "all")}
+              value={roleFilter}
+            >
+              <option className={selectOptionClassName} value="all">
+                All roles
+              </option>
+              {leagueRoles.map((roleOption) => (
+                <option className={selectOptionClassName} key={roleOption} value={roleOption}>
+                  {formatRole(roleOption)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Champion</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) => setChampionFilter(event.target.value)}
+              value={championFilter}
+            >
+              <option className={selectOptionClassName} value="">
+                All champions
+              </option>
+              {champions.map((champion) => (
+                <option className={selectOptionClassName} key={champion.id} value={champion.id}>
+                  {champion.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Patch</span>
+            <Input
+              className={fieldClassName}
+              onChange={(event) => setPatchFilter(event.target.value)}
+              placeholder="16.12"
+              value={patchFilter}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Platform</span>
+            <Input
+              className={fieldClassName}
+              onChange={(event) => setPlatformFilter(event.target.value.toUpperCase())}
+              placeholder="EUW1"
+              value={platformFilter}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Attribution</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setAttributionFilter(event.target.value as MatchupRankAttributionMethod | "all")
+              }
+              value={attributionFilter}
+            >
+              {matchupCoverageAttributionFilters.map((method) => (
+                <option className={selectOptionClassName} key={method} value={method}>
+                  {method === "all" ? "All unresolved" : formatEnumLabel(method)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Candidate row</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setHasCandidateFilter(
+                  event.target.value as NonNullable<MatchupRankCoverageFilters["hasCandidate"]>,
+                )
+              }
+              value={hasCandidateFilter}
+            >
+              {matchupCoverageCandidateFilters.map((filter) => (
+                <option className={selectOptionClassName} key={filter} value={filter}>
+                  {filter === "all" ? "All" : filter === "yes" ? "Has candidate" : "Missing"}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Rank status</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) =>
+                setRankStatusFilter(
+                  event.target.value as NonNullable<MatchupRankCoverageFilters["rankStatus"]>,
+                )
+              }
+              value={rankStatusFilter}
+            >
+              <option className={selectOptionClassName} value="all">
+                All
+              </option>
+              <option className={selectOptionClassName} value="never_enriched">
+                Never enriched
+              </option>
+              {seedCandidateRankStatuses
+                .filter((rankStatus) => rankStatus !== "all")
+                .map((rankStatus) => (
+                  <option className={selectOptionClassName} key={rankStatus} value={rankStatus}>
+                    {formatEnumLabel(rankStatus)}
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Sort</span>
+            <select
+              className={`${fieldClassName} h-10`}
+              onChange={(event) => setSort(event.target.value as MatchupRankCoverageSort)}
+              value={sort}
+            >
+              {matchupCoverageSorts.map((sortOption) => (
+                <option className={selectOptionClassName} key={sortOption.value} value={sortOption.value}>
+                  {sortOption.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Minimum impact</span>
+            <Input
+              className={fieldClassName}
+              min={1}
+              onChange={(event) => setMinimumImpact(event.target.value)}
+              type="number"
+              value={minimumImpact}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Limit</span>
+            <Input
+              className={fieldClassName}
+              min={1}
+              onChange={(event) => setLimit(event.target.value)}
+              type="number"
+              value={limit}
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 p-3">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                checked={twoPlayerUpgradeOnly}
+                className="size-4 accent-cyan-400"
+                onChange={(event) => setTwoPlayerUpgradeOnly(event.target.checked)}
+                type="checkbox"
+              />
+              Two-player upgrade potential only
+            </label>
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                checked={forceRefresh}
+                className="size-4 accent-cyan-400"
+                onChange={(event) => setForceRefresh(event.target.checked)}
+                type="checkbox"
+              />
+              Force refresh selected ranks
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={candidates.length === 0 || allVisibleSelected}
+              onClick={selectAllVisible}
+              type="button"
+              variant="ghost"
+            >
+              <Check className="size-4" aria-hidden="true" />
+              Select all visible
+            </Button>
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={selectedCandidates.length === 0}
+              onClick={clearSelection}
+              type="button"
+              variant="ghost"
+            >
+              <X className="size-4" aria-hidden="true" />
+              Clear selection
+            </Button>
+            <Button
+              className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20"
+              disabled={status.isLoading || selectedCandidates.length === 0}
+              onClick={() => void refreshSelectedRanks()}
+              type="button"
+              variant="ghost"
+            >
+              {status.isLoading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <RefreshCw className="size-4" aria-hidden="true" />
+              )}
+              Refresh rank for selected
+            </Button>
+            <Button
+              className="border-amber-300/20 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
+              disabled={status.isLoading}
+              onClick={() => void rerunAttribution()}
+              type="button"
+              variant="ghost"
+            >
+              Re-run rank attribution
+            </Button>
+            <Button
+              className="h-10 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+              disabled={status.isLoading}
+              onClick={() => void loadQueue()}
+              type="button"
+            >
+              <Search className="size-4" aria-hidden="true" />
+              Apply filters
+            </Button>
+          </div>
+        </div>
+
+        <StatusMessage status={status} />
+
+        {selectedCandidates.length > 0 ? (
+          <div className="grid gap-3 rounded-lg border border-cyan-300/20 bg-cyan-500/10 p-4 sm:grid-cols-4">
+            <Metric label="Selected participants" value={selectedCandidates.length} />
+            <Metric
+              label="Projected unknown gains"
+              value={projectedImpact.unknownObservationsAffected}
+            />
+            <Metric
+              label="Projected two-player upgrades"
+              value={projectedImpact.twoPlayerUpgradePotential}
+            />
+            <Metric
+              label="Projected affected observations"
+              value={projectedImpact.observationsAffected}
+            />
+          </div>
+        ) : null}
+
+        {selectedCandidates.length > maxSeedCandidateRankRefreshBatch ? (
+          <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+            You selected {selectedCandidates.length} participants. The maximum rank refresh batch is{" "}
+            {maxSeedCandidateRankRefreshBatch}.
+          </p>
+        ) : null}
+
+        {refreshSummary ? (
+          <div className="grid gap-3 rounded-lg border border-emerald-300/20 bg-emerald-500/10 p-4 sm:grid-cols-3 xl:grid-cols-6">
+            <Metric label="Candidates requested" value={refreshSummary.candidatesRequested} />
+            <Metric label="Created" value={refreshSummary.createdCandidateCount} />
+            <Metric label="Ranked" value={refreshSummary.rankedCount} />
+            <Metric label="Unranked" value={refreshSummary.unrankedCount} />
+            <Metric label="Not found" value={refreshSummary.notFoundCount} />
+            <Metric label="Snapshots created" value={refreshSummary.snapshotInsertedCount} />
+          </div>
+        ) : null}
+
+        {attributionSummary ? (
+          <div className="grid gap-3 rounded-lg border border-amber-300/20 bg-amber-500/10 p-4 sm:grid-cols-3 xl:grid-cols-6">
+            <Metric label="Processed" value={attributionSummary.processed} />
+            <Metric label="Two-player" value={attributionSummary.twoPlayerAverage} />
+            <Metric label="Single-player" value={attributionSummary.singlePlayer} />
+            <Metric label="Unknown" value={attributionSummary.unknown} />
+            <Metric label="Participants missing" value={attributionSummary.participantsNotFound} />
+            <Metric label="Snapshot too old" value={attributionSummary.snapshotTooOld} />
+          </div>
+        ) : null}
+
+        {candidates.length === 0 ? (
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-500">
+            No unresolved matchup participants matched the current filters.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {candidates.map((candidate) => {
+              const expanded = expandedCandidateId === candidate.identityKey;
+              const selected = selectedCandidateKeys.has(candidate.identityKey);
+
+              return (
+                <div
+                  className={cn(
+                    "rounded-lg border bg-black/15 transition",
+                    selected ? "border-cyan-300/50" : "border-white/10",
+                  )}
+                  key={candidate.identityKey}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <input
+                        checked={selected}
+                        className="size-4 accent-cyan-400"
+                        onChange={() => toggleSelection(candidate)}
+                        type="checkbox"
+                      />
+                      <button
+                        className="min-w-0 text-left"
+                        onClick={() =>
+                          setExpandedCandidateId((currentId) =>
+                            currentId === candidate.identityKey ? null : candidate.identityKey,
+                          )
+                        }
+                        type="button"
+                      >
+                        <span className="block font-semibold text-white">
+                          {candidate.platformRegion} / {candidate.puuidPreview}
+                        </span>
+                        <span className="mt-1 block text-xs text-zinc-500">
+                          {candidate.roles.map(formatRole).join(", ")} ·{" "}
+                          {candidate.champions
+                            .map((champion) => championDisplayNamesById.get(champion) ?? champion)
+                            .join(", ")}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="grid min-w-[560px] flex-1 grid-cols-5 gap-3 text-right text-xs">
+                      <CoverageMetric label="Priority" value={candidate.priorityScore} />
+                      <CoverageMetric label="Affected" value={candidate.observationsAffected} />
+                      <CoverageMetric
+                        label="Unknown"
+                        value={candidate.unknownObservationsAffected}
+                      />
+                      <CoverageMetric
+                        label="2-player gain"
+                        value={candidate.twoPlayerUpgradePotential}
+                      />
+                      <CoverageMetric
+                        label="Rank status"
+                        value={
+                          candidate.cooldownActive
+                            ? "Cooldown active"
+                            : formatEnumLabel(candidate.rankStatus)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {expanded ? (
+                    <div className="grid gap-3 border-t border-white/10 p-4 text-sm text-zinc-300 lg:grid-cols-3">
+                      <Metric label="Candidate row" value={candidate.candidateId ? "Linked" : "Missing"} />
+                      <Metric label="Last refresh" value={formatDateTime(candidate.lastRankRefreshAt)} />
+                      <Metric label="Next eligible" value={formatDateTime(candidate.nextEligibleAt)} />
+                      <Metric label="Latest match seen" value={formatDateTime(candidate.latestMatchSeenAt)} />
+                      <Metric
+                        label="Rank"
+                        value={
+                          candidate.rankTier
+                            ? `${candidate.rankTier} ${candidate.rankDivision ?? ""}`.trim()
+                            : "Pending"
+                        }
+                      />
+                      <Metric label="LP" value={candidate.rankLeaguePoints ?? "Pending"} />
+                      <div className="lg:col-span-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
+                          Affected sample
+                        </p>
+                        <div className="mt-2 grid gap-2">
+                          {candidate.affectedMatchups.map((matchup) => (
+                            <div
+                              className="rounded-md border border-white/10 bg-white/[0.03] p-2 text-xs text-zinc-400"
+                              key={`${candidate.identityKey}-${matchup.matchIdPreview}-${matchup.championA}-${matchup.championB}`}
+                            >
+                              {(championDisplayNamesById.get(matchup.championA) ?? matchup.championA)} vs{" "}
+                              {(championDisplayNamesById.get(matchup.championB) ?? matchup.championB)} ·{" "}
+                              {formatRole(matchup.role)} · {matchup.patch} ·{" "}
+                              {formatEnumLabel(matchup.method)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CoverageMetric({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div>
+      <div className="font-semibold text-cyan-100">{value}</div>
+      <div className="mt-1 uppercase tracking-[0.18em] text-zinc-600">{label}</div>
+    </div>
+  );
+}
+
 function RiotSeedCandidatesPanel({
   champions,
   championDisplayNamesById,
@@ -1072,6 +1835,12 @@ function RiotSeedCandidatesPanel({
   const [candidateGroups, setCandidateGroups] = useState<SeedCandidateGroupStates>(
     createInitialSeedCandidateGroupStates,
   );
+  const [activeRankGroup, setActiveRankGroup] = useState<RiotSeedCandidateRankGroupId>("master-plus");
+  const [lifecycleFilter, setLifecycleFilter] =
+    useState<SeedCandidateLifecycleState | "all">("ready-to-scan");
+  const [lifecycleCounts, setLifecycleCounts] = useState<
+    Record<SeedCandidateLifecycleState, number>
+  >(createEmptyLifecycleCounts);
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
   const [platformRegion, setPlatformRegion] = useState("EUW1");
   const [statusFilter, setStatusFilter] = useState<RiotSeedCandidateStatus | "all">("all");
@@ -1085,6 +1854,7 @@ function RiotSeedCandidatesPanel({
     useState<NonNullable<RiotSeedCandidateFilters["rankedState"]>>("all");
   const [primaryRoleFilter, setPrimaryRoleFilter] = useState<LeagueRole | "all">("all");
   const [primaryChampionFilter, setPrimaryChampionFilter] = useState("");
+  const [searchFilter, setSearchFilter] = useState("");
   const [minimumObservedGames, setMinimumObservedGames] = useState("");
   const [minimumPrimaryRoleShare, setMinimumPrimaryRoleShare] = useState("");
   const [minimumPrimaryChampionShare, setMinimumPrimaryChampionShare] = useState("");
@@ -1119,13 +1889,6 @@ function RiotSeedCandidatesPanel({
         .filter((candidate): candidate is RiotSeedCandidateView => Boolean(candidate)),
     [selectedCandidateCache, selectedCandidateIds],
   );
-  const expandedRankGroupIds = useMemo(
-    () =>
-      riotSeedCandidateRankGroups
-        .filter((rankGroup) => candidateGroups[rankGroup.id].isExpanded)
-        .map((rankGroup) => rankGroup.id),
-    [candidateGroups],
-  );
   const selectedRecentScanCount = selectedCandidates.filter((candidate) =>
     wasCandidateScannedRecently(candidate.last_scanned_at),
   ).length;
@@ -1134,7 +1897,7 @@ function RiotSeedCandidatesPanel({
   ).length;
 
   useEffect(() => {
-    void loadCandidateGroups({ groupIds: ["master-plus"] });
+    void loadCandidateGroups({ groupIds: [activeRankGroup] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1144,6 +1907,7 @@ function RiotSeedCandidatesPanel({
     const parsedMinimumPrimaryChampionShare = Number(minimumPrimaryChampionShare);
     const filters: RiotSeedCandidateFilters = {
       lastScanned: lastScannedFilter,
+      lifecycleState: lifecycleFilter,
       platformRegion,
       primaryChampion: primaryChampionFilter,
       primaryRole: primaryRoleFilter,
@@ -1151,6 +1915,7 @@ function RiotSeedCandidatesPanel({
       rankedState: rankedStateFilter,
       rankStatus: rankStatusFilter,
       rankTier: rankTierFilter,
+      search: searchFilter,
       source: sourceFilter,
       status: statusFilter,
     };
@@ -1174,10 +1939,12 @@ function RiotSeedCandidatesPanel({
   }
 
   async function loadCandidateGroups({
-    groupIds = expandedRankGroupIds,
+    filterOverrides = {},
+    groupIds = [activeRankGroup],
     overrides = {},
     resetPages = false,
   }: {
+    filterOverrides?: Partial<RiotSeedCandidateFilters>;
     groupIds?: RiotSeedCandidateRankGroupId[];
     overrides?: Partial<Record<RiotSeedCandidateRankGroupId, Partial<SeedCandidateGroupState>>>;
     resetPages?: boolean;
@@ -1203,7 +1970,6 @@ function RiotSeedCandidatesPanel({
 
       return nextGroups;
     });
-
     const groups: RiotSeedCandidateGroupPageRequest[] = groupIds.map((groupId) => {
       const currentGroup = {
         ...candidateGroups[groupId],
@@ -1221,7 +1987,10 @@ function RiotSeedCandidatesPanel({
 
     const result = await getPaginatedRiotSeedCandidates({
       accessToken: tokenResult.accessToken,
-      filters: buildCandidateFilters(),
+      filters: {
+        ...buildCandidateFilters(),
+        ...filterOverrides,
+      },
       groups,
     });
 
@@ -1242,6 +2011,8 @@ function RiotSeedCandidatesPanel({
       });
       return;
     }
+
+    setLifecycleCounts(result.lifecycleCounts);
 
     setCandidateGroups((currentGroups) => {
       const nextGroups = { ...currentGroups };
@@ -1296,9 +2067,6 @@ function RiotSeedCandidatesPanel({
   }
 
   function applyFilters() {
-    const groupsToLoad: RiotSeedCandidateRankGroupId[] =
-      expandedRankGroupIds.length > 0 ? expandedRankGroupIds : ["master-plus"];
-
     setSelectedCandidateIds(new Set());
     setSelectedCandidateCache(new Map());
     setShowScanPanel(false);
@@ -1316,7 +2084,29 @@ function RiotSeedCandidatesPanel({
 
       return nextGroups;
     });
-    void loadCandidateGroups({ groupIds: groupsToLoad, resetPages: true });
+    void loadCandidateGroups({ groupIds: [activeRankGroup], resetPages: true });
+  }
+
+  function changeActiveRankGroup(rankGroup: RiotSeedCandidateRankGroupId) {
+    setActiveRankGroup(rankGroup);
+    setSelectedCandidateIds(new Set());
+    setSelectedCandidateCache(new Map());
+    setShowScanPanel(false);
+    void loadCandidateGroups({ groupIds: [rankGroup], resetPages: true });
+  }
+
+  function changeLifecycleFilter(nextLifecycleFilter: SeedCandidateLifecycleState | "all") {
+    setLifecycleFilter(nextLifecycleFilter);
+    setSelectedCandidateIds(new Set());
+    setSelectedCandidateCache(new Map());
+    setShowScanPanel(false);
+    void loadCandidateGroups({
+      filterOverrides: {
+        lifecycleState: nextLifecycleFilter,
+      },
+      groupIds: [activeRankGroup],
+      resetPages: true,
+    });
   }
 
   async function copyPuuid(value: string) {
@@ -1329,6 +2119,15 @@ function RiotSeedCandidatesPanel({
   }
 
   function toggleCandidateSelection(candidate: RiotSeedCandidateView) {
+    if (!candidate.lifecycle.isSelectableForScan) {
+      setStatus({
+        error: getCandidateSelectionDisabledMessage(candidate),
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
     setSelectedCandidateIds((currentSelection) => {
       const nextSelection = new Set(currentSelection);
 
@@ -1349,7 +2148,9 @@ function RiotSeedCandidatesPanel({
   }
 
   function selectAllVisibleCandidates(rankGroup: RiotSeedCandidateRankGroupId) {
-    const visibleCandidates = candidateGroups[rankGroup].candidates;
+    const visibleCandidates = candidateGroups[rankGroup].candidates.filter(
+      (candidate) => candidate.lifecycle.isSelectableForScan,
+    );
 
     setSelectedCandidateIds((currentSelection) => {
       const nextSelection = new Set(currentSelection);
@@ -1380,22 +2181,6 @@ function RiotSeedCandidatesPanel({
     setSelectedCandidateIds(new Set());
     setShowScanPanel(false);
     setStatus({ error: null, isLoading: false, success: "Selection cleared." });
-  }
-
-  function toggleRankGroup(rankGroup: RiotSeedCandidateRankGroupId) {
-    const nextExpanded = !candidateGroups[rankGroup].isExpanded;
-
-    setCandidateGroups((currentGroups) => ({
-      ...currentGroups,
-      [rankGroup]: {
-        ...currentGroups[rankGroup],
-        isExpanded: nextExpanded,
-      },
-    }));
-
-    if (nextExpanded && !candidateGroups[rankGroup].loaded) {
-      void loadCandidateGroups({ groupIds: [rankGroup] });
-    }
   }
 
   function changeRankGroupPage(rankGroup: RiotSeedCandidateRankGroupId, page: number) {
@@ -1469,6 +2254,19 @@ function RiotSeedCandidatesPanel({
   function addSelectedToScanner() {
     if (selectedCandidates.length === 0) {
       setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    const blockedCandidate = selectedCandidates.find(
+      (candidate) => !candidate.lifecycle.isSelectableForScan,
+    );
+
+    if (blockedCandidate) {
+      setStatus({
+        error: getCandidateSelectionDisabledMessage(blockedCandidate),
+        isLoading: false,
+        success: null,
+      });
       return;
     }
 
@@ -1547,6 +2345,109 @@ function RiotSeedCandidatesPanel({
     await loadCandidateGroups();
   }
 
+  async function rejectSelectedCandidates() {
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await rejectRiotSeedCandidates({
+      accessToken: tokenResult.accessToken,
+      candidateIds: selectedCandidates.map((candidate) => candidate.id),
+      reason: "Rejected from Counter Pick seed lifecycle UI.",
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    clearSelectedCandidates();
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${result.updatedCount} seed ${result.updatedCount === 1 ? "candidate" : "candidates"} rejected.`,
+    });
+    await loadCandidateGroups();
+  }
+
+  async function restoreSelectedCandidates() {
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await restoreRiotSeedCandidates({
+      accessToken: tokenResult.accessToken,
+      candidateIds: selectedCandidates.map((candidate) => candidate.id),
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    clearSelectedCandidates();
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${result.updatedCount} seed ${result.updatedCount === 1 ? "candidate" : "candidates"} restored.`,
+    });
+    await loadCandidateGroups();
+  }
+
+  async function resetSelectedFailures() {
+    if (selectedCandidates.length === 0) {
+      setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await resetRiotSeedCandidateFailures({
+      accessToken: tokenResult.accessToken,
+      candidateIds: selectedCandidates.map((candidate) => candidate.id),
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    clearSelectedCandidates();
+    setStatus({
+      error: null,
+      isLoading: false,
+      success: `${result.updatedCount} seed ${result.updatedCount === 1 ? "candidate" : "candidates"} reset.`,
+    });
+    await loadCandidateGroups();
+  }
+
   function openSelectedScanPanel() {
     if (!showScanPanel) {
       if (primaryRoleFilter !== "all") {
@@ -1564,6 +2465,19 @@ function RiotSeedCandidatesPanel({
   async function scanSelectedCandidates() {
     if (selectedCandidates.length === 0) {
       setStatus({ error: "No candidates selected.", isLoading: false, success: null });
+      return;
+    }
+
+    const blockedCandidate = selectedCandidates.find(
+      (candidate) => !candidate.lifecycle.isSelectableForScan,
+    );
+
+    if (blockedCandidate) {
+      setStatus({
+        error: getCandidateSelectionDisabledMessage(blockedCandidate),
+        isLoading: false,
+        success: null,
+      });
       return;
     }
 
@@ -1679,7 +2593,7 @@ function RiotSeedCandidatesPanel({
           <Button
             className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
             disabled={status.isLoading}
-            onClick={() => void loadCandidateGroups()}
+            onClick={() => void loadCandidateGroups({ groupIds: [activeRankGroup] })}
             type="button"
             variant="ghost"
           >
@@ -1693,6 +2607,73 @@ function RiotSeedCandidatesPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+          {seedCandidateLifecycleStates.map((lifecycleState) => (
+            <div
+              className={cn(
+                "rounded-md border p-3",
+                lifecycleState === lifecycleFilter
+                  ? "border-cyan-300/30 bg-cyan-500/10"
+                  : "border-white/10 bg-black/15",
+              )}
+              key={lifecycleState}
+            >
+              <p className="text-[11px] uppercase tracking-wide text-zinc-500">
+                {seedCandidateLifecycleLabels[lifecycleState]}
+              </p>
+              <p className="mt-1 text-lg font-semibold text-zinc-100">
+                {formatNumber(lifecycleCounts[lifecycleState] ?? 0)}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-white/10 bg-black/20 p-3">
+          <div className="flex flex-wrap gap-2">
+            {riotSeedCandidateRankGroups.map((rankGroup) => (
+              <button
+                className={cn(
+                  "rounded-md border px-3 py-2 text-sm font-semibold transition",
+                  activeRankGroup === rankGroup.id
+                    ? "border-cyan-300/30 bg-cyan-500/15 text-cyan-100"
+                    : "border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06]",
+                )}
+                key={rankGroup.id}
+                onClick={() => changeActiveRankGroup(rankGroup.id)}
+                type="button"
+              >
+                {rankGroup.label}
+                <span className="ml-2 text-xs text-zinc-500">
+                  {formatNumber(candidateGroups[rankGroup.id].totalCount)}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              Lifecycle
+            </span>
+            {seedCandidateLifecycleFilters.map((candidateLifecycleState) => (
+              <button
+                className={cn(
+                  "rounded-md border px-2.5 py-1.5 text-xs font-semibold transition",
+                  lifecycleFilter === candidateLifecycleState
+                    ? "border-violet-300/30 bg-violet-500/15 text-violet-100"
+                    : "border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]",
+                )}
+                key={candidateLifecycleState}
+                onClick={() => changeLifecycleFilter(candidateLifecycleState)}
+                type="button"
+              >
+                {candidateLifecycleState === "all"
+                  ? "All"
+                  : seedCandidateLifecycleLabels[candidateLifecycleState]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           <label className="block space-y-2">
             <span className="text-sm text-zinc-300">Platform</span>
@@ -1700,6 +2681,16 @@ function RiotSeedCandidatesPanel({
               className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
               onChange={(event) => setPlatformRegion(event.target.value)}
               value={platformRegion}
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm text-zinc-300">Search</span>
+            <Input
+              className="h-10 border-white/10 bg-white/5 text-zinc-100 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              onChange={(event) => setSearchFilter(event.target.value)}
+              placeholder="PUUID or champion"
+              value={searchFilter}
             />
           </label>
 
@@ -1964,6 +2955,41 @@ function RiotSeedCandidatesPanel({
               )}
               Refresh rank for selected
             </Button>
+            {selectedCandidates.some((candidate) => candidate.lifecycle.state === "failed") ? (
+              <Button
+                className="border-sky-300/20 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
+                disabled={status.isLoading || selectedCandidates.length === 0}
+                onClick={() => void resetSelectedFailures()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Reset failed
+              </Button>
+            ) : null}
+            {selectedCandidates.some((candidate) => candidate.lifecycle.state === "rejected") ? (
+              <Button
+                className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                disabled={status.isLoading || selectedCandidates.length === 0}
+                onClick={() => void restoreSelectedCandidates()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Restore selected
+              </Button>
+            ) : (
+              <Button
+                className="border-rose-300/20 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+                disabled={status.isLoading || selectedCandidates.length === 0}
+                onClick={() => void rejectSelectedCandidates()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Reject selected
+              </Button>
+            )}
             <Button
               className="bg-violet-500/80 text-white hover:bg-violet-500"
               disabled={selectedCandidates.length === 0}
@@ -2157,7 +3183,9 @@ function RiotSeedCandidatesPanel({
         ) : null}
 
         <div className="space-y-3">
-          {riotSeedCandidateRankGroups.map((rankGroup) => (
+          {riotSeedCandidateRankGroups
+            .filter((rankGroup) => rankGroup.id === activeRankGroup)
+            .map((rankGroup) => (
             <SeedCandidateRankGroupSection
               championDisplayNamesById={championDisplayNamesById}
               expandedCandidateId={expandedCandidateId}
@@ -2177,7 +3205,7 @@ function RiotSeedCandidatesPanel({
               onRetry={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
               onSelectAllVisible={() => selectAllVisibleCandidates(rankGroup.id)}
               onSortChange={(nextSort) => changeRankGroupSort(rankGroup.id, nextSort)}
-              onToggle={() => toggleRankGroup(rankGroup.id)}
+              onToggle={() => void loadCandidateGroups({ groupIds: [rankGroup.id] })}
               selectedCandidateIds={selectedCandidateIds}
               selectedCount={
                 candidateGroups[rankGroup.id].candidates.filter((candidate) =>
@@ -2185,7 +3213,7 @@ function RiotSeedCandidatesPanel({
                 ).length
               }
             />
-          ))}
+            ))}
         </div>
       </CardContent>
     </Card>
@@ -2232,9 +3260,12 @@ function SeedCandidateRankGroupSection({
     pageSize: groupState.pageSize,
     totalCount: groupState.totalCount,
   });
+  const selectableCandidates = groupState.candidates.filter(
+    (candidate) => candidate.lifecycle.isSelectableForScan,
+  );
   const visibleCandidatesSelected =
-    groupState.candidates.length > 0 &&
-    groupState.candidates.every((candidate) => selectedCandidateIds.has(candidate.id));
+    selectableCandidates.length > 0 &&
+    selectableCandidates.every((candidate) => selectedCandidateIds.has(candidate.id));
 
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-black/15">
@@ -2336,7 +3367,7 @@ function SeedCandidateRankGroupSection({
               </Button>
               <Button
                 className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-                disabled={groupState.candidates.length === 0 || visibleCandidatesSelected}
+                disabled={selectableCandidates.length === 0 || visibleCandidatesSelected}
                 onClick={onSelectAllVisible}
                 size="sm"
                 type="button"
@@ -2414,6 +3445,16 @@ function createInitialSeedCandidateGroupStates(): SeedCandidateGroupStates {
   }, {} as SeedCandidateGroupStates);
 }
 
+function createEmptyLifecycleCounts() {
+  return seedCandidateLifecycleStates.reduce(
+    (counts, lifecycleState) => {
+      counts[lifecycleState] = 0;
+      return counts;
+    },
+    {} as Record<SeedCandidateLifecycleState, number>,
+  );
+}
+
 function SeedCandidateRow({
   candidate,
   championDisplayNamesById,
@@ -2433,20 +3474,30 @@ function SeedCandidateRow({
   onToggle: () => void;
   selected: boolean;
 }) {
+  const lifecycle = candidate.lifecycle;
+  const selectionDisabled = !lifecycle.isSelectableForScan;
+
   return (
     <div className="overflow-hidden rounded-lg border border-white/10 bg-black/15">
       <div className="flex items-stretch">
-        <label className="flex items-center border-r border-white/10 px-3">
+        <label
+          className={cn(
+            "flex items-center border-r border-white/10 px-3",
+            selectionDisabled ? "cursor-not-allowed opacity-40" : "",
+          )}
+          title={selectionDisabled ? getCandidateSelectionDisabledMessage(candidate) : undefined}
+        >
           <input
             checked={selected}
             className="size-4 accent-cyan-400"
+            disabled={selectionDisabled}
             onChange={onSelectionChange}
             type="checkbox"
           />
           <span className="sr-only">Select candidate</span>
         </label>
         <button
-          className="grid min-w-0 flex-1 gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.65fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
+          className="grid min-w-0 flex-1 gap-3 p-3 text-left text-sm transition hover:bg-white/[0.04] md:grid-cols-[1fr_0.8fr_0.7fr_0.75fr_0.75fr_0.6fr_auto]"
           onClick={onToggle}
           type="button"
         >
@@ -2459,8 +3510,13 @@ function SeedCandidateRow({
             </span>
           </span>
           <span>
-            <span className="block text-xs uppercase tracking-wide text-zinc-500">Status</span>
-            <span className="font-semibold text-zinc-100">{formatEnumLabel(candidate.status)}</span>
+            <span className="block text-xs uppercase tracking-wide text-zinc-500">Lifecycle</span>
+            <span className="font-semibold text-zinc-100">
+              {seedCandidateLifecycleLabels[lifecycle.state]}
+            </span>
+            <span className="mt-1 block text-xs text-zinc-500">
+              {formatLifecycleReasons(lifecycle.reasonCodes)}
+            </span>
           </span>
           <span>
             <span className="block text-xs uppercase tracking-wide text-zinc-500">Rank</span>
@@ -2534,10 +3590,46 @@ function SeedCandidateRow({
             <Metric label="First scan job" value={candidate.first_seen_scan_job_id} />
             <Metric label="Last profiled" value={formatDateTime(candidate.last_profiled_at)} />
             <Metric label="Last scanned" value={formatDateTime(candidate.last_scanned_at)} />
+            <Metric
+              label="Last successful"
+              value={formatDateTime(candidate.last_successful_scan_at)}
+            />
+            <Metric
+              label="Next eligible"
+              value={formatDateTime(candidate.lifecycle.nextEligibleAt)}
+            />
+            <Metric label="Lifecycle" value={seedCandidateLifecycleLabels[lifecycle.state]} />
+            <Metric label="Lifecycle reason" value={formatLifecycleReasons(lifecycle.reasonCodes)} />
+            <Metric label="Latest scan job" value={candidate.latest_scan_job_id} />
+            <Metric
+              label="New unique matches"
+              value={candidate.last_scan_unique_matches_found}
+            />
+            <Metric
+              label="Match IDs fetched"
+              value={candidate.last_scan_match_ids_fetched}
+            />
+            <Metric
+              label="Duplicate matches"
+              value={candidate.last_scan_duplicate_matches_skipped}
+            />
+            <Metric label="Duplicate rate" value={formatLastScanDuplicateRate(candidate)} />
+            <Metric
+              label="Useful observations"
+              value={candidate.last_scan_matchup_observations_inserted}
+            />
+            <Metric
+              label="Candidate observations"
+              value={candidate.last_scan_candidate_observations_discovered}
+            />
             <Metric label="Times scanned" value={candidate.times_scanned} />
             <Metric label="Successful scans" value={candidate.successful_scan_count} />
             <Metric label="Failed scans" value={candidate.failed_scan_count} />
             <Metric label="Consecutive failures" value={candidate.consecutive_scan_failures} />
+            <Metric label="Last scan error" value={candidate.last_scan_error_code} />
+            <Metric label="Retry at" value={formatDateTime(candidate.next_retry_at)} />
+            <Metric label="Rejected at" value={formatDateTime(candidate.manually_rejected_at)} />
+            <Metric label="Rejection reason" value={candidate.rejection_reason} />
             <Metric label="Rank status" value={formatEnumLabel(candidate.rank_enrichment_status)} />
             <Metric label="Rank" value={formatCandidateRank(candidate)} />
             <Metric label="Rank win rate" value={formatPercent(candidate.rank_win_rate)} />
@@ -3502,14 +4594,58 @@ function formatRankRecord(candidate: RiotSeedCandidateView) {
   return `${candidate.rank_wins}W ${candidate.rank_losses}L`;
 }
 
+function formatLifecycleReasons(reasonCodes: string[]) {
+  if (reasonCodes.length === 0) {
+    return "Pending";
+  }
+
+  return reasonCodes
+    .map((reasonCode) =>
+      reasonCode in seedCandidateLifecycleReasonLabels
+        ? seedCandidateLifecycleReasonLabels[
+            reasonCode as keyof typeof seedCandidateLifecycleReasonLabels
+          ]
+        : formatEnumLabel(reasonCode),
+    )
+    .join(", ");
+}
+
+function getCandidateSelectionDisabledMessage(candidate: RiotSeedCandidateView) {
+  if (candidate.lifecycle.isSelectableForScan) {
+    return "Ready to scan.";
+  }
+
+  const nextEligibleAt = candidate.lifecycle.nextEligibleAt
+    ? formatDateTime(candidate.lifecycle.nextEligibleAt)
+    : null;
+  const reason = formatLifecycleReasons(candidate.lifecycle.reasonCodes);
+
+  return nextEligibleAt ? `${reason}. Available again ${nextEligibleAt}.` : reason;
+}
+
+function formatLastScanDuplicateRate(candidate: RiotSeedCandidateView) {
+  const fetched = candidate.last_scan_match_ids_fetched;
+  const duplicates = candidate.last_scan_duplicate_matches_skipped;
+
+  if (typeof fetched !== "number" || fetched <= 0 || typeof duplicates !== "number") {
+    return "Pending";
+  }
+
+  return formatPercent(duplicates / fetched);
+}
+
 function formatEnumLabel(value: string) {
   return value
-    .split("_")
+    .split(/[-_]/g)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
 }
 
-function formatNumber(value: number | undefined) {
+function formatRole(value: string) {
+  return value === "adc" ? "ADC" : formatEnumLabel(value);
+}
+
+function formatNumber(value: number | null | undefined) {
   return typeof value === "number" ? value.toLocaleString() : "Pending";
 }
 

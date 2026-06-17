@@ -3,6 +3,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type {
+  MatchupRankCoverageAttributionResult,
+  MatchupRankCoverageCandidate,
+  MatchupRankCoverageFilters,
+  MatchupRankCoverageParticipantInput,
+  MatchupRankCoverageQueueResult,
+  MatchupRankCoverageSort,
+  RefreshMatchupRankCoverageParticipantsResult,
   RiotIdResolverInput,
   RiotIdResolverResult,
   RiotIdResolverRow,
@@ -13,6 +20,7 @@ import type {
   RiotSeedCandidateRankRefreshResult,
   RiotSeedCandidateSort,
   RiotSeedCandidatesResult,
+  RiotSeedCandidateLifecycleMutationResult,
   RiotSeedCandidateView,
   RiotScanDiscoveryResult,
   RiotScanJobResult,
@@ -24,6 +32,16 @@ import type {
   RiotScanTargetResult,
   StartRiotScanJobInput,
 } from "@/src/features/league/riot-scan-jobs";
+import {
+  deriveSeedCandidateLifecycle,
+  getSeedScanCooldownEligibleAt,
+  getSeedScanRetryEligibleAt,
+  MAX_CONSECUTIVE_SCAN_FAILURES,
+  MIN_SEED_OBSERVATIONS,
+  RECENTLY_SCANNED_WINDOW_HOURS,
+  seedCandidateLifecycleStates,
+  type SeedCandidateLifecycleState,
+} from "@/src/features/league/riot-seed-candidate-lifecycle";
 import {
   getRiotSeedCandidateTotalPages,
   normalizeRiotSeedCandidatePage,
@@ -44,7 +62,7 @@ const maxDisplayedResultsLimit = 100;
 const maxRiotIdsPerBatch = 20;
 const maxSeedCandidatesPerScan = 20;
 const maxSeedCandidateRankRefreshBatch = 20;
-const recentSeedCandidateScanHours = 24;
+const recentSeedCandidateScanHours = RECENTLY_SCANNED_WINDOW_HOURS;
 const recentSeedCandidateRankRefreshHours = 24;
 const defaultRegionalRoute = "europe";
 const defaultPlatformRegion = "EUW1";
@@ -54,6 +72,13 @@ const riotScanJobSelect =
   "id, mode, status, role, seed_puuids, enemy_champion, counter_champion, focus_champion_id, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at";
 const riotSeedCandidateSelect = [
   "id",
+  "last_scan_candidate_observations_discovered",
+  "last_scan_duplicate_matches_skipped",
+  "last_scan_error_at",
+  "last_scan_error_code",
+  "last_scan_match_ids_fetched",
+  "last_scan_matchup_observations_inserted",
+  "last_scan_unique_matches_found",
   "puuid",
   "platform_region",
   "regional_routing",
@@ -96,7 +121,13 @@ const riotSeedCandidateSelect = [
   "top_champions",
   "last_profiled_at",
   "last_scanned_at",
+  "last_successful_scan_at",
+  "latest_scan_job_id",
   "next_eligible_scan_at",
+  "next_retry_at",
+  "manually_rejected_at",
+  "manually_rejected_by",
+  "rejection_reason",
   "times_scanned",
   "successful_scan_count",
   "failed_scan_count",
@@ -133,6 +164,18 @@ type RiotScanJobRow = {
   started_at: string | null;
   status: RiotScanStatus;
   summary: RiotScanSummary | null;
+};
+
+type RiotSeedCandidateQueryBuilder = {
+  eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  gte: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  in: (column: string, values: unknown[]) => RiotSeedCandidateQueryBuilder;
+  is: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  lt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  lte: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  not: (column: string, operator: string, value: unknown) => RiotSeedCandidateQueryBuilder;
+  or: (filters: string) => RiotSeedCandidateQueryBuilder;
 };
 
 export type LeagueChampionRegistryAdminStatusResult =
@@ -243,6 +286,8 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
       supabase: serviceClientResult.supabase,
     });
     await markSeedCandidatesScanFailed({
+      errorCode: "missing_riot_api_key",
+      scanJobId: insertedJob.id,
       seedPuuids: validation.seedPuuids,
       supabase: serviceClientResult.supabase,
     });
@@ -482,7 +527,9 @@ export async function getRiotSeedCandidates({
   }
 
   return {
-    candidates: sortCandidateRows(data ?? [], sort).slice(0, Math.min(Math.max(limit, 1), 100)),
+    candidates: sortCandidateRows(data ?? [], sort)
+      .slice(0, Math.min(Math.max(limit, 1), 100))
+      .map(hydrateSeedCandidateLifecycle),
     ok: true,
   };
 }
@@ -506,9 +553,30 @@ export async function getPaginatedRiotSeedCandidates({
 
   const supabase = serviceClientResult.supabase;
   const counts = {} as Record<RiotSeedCandidateRankGroupId, number>;
+  const lifecycleCounts = {} as Record<SeedCandidateLifecycleState, number>;
   const groupedResults: Partial<
     Record<RiotSeedCandidateRankGroupId, PaginatedSeedCandidates>
   > = {};
+
+  for (const lifecycleState of seedCandidateLifecycleStates) {
+    const { count, error } = await buildRiotSeedCandidateQuery({
+      filters: {
+        ...filters,
+        lifecycleState,
+      },
+      selectOptions: { count: "exact", head: true },
+      supabase,
+    });
+
+    if (error) {
+      return {
+        error: "Seed candidate lifecycle counts could not be loaded.",
+        ok: false,
+      };
+    }
+
+    lifecycleCounts[lifecycleState] = count ?? 0;
+  }
 
   for (const rankGroup of riotSeedCandidateRankGroupIds) {
     const { count, error } = await buildRiotSeedCandidateQuery({
@@ -569,7 +637,7 @@ export async function getPaginatedRiotSeedCandidates({
       candidates: sortRiotSeedCandidateRows(pageResult.data ?? [], {
         sort: groupRequest.sort,
         sortDirection: groupRequest.sortDirection,
-      }),
+      }).map(hydrateSeedCandidateLifecycle),
       page,
       pageSize,
       totalCount,
@@ -580,6 +648,7 @@ export async function getPaginatedRiotSeedCandidates({
   return {
     counts,
     groups: groupedResults,
+    lifecycleCounts,
     ok: true,
   };
 }
@@ -658,6 +727,384 @@ export async function refreshRiotSeedCandidateRanks(
     return {
       error:
         error instanceof Error ? getRiotRankRefreshErrorMessage(error) : "Rank refresh failed.",
+      ok: false,
+    };
+  }
+}
+
+export async function rejectRiotSeedCandidates({
+  accessToken,
+  candidateIds,
+  reason = null,
+}: {
+  accessToken: string;
+  candidateIds: string[];
+  reason?: string | null;
+}): Promise<RiotSeedCandidateLifecycleMutationResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "reject Riot seed candidates");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const uniqueCandidateIds = uniqueValues(candidateIds);
+
+  if (uniqueCandidateIds.length === 0) {
+    return {
+      error: "Select at least one seed candidate.",
+      ok: false,
+    };
+  }
+
+  const rejectedAt = new Date().toISOString();
+  const { error } = await serviceClientResult.supabase
+    .from("riot_seed_candidates")
+    .update({
+      manually_rejected_at: rejectedAt,
+      manually_rejected_by: authResult.userId,
+      rejection_reason: normalizeNullableText(reason),
+    })
+    .in("id", uniqueCandidateIds);
+
+  if (error) {
+    return {
+      error: "Seed candidates could not be rejected.",
+      ok: false,
+    };
+  }
+
+  console.info("Riot seed candidate lifecycle updated", {
+    rejected: uniqueCandidateIds.length,
+    totalCandidates: uniqueCandidateIds.length,
+  });
+
+  return {
+    ok: true,
+    updatedCount: uniqueCandidateIds.length,
+  };
+}
+
+export async function restoreRiotSeedCandidates({
+  accessToken,
+  candidateIds,
+}: {
+  accessToken: string;
+  candidateIds: string[];
+}): Promise<RiotSeedCandidateLifecycleMutationResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "restore Riot seed candidates");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const uniqueCandidateIds = uniqueValues(candidateIds);
+
+  if (uniqueCandidateIds.length === 0) {
+    return {
+      error: "Select at least one seed candidate.",
+      ok: false,
+    };
+  }
+
+  const { error } = await serviceClientResult.supabase
+    .from("riot_seed_candidates")
+    .update({
+      manually_rejected_at: null,
+      manually_rejected_by: null,
+      rejection_reason: null,
+    })
+    .in("id", uniqueCandidateIds);
+
+  if (error) {
+    return {
+      error: "Seed candidates could not be restored.",
+      ok: false,
+    };
+  }
+
+  console.info("Riot seed candidate lifecycle updated", {
+    restored: uniqueCandidateIds.length,
+    totalCandidates: uniqueCandidateIds.length,
+  });
+
+  return {
+    ok: true,
+    updatedCount: uniqueCandidateIds.length,
+  };
+}
+
+export async function resetRiotSeedCandidateFailures({
+  accessToken,
+  candidateIds,
+}: {
+  accessToken: string;
+  candidateIds: string[];
+}): Promise<RiotSeedCandidateLifecycleMutationResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "reset Riot seed candidate failures");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const uniqueCandidateIds = uniqueValues(candidateIds);
+
+  if (uniqueCandidateIds.length === 0) {
+    return {
+      error: "Select at least one seed candidate.",
+      ok: false,
+    };
+  }
+
+  const { error } = await serviceClientResult.supabase
+    .from("riot_seed_candidates")
+    .update({
+      consecutive_scan_failures: 0,
+      last_scan_error_at: null,
+      last_scan_error_code: null,
+      next_retry_at: null,
+      status: "candidate",
+    })
+    .in("id", uniqueCandidateIds);
+
+  if (error) {
+    return {
+      error: "Seed candidate failure state could not be reset.",
+      ok: false,
+    };
+  }
+
+  console.info("Riot seed candidate lifecycle updated", {
+    resetFailures: uniqueCandidateIds.length,
+    totalCandidates: uniqueCandidateIds.length,
+  });
+
+  return {
+    ok: true,
+    updatedCount: uniqueCandidateIds.length,
+  };
+}
+
+export async function getMatchupRankCoverageQueue({
+  accessToken,
+  filters = {},
+  limit = 100,
+  sort = "priority_score",
+  sortDirection = "desc",
+}: {
+  accessToken: string;
+  filters?: MatchupRankCoverageFilters;
+  limit?: number;
+  sort?: MatchupRankCoverageSort;
+  sortDirection?: "asc" | "desc";
+}): Promise<MatchupRankCoverageQueueResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "view matchup rank coverage queue");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  try {
+    const {
+      createSupabaseMatchupRankCoverageRepository,
+      loadMatchupRankCoverageQueue,
+      maxMatchupRankCoverageLimit,
+    } = await import("@/scripts/lib/matchup-rank-coverage-queue.mjs");
+    const result = await loadMatchupRankCoverageQueue({
+      filters,
+      limit: Math.min(Math.max(Math.trunc(limit), 1), maxMatchupRankCoverageLimit),
+      repository: createSupabaseMatchupRankCoverageRepository(serviceClientResult.supabase),
+      sort,
+      sortDirection,
+    });
+
+    return {
+      candidates: result.candidates as MatchupRankCoverageCandidate[],
+      ok: true,
+      projectedImpact: result.projectedImpact,
+      summary: result.summary,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Matchup rank coverage queue could not be loaded.",
+      ok: false,
+    };
+  }
+}
+
+export async function refreshMatchupRankCoverageParticipants({
+  accessToken,
+  force = false,
+  participants,
+}: {
+  accessToken: string;
+  force?: boolean;
+  participants: MatchupRankCoverageParticipantInput[];
+}): Promise<RefreshMatchupRankCoverageParticipantsResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "refresh matchup rank coverage ranks");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const uniqueParticipants = dedupeCoverageParticipantInputs(participants);
+
+  if (uniqueParticipants.length === 0) {
+    return {
+      error: "Select at least one matchup participant.",
+      ok: false,
+    };
+  }
+
+  if (uniqueParticipants.length > maxSeedCandidateRankRefreshBatch) {
+    return {
+      error: `Refresh rank for up to ${maxSeedCandidateRankRefreshBatch} participants at a time.`,
+      ok: false,
+    };
+  }
+
+  if (!process.env.RIOT_API_KEY) {
+    return {
+      error: "Missing Riot API configuration.",
+      ok: false,
+    };
+  }
+
+  try {
+    const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
+    const { createSupabaseRankRepository, enrichRiotSeedCandidateRanks } = await import(
+      "@/scripts/lib/riot-seed-rank-enrichment.mjs"
+    );
+    const {
+      createSupabaseMatchupRankCoverageRepository,
+      ensureMatchupRankCoverageCandidates,
+    } = await import("@/scripts/lib/matchup-rank-coverage-queue.mjs");
+    const coverageRepository = createSupabaseMatchupRankCoverageRepository(
+      serviceClientResult.supabase,
+    );
+    const candidateResult = await ensureMatchupRankCoverageCandidates({
+      participants: uniqueParticipants,
+      repository: coverageRepository,
+    });
+    const candidateIds = candidateResult.candidateIds;
+
+    if (candidateIds.length === 0) {
+      return {
+        error: "No seed candidates could be linked for selected participants.",
+        ok: false,
+      };
+    }
+
+    const riot = new RiotApiClient({
+      apiKey: process.env.RIOT_API_KEY,
+      regionalRoute: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
+      requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
+    });
+    const result = await enrichRiotSeedCandidateRanks({
+      candidateIds,
+      force,
+      limit: candidateIds.length,
+      repository: createSupabaseRankRepository(serviceClientResult.supabase),
+      riot,
+    });
+
+    return {
+      candidatesRequested: candidateResult.requestedCount,
+      createdCandidateCount: candidateResult.createdCount,
+      failedCount: result.failedCount,
+      notFoundCount: result.notFoundCount,
+      ok: true,
+      rankedCount: result.rankedCount,
+      rateLimitedCount: result.rateLimitedCount,
+      skippedCount: result.skippedCount,
+      snapshotInsertedCount: result.snapshotInsertedCount,
+      total: result.total,
+      unrankedCount: result.unrankedCount,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? getRiotRankRefreshErrorMessage(error) : "Rank refresh failed.",
+      ok: false,
+    };
+  }
+}
+
+export async function rerunMatchupRankCoverageAttribution({
+  accessToken,
+  filters = {},
+  limit = 500,
+}: {
+  accessToken: string;
+  filters?: MatchupRankCoverageFilters;
+  limit?: number;
+}): Promise<MatchupRankCoverageAttributionResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "re-run matchup rank attribution");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  try {
+    const {
+      attributeStoredMatchupRankBrackets,
+      createSupabaseMatchupRankAttributionRepository,
+    } = await import("@/scripts/lib/riot-matchup-rank-attribution.mjs");
+    const result = await attributeStoredMatchupRankBrackets({
+      filters: {
+        champion: filters.champion ?? null,
+        patch: filters.patch ?? null,
+        role: filters.role && filters.role !== "all" ? filters.role : null,
+      },
+      force: true,
+      limit: Math.min(Math.max(Math.trunc(limit), 1), 5000),
+      repository: createSupabaseMatchupRankAttributionRepository(serviceClientResult.supabase),
+    });
+
+    return {
+      ok: true,
+      summary: result.summary,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Matchup rank attribution could not be re-run.",
       ok: false,
     };
   }
@@ -1012,6 +1459,17 @@ async function runRiotScanJob({
             ? getPersistenceRecoveryWarningMessage(persistedSummary)
             : null;
 
+    console.info(
+      "Riot counter pick scan completed",
+      createRiotCounterPickScanLogPayload({
+        didPersistenceFail,
+        errorMessage: persistenceErrorMessage,
+        jobId,
+        persistenceResult,
+        summary: persistedSummary,
+      }),
+    );
+
     await supabase
       .from("riot_scan_jobs")
       .update({
@@ -1026,26 +1484,118 @@ async function runRiotScanJob({
 
     if (didPersistenceFail) {
       await markSeedCandidatesScanFailed({
+        errorCode: "scan_persistence_failed",
+        scanJobId: jobId,
         seedPuuids: input.seedPuuids,
         supabase,
       });
     } else {
       await markSeedCandidatesScanSucceeded({
+        scanJobId: jobId,
         seedPuuids: input.seedPuuids,
+        summary: persistedSummary,
         supabase,
       });
     }
   } catch (error) {
+    console.error("Riot counter pick scan failed", {
+      error: getScannerErrorMessage(error),
+      scanJobId: jobId,
+      seedCount: input.seedPuuids.length,
+    });
     await failJob({
       errorMessage: getScannerErrorMessage(error),
       jobId,
       supabase,
     });
     await markSeedCandidatesScanFailed({
+      errorCode: "scan_runtime_failed",
+      scanJobId: jobId,
       seedPuuids: input.seedPuuids,
       supabase,
     });
   }
+}
+
+type RiotCounterPickScanLogPersistence = {
+  affectedGroups?: unknown[];
+  counterPickAggregateInsertFailures?: number;
+  counterPickAggregateValidationFailures?: number;
+  duplicateObservationsSkipped?: number;
+  insertedObservations?: number;
+  insertFailures?: number;
+  matchupObservationsRejected?: number;
+  observationsFound?: number;
+  statsRowsUpdated?: number;
+  updatedStats?: unknown[];
+};
+
+function createRiotCounterPickScanLogPayload({
+  didPersistenceFail,
+  errorMessage,
+  jobId,
+  persistenceResult,
+  summary,
+}: {
+  didPersistenceFail: boolean;
+  errorMessage: string | null;
+  jobId: number;
+  persistenceResult: RiotCounterPickScanLogPersistence;
+  summary: RiotScanSummary;
+}) {
+  const aggregationTriggered = (persistenceResult.affectedGroups?.length ?? 0) > 0;
+  const aggregationSucceeded = aggregationTriggered
+    ? getNumberMetric(summary.counterPickAggregateInsertFailures) === 0 &&
+      getNumberMetric(summary.counterPickAggregateValidationFailures) === 0
+    : false;
+  const rankBrackets = Array.from(
+    new Set(
+      (persistenceResult.updatedStats ?? [])
+        .map(getRankBracketMetric)
+        .filter((rankBracket): rankBracket is string => Boolean(rankBracket)),
+    ),
+  ).sort();
+
+  return {
+    aggregationSucceeded,
+    aggregationTriggered,
+    duplicateMatchIds: Math.max(
+      getNumberMetric(summary.fetchedMatchIds) - getNumberMetric(summary.uniqueMatchIds),
+      0,
+    ),
+    duplicateObservations: getNumberMetric(summary.observationDuplicatesSkipped),
+    errorMessage,
+    matchIdsFetched: getNumberMetric(summary.fetchedMatchIds),
+    matchesFailed: 0,
+    matchesLoaded: getNumberMetric(summary.matchesScanned),
+    observationsGenerated: getNumberMetric(summary.observationsFound),
+    observationsInserted: getNumberMetric(summary.observationsInserted),
+    observationsRejected: getNumberMetric(summary.matchupObservationsRejected),
+    rankBracket:
+      rankBrackets.length === 0 ? "none" : rankBrackets.length === 1 ? rankBrackets[0] : "mixed",
+    rankBrackets,
+    scanJobId: jobId,
+    seedCount: getNumberMetric(summary.seedCount),
+    statsRows: getNumberMetric(summary.statsRowsUpdated),
+    status: didPersistenceFail ? "failed" : "completed",
+    uniqueMatchIds: getNumberMetric(summary.uniqueMatchIds),
+  };
+}
+
+function getNumberMetric(value: unknown) {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function getRankBracketMetric(value: unknown) {
+  if (!value || typeof value !== "object" || !("rank_bracket" in value)) {
+    return null;
+  }
+
+  const rankBracket = value.rank_bracket;
+
+  return typeof rankBracket === "string" && rankBracket.trim() ? rankBracket : null;
 }
 
 function getRankedDiscoveryResults({
@@ -1282,21 +1832,40 @@ async function markSeedCandidatesScanRunning({
 }
 
 async function markSeedCandidatesScanSucceeded({
+  scanJobId,
   seedPuuids,
+  summary,
   supabase,
 }: {
+  scanJobId: number;
   seedPuuids: string[];
+  summary: RiotScanSummary;
   supabase: SupabaseClient;
 }) {
   const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
-  const scannedAt = new Date().toISOString();
+  const scannedAtDate = new Date();
+  const scannedAt = scannedAtDate.toISOString();
+  const nextEligibleAt = getSeedScanCooldownEligibleAt(scannedAtDate);
 
   for (const candidate of candidates) {
+    const previousLifecycle = deriveSeedCandidateLifecycle(candidate);
     const { error } = await supabase
       .from("riot_seed_candidates")
       .update({
         consecutive_scan_failures: 0,
+        last_scan_candidate_observations_discovered:
+          summary.candidateObservationsInserted ?? summary.candidateObservationsFound ?? null,
+        last_scan_duplicate_matches_skipped: summary.observationDuplicatesSkipped ?? null,
+        last_scan_error_at: null,
+        last_scan_error_code: null,
+        last_scan_match_ids_fetched: summary.fetchedMatchIds ?? null,
+        last_scan_matchup_observations_inserted: summary.observationsInserted ?? null,
+        last_scan_unique_matches_found: summary.uniqueMatchIds ?? null,
         last_scanned_at: scannedAt,
+        last_successful_scan_at: scannedAt,
+        latest_scan_job_id: scanJobId,
+        next_eligible_scan_at: nextEligibleAt,
+        next_retry_at: null,
         status: "candidate",
         successful_scan_count: Number(candidate.successful_scan_count ?? 0) + 1,
         times_scanned: Number(candidate.times_scanned ?? 0) + 1,
@@ -1305,31 +1874,74 @@ async function markSeedCandidatesScanSucceeded({
 
     if (error) {
       console.error("Seed candidate success metadata update failed", getSafeDatabaseError(error));
+    } else {
+      logSeedCandidateLifecycleTransition({
+        candidate: {
+          ...candidate,
+          consecutive_scan_failures: 0,
+          last_scanned_at: scannedAt,
+          last_successful_scan_at: scannedAt,
+          next_eligible_scan_at: nextEligibleAt,
+          next_retry_at: null,
+          status: "candidate",
+        },
+        previousLifecycle,
+        scanJobId,
+      });
     }
   }
 }
 
 async function markSeedCandidatesScanFailed({
+  errorCode,
+  scanJobId,
   seedPuuids,
   supabase,
 }: {
+  errorCode: string;
+  scanJobId: number;
   seedPuuids: string[];
   supabase: SupabaseClient;
 }) {
   const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
+  const failedAtDate = new Date();
+  const failedAt = failedAtDate.toISOString();
 
   for (const candidate of candidates) {
+    const previousLifecycle = deriveSeedCandidateLifecycle(candidate);
+    const consecutiveFailures = Number(candidate.consecutive_scan_failures ?? 0) + 1;
+    const nextRetryAt = getSeedScanRetryEligibleAt(failedAtDate, consecutiveFailures);
     const { error } = await supabase
       .from("riot_seed_candidates")
       .update({
-        consecutive_scan_failures: Number(candidate.consecutive_scan_failures ?? 0) + 1,
+        consecutive_scan_failures: consecutiveFailures,
         failed_scan_count: Number(candidate.failed_scan_count ?? 0) + 1,
+        last_scan_error_at: failedAt,
+        last_scan_error_code: errorCode,
+        last_scanned_at: failedAt,
+        latest_scan_job_id: scanJobId,
+        next_retry_at: nextRetryAt,
         status: "failed",
       })
       .eq("id", candidate.id);
 
     if (error) {
       console.error("Seed candidate failure metadata update failed", getSafeDatabaseError(error));
+    } else {
+      logSeedCandidateLifecycleTransition({
+        candidate: {
+          ...candidate,
+          consecutive_scan_failures: consecutiveFailures,
+          last_scan_error_at: failedAt,
+          last_scan_error_code: errorCode,
+          last_scanned_at: failedAt,
+          latest_scan_job_id: scanJobId,
+          next_retry_at: nextRetryAt,
+          status: "failed",
+        },
+        previousLifecycle,
+        scanJobId,
+      });
     }
   }
 }
@@ -1340,7 +1952,7 @@ async function fetchScanSeedCandidates({
 }: {
   seedPuuids: string[];
   supabase: SupabaseClient;
-}) {
+}): Promise<RiotSeedCandidateView[]> {
   const uniquePuuids = uniqueValues(seedPuuids);
 
   if (uniquePuuids.length === 0) {
@@ -1349,9 +1961,7 @@ async function fetchScanSeedCandidates({
 
   const { data, error } = await supabase
     .from("riot_seed_candidates")
-    .select(
-      "id, puuid, platform_region, status, first_seen_scan_job_id, times_scanned, successful_scan_count, failed_scan_count, consecutive_scan_failures",
-    )
+    .select(riotSeedCandidateSelect)
     .eq(
       "platform_region",
       (process.env.RIOT_PLATFORM_REGION ?? defaultPlatformRegion).toUpperCase(),
@@ -1363,7 +1973,7 @@ async function fetchScanSeedCandidates({
     return [];
   }
 
-  return data ?? [];
+  return (data ?? []) as unknown as RiotSeedCandidateView[];
 }
 
 function getSafeDatabaseError(error: { code?: string; message?: string; status?: number }) {
@@ -1372,6 +1982,34 @@ function getSafeDatabaseError(error: { code?: string; message?: string; status?:
     message: error.message ?? "Database operation failed.",
     status: error.status ?? null,
   };
+}
+
+function logSeedCandidateLifecycleTransition({
+  candidate,
+  previousLifecycle,
+  scanJobId,
+}: {
+  candidate: RiotSeedCandidateView;
+  previousLifecycle: ReturnType<typeof deriveSeedCandidateLifecycle>;
+  scanJobId: number;
+}) {
+  const nextLifecycle = deriveSeedCandidateLifecycle(candidate);
+
+  if (
+    previousLifecycle.state === nextLifecycle.state &&
+    previousLifecycle.nextEligibleAt === nextLifecycle.nextEligibleAt
+  ) {
+    return;
+  }
+
+  console.info("Riot seed candidate lifecycle changed", {
+    candidateId: candidate.id,
+    nextEligibleAt: nextLifecycle.nextEligibleAt,
+    nextState: nextLifecycle.state,
+    previousState: previousLifecycle.state,
+    reasonCodes: nextLifecycle.reasonCodes,
+    scanJobId,
+  });
 }
 
 function getPersistenceRecoveryState(summary: RiotScanSummary) {
@@ -1834,6 +2472,32 @@ function uniqueValues(values: unknown[]) {
   return Array.from(new Set(values.map((value) => String(value).trim()).filter(Boolean)));
 }
 
+function normalizeNullableText(value: string | null | undefined) {
+  const text = String(value ?? "").trim();
+
+  return text ? text.slice(0, 240) : null;
+}
+
+function dedupeCoverageParticipantInputs(participants: MatchupRankCoverageParticipantInput[]) {
+  const participantsByKey = new Map<string, MatchupRankCoverageParticipantInput>();
+
+  for (const participant of participants ?? []) {
+    const platformRegion = String(participant.platformRegion ?? "").trim().toUpperCase();
+    const puuid = String(participant.puuid ?? "").trim();
+
+    if (!platformRegion || !puuid) {
+      continue;
+    }
+
+    participantsByKey.set(`${platformRegion}:${puuid}`, {
+      platformRegion,
+      puuid,
+    });
+  }
+
+  return Array.from(participantsByKey.values());
+}
+
 function getCandidateSortColumn(sort: RiotSeedCandidateSort) {
   switch (sort) {
     case "created_at":
@@ -1888,6 +2552,14 @@ function buildRiotSeedCandidateQuery({
 
   if (filters.primaryChampion?.trim()) {
     query = query.ilike("primary_champion", `%${filters.primaryChampion.trim()}%`);
+  }
+
+  if (filters.search?.trim()) {
+    const search = filters.search.trim().replace(/[%*,]/g, "");
+
+    if (search) {
+      query = query.or(`puuid.ilike.%${search}%,primary_champion.ilike.%${search}%`);
+    }
   }
 
   if (filters.lastScanned === "never") {
@@ -1955,7 +2627,91 @@ function buildRiotSeedCandidateQuery({
     }
   }
 
+  if (filters.lifecycleState && filters.lifecycleState !== "all") {
+    query = applyRiotSeedCandidateLifecycleFilter(query, filters.lifecycleState);
+  }
+
   return query;
+}
+
+function applyRiotSeedCandidateLifecycleFilter<TQuery extends RiotSeedCandidateQueryBuilder>(
+  query: TQuery,
+  lifecycleState: SeedCandidateLifecycleState,
+) {
+  const nowIso = new Date().toISOString();
+  const recentCutoff = getHoursAgoIso(RECENTLY_SCANNED_WINDOW_HOURS);
+  const staleRankCutoff = getDaysAgoIso(30);
+  const supportedRankTiers = [
+    "CHALLENGER",
+    "GRANDMASTER",
+    "MASTER",
+    "DIAMOND",
+    "EMERALD",
+    "PLATINUM",
+    "GOLD",
+    "SILVER",
+    "BRONZE",
+    "IRON",
+  ];
+
+  switch (lifecycleState) {
+    case "rejected":
+      return query.not("manually_rejected_at", "is", null) as TQuery;
+    case "low-signal":
+      return query.is("manually_rejected_at", null).lt("observed_games", MIN_SEED_OBSERVATIONS) as TQuery;
+    case "failed":
+      return query
+        .is("manually_rejected_at", null)
+        .or(`consecutive_scan_failures.gte.${MAX_CONSECUTIVE_SCAN_FAILURES},status.eq.failed`) as TQuery;
+    case "recently-scanned":
+      return query
+        .is("manually_rejected_at", null)
+        .gte("last_successful_scan_at", recentCutoff)
+        .lt("consecutive_scan_failures", MAX_CONSECUTIVE_SCAN_FAILURES) as TQuery;
+    case "cooling-down":
+      return query
+        .is("manually_rejected_at", null)
+        .lt("last_successful_scan_at", recentCutoff)
+        .gt("next_eligible_scan_at", nowIso)
+        .lt("consecutive_scan_failures", MAX_CONSECUTIVE_SCAN_FAILURES) as TQuery;
+    case "needs-rank-enrichment":
+      return query
+        .is("manually_rejected_at", null)
+        .gte("observed_games", MIN_SEED_OBSERVATIONS)
+        .lt("consecutive_scan_failures", MAX_CONSECUTIVE_SCAN_FAILURES)
+        .or(
+          [
+            "rank_enrichment_status.neq.ranked",
+            "rank_tier.is.null",
+            "rank_last_success_at.is.null",
+            `rank_last_success_at.lt.${staleRankCutoff}`,
+          ].join(","),
+        ) as TQuery;
+    case "ready-to-scan":
+      return query
+        .is("manually_rejected_at", null)
+        .gte("observed_games", MIN_SEED_OBSERVATIONS)
+        .eq("rank_enrichment_status", "ranked")
+        .in("rank_tier", supportedRankTiers)
+        .lt("consecutive_scan_failures", MAX_CONSECUTIVE_SCAN_FAILURES)
+        .or("status.eq.candidate,status.eq.approved,status.eq.cooldown,status.eq.ignored")
+        .or(`next_eligible_scan_at.is.null,next_eligible_scan_at.lte.${nowIso}`)
+        .or(`next_retry_at.is.null,next_retry_at.lte.${nowIso}`)
+        .or(`last_successful_scan_at.is.null,last_successful_scan_at.lt.${recentCutoff}`) as TQuery;
+    case "observed":
+    default:
+      return query
+        .is("manually_rejected_at", null)
+        .gte("observed_games", MIN_SEED_OBSERVATIONS)
+        .is("rank_last_attempted_at", null) as TQuery;
+  }
+}
+
+function hydrateSeedCandidateLifecycle(candidate: RiotSeedCandidateView): RiotSeedCandidateView {
+  return {
+    ...candidate,
+    lifecycle: deriveSeedCandidateLifecycle(candidate),
+  };
 }
 
 function getRiotSeedCandidateGroupLabel(rankGroup: RiotSeedCandidateRankGroupId) {
@@ -2122,6 +2878,14 @@ function getRecentSeedCandidateRankRefreshCutoff() {
   return new Date(
     Date.now() - recentSeedCandidateRankRefreshHours * 60 * 60 * 1000,
   ).toISOString();
+}
+
+function getHoursAgoIso(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+function getDaysAgoIso(days: number) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 }
 
 function getScannerErrorMessage(error: unknown) {

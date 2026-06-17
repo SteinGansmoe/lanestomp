@@ -1,5 +1,9 @@
 import type { LeagueRole } from "./roles";
 import type {
+  SeedCandidateLifecycle,
+  SeedCandidateLifecycleState,
+} from "./riot-seed-candidate-lifecycle";
+import type {
   PaginatedSeedCandidates,
   RiotSeedCandidateGroupPageRequest,
   RiotSeedCandidateRankGroupId,
@@ -139,6 +143,7 @@ export type RiotSeedCandidateSource =
   | "ladder_import"
   | "manual"
   | "match_discovery"
+  | "matchup_rank_coverage"
   | "riot_id_resolver";
 export type RiotSeedCandidateStatus =
   | "active"
@@ -189,11 +194,24 @@ export type RiotSeedCandidateView = {
   first_seen_match_id: string | null;
   first_seen_scan_job_id: number | null;
   id: string;
+  last_scan_candidate_observations_discovered: number | null;
+  last_scan_duplicate_matches_skipped: number | null;
+  last_scan_error_at: string | null;
+  last_scan_error_code: string | null;
+  last_scan_match_ids_fetched: number | null;
+  last_scan_matchup_observations_inserted: number | null;
+  last_scan_unique_matches_found: number | null;
   last_profiled_at: string | null;
   last_scanned_at: string | null;
+  last_successful_scan_at: string | null;
   last_seen_at: string;
+  latest_scan_job_id: number | null;
   latest_match_seen_at: string | null;
+  lifecycle: SeedCandidateLifecycle;
+  manually_rejected_at: string | null;
+  manually_rejected_by: string | null;
   next_eligible_scan_at: string | null;
+  next_retry_at: string | null;
   observed_games: number;
   platform_region: string;
   primary_champion: string | null;
@@ -223,6 +241,7 @@ export type RiotSeedCandidateView = {
   rank_wins: number | null;
   ranked_at: string | null;
   regional_routing: string;
+  rejection_reason: string | null;
   role_distribution: RiotSeedCandidateRoleDistribution;
   secondary_role_share: number | null;
   source: RiotSeedCandidateSource;
@@ -234,6 +253,7 @@ export type RiotSeedCandidateView = {
 
 export type RiotSeedCandidateFilters = {
   lastScanned?: "all" | "never" | "recent" | "older";
+  lifecycleState?: SeedCandidateLifecycleState | "all";
   minObservedGames?: number;
   minPrimaryChampionShare?: number;
   minPrimaryRoleShare?: number;
@@ -244,6 +264,7 @@ export type RiotSeedCandidateFilters = {
   rankedState?: "all" | "ranked" | "unranked";
   rankStatus?: RiotSeedCandidateRankEnrichmentStatus | "all";
   rankTier?: string | "all";
+  search?: string;
   source?: RiotSeedCandidateSource | "all";
   status?: RiotSeedCandidateStatus | "all";
 };
@@ -273,6 +294,7 @@ export type RiotSeedCandidateGroupedResult =
   | {
       counts: Record<RiotSeedCandidateRankGroupId, number>;
       groups: Partial<Record<RiotSeedCandidateRankGroupId, PaginatedSeedCandidates>>;
+      lifecycleCounts: Record<SeedCandidateLifecycleState, number>;
       ok: true;
     }
   | {
@@ -285,6 +307,150 @@ export type RiotSeedCandidateGroupedQueryInput = {
   filters?: RiotSeedCandidateFilters;
   groups: RiotSeedCandidateGroupPageRequest[];
 };
+
+export type RiotSeedCandidateLifecycleMutationResult =
+  | {
+      ok: true;
+      updatedCount: number;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type MatchupRankAttributionMethod =
+  | "single-player"
+  | "two-player-average"
+  | "unknown";
+
+export type MatchupRankCoverageSort =
+  | "last_rank_refresh_at"
+  | "latest_match_seen_at"
+  | "observations_affected"
+  | "priority_score"
+  | "two_player_upgrade_potential"
+  | "unknown_observations_affected";
+
+export type MatchupRankCoverageFilters = {
+  attributionMethod?: MatchupRankAttributionMethod | "all";
+  champion?: string | null;
+  hasCandidate?: "all" | "no" | "yes";
+  lastRankRefresh?: "all" | "never" | "older" | "recent";
+  minimumImpact?: number;
+  minimumObservationsAffected?: number;
+  patch?: string | null;
+  platformRegion?: string | null;
+  rankStatus?: RiotSeedCandidateRankEnrichmentStatus | "all" | "never_enriched";
+  role?: LeagueRole | "all";
+  twoPlayerUpgradeOnly?: boolean;
+};
+
+export type MatchupRankCoverageCandidate = {
+  affectedMatchups: Array<{
+    championA: string;
+    championB: string;
+    matchIdPreview: string;
+    method: MatchupRankAttributionMethod;
+    patch: string;
+    role: LeagueRole;
+  }>;
+  candidateId: string | null;
+  champions: string[];
+  cooldownActive: boolean;
+  existingCandidate: boolean;
+  identityKey: string;
+  isEligibleForRefresh: boolean;
+  lastRankAttemptAt: string | null;
+  lastRankRefreshAt: string | null;
+  latestMatchSeenAt: string | null;
+  nextEligibleAt: string | null;
+  observationsAffected: number;
+  platformRegion: string;
+  priorityScore: number;
+  puuid: string;
+  puuidPreview: string;
+  rankDivision: string | null;
+  rankLeaguePoints: number | null;
+  rankStatus: RiotSeedCandidateRankEnrichmentStatus | "never_enriched";
+  rankTier: string | null;
+  roles: LeagueRole[];
+  sortPriorityScore: number;
+  twoPlayerUpgradePotential: number;
+  unknownObservationsAffected: number;
+};
+
+export type MatchupRankCoverageSummary = {
+  anyRankCoveragePercent: number;
+  singlePlayer: number;
+  strictCoveragePercent: number;
+  totalObservations: number;
+  twoPlayerAverage: number;
+  unknown: number;
+};
+
+export type MatchupRankCoverageProjectedImpact = {
+  observationsAffected: number;
+  twoPlayerUpgradePotential: number;
+  unknownObservationsAffected: number;
+};
+
+export type MatchupRankCoverageQueueResult =
+  | {
+      candidates: MatchupRankCoverageCandidate[];
+      ok: true;
+      projectedImpact: MatchupRankCoverageProjectedImpact;
+      summary: MatchupRankCoverageSummary;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type MatchupRankCoverageParticipantInput = {
+  platformRegion: string;
+  puuid: string;
+};
+
+export type RefreshMatchupRankCoverageParticipantsResult =
+  | {
+      candidatesRequested: number;
+      createdCandidateCount: number;
+      failedCount: number;
+      notFoundCount: number;
+      ok: true;
+      rankedCount: number;
+      rateLimitedCount: number;
+      skippedCount: number;
+      snapshotInsertedCount: number;
+      total: number;
+      unrankedCount: number;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type MatchupRankAttributionSummary = {
+  alreadyAttributed: number;
+  failures: number;
+  participantsNotFound: number;
+  processed: number;
+  singlePlayer: number;
+  snapshotTooOld: number;
+  total: number;
+  twoPlayerAverage: number;
+  unknown: number;
+};
+
+export type MatchupRankCoverageAttributionResult =
+  | {
+      ok: true;
+      summary: MatchupRankAttributionSummary;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
 
 export type RiotSeedCandidateRankRefreshInput = {
   accessToken: string;

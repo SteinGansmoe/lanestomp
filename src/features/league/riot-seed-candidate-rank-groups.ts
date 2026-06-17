@@ -12,7 +12,7 @@ export type RiotSeedCandidateRankGroupId =
   | "gold-emerald"
   | "iron-silver"
   | "master-plus"
-  | "unranked-unknown";
+  | "unknown";
 
 export type RiotSeedCandidateSortDirection = "asc" | "desc";
 
@@ -82,8 +82,8 @@ export const riotSeedCandidateRankGroups = [
   },
   {
     description: "Unranked candidates, pending rank lookups and failed rank lookups.",
-    id: "unranked-unknown",
-    label: "Unranked / Unknown",
+    id: "unknown",
+    label: "Unknown",
     rankStatuses: ["failed", "not_found", "pending", "unranked"],
     tiers: [],
   },
@@ -133,10 +133,10 @@ export function getRiotSeedCandidateRankGroup(
   }
 
   if (status === "ranked") {
-    return "unranked-unknown";
+    return "unknown";
   }
 
-  return "unranked-unknown";
+  return "unknown";
 }
 
 export function normalizeRiotSeedCandidatePage(value: number) {
@@ -194,7 +194,7 @@ export function createDefaultRiotSeedCandidateGroupRequest(
 export function getDefaultRiotSeedCandidateGroupSort(
   rankGroup: RiotSeedCandidateRankGroupId,
 ): RiotSeedCandidateSort {
-  return rankGroup === "unranked-unknown" ? "observed_games" : "rank_tier";
+  return rankGroup === "unknown" ? "observed_games" : "rank_tier";
 }
 
 export function getDefaultRiotSeedCandidateSortDirection(

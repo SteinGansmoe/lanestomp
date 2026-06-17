@@ -32,7 +32,7 @@ function testRankGroupDefinitions() {
     "diamond",
     "gold-emerald",
     "iron-silver",
-    "unranked-unknown",
+    "unknown",
   ]);
 
   assert.equal(getRiotSeedCandidateRankGroup(candidate({ rankTier: "CHALLENGER" })), "master-plus");
@@ -46,13 +46,13 @@ function testRankGroupDefinitions() {
     getRiotSeedCandidateRankGroup(
       candidate({ rankEnrichmentStatus: "pending", rankTier: null }),
     ),
-    "unranked-unknown",
+    "unknown",
   );
   assert.equal(
     getRiotSeedCandidateRankGroup(
       candidate({ rankEnrichmentStatus: "failed", rankTier: null }),
     ),
-    "unranked-unknown",
+    "unknown",
   );
 }
 

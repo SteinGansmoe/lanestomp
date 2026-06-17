@@ -77,6 +77,52 @@ declare module "@/scripts/lib/riot-seed-rank-enrichment.mjs" {
   }): number;
 }
 
+declare module "@/scripts/lib/matchup-rank-coverage-queue.mjs" {
+  export const maxMatchupRankCoverageLimit: number;
+  export function createSupabaseMatchupRankCoverageRepository(supabase: unknown): unknown;
+  export function ensureMatchupRankCoverageCandidates(options: {
+    participants: Array<{
+      platformRegion: string;
+      puuid: string;
+    }>;
+    repository: unknown;
+  }): Promise<{
+    candidateIds: string[];
+    createdCount: number;
+    existingCount: number;
+    requestedCount: number;
+  }>;
+  export function getProjectedMatchupRankCoverageImpact(
+    candidates: unknown[],
+  ): {
+    observationsAffected: number;
+    twoPlayerUpgradePotential: number;
+    unknownObservationsAffected: number;
+  };
+  export function loadMatchupRankCoverageQueue(options: {
+    filters?: Record<string, unknown>;
+    limit?: number;
+    repository: unknown;
+    sort?: string;
+    sortDirection?: "asc" | "desc";
+  }): Promise<{
+    candidates: unknown[];
+    projectedImpact: {
+      observationsAffected: number;
+      twoPlayerUpgradePotential: number;
+      unknownObservationsAffected: number;
+    };
+    summary: {
+      anyRankCoveragePercent: number;
+      singlePlayer: number;
+      strictCoveragePercent: number;
+      totalObservations: number;
+      twoPlayerAverage: number;
+      unknown: number;
+    };
+  }>;
+}
+
 declare module "@/scripts/lib/riot-rank-brackets.mjs" {
   export const MAX_RANK_SNAPSHOT_DISTANCE_DAYS: number;
   export const counterPickRankBrackets: string[];
@@ -102,6 +148,34 @@ declare module "@/scripts/lib/riot-rank-brackets.mjs" {
   export function isMatchupRankAttributionMethod(value: unknown): boolean;
   export function normalizeRiotRankDivision(value: unknown): string | null;
   export function normalizeRiotRankTier(value: unknown): string | null;
+}
+
+declare module "@/scripts/lib/riot-matchup-rank-attribution.mjs" {
+  export function attributeStoredMatchupRankBrackets(options: {
+    filters?: {
+      champion?: string | null;
+      matchId?: string | null;
+      patch?: string | null;
+      role?: string | null;
+    };
+    force?: boolean;
+    limit?: number;
+    repository: unknown;
+  }): Promise<{
+    results: unknown[];
+    summary: {
+      alreadyAttributed: number;
+      failures: number;
+      participantsNotFound: number;
+      processed: number;
+      singlePlayer: number;
+      snapshotTooOld: number;
+      total: number;
+      twoPlayerAverage: number;
+      unknown: number;
+    };
+  }>;
+  export function createSupabaseMatchupRankAttributionRepository(supabase: unknown): unknown;
 }
 
 declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
