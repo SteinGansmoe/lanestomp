@@ -7,8 +7,8 @@ import {
 } from "./riot-seed-candidates.mjs";
 
 export const matchupRankCoverageSeedSource = "matchup_rank_coverage";
-export const defaultMatchupRankCoverageLimit = 100;
-export const maxMatchupRankCoverageLimit = 500;
+export const defaultMatchupRankCoverageLimit = 20;
+export const maxMatchupRankCoverageLimit = 20;
 export const maxMatchupRankCoverageObservationRows = 5000;
 export const recentRankRefreshHours = 24;
 export const recentRankRefreshMs = recentRankRefreshHours * 60 * 60 * 1000;
@@ -78,11 +78,9 @@ export function getProjectedMatchupRankCoverageImpact(candidates) {
       observationsAffected:
         projection.observationsAffected + Number(candidate.observationsAffected ?? 0),
       twoPlayerUpgradePotential:
-        projection.twoPlayerUpgradePotential +
-        Number(candidate.twoPlayerUpgradePotential ?? 0),
+        projection.twoPlayerUpgradePotential + Number(candidate.twoPlayerUpgradePotential ?? 0),
       unknownObservationsAffected:
-        projection.unknownObservationsAffected +
-        Number(candidate.unknownObservationsAffected ?? 0),
+        projection.unknownObservationsAffected + Number(candidate.unknownObservationsAffected ?? 0),
     }),
     {
       observationsAffected: 0,
@@ -133,10 +131,7 @@ export function buildMatchupRankCoverageQueue({
   sortDirection = "desc",
 } = {}) {
   const candidatesByIdentity = new Map(
-    (candidates ?? []).map((candidate) => [
-      getMatchupRankCoverageIdentity(candidate),
-      candidate,
-    ]),
+    (candidates ?? []).map((candidate) => [getMatchupRankCoverageIdentity(candidate), candidate]),
   );
   const rowsByIdentity = new Map();
 
@@ -277,10 +272,7 @@ export function sortMatchupRankCoverageCandidates(
   });
 }
 
-export async function ensureMatchupRankCoverageCandidates({
-  participants,
-  repository,
-} = {}) {
+export async function ensureMatchupRankCoverageCandidates({ participants, repository } = {}) {
   const uniqueParticipants = dedupeCoverageParticipants(participants ?? []);
   const existingCandidates = await repository.fetchSeedCandidatesByIdentities(uniqueParticipants);
   const existingByIdentity = new Map(
@@ -293,11 +285,11 @@ export async function ensureMatchupRankCoverageCandidates({
   let candidatesByIdentity = existingByIdentity;
 
   if (missingParticipants.length > 0) {
-    const createdCandidates = await repository.createSeedCandidatesForParticipants(
-      missingParticipants,
-    );
+    const createdCandidates =
+      await repository.createSeedCandidatesForParticipants(missingParticipants);
     createdCount = createdCandidates.newCandidatesCreated ?? 0;
-    const refreshedCandidates = await repository.fetchSeedCandidatesByIdentities(uniqueParticipants);
+    const refreshedCandidates =
+      await repository.fetchSeedCandidatesByIdentities(uniqueParticipants);
     candidatesByIdentity = new Map(
       refreshedCandidates.map((candidate) => [
         getMatchupRankCoverageIdentity(candidate),
@@ -308,7 +300,9 @@ export async function ensureMatchupRankCoverageCandidates({
 
   return {
     candidateIds: uniqueParticipants
-      .map((participant) => candidatesByIdentity.get(getMatchupRankCoverageIdentity(participant))?.id)
+      .map(
+        (participant) => candidatesByIdentity.get(getMatchupRankCoverageIdentity(participant))?.id,
+      )
       .filter(Boolean),
     candidatesByIdentity,
     createdCount,
@@ -346,12 +340,17 @@ export function createSupabaseMatchupRankCoverageRepository(supabase) {
       };
     },
 
-    async fetchCoverageObservations({ filters = {}, limit = maxMatchupRankCoverageObservationRows } = {}) {
+    async fetchCoverageObservations({
+      filters = {},
+      limit = maxMatchupRankCoverageObservationRows,
+    } = {}) {
       let query = supabase
         .from("riot_matchup_observations")
         .select(coverageObservationSelect)
         .order("game_start_at", { ascending: false, nullsFirst: false })
-        .limit(Math.min(Math.max(Number(limit) || maxMatchupRankCoverageObservationRows, 1), 10000));
+        .limit(
+          Math.min(Math.max(Number(limit) || maxMatchupRankCoverageObservationRows, 1), 10000),
+        );
 
       if (filters.patch) {
         query = query.eq("patch", filters.patch);
@@ -368,7 +367,11 @@ export function createSupabaseMatchupRankCoverageRepository(supabase) {
       if (filters.attributionMethod && filters.attributionMethod !== "all") {
         query = query.eq("rank_attribution_method", filters.attributionMethod);
       } else {
-        query = query.in("rank_attribution_method", ["unknown", "single-player", "two-player-average"]);
+        query = query.in("rank_attribution_method", [
+          "unknown",
+          "single-player",
+          "two-player-average",
+        ]);
       }
 
       const { data, error } = await query;
@@ -383,10 +386,16 @@ export function createSupabaseMatchupRankCoverageRepository(supabase) {
     async fetchSeedCandidatesByIdentities(participants) {
       const uniqueParticipants = dedupeCoverageParticipants(participants);
       const candidates = [];
-      const groupedByPlatform = groupBy(uniqueParticipants, (participant) => participant.platformRegion);
+      const groupedByPlatform = groupBy(
+        uniqueParticipants,
+        (participant) => participant.platformRegion,
+      );
 
       for (const [platformRegion, platformParticipants] of groupedByPlatform) {
-        for (const puuidChunk of chunkArray(platformParticipants.map((participant) => participant.puuid), 25)) {
+        for (const puuidChunk of chunkArray(
+          platformParticipants.map((participant) => participant.puuid),
+          25,
+        )) {
           const { data, error } = await supabase
             .from("riot_seed_candidates")
             .select(coverageCandidateSelect)
@@ -452,9 +461,12 @@ function isMissingRankSide(observation, side) {
     return false;
   }
 
-  const score = side === "a" ? observation.champion_a_rank_score : observation.champion_b_rank_score;
+  const score =
+    side === "a" ? observation.champion_a_rank_score : observation.champion_b_rank_score;
   const snapshotId =
-    side === "a" ? observation.champion_a_rank_snapshot_id : observation.champion_b_rank_snapshot_id;
+    side === "a"
+      ? observation.champion_a_rank_snapshot_id
+      : observation.champion_b_rank_snapshot_id;
 
   return score === null && !snapshotId;
 }
@@ -524,8 +536,7 @@ function matchesCoverageCandidateFilters(candidate, filters) {
 
   if (
     filters.minimumObservationsAffected &&
-    candidate.observationsAffected <
-      Math.max(Number(filters.minimumObservationsAffected) || 0, 0)
+    candidate.observationsAffected < Math.max(Number(filters.minimumObservationsAffected) || 0, 0)
   ) {
     return false;
   }
@@ -612,8 +623,10 @@ function compareCoverageSortValue(left, right, sort) {
       return compareNullableDates(left.lastRankRefreshAt, right.lastRankRefreshAt);
     case "priority_score":
     default:
-      return Number(left.sortPriorityScore ?? left.priorityScore) -
-        Number(right.sortPriorityScore ?? right.priorityScore);
+      return (
+        Number(left.sortPriorityScore ?? left.priorityScore) -
+        Number(right.sortPriorityScore ?? right.priorityScore)
+      );
   }
 }
 

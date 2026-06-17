@@ -43,6 +43,26 @@ declare module "@/scripts/lib/riot-api-client.mjs" {
       platformRegion: string;
       puuid: string;
     }): Promise<unknown[]>;
+    fetchLeagueEntriesByTierDivision(options: {
+      division: string;
+      page?: number;
+      platformRegion: string;
+      queue?: string;
+      tier: string;
+    }): Promise<unknown[]>;
+    fetchHighTierLeagueEntries(options: {
+      platformRegion: string;
+      queue?: string;
+      tier: string;
+    }): Promise<{
+      entries?: unknown[];
+    }>;
+    fetchSummonerByEncryptedId(options: {
+      encryptedSummonerId: string;
+      platformRegion: string;
+    }): Promise<{
+      puuid?: string;
+    }>;
   }
 }
 
@@ -75,6 +95,19 @@ declare module "@/scripts/lib/riot-seed-rank-enrichment.mjs" {
     rank_division?: string | null;
     rank_tier?: string | null;
   }): number;
+  export function normalizeRankEntry(entry: unknown): {
+    division: string | null;
+    freshBlood: boolean | null;
+    hotStreak: boolean | null;
+    inactive: boolean | null;
+    leaguePoints: number | null;
+    losses: number | null;
+    queueType: string;
+    tier: string | null;
+    veteran: boolean | null;
+    winRate: number | null;
+    wins: number | null;
+  } | null;
 }
 
 declare module "@/scripts/lib/matchup-rank-coverage-queue.mjs" {
@@ -92,9 +125,7 @@ declare module "@/scripts/lib/matchup-rank-coverage-queue.mjs" {
     existingCount: number;
     requestedCount: number;
   }>;
-  export function getProjectedMatchupRankCoverageImpact(
-    candidates: unknown[],
-  ): {
+  export function getProjectedMatchupRankCoverageImpact(candidates: unknown[]): {
     observationsAffected: number;
     twoPlayerUpgradePotential: number;
     unknownObservationsAffected: number;

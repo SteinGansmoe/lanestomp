@@ -1,6 +1,12 @@
 import type { LeagueRole } from "./roles";
 import type { CounterPickManagementMetricsResult } from "./counter-pick-management-metrics";
 import type {
+  RiotCollectionInventoryResult,
+  RiotCollectionJobResult,
+  RiotCollectionJobsResult,
+  StartRiotCollectionJobInput,
+} from "./riot-collection-jobs";
+import type {
   SeedCandidateLifecycle,
   SeedCandidateLifecycleState,
 } from "./riot-seed-candidate-lifecycle";
@@ -512,6 +518,7 @@ export type RiotScanDiscoveryResult = {
 };
 
 export type RiotScanJobView = {
+  collection_job_id: number | null;
   completed_at: string | null;
   counter_champion: string | null;
   created_at: string;
@@ -533,6 +540,7 @@ export type RiotScanJobView = {
 
 export type StartRiotScanJobInput = {
   accessToken: string;
+  collectionJobId?: number | null;
   counterChampion?: string | null;
   currentPatchOnly: boolean;
   discoveryFocusChampion?: string | null;
@@ -566,41 +574,9 @@ export type RiotScanJobsResult =
     };
 
 export type { CounterPickManagementMetricsResult };
-
-export type RiotIdResolverInput = {
-  accessToken: string;
-  riotIds: string[];
+export type {
+  RiotCollectionInventoryResult,
+  RiotCollectionJobResult,
+  RiotCollectionJobsResult,
+  StartRiotCollectionJobInput,
 };
-
-export type RiotIdResolverRow =
-  | {
-      error: string;
-      gameName: string | null;
-      ok: false;
-      originalRiotId: string;
-      puuid: null;
-      riotId: string;
-      tagLine: string | null;
-    }
-  | {
-      error: null;
-      gameName: string;
-      ok: true;
-      originalRiotId: string;
-      puuid: string;
-      riotId: string;
-      tagLine: string;
-    };
-
-export type RiotIdResolverResult =
-  | {
-      failedCount: number;
-      ok: true;
-      results: RiotIdResolverRow[];
-      successCount: number;
-      uniqueCount: number;
-    }
-  | {
-      error: string;
-      ok: false;
-    };

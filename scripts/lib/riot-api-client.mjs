@@ -26,12 +26,7 @@ export class RiotApiClient {
     this.nextRequestAt = 0;
   }
 
-  async fetchRecentRankedMatchIdsByPuuid({
-    count,
-    puuid,
-    queue = 420,
-    start = 0,
-  }) {
+  async fetchRecentRankedMatchIdsByPuuid({ count, puuid, queue = 420, start = 0 }) {
     const searchParams = new URLSearchParams({
       count: String(count),
       queue: String(queue),
@@ -72,6 +67,53 @@ export class RiotApiClient {
     );
   }
 
+  async fetchLeagueEntriesByTierDivision({
+    division,
+    page = 1,
+    platformRegion,
+    queue = "RANKED_SOLO_5x5",
+    tier,
+  }) {
+    const searchParams = new URLSearchParams({
+      page: String(page),
+    });
+
+    return this.fetchJson(
+      `https://${String(platformRegion).toLowerCase()}.api.riotgames.com/lol/league/v4/entries/${encodeURIComponent(
+        queue,
+      )}/${encodeURIComponent(tier)}/${encodeURIComponent(division)}?${searchParams.toString()}`,
+      {
+        retryOnRateLimit: false,
+      },
+    );
+  }
+
+  async fetchHighTierLeagueEntries({ platformRegion, queue = "RANKED_SOLO_5x5", tier }) {
+    const normalizedTier = String(tier ?? "")
+      .trim()
+      .toLowerCase();
+
+    return this.fetchJson(
+      `https://${String(platformRegion).toLowerCase()}.api.riotgames.com/lol/league/v4/${encodeURIComponent(
+        normalizedTier,
+      )}leagues/by-queue/${encodeURIComponent(queue)}`,
+      {
+        retryOnRateLimit: false,
+      },
+    );
+  }
+
+  async fetchSummonerByEncryptedId({ encryptedSummonerId, platformRegion }) {
+    return this.fetchJson(
+      `https://${String(platformRegion).toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/${encodeURIComponent(
+        encryptedSummonerId,
+      )}`,
+      {
+        retryOnRateLimit: false,
+      },
+    );
+  }
+
   async fetchJson(url, { retryOnRateLimit = this.retryOnRateLimit } = {}) {
     await this.waitForRateLimitSlot();
 
@@ -92,13 +134,10 @@ export class RiotApiClient {
     }
 
     if (!response.ok) {
-      throw new RiotApiError(
-        `Riot API request failed (${response.status}) for ${redactUrl(url)}`,
-        {
-          status: response.status,
-          url: redactUrl(url),
-        },
-      );
+      throw new RiotApiError(`Riot API request failed (${response.status}) for ${redactUrl(url)}`, {
+        status: response.status,
+        url: redactUrl(url),
+      });
     }
 
     return response.json();

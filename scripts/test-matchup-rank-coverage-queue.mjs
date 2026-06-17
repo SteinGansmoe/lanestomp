@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import {
   buildMatchupRankCoverageQueue,
   calculateMatchupRankCoveragePriorityScore,
+  defaultMatchupRankCoverageLimit,
   ensureMatchupRankCoverageCandidates,
   getProjectedMatchupRankCoverageImpact,
   loadMatchupRankCoverageQueue,
+  maxMatchupRankCoverageLimit,
 } from "./lib/matchup-rank-coverage-queue.mjs";
 
 const now = new Date("2026-06-16T12:00:00.000Z");
@@ -19,6 +21,7 @@ testFiltering();
 testCooldownDeprioritization();
 testUnrankedStatus();
 testBatchLimitProjection();
+testQueueLimits();
 testPrivacyPreview();
 await testLoadQueueRepositoryFlow();
 
@@ -36,7 +39,10 @@ function testUnknownObservation() {
   }).candidates;
 
   assert.equal(queue.length, 2);
-  assert.equal(queue.every((candidate) => candidate.unknownObservationsAffected === 1), true);
+  assert.equal(
+    queue.every((candidate) => candidate.unknownObservationsAffected === 1),
+    true,
+  );
 }
 
 function testSinglePlayerObservation() {
@@ -170,10 +176,7 @@ function testCooldownDeprioritization() {
   }).candidates;
 
   assert.equal(queue[0].puuid, "fresh-low-impact");
-  assert.equal(
-    queue.find((row) => row.puuid === "cooldown-high-impact").cooldownActive,
-    true,
-  );
+  assert.equal(queue.find((row) => row.puuid === "cooldown-high-impact").cooldownActive, true);
 }
 
 function testUnrankedStatus() {
@@ -201,6 +204,25 @@ function testBatchLimitProjection() {
   assert.equal(selected.length <= 20, true);
   assert.equal(projection.unknownObservationsAffected, 20);
   assert.equal(projection.twoPlayerUpgradePotential, 10);
+}
+
+function testQueueLimits() {
+  assert.equal(defaultMatchupRankCoverageLimit, 20);
+  assert.equal(maxMatchupRankCoverageLimit, 20);
+
+  const observations = Array.from({ length: 30 }, (_, index) =>
+    observation({
+      championAPuuid: `missing-${index}`,
+      championBPuuid: `other-${index}`,
+      matchId: `EUW1_${index}`,
+    }),
+  );
+  const queue = buildMatchupRankCoverageQueue({
+    limit: 100,
+    observations,
+  });
+
+  assert.equal(queue.candidates.length, 20);
 }
 
 function testPrivacyPreview() {
