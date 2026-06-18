@@ -19,9 +19,7 @@
         "sell": 210,
         "total": 300
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 25
       },
@@ -43,9 +41,7 @@
         "sell": 140,
         "total": 200
       },
-      "tags": [
-        "ManaRegen"
-      ],
+      "tags": ["ManaRegen"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -65,9 +61,7 @@
         "sell": 120,
         "total": 300
       },
-      "tags": [
-        "HealthRegen"
-      ],
+      "tags": ["HealthRegen"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -87,9 +81,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Health"
-      ],
+      "tags": ["Health"],
       "stats": {
         "FlatHPPoolMod": 350
       },
@@ -111,9 +103,7 @@
         "sell": 420,
         "total": 600
       },
-      "tags": [
-        "CriticalStrike"
-      ],
+      "tags": ["CriticalStrike"],
       "stats": {
         "FlatCritChanceMod": 0.15
       },
@@ -135,9 +125,7 @@
         "sell": 595,
         "total": 850
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45
       },
@@ -159,9 +147,7 @@
         "sell": 210,
         "total": 300
       },
-      "tags": [
-        "Mana"
-      ],
+      "tags": ["Mana"],
       "stats": {
         "FlatMPPoolMod": 300
       },
@@ -183,9 +169,7 @@
         "sell": 280,
         "total": 400
       },
-      "tags": [
-        "Health"
-      ],
+      "tags": ["Health"],
       "stats": {
         "FlatHPPoolMod": 150
       },
@@ -207,9 +191,7 @@
         "sell": 210,
         "total": 300
       },
-      "tags": [
-        "Armor"
-      ],
+      "tags": ["Armor"],
       "stats": {
         "FlatArmorMod": 15
       },
@@ -231,9 +213,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "Armor"
-      ],
+      "tags": ["Armor"],
       "stats": {
         "FlatArmorMod": 40
       },
@@ -255,9 +235,7 @@
         "sell": 280,
         "total": 400
       },
-      "tags": [
-        "SpellBlock"
-      ],
+      "tags": ["SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 20
       },
@@ -279,11 +257,7 @@
         "sell": 140,
         "total": 350
       },
-      "tags": [
-        "Jungle",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Jungle", "LifeSteal", "SpellVamp"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -303,10 +277,7 @@
         "sell": 245,
         "total": 350
       },
-      "tags": [
-        "Damage",
-        "Lane"
-      ],
+      "tags": ["Damage", "Lane"],
       "stats": {
         "FlatPhysicalDamageMod": 10
       },
@@ -328,9 +299,7 @@
         "sell": 613,
         "total": 875
       },
-      "tags": [
-        "Damage"
-      ],
+      "tags": ["Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 25
       },
@@ -352,9 +321,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "Damage"
-      ],
+      "tags": ["Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 40
       },
@@ -376,11 +343,7 @@
         "sell": 140,
         "total": 350
       },
-      "tags": [
-        "Jungle",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Jungle", "LifeSteal", "SpellVamp"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -400,11 +363,7 @@
         "sell": 140,
         "total": 350
       },
-      "tags": [
-        "Jungle",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Jungle", "LifeSteal", "SpellVamp"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -424,9 +383,7 @@
         "sell": 175,
         "total": 250
       },
-      "tags": [
-        "AttackSpeed"
-      ],
+      "tags": ["AttackSpeed"],
       "stats": {
         "PercentAttackSpeedMod": 0.1
       },
@@ -448,10 +405,7 @@
         "sell": 490,
         "total": 700
       },
-      "tags": [
-        "AttackSpeed",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "OnHit"],
       "stats": {
         "PercentAttackSpeedMod": 0.15
       },
@@ -473,9 +427,7 @@
         "sell": 280,
         "total": 400
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 20
       },
@@ -497,10 +449,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Damage",
-        "LifeSteal"
-      ],
+      "tags": ["Damage", "LifeSteal"],
       "stats": {
         "FlatPhysicalDamageMod": 15,
         "PercentLifeStealMod": 0.07
@@ -523,11 +472,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 110,
         "FlatHPRegenMod": 0.8
@@ -550,13 +495,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "Lane",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Damage", "Health", "Lane", "LifeSteal", "SpellVamp"],
       "stats": {
         "FlatHPPoolMod": 80,
         "FlatPhysicalDamageMod": 10
@@ -579,12 +518,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "Health",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "Lane", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 90,
         "FlatMagicDamageMod": 18
@@ -607,9 +541,7 @@
         "sell": 595,
         "total": 850
       },
-      "tags": [
-        "SpellBlock"
-      ],
+      "tags": ["SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 45
       },
@@ -631,9 +563,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 65
       },
@@ -655,11 +585,7 @@
         "sell": 140,
         "total": 350
       },
-      "tags": [
-        "Health",
-        "Lane",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "Lane", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 50,
         "FlatMagicDamageMod": 15
@@ -682,11 +608,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Damage",
-        "Lane",
-        "OnHit"
-      ],
+      "tags": ["Damage", "Lane", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 7
       },
@@ -708,12 +630,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "Lane",
-        "SpellVamp"
-      ],
+      "tags": ["AttackSpeed", "Damage", "Lane", "SpellVamp"],
       "stats": {
         "FlatPhysicalDamageMod": 8,
         "PercentAttackSpeedMod": 0.15
@@ -736,9 +653,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -758,9 +673,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -780,9 +693,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -802,9 +713,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -824,9 +733,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -846,9 +753,7 @@
         "sell": 0,
         "total": 450
       },
-      "tags": [
-        "Jungle"
-      ],
+      "tags": ["Jungle"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -868,9 +773,7 @@
         "sell": 0,
         "total": 450
       },
-      "tags": [
-        "Jungle"
-      ],
+      "tags": ["Jungle"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -890,9 +793,7 @@
         "sell": 0,
         "total": 450
       },
-      "tags": [
-        "Jungle"
-      ],
+      "tags": ["Jungle"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -912,10 +813,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Trinket"
-      ],
+      "tags": ["Active", "Trinket"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -935,9 +833,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Jungle"
-      ],
+      "tags": ["Jungle"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -957,9 +853,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Jungle"
-      ],
+      "tags": ["Jungle"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -979,9 +873,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Jungle"
-      ],
+      "tags": ["Jungle"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1034,12 +926,7 @@
         "sell": 180,
         "total": 450
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "Lane",
-        "SpellBlock"
-      ],
+      "tags": ["Armor", "Health", "Lane", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 10,
         "FlatHPPoolMod": 140,
@@ -1063,9 +950,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1085,9 +970,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1107,9 +990,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1129,9 +1010,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1151,9 +1030,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1173,9 +1050,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1195,9 +1070,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1217,9 +1090,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1239,9 +1110,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1261,9 +1130,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1283,9 +1150,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1305,9 +1170,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1327,9 +1190,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1349,9 +1210,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1371,9 +1230,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Lane"
-      ],
+      "tags": ["Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1393,11 +1250,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "HealthRegen",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["HealthRegen", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1437,11 +1290,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1461,11 +1310,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "HealthRegen",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["HealthRegen", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1485,11 +1330,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1509,11 +1350,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1533,11 +1370,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1557,11 +1390,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1581,11 +1410,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1605,11 +1430,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1629,11 +1450,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1653,11 +1470,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1677,11 +1490,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1701,9 +1510,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor"
-      ],
+      "tags": ["Armor"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1723,11 +1530,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "HealthRegen",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["HealthRegen", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1747,11 +1550,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "HealthRegen",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["HealthRegen", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1771,11 +1570,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "HealthRegen",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["HealthRegen", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1795,11 +1590,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "HealthRegen",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["HealthRegen", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1819,11 +1610,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1843,9 +1630,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "OnHit"
-      ],
+      "tags": ["OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1865,10 +1650,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["Armor", "Damage"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1888,11 +1670,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "ManaRegen",
-        "OnHit"
-      ],
+      "tags": ["Armor", "ManaRegen", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1912,10 +1690,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["Armor", "Damage"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -1975,12 +1750,7 @@
         "sell": 20,
         "total": 50
       },
-      "tags": [
-        "Consumable",
-        "HealthRegen",
-        "Jungle",
-        "Lane"
-      ],
+      "tags": ["Consumable", "HealthRegen", "Jungle", "Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2060,10 +1830,7 @@
         "sell": 490,
         "total": 700
       },
-      "tags": [
-        "Damage",
-        "OnHit"
-      ],
+      "tags": ["Damage", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 15
       },
@@ -2085,10 +1852,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["Armor", "Damage"],
       "stats": {
         "FlatArmorMod": 30,
         "FlatPhysicalDamageMod": 15
@@ -2111,11 +1875,7 @@
         "sell": 936,
         "total": 1337
       },
-      "tags": [
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 25
       },
@@ -2137,10 +1897,7 @@
         "sell": 805,
         "total": 1150
       },
-      "tags": [
-        "Damage",
-        "Health"
-      ],
+      "tags": ["Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatPhysicalDamageMod": 15
@@ -2163,9 +1920,7 @@
         "sell": 175,
         "total": 250
       },
-      "tags": [
-        "CooldownReduction"
-      ],
+      "tags": ["CooldownReduction"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2185,13 +1940,7 @@
         "sell": 60,
         "total": 150
       },
-      "tags": [
-        "Active",
-        "Consumable",
-        "HealthRegen",
-        "Jungle",
-        "Lane"
-      ],
+      "tags": ["Active", "Consumable", "HealthRegen", "Jungle", "Lane"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2211,13 +1960,7 @@
         "sell": 200,
         "total": 500
       },
-      "tags": [
-        "Active",
-        "Consumable",
-        "HealthRegen",
-        "Lane",
-        "ManaRegen"
-      ],
+      "tags": ["Active", "Consumable", "HealthRegen", "Lane", "ManaRegen"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2237,13 +1980,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Lane", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 20
       },
@@ -2265,13 +2002,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "Lane",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "Lane", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 35
@@ -2294,11 +2025,7 @@
         "sell": 665,
         "total": 950
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatHPRegenMod": 4
@@ -2341,12 +2068,7 @@
         "sell": 30,
         "total": 75
       },
-      "tags": [
-        "Consumable",
-        "Lane",
-        "Stealth",
-        "Vision"
-      ],
+      "tags": ["Consumable", "Lane", "Stealth", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2366,12 +2088,7 @@
         "sell": 16,
         "total": 40
       },
-      "tags": [
-        "Consumable",
-        "Lane",
-        "Stealth",
-        "Vision"
-      ],
+      "tags": ["Consumable", "Lane", "Stealth", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2421,12 +2138,7 @@
         "sell": 200,
         "total": 500
       },
-      "tags": [
-        "Consumable",
-        "Health",
-        "NonbootsMovement",
-        "Tenacity"
-      ],
+      "tags": ["Consumable", "Health", "NonbootsMovement", "Tenacity"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2446,11 +2158,7 @@
         "sell": 200,
         "total": 500
       },
-      "tags": [
-        "Consumable",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["Consumable", "ManaRegen", "SpellDamage"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2470,12 +2178,7 @@
         "sell": 200,
         "total": 500
       },
-      "tags": [
-        "Consumable",
-        "Damage",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Consumable", "Damage", "LifeSteal", "SpellVamp"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2495,10 +2198,7 @@
         "sell": 300,
         "total": 300
       },
-      "tags": [
-        "Consumable",
-        "Damage"
-      ],
+      "tags": ["Consumable", "Damage"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2518,10 +2218,7 @@
         "sell": 500,
         "total": 500
       },
-      "tags": [
-        "Consumable",
-        "SpellDamage"
-      ],
+      "tags": ["Consumable", "SpellDamage"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2541,10 +2238,7 @@
         "sell": 500,
         "total": 500
       },
-      "tags": [
-        "Consumable",
-        "Health"
-      ],
+      "tags": ["Consumable", "Health"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2564,10 +2258,7 @@
         "sell": 500,
         "total": 500
       },
-      "tags": [
-        "Consumable",
-        "CooldownReduction"
-      ],
+      "tags": ["Consumable", "CooldownReduction"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2587,9 +2278,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2609,9 +2298,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2631,9 +2318,7 @@
         "sell": 0,
         "total": 1250
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2653,9 +2338,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2675,11 +2358,7 @@
         "sell": 20,
         "total": 50
       },
-      "tags": [
-        "Consumable",
-        "Health",
-        "Tenacity"
-      ],
+      "tags": ["Consumable", "Health", "Tenacity"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2699,10 +2378,7 @@
         "sell": 20,
         "total": 50
       },
-      "tags": [
-        "Consumable",
-        "Tenacity"
-      ],
+      "tags": ["Consumable", "Tenacity"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2722,10 +2398,7 @@
         "sell": 1000,
         "total": 1000
       },
-      "tags": [
-        "Consumable",
-        "SpellDamage"
-      ],
+      "tags": ["Consumable", "SpellDamage"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2745,10 +2418,7 @@
         "sell": 1000,
         "total": 1000
       },
-      "tags": [
-        "Consumable",
-        "Health"
-      ],
+      "tags": ["Consumable", "Health"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2768,10 +2438,7 @@
         "sell": 1000,
         "total": 1000
       },
-      "tags": [
-        "Consumable",
-        "CooldownReduction"
-      ],
+      "tags": ["Consumable", "CooldownReduction"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -2811,11 +2478,7 @@
         "sell": 640,
         "total": 1600
       },
-      "tags": [
-        "Active",
-        "Armor",
-        "SpellDamage"
-      ],
+      "tags": ["Active", "Armor", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 40,
         "FlatArmorMod": 25
@@ -2861,9 +2524,7 @@
         "sell": 90,
         "total": 300
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 25
       },
@@ -2885,10 +2546,7 @@
         "sell": 2310,
         "total": 3300
       },
-      "tags": [
-        "Damage",
-        "Health"
-      ],
+      "tags": ["Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 550,
         "FlatPhysicalDamageMod": 30
@@ -2911,12 +2569,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "Health"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatArmorMod": 50
@@ -2939,12 +2592,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 80
@@ -2967,11 +2615,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "HealthRegen", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 80,
         "FlatHPPoolMod": 400
@@ -2994,9 +2638,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 30
       },
@@ -3018,13 +2660,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "Health",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "Health", "OnHit", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 60,
@@ -3048,12 +2684,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.45,
@@ -3077,13 +2708,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "LifeSteal",
-        "SpellVamp",
-        "Tenacity"
-      ],
+      "tags": ["AbilityHaste", "Damage", "LifeSteal", "SpellVamp", "Tenacity"],
       "stats": {
         "FlatPhysicalDamageMod": 65
       },
@@ -3105,11 +2730,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -3131,11 +2752,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatMagicDamageMod": 90
@@ -3158,10 +2775,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 55
@@ -3184,14 +2798,7 @@
         "sell": 1610,
         "total": 2300
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "AttackSpeed",
-        "Health",
-        "NonbootsMovement",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "AttackSpeed", "Health", "NonbootsMovement", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 20,
         "FlatHPPoolMod": 200,
@@ -3215,12 +2822,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "NonbootsMovement",
-        "Tenacity"
-      ],
+      "tags": ["AbilityHaste", "Health", "NonbootsMovement", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 600
       },
@@ -3242,11 +2844,7 @@
         "sell": 1575,
         "total": 2250
       },
-      "tags": [
-        "Health",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["Health", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatHPPoolMod": 200
@@ -3269,12 +2867,7 @@
         "sell": 1575,
         "total": 2250
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatHPPoolMod": 200
@@ -3297,12 +2890,7 @@
         "sell": 1610,
         "total": 2300
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 200,
@@ -3326,11 +2914,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Armor", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatArmorMod": 40,
@@ -3354,11 +2938,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 70
@@ -3381,13 +2961,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Mana",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Mana", "OnHit"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatPhysicalDamageMod": 35
@@ -3410,9 +2984,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -3434,10 +3006,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "AttackSpeed",
-        "Boots"
-      ],
+      "tags": ["AttackSpeed", "Boots"],
       "stats": {
         "FlatMovementSpeedMod": 45,
         "PercentAttackSpeedMod": 0.25
@@ -3460,11 +3029,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Boots",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Boots", "LifeSteal", "SpellVamp"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -3486,9 +3051,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 55
       },
@@ -3510,9 +3073,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 40
       },
@@ -3534,11 +3095,7 @@
         "sell": 1330,
         "total": 1900
       },
-      "tags": [
-        "AbilityHaste",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 35
       },
@@ -3560,10 +3117,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Health",
-        "ManaRegen"
-      ],
+      "tags": ["Health", "ManaRegen"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -3585,9 +3139,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -3609,10 +3161,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "Boots",
-        "MagicPenetration"
-      ],
+      "tags": ["Boots", "MagicPenetration"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -3634,11 +3183,7 @@
         "sell": 735,
         "total": 1050
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Health"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatArmorMod": 25
@@ -3661,12 +3206,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "Mana"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatArmorMod": 25
@@ -3689,10 +3229,7 @@
         "sell": 1280,
         "total": 3200
       },
-      "tags": [
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["Armor", "Damage"],
       "stats": {
         "FlatArmorMod": 45,
         "FlatPhysicalDamageMod": 55
@@ -3715,10 +3252,7 @@
         "sell": 2450,
         "total": 3500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 75
@@ -3741,11 +3275,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 50,
         "PercentAttackSpeedMod": 0.4
@@ -3768,11 +3298,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 35
@@ -3795,10 +3321,7 @@
         "sell": 1015,
         "total": 1450
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 20
       },
@@ -3820,11 +3343,7 @@
         "sell": 2310,
         "total": 3300
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 35
@@ -3847,10 +3366,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "CriticalStrike",
-        "Health"
-      ],
+      "tags": ["CriticalStrike", "Health"],
       "stats": {
         "FlatHPPoolMod": 700,
         "FlatCritChanceMod": 0.2
@@ -3873,11 +3389,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatMagicDamageMod": 70
@@ -3900,11 +3412,7 @@
         "sell": 1050,
         "total": 1500
       },
-      "tags": [
-        "Health",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 100,
         "FlatMagicDamageMod": 20
@@ -3927,13 +3435,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage",
-        "Mana",
-        "OnHit"
-      ],
+      "tags": ["ArmorPenetration", "CooldownReduction", "Damage", "Mana", "OnHit"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatPhysicalDamageMod": 35
@@ -3956,11 +3458,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Damage", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatPhysicalDamageMod": 15
@@ -3983,11 +3481,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.65,
@@ -4011,10 +3505,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "Armor",
-        "Boots"
-      ],
+      "tags": ["Armor", "Boots"],
       "stats": {
         "FlatMovementSpeedMod": 45,
         "FlatArmorMod": 25
@@ -4037,12 +3528,7 @@
         "sell": 1540,
         "total": 2200
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 25,
         "FlatHPPoolMod": 300,
@@ -4066,10 +3552,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage"
-      ],
+      "tags": ["AttackSpeed", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 20,
         "PercentAttackSpeedMod": 0.2
@@ -4092,11 +3575,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "Tenacity"
-      ],
+      "tags": ["Damage", "Health", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 400
       },
@@ -4118,10 +3597,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "AbilityHaste",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -4141,13 +3617,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "HealthRegen",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "HealthRegen", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 50,
         "FlatHPPoolMod": 400
@@ -4170,10 +3640,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 200,
         "PercentMovementSpeedMod": 0.04
@@ -4196,11 +3663,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -4222,12 +3685,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "Health"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatArmorMod": 50
@@ -4250,10 +3708,7 @@
         "sell": 280,
         "total": 400
       },
-      "tags": [
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 240
       },
@@ -4306,10 +3761,7 @@
         "sell": 2380,
         "total": 3400
       },
-      "tags": [
-        "Damage",
-        "LifeSteal"
-      ],
+      "tags": ["Damage", "LifeSteal"],
       "stats": {
         "FlatPhysicalDamageMod": 80,
         "PercentLifeStealMod": 0.15
@@ -4363,13 +3815,7 @@
         "sell": 2310,
         "total": 3300
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "LifeSteal",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "LifeSteal", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 65,
         "PercentLifeStealMod": 0.12
@@ -4392,10 +3838,7 @@
         "sell": 1715,
         "total": 2450
       },
-      "tags": [
-        "Armor",
-        "Health"
-      ],
+      "tags": ["Armor", "Health"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatArmorMod": 75
@@ -4418,9 +3861,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "Armor"
-      ],
+      "tags": ["Armor"],
       "stats": {
         "FlatArmorMod": 30
       },
@@ -4442,10 +3883,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "Damage",
-        "OnHit"
-      ],
+      "tags": ["Damage", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 20
       },
@@ -4499,9 +3937,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Armor"
-      ],
+      "tags": ["Armor"],
       "stats": {
         "FlatArmorMod": 40
       },
@@ -4523,10 +3959,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "Health",
-        "HealthRegen"
-      ],
+      "tags": ["Health", "HealthRegen"],
       "stats": {
         "FlatHPPoolMod": 1000
       },
@@ -4548,10 +3981,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Health",
-        "HealthRegen"
-      ],
+      "tags": ["Health", "HealthRegen"],
       "stats": {
         "FlatHPPoolMod": 900
       },
@@ -4573,12 +4003,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement", "OnHit"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.4,
@@ -4602,11 +4027,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.15,
         "PercentAttackSpeedMod": 0.15,
@@ -4630,13 +4051,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45,
         "FlatPhysicalDamageMod": 45,
@@ -4661,9 +4076,7 @@
         "sell": 2450,
         "total": 3500
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 130
       },
@@ -4685,12 +4098,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AttackSpeed",
-        "OnHit",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["AttackSpeed", "OnHit", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 45,
         "PercentAttackSpeedMod": 0.5
@@ -4713,11 +4121,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.35,
@@ -4741,12 +4145,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 50,
@@ -4770,12 +4169,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 50,
@@ -4799,12 +4193,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "NonbootsMovement",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "NonbootsMovement", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 100,
         "PercentMovementSpeedMod": 0.06
@@ -4827,10 +4216,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "SpellBlock",
-        "SpellDamage"
-      ],
+      "tags": ["SpellBlock", "SpellDamage"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatMagicDamageMod": 105
@@ -4853,12 +4239,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 25,
         "FlatArmorMod": 25
@@ -4881,12 +4262,7 @@
         "sell": 1610,
         "total": 2300
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 30
       },
@@ -4908,11 +4284,7 @@
         "sell": 595,
         "total": 850
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 25
       },
@@ -4965,13 +4337,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "CooldownReduction", "Mana"],
       "stats": {
         "FlatMPPoolMod": 400,
         "FlatArmorMod": 75
@@ -4994,11 +4360,7 @@
         "sell": 875,
         "total": 1250
       },
-      "tags": [
-        "Boots",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Boots", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 20,
         "FlatMovementSpeedMod": 45
@@ -5021,12 +4383,7 @@
         "sell": 665,
         "total": 950
       },
-      "tags": [
-        "Health",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "Lane", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatMagicDamageMod": 50
@@ -5049,10 +4406,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 30,
         "PercentMovementSpeedMod": 0.04
@@ -5075,9 +4429,7 @@
         "sell": 420,
         "total": 600
       },
-      "tags": [
-        "ManaRegen"
-      ],
+      "tags": ["ManaRegen"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -5097,12 +4449,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 80,
         "PercentAttackSpeedMod": 0.5
@@ -5125,11 +4472,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "Health",
-        "Slow",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "Slow", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatMagicDamageMod": 65
@@ -5152,9 +4495,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -5176,11 +4517,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 90
@@ -5203,11 +4540,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatHPPoolMod": 550
@@ -5230,11 +4563,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatHPPoolMod": 550
@@ -5257,9 +4586,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "Damage"
-      ],
+      "tags": ["Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 15
       },
@@ -5281,12 +4608,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "Damage", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 30,
         "FlatPhysicalDamageMod": 30,
@@ -5310,10 +4632,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "CooldownReduction",
-        "SpellDamage"
-      ],
+      "tags": ["CooldownReduction", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 120
       },
@@ -5335,11 +4654,7 @@
         "sell": 1610,
         "total": 2300
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 30,
         "PercentAttackSpeedMod": 0.25
@@ -5362,11 +4677,7 @@
         "sell": 735,
         "total": 1050
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 20
       },
@@ -5388,10 +4699,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 20
       },
@@ -5413,10 +4721,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 95
       },
@@ -5438,11 +4743,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AbilityHaste",
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 75
       },
@@ -5464,14 +4765,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "LifeSteal",
-        "NonbootsMovement",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Active", "Damage", "LifeSteal", "NonbootsMovement", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 35,
         "FlatPhysicalDamageMod": 50,
@@ -5495,10 +4789,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "Active",
-        "SpellBlock"
-      ],
+      "tags": ["Active", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30
       },
@@ -5520,12 +4811,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "Active",
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 55,
         "PercentMovementSpeedMod": 0.04
@@ -5548,12 +4834,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "Active",
-        "Armor",
-        "Health",
-        "Slow"
-      ],
+      "tags": ["Active", "Armor", "Health", "Slow"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatArmorMod": 75
@@ -5576,9 +4857,7 @@
         "sell": 420,
         "total": 600
       },
-      "tags": [
-        "AttackSpeed"
-      ],
+      "tags": ["AttackSpeed"],
       "stats": {
         "PercentAttackSpeedMod": 0.2
       },
@@ -5600,9 +4879,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45
       },
@@ -5624,13 +4901,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "LifeSteal",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["Active", "Damage", "LifeSteal", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatMagicDamageMod": 80,
         "FlatPhysicalDamageMod": 40
@@ -5653,10 +4924,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 30
@@ -5709,13 +4977,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "LifeSteal",
-        "OnHit",
-        "Slow"
-      ],
+      "tags": ["AttackSpeed", "Damage", "LifeSteal", "OnHit", "Slow"],
       "stats": {
         "FlatPhysicalDamageMod": 40,
         "PercentAttackSpeedMod": 0.25,
@@ -5739,10 +5001,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "Damage",
-        "SpellBlock"
-      ],
+      "tags": ["Damage", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 25,
         "FlatPhysicalDamageMod": 25
@@ -5765,13 +5024,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "LifeSteal",
-        "SpellBlock",
-        "SpellVamp"
-      ],
+      "tags": ["AbilityHaste", "Damage", "LifeSteal", "SpellBlock", "SpellVamp"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatPhysicalDamageMod": 60
@@ -5794,11 +5047,7 @@
         "sell": 2275,
         "total": 3250
       },
-      "tags": [
-        "Active",
-        "Armor",
-        "SpellDamage"
-      ],
+      "tags": ["Active", "Armor", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 105,
         "FlatArmorMod": 50
@@ -5821,10 +5070,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Boots",
-        "CooldownReduction"
-      ],
+      "tags": ["Boots", "CooldownReduction"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -5846,11 +5092,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 450,
         "FlatPhysicalDamageMod": 45
@@ -5873,12 +5115,7 @@
         "sell": 1995,
         "total": 2850
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 75
@@ -5901,11 +5138,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Boots",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Boots", "LifeSteal", "SpellVamp"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -5927,9 +5160,7 @@
         "sell": 700,
         "total": 1000
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 65
       },
@@ -5951,10 +5182,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Boots",
-        "CooldownReduction"
-      ],
+      "tags": ["Boots", "CooldownReduction"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -5976,11 +5204,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "AttackSpeed",
-        "LifeSteal",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "LifeSteal", "NonbootsMovement"],
       "stats": {
         "FlatMovementSpeedMod": 45,
         "PercentAttackSpeedMod": 0.4,
@@ -6004,12 +5228,7 @@
         "sell": 875,
         "total": 1250
       },
-      "tags": [
-        "Boots",
-        "MagicResist",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Boots", "MagicResist", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatMovementSpeedMod": 45
@@ -6032,10 +5251,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "Armor",
-        "Boots"
-      ],
+      "tags": ["Armor", "Boots"],
       "stats": {
         "FlatMovementSpeedMod": 45,
         "FlatArmorMod": 35
@@ -6058,10 +5274,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "Boots",
-        "MagicPenetration"
-      ],
+      "tags": ["Boots", "MagicPenetration"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -6083,9 +5296,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 55
       },
@@ -6107,12 +5318,7 @@
         "sell": 665,
         "total": 950
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "Health",
-        "Lane"
-      ],
+      "tags": ["AbilityHaste", "Damage", "Health", "Lane"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatPhysicalDamageMod": 30
@@ -6135,13 +5341,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage",
-        "Vision"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "CooldownReduction", "Damage", "Vision"],
       "stats": {
         "FlatPhysicalDamageMod": 60
       },
@@ -6163,11 +5363,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Damage", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 500,
         "FlatPhysicalDamageMod": 40,
@@ -6191,12 +5387,7 @@
         "sell": 665,
         "total": 950
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "Lane",
-        "LifeSteal"
-      ],
+      "tags": ["Damage", "Health", "Lane", "LifeSteal"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatPhysicalDamageMod": 25,
@@ -6220,15 +5411,7 @@
         "sell": 1540,
         "total": 2200
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "Aura",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "Aura", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 200,
@@ -6252,13 +5435,7 @@
         "sell": 2205,
         "total": 3150
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "CooldownReduction",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "CooldownReduction", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 60,
         "FlatArmorMod": 60
@@ -6281,11 +5458,7 @@
         "sell": 875,
         "total": 1250
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "HealthRegen", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 35,
         "FlatHPPoolMod": 200
@@ -6308,14 +5481,7 @@
         "sell": 1610,
         "total": 2300
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "Tenacity"
-      ],
+      "tags": ["AbilityHaste", "Active", "CooldownReduction", "Health", "ManaRegen", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 250
       },
@@ -6337,13 +5503,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "ArmorPenetration",
-        "AttackSpeed",
-        "Damage",
-        "MagicPenetration",
-        "OnHit"
-      ],
+      "tags": ["ArmorPenetration", "AttackSpeed", "Damage", "MagicPenetration", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 30,
         "PercentAttackSpeedMod": 0.35
@@ -6366,13 +5526,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Jungle",
-        "Lane",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Jungle", "Lane", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6392,13 +5546,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Jungle",
-        "Lane",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Jungle", "Lane", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6418,13 +5566,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Jungle",
-        "Lane",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Jungle", "Lane", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6444,13 +5586,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Jungle",
-        "Lane",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Jungle", "Lane", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6470,11 +5606,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6494,11 +5626,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6518,10 +5646,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable",
-        "GoldPer"
-      ],
+      "tags": ["Consumable", "GoldPer"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6541,10 +5666,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable",
-        "GoldPer"
-      ],
+      "tags": ["Consumable", "GoldPer"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6564,10 +5686,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable",
-        "GoldPer"
-      ],
+      "tags": ["Consumable", "GoldPer"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6587,11 +5706,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CooldownReduction",
-        "CriticalStrike",
-        "SpellDamage"
-      ],
+      "tags": ["CooldownReduction", "CriticalStrike", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 50,
         "FlatCritChanceMod": 0.25
@@ -6614,12 +5729,7 @@
         "sell": 1540,
         "total": 2200
       },
-      "tags": [
-        "AttackSpeed",
-        "ManaRegen",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "ManaRegen", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45,
         "PercentMovementSpeedMod": 0.04
@@ -6672,10 +5782,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Trinket"
-      ],
+      "tags": ["Active", "Trinket"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6695,9 +5802,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6717,9 +5822,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -6739,12 +5842,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "NonbootsMovement",
-        "Slow"
-      ],
+      "tags": ["Armor", "Health", "NonbootsMovement", "Slow"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatArmorMod": 55,
@@ -6768,12 +5866,7 @@
         "sell": 2310,
         "total": 3300
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "HealthRegen",
-        "OnHit"
-      ],
+      "tags": ["Damage", "Health", "HealthRegen", "OnHit"],
       "stats": {
         "FlatHPPoolMod": 600,
         "FlatPhysicalDamageMod": 40
@@ -6796,10 +5889,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "Health",
-        "HealthRegen"
-      ],
+      "tags": ["Health", "HealthRegen"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -6821,13 +5911,7 @@
         "sell": 840,
         "total": 1200
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Mana",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Mana", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatMagicDamageMod": 40
@@ -6850,12 +5934,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["Health", "HealthRegen", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 375,
         "FlatHPPoolMod": 300
@@ -6878,11 +5957,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatPhysicalDamageMod": 50
@@ -6905,14 +5980,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "Lane", "ManaRegen", "SpellDamage", "Vision"],
       "stats": {
         "FlatHPPoolMod": 25,
         "FlatMagicDamageMod": 10
@@ -6935,12 +6003,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["GoldPer", "Lane", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 70,
         "FlatMagicDamageMod": 15
@@ -6963,12 +6026,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["GoldPer", "Lane", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 75,
         "FlatMagicDamageMod": 40
@@ -6991,14 +6049,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "Damage",
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "Vision"
-      ],
+      "tags": ["Damage", "GoldPer", "Health", "HealthRegen", "Lane", "Vision"],
       "stats": {
         "FlatHPPoolMod": 50,
         "FlatPhysicalDamageMod": 4
@@ -7021,12 +6072,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 100,
         "FlatPhysicalDamageMod": 6
@@ -7049,12 +6095,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatPhysicalDamageMod": 15
@@ -7077,14 +6118,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "SpellDamage",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane", "SpellDamage", "Vision"],
       "stats": {
         "FlatHPPoolMod": 50,
         "FlatMagicDamageMod": 7
@@ -7107,12 +6141,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 100,
         "FlatMagicDamageMod": 10
@@ -7135,12 +6164,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatMagicDamageMod": 20
@@ -7163,14 +6187,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "Damage",
-        "GoldPer",
-        "Health",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["Damage", "GoldPer", "Health", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 25,
         "FlatPhysicalDamageMod": 6
@@ -7193,12 +6210,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "Lane",
-        "ManaRegen"
-      ],
+      "tags": ["GoldPer", "Health", "Lane", "ManaRegen"],
       "stats": {
         "FlatHPPoolMod": 60,
         "FlatPhysicalDamageMod": 10
@@ -7221,12 +6233,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "Lane",
-        "ManaRegen"
-      ],
+      "tags": ["GoldPer", "Health", "Lane", "ManaRegen"],
       "stats": {
         "FlatHPPoolMod": 75,
         "FlatPhysicalDamageMod": 20
@@ -7249,13 +6256,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 30
       },
@@ -7277,13 +6278,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Lane", "ManaRegen", "SpellDamage", "Vision"],
       "stats": {
         "FlatHPPoolMod": 100
       },
@@ -7305,13 +6300,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Lane", "ManaRegen", "SpellDamage", "Vision"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -7333,14 +6322,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -7362,14 +6344,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -7391,14 +6366,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -7420,14 +6388,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -7449,14 +6410,7 @@
         "sell": 160,
         "total": 400
       },
-      "tags": [
-        "GoldPer",
-        "Health",
-        "HealthRegen",
-        "Lane",
-        "ManaRegen",
-        "Vision"
-      ],
+      "tags": ["GoldPer", "Health", "HealthRegen", "Lane", "ManaRegen", "Vision"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -7538,9 +6492,7 @@
         "sell": 560,
         "total": 800
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 25
       },
@@ -7562,11 +6514,7 @@
         "sell": 1120,
         "total": 1600
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 25,
         "PercentMovementSpeedMod": 0.04
@@ -7589,11 +6537,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 50,
         "PercentMovementSpeedMod": 0.04
@@ -7616,12 +6560,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 65
       },
@@ -7643,12 +6582,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CooldownReduction",
-        "MagicPenetration",
-        "SpellBlock",
-        "SpellDamage"
-      ],
+      "tags": ["CooldownReduction", "MagicPenetration", "SpellBlock", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 60
@@ -7671,13 +6605,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "OnHit", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 45
@@ -7700,12 +6628,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Armor", "Health", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 45,
         "FlatHPPoolMod": 300,
@@ -7729,12 +6652,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Armor",
-        "SpellBlock",
-        "SpellDamage",
-        "Tenacity"
-      ],
+      "tags": ["Armor", "SpellBlock", "SpellDamage", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatMagicDamageMod": 70,
@@ -7758,12 +6676,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "Health",
-        "Slow"
-      ],
+      "tags": ["AttackSpeed", "Damage", "Health", "Slow"],
       "stats": {
         "FlatHPPoolMod": 600,
         "PercentAttackSpeedMod": 0.6
@@ -7816,11 +6729,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 50
       },
@@ -7842,10 +6751,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 35
       },
@@ -7867,11 +6773,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "Health",
-        "NonbootsMovement",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "NonbootsMovement", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 55,
         "FlatHPPoolMod": 400,
@@ -7895,13 +6797,7 @@
         "sell": 2065,
         "total": 2950
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatHPPoolMod": 400,
@@ -7970,10 +6866,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "AbilityHaste",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 75
       },
@@ -7995,12 +6888,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 70,
@@ -8024,10 +6912,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 25
       },
@@ -8049,10 +6934,7 @@
         "sell": 1120,
         "total": 1600
       },
-      "tags": [
-        "SpellBlock",
-        "SpellDamage"
-      ],
+      "tags": ["SpellBlock", "SpellDamage"],
       "stats": {
         "FlatSpellBlockMod": 25,
         "FlatMagicDamageMod": 40
@@ -8075,12 +6957,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "CooldownReduction",
-        "Health",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["CooldownReduction", "Health", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 70
@@ -8103,11 +6980,7 @@
         "sell": 886,
         "total": 1265
       },
-      "tags": [
-        "Health",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["Health", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatMagicDamageMod": 20
@@ -8130,13 +7003,7 @@
         "sell": 1936,
         "total": 2765
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 90
@@ -8159,10 +7026,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 75
@@ -8248,12 +7112,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 20
       },
@@ -8307,13 +7166,7 @@
         "sell": 2006,
         "total": 2865
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatHPPoolMod": 250,
@@ -8337,10 +7190,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 110
       },
@@ -8362,12 +7212,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "GoldPer",
-        "MagicPenetration",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["GoldPer", "MagicPenetration", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 90,
         "PercentMovementSpeedMod": 0.06
@@ -8390,10 +7235,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "Active",
-        "Damage"
-      ],
+      "tags": ["Active", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 30
       },
@@ -8453,13 +7295,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "Health",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Active", "Damage", "Health", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatHPPoolMod": 300,
@@ -8483,11 +7319,7 @@
         "sell": 2310,
         "total": 3300
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Damage"],
       "stats": {
         "FlatArmorMod": 50,
         "FlatPhysicalDamageMod": 60
@@ -8510,12 +7342,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 450,
         "FlatPhysicalDamageMod": 45
@@ -8538,12 +7365,7 @@
         "sell": 2170,
         "total": 3100
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatPhysicalDamageMod": 45
@@ -8566,12 +7388,7 @@
         "sell": 1575,
         "total": 2250
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 35
       },
@@ -8593,13 +7410,7 @@
         "sell": 1540,
         "total": 2200
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 25
@@ -8622,13 +7433,7 @@
         "sell": 1540,
         "total": 2200
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 35
@@ -8651,10 +7456,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45
       },
@@ -8707,12 +7509,7 @@
         "sell": 2310,
         "total": 3300
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "Health",
-        "Slow"
-      ],
+      "tags": ["AttackSpeed", "Damage", "Health", "Slow"],
       "stats": {
         "FlatHPPoolMod": 450,
         "FlatPhysicalDamageMod": 40,
@@ -8767,10 +7564,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 60
@@ -8793,12 +7587,7 @@
         "sell": 1925,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 100
@@ -8853,13 +7642,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Mana",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "HealthRegen", "Mana", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatHPPoolMod": 350,
@@ -8883,10 +7666,7 @@
         "sell": 630,
         "total": 900
       },
-      "tags": [
-        "AbilityHaste",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Health"],
       "stats": {
         "FlatHPPoolMod": 150
       },
@@ -8908,14 +7688,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "Health",
-        "OnHit",
-        "Slow"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "Health", "OnHit", "Slow"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 50
@@ -8938,14 +7711,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "Aura",
-        "Health",
-        "HealthRegen",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Aura", "Health", "HealthRegen", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatHPPoolMod": 400
@@ -8968,12 +7734,7 @@
         "sell": 2240,
         "total": 3200
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["Armor", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 45,
         "FlatHPPoolMod": 350,
@@ -8997,14 +7758,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "CooldownReduction", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 350,
@@ -9028,10 +7782,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.2,
         "FlatPhysicalDamageMod": 15
@@ -9054,13 +7805,7 @@
         "sell": 2450,
         "total": 3500
       },
-      "tags": [
-        "Active",
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "AttackSpeed", "CriticalStrike", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.2,
         "FlatPhysicalDamageMod": 50,
@@ -9085,12 +7830,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 45,
         "PercentAttackSpeedMod": 0.4,
@@ -9114,10 +7854,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 55
@@ -9140,11 +7877,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.4,
@@ -9168,11 +7901,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 50
@@ -9195,10 +7924,7 @@
         "sell": 770,
         "total": 1100
       },
-      "tags": [
-        "AttackSpeed",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "OnHit"],
       "stats": {
         "PercentAttackSpeedMod": 0.25
       },
@@ -9220,10 +7946,7 @@
         "sell": 543,
         "total": 775
       },
-      "tags": [
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 15,
         "PercentMovementSpeedMod": 0.04
@@ -9276,11 +7999,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 60
       },
@@ -9302,12 +8021,7 @@
         "sell": 1995,
         "total": 2850
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9329,12 +8043,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 45
       },
@@ -9356,10 +8065,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9381,11 +8087,7 @@
         "sell": 1925,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9407,13 +8109,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9435,13 +8131,7 @@
         "sell": 1995,
         "total": 2850
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9463,13 +8153,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9522,12 +8206,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "Active",
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -9549,13 +8228,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "Active",
-        "Jungle",
-        "Lane",
-        "Trinket",
-        "Vision"
-      ],
+      "tags": ["Active", "Jungle", "Lane", "Trinket", "Vision"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -9595,12 +8268,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "CooldownReduction",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Active", "CooldownReduction", "Health"],
       "stats": {
         "FlatHPPoolMod": 650
       },
@@ -9622,12 +8290,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "CooldownReduction",
-        "Health",
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["CooldownReduction", "Health", "MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatMagicDamageMod": 65
@@ -9650,13 +8313,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 45,
         "FlatHPPoolMod": 350
@@ -10859,12 +9516,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "CooldownReduction",
-        "CriticalStrike",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["CooldownReduction", "CriticalStrike", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 55,
         "FlatCritChanceMod": 0.25,
@@ -10888,13 +9540,7 @@
         "sell": 1645,
         "total": 2350
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "OnHit", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 45
@@ -10917,13 +9563,7 @@
         "sell": 2065,
         "total": 2950
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -11103,9 +9743,7 @@
         "sell": 4000,
         "total": 4000
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -11245,9 +9883,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Health"
-      ],
+      "tags": ["Health"],
       "stats": {
         "FlatHPPoolMod": 300
       },
@@ -11269,9 +9905,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45
       },
@@ -11293,9 +9927,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Armor"
-      ],
+      "tags": ["Armor"],
       "stats": {
         "FlatArmorMod": 40
       },
@@ -11317,9 +9949,7 @@
         "sell": 910,
         "total": 1300
       },
-      "tags": [
-        "Damage"
-      ],
+      "tags": ["Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 40
       },
@@ -11341,10 +9971,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "AttackSpeed",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "OnHit"],
       "stats": {
         "PercentAttackSpeedMod": 0.15
       },
@@ -11366,10 +9993,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Damage",
-        "LifeSteal"
-      ],
+      "tags": ["Damage", "LifeSteal"],
       "stats": {
         "FlatPhysicalDamageMod": 15,
         "PercentLifeStealMod": 0.07
@@ -11392,9 +10016,7 @@
         "sell": 315,
         "total": 450
       },
-      "tags": [
-        "SpellBlock"
-      ],
+      "tags": ["SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30
       },
@@ -11416,9 +10038,7 @@
         "sell": 0,
         "total": 500
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 120
       },
@@ -11440,9 +10060,7 @@
         "sell": 175,
         "total": 250
       },
-      "tags": [
-        "CooldownReduction"
-      ],
+      "tags": ["CooldownReduction"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -11462,11 +10080,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Lane"
-      ],
+      "tags": ["Health", "HealthRegen", "Lane"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatHPRegenMod": 4
@@ -11519,9 +10133,7 @@
         "sell": 500,
         "total": 500
       },
-      "tags": [
-        "Consumable"
-      ],
+      "tags": ["Consumable"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -11541,13 +10153,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "Health",
-        "MagicResist"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "Health", "MagicResist"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatArmorMod": 50
@@ -11570,12 +10176,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 60
@@ -11598,11 +10199,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "HealthRegen", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 80,
         "FlatHPPoolMod": 350
@@ -11625,13 +10222,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "Health",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "Health", "OnHit", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 60,
@@ -11655,12 +10246,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.4,
@@ -11684,12 +10270,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["AbilityHaste", "Damage", "LifeSteal", "SpellVamp"],
       "stats": {
         "FlatPhysicalDamageMod": 60
       },
@@ -11711,12 +10292,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Active", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatMagicDamageMod": 90
@@ -11739,10 +10315,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 55
@@ -11765,10 +10338,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Health"],
       "stats": {
         "FlatSpellBlockMod": 25,
         "FlatHPPoolMod": 200,
@@ -11792,12 +10362,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "NonbootsMovement",
-        "Tenacity"
-      ],
+      "tags": ["AbilityHaste", "Health", "NonbootsMovement", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 600
       },
@@ -11819,11 +10384,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["Health", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatHPPoolMod": 200
@@ -11846,12 +10407,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatHPPoolMod": 200
@@ -11874,12 +10430,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 200,
@@ -11903,11 +10454,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Armor", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 45,
@@ -11931,11 +10478,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 55
@@ -11958,13 +10501,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Mana",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Mana", "OnHit"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatPhysicalDamageMod": 40
@@ -11987,9 +10524,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 70
       },
@@ -12011,10 +10546,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "AttackSpeed",
-        "Boots"
-      ],
+      "tags": ["AttackSpeed", "Boots"],
       "stats": {
         "FlatMovementSpeedMod": 55,
         "PercentAttackSpeedMod": 0.35
@@ -12037,11 +10569,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Boots",
-        "LifeSteal",
-        "SpellVamp"
-      ],
+      "tags": ["Boots", "LifeSteal", "SpellVamp"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -12063,9 +10591,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Boots"
-      ],
+      "tags": ["Boots"],
       "stats": {
         "FlatMovementSpeedMod": 70
       },
@@ -12087,11 +10613,7 @@
         "sell": 1330,
         "total": 1900
       },
-      "tags": [
-        "AbilityHaste",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 35
       },
@@ -12113,10 +10635,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Boots",
-        "MagicPenetration"
-      ],
+      "tags": ["Boots", "MagicPenetration"],
       "stats": {
         "FlatMovementSpeedMod": 55
       },
@@ -12138,10 +10657,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["Armor", "Damage"],
       "stats": {
         "FlatArmorMod": 45,
         "FlatPhysicalDamageMod": 55
@@ -12164,10 +10680,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 75
@@ -12190,10 +10703,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 45,
         "PercentAttackSpeedMod": 0.4
@@ -12216,11 +10726,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 30
@@ -12243,11 +10749,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 30
@@ -12270,11 +10772,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Health",
-        "Lane"
-      ],
+      "tags": ["CriticalStrike", "Health", "Lane"],
       "stats": {
         "FlatHPPoolMod": 700,
         "FlatCritChanceMod": 0.2
@@ -12297,11 +10795,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 1200,
         "FlatMagicDamageMod": 60
@@ -12324,13 +10818,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage",
-        "Mana",
-        "OnHit"
-      ],
+      "tags": ["ArmorPenetration", "CooldownReduction", "Damage", "Mana", "OnHit"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatPhysicalDamageMod": 40
@@ -12353,11 +10841,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.6,
@@ -12381,10 +10865,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Armor",
-        "Boots"
-      ],
+      "tags": ["Armor", "Boots"],
       "stats": {
         "FlatMovementSpeedMod": 30,
         "FlatArmorMod": 25
@@ -12407,12 +10888,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 300,
@@ -12436,11 +10912,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "Tenacity"
-      ],
+      "tags": ["Damage", "Health", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 300
       },
@@ -12462,10 +10934,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "OnHit"],
       "stats": {},
       "patch": "16.12.1"
     },
@@ -12485,13 +10954,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "HealthRegen",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "HealthRegen", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatHPPoolMod": 300
@@ -12514,11 +10977,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health"],
       "stats": {
         "FlatHPPoolMod": 200
       },
@@ -12540,12 +10999,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "Health"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatArmorMod": 40
@@ -12632,10 +11086,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Damage",
-        "LifeSteal"
-      ],
+      "tags": ["Damage", "LifeSteal"],
       "stats": {
         "FlatPhysicalDamageMod": 70,
         "PercentLifeStealMod": 0.18
@@ -12689,13 +11140,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "LifeSteal",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "LifeSteal", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 70,
         "PercentLifeStealMod": 0.15
@@ -12718,10 +11163,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "Health"
-      ],
+      "tags": ["Armor", "Health"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 60
@@ -12776,9 +11218,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health"
-      ],
+      "tags": ["Health"],
       "stats": {
         "FlatHPPoolMod": 700
       },
@@ -12800,12 +11240,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement", "OnHit"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.45,
@@ -12829,12 +11264,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement", "OnHit"],
       "stats": {
         "FlatMagicDamageMod": 45,
         "FlatPhysicalDamageMod": 45,
@@ -12859,9 +11289,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "SpellDamage"
-      ],
+      "tags": ["SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 65
       },
@@ -12883,12 +11311,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "OnHit",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["AttackSpeed", "OnHit", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 45,
         "PercentAttackSpeedMod": 0.5
@@ -12911,11 +11334,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.3,
@@ -12939,10 +11358,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 50,
@@ -12966,12 +11382,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "NonbootsMovement",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "NonbootsMovement", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 80,
         "PercentMovementSpeedMod": 0.1
@@ -12994,10 +11405,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "SpellBlock",
-        "SpellDamage"
-      ],
+      "tags": ["SpellBlock", "SpellDamage"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatMagicDamageMod": 80
@@ -13020,12 +11428,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatArmorMod": 30
@@ -13048,12 +11451,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen"],
       "stats": {
         "FlatMagicDamageMod": 30
       },
@@ -13075,14 +11473,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "Aura", "CooldownReduction", "Health"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatArmorMod": 50
@@ -13105,13 +11496,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "CooldownReduction", "Mana"],
       "stats": {
         "FlatMPPoolMod": 450,
         "FlatArmorMod": 90
@@ -13134,11 +11519,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Boots",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Boots", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatMovementSpeedMod": 30
@@ -13161,12 +11542,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "CooldownReduction",
-        "Lane",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["CooldownReduction", "Lane", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 55
       },
@@ -13188,12 +11564,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 70,
         "PercentAttackSpeedMod": 0.45
@@ -13216,11 +11587,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "Slow",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "Slow", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 60
@@ -13243,11 +11610,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 70
@@ -13270,11 +11633,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatHPPoolMod": 400
@@ -13297,11 +11656,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatHPPoolMod": 400
@@ -13324,12 +11679,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "Damage", "OnHit", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 25,
         "FlatPhysicalDamageMod": 20,
@@ -13353,10 +11703,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 65
       },
@@ -13378,11 +11725,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 60
       },
@@ -13404,14 +11747,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "LifeSteal",
-        "NonbootsMovement",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Active", "Damage", "LifeSteal", "NonbootsMovement", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatPhysicalDamageMod": 45,
@@ -13435,12 +11771,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 55,
         "PercentMovementSpeedMod": 0.04
@@ -13463,12 +11794,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "Armor",
-        "Health",
-        "Slow"
-      ],
+      "tags": ["Active", "Armor", "Health", "Slow"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 75
@@ -13491,13 +11817,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "LifeSteal",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["Active", "Damage", "LifeSteal", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatMagicDamageMod": 90,
         "FlatPhysicalDamageMod": 45
@@ -13550,13 +11870,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "LifeSteal",
-        "OnHit",
-        "Slow"
-      ],
+      "tags": ["AttackSpeed", "Damage", "LifeSteal", "OnHit", "Slow"],
       "stats": {
         "FlatPhysicalDamageMod": 30,
         "PercentAttackSpeedMod": 0.2,
@@ -13580,13 +11894,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "LifeSteal",
-        "SpellBlock",
-        "SpellVamp"
-      ],
+      "tags": ["AbilityHaste", "Damage", "LifeSteal", "SpellBlock", "SpellVamp"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatPhysicalDamageMod": 50
@@ -13609,11 +11917,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "Armor",
-        "SpellDamage"
-      ],
+      "tags": ["Active", "Armor", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 80,
         "FlatArmorMod": 50
@@ -13636,10 +11940,7 @@
         "sell": 350,
         "total": 500
       },
-      "tags": [
-        "Boots",
-        "CooldownReduction"
-      ],
+      "tags": ["Boots", "CooldownReduction"],
       "stats": {
         "FlatMovementSpeedMod": 45
       },
@@ -13661,11 +11962,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatPhysicalDamageMod": 40
@@ -13688,12 +11985,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatMagicDamageMod": 90
@@ -13716,13 +12008,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "CooldownReduction",
-        "NonbootsMovement",
-        "OnHit",
-        "Tenacity"
-      ],
+      "tags": ["AttackSpeed", "CooldownReduction", "NonbootsMovement", "OnHit", "Tenacity"],
       "stats": {
         "PercentAttackSpeedMod": 0.5,
         "PercentMovementSpeedMod": 0.1
@@ -13745,12 +12031,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "Health",
-        "Lane"
-      ],
+      "tags": ["AbilityHaste", "Damage", "Health", "Lane"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatPhysicalDamageMod": 25
@@ -13773,11 +12054,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Damage", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 500,
         "FlatPhysicalDamageMod": 40,
@@ -13801,12 +12078,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "Lane",
-        "LifeSteal"
-      ],
+      "tags": ["Damage", "Health", "Lane", "LifeSteal"],
       "stats": {
         "FlatPhysicalDamageMod": 25,
         "PercentAttackSpeedMod": 0.35,
@@ -13830,11 +12102,7 @@
         "sell": 250,
         "total": 500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "Lane"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "Lane"],
       "stats": {
         "FlatPhysicalDamageMod": 25
       },
@@ -13856,15 +12124,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "Aura",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "Aura", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 35,
         "FlatHPPoolMod": 400,
@@ -13888,13 +12148,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "CooldownReduction",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "CooldownReduction", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 60,
         "FlatArmorMod": 60
@@ -13917,14 +12171,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "Tenacity"
-      ],
+      "tags": ["AbilityHaste", "Active", "CooldownReduction", "Health", "ManaRegen", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 400
       },
@@ -13946,13 +12193,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "AttackSpeed",
-        "Damage",
-        "MagicPenetration",
-        "OnHit"
-      ],
+      "tags": ["ArmorPenetration", "AttackSpeed", "Damage", "MagicPenetration", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 30,
         "PercentAttackSpeedMod": 0.4
@@ -13975,12 +12216,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "ManaRegen",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "ManaRegen", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 40,
         "PercentMovementSpeedMod": 0.06
@@ -14033,12 +12269,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "NonbootsMovement",
-        "Slow"
-      ],
+      "tags": ["Armor", "Health", "NonbootsMovement", "Slow"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 40,
@@ -14062,12 +12293,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "HealthRegen",
-        "OnHit"
-      ],
+      "tags": ["Damage", "Health", "HealthRegen", "OnHit"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatPhysicalDamageMod": 40
@@ -14090,11 +12316,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 375,
         "FlatPhysicalDamageMod": 45
@@ -14117,10 +12339,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 60
       },
@@ -14142,12 +12361,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 60
       },
@@ -14169,11 +12383,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "NonbootsMovement",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "NonbootsMovement", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 50,
         "FlatHPPoolMod": 400,
@@ -14241,10 +12451,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 90
       },
@@ -14266,12 +12473,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 65,
@@ -14295,12 +12497,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CooldownReduction",
-        "Health",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["CooldownReduction", "Health", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 60
@@ -14323,13 +12520,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 90
@@ -14352,10 +12543,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatMagicDamageMod": 75
@@ -14378,12 +12566,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatHPPoolMod": 250,
@@ -14407,10 +12590,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 90
       },
@@ -14432,12 +12612,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "GoldPer",
-        "MagicPenetration",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["GoldPer", "MagicPenetration", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 90,
         "PercentMovementSpeedMod": 0.04
@@ -14460,13 +12635,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "Health",
-        "SpellBlock",
-        "Tenacity"
-      ],
+      "tags": ["Active", "Damage", "Health", "SpellBlock", "Tenacity"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatHPPoolMod": 300,
@@ -14490,11 +12659,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Damage"],
       "stats": {
         "FlatArmorMod": 45,
         "FlatPhysicalDamageMod": 60
@@ -14517,12 +12682,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 450,
         "FlatPhysicalDamageMod": 45
@@ -14545,12 +12705,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 350,
         "FlatPhysicalDamageMod": 40
@@ -14573,12 +12728,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 65
       },
@@ -14600,13 +12750,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 35
@@ -14629,13 +12773,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 40
@@ -14658,10 +12796,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45
       },
@@ -14683,13 +12818,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "CooldownReduction",
-        "Damage",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Active", "CooldownReduction", "Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatPhysicalDamageMod": 55
@@ -14712,13 +12841,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "Health",
-        "NonbootsMovement",
-        "Slow"
-      ],
+      "tags": ["AttackSpeed", "Damage", "Health", "NonbootsMovement", "Slow"],
       "stats": {
         "FlatHPPoolMod": 375,
         "FlatPhysicalDamageMod": 40,
@@ -14773,10 +12896,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatMagicDamageMod": 50
@@ -14799,12 +12919,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 85
@@ -14859,13 +12974,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Mana",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "HealthRegen", "Mana", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatHPPoolMod": 350,
@@ -14889,10 +12998,7 @@
         "sell": 0,
         "total": 0
       },
-      "tags": [
-        "AbilityHaste",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Health"],
       "stats": {
         "FlatHPPoolMod": 550
       },
@@ -14914,14 +13020,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "CooldownReduction",
-        "Health",
-        "OnHit",
-        "Slow"
-      ],
+      "tags": ["AbilityHaste", "Armor", "CooldownReduction", "Health", "OnHit", "Slow"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 45
@@ -14944,13 +13043,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Aura",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Aura", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 40,
         "FlatHPPoolMod": 450
@@ -14973,12 +13066,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["Armor", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 35,
         "FlatHPPoolMod": 350,
@@ -15002,14 +13090,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "CooldownReduction", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 350,
@@ -15033,13 +13114,7 @@
         "sell": 1750,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "AttackSpeed", "CriticalStrike", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.2,
         "FlatPhysicalDamageMod": 50,
@@ -15064,12 +13139,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "OnHit"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 50,
         "PercentAttackSpeedMod": 0.35,
@@ -15093,10 +13163,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 55
@@ -15119,11 +13186,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "PercentAttackSpeedMod": 0.35,
@@ -15147,11 +13210,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 45
@@ -15203,11 +13262,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 50
       },
@@ -15229,12 +13284,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -15256,12 +13306,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 50
       },
@@ -15283,10 +13328,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 55
       },
@@ -15308,11 +13350,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 45
       },
@@ -15334,13 +13372,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 50
       },
@@ -15362,13 +13394,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 50
       },
@@ -15390,13 +13416,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "Active", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 60
       },
@@ -15418,12 +13438,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 50
       },
@@ -15445,12 +13460,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "CooldownReduction",
-        "Health"
-      ],
+      "tags": ["AbilityHaste", "Active", "CooldownReduction", "Health"],
       "stats": {
         "FlatHPPoolMod": 650
       },
@@ -15472,11 +13482,7 @@
         "sell": 4200,
         "total": 6000
       },
-      "tags": [
-        "Active",
-        "Armor",
-        "SpellDamage"
-      ],
+      "tags": ["Active", "Armor", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 300,
         "FlatArmorMod": 50
@@ -15499,11 +13505,7 @@
         "sell": 6300,
         "total": 9000
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.2,
         "FlatPhysicalDamageMod": 150
@@ -15526,12 +13528,7 @@
         "sell": 4200,
         "total": 6000
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["Armor", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 100,
         "FlatHPPoolMod": 800,
@@ -15587,13 +13584,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "LifeSteal",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "LifeSteal", "OnHit"],
       "stats": {
         "FlatPhysicalDamageMod": 130,
         "PercentAttackSpeedMod": 0.4,
@@ -15733,11 +13724,7 @@
         "sell": 1575,
         "total": 2250
       },
-      "tags": [
-        "Health",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["Health", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 300,
         "FlatHPPoolMod": 200
@@ -15760,12 +13747,7 @@
         "sell": 1575,
         "total": 2250
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatHPPoolMod": 200
@@ -15788,11 +13770,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "Armor",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Armor", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 45,
@@ -15816,11 +13794,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 70
@@ -15843,13 +13817,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Damage",
-        "Mana",
-        "OnHit"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Damage", "Mana", "OnHit"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatPhysicalDamageMod": 35
@@ -15872,11 +13840,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatMagicDamageMod": 70
@@ -15899,13 +13863,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage",
-        "Mana",
-        "OnHit"
-      ],
+      "tags": ["ArmorPenetration", "CooldownReduction", "Damage", "Mana", "OnHit"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatPhysicalDamageMod": 35
@@ -15928,12 +13886,7 @@
         "sell": 1610,
         "total": 2300
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 350,
@@ -15957,10 +13910,7 @@
         "sell": 280,
         "total": 400
       },
-      "tags": [
-        "Mana",
-        "ManaRegen"
-      ],
+      "tags": ["Mana", "ManaRegen"],
       "stats": {
         "FlatMPPoolMod": 240
       },
@@ -15982,10 +13932,7 @@
         "sell": 1855,
         "total": 2650
       },
-      "tags": [
-        "Armor",
-        "Health"
-      ],
+      "tags": ["Armor", "Health"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatArmorMod": 85
@@ -16008,12 +13955,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatMagicDamageMod": 30
@@ -16067,13 +14009,7 @@
         "sell": 1890,
         "total": 2700
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "CooldownReduction", "Mana"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatArmorMod": 75
@@ -16096,11 +14032,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatHPPoolMod": 550
@@ -16123,11 +14055,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana"],
       "stats": {
         "FlatMPPoolMod": 1000,
         "FlatHPPoolMod": 550
@@ -16150,15 +14078,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "Aura",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "Aura", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 250,
@@ -16182,14 +14102,7 @@
         "sell": 1960,
         "total": 2800
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "Tenacity"
-      ],
+      "tags": ["AbilityHaste", "Active", "CooldownReduction", "Health", "ManaRegen", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 400
       },
@@ -16211,12 +14124,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "AttackSpeed",
-        "ManaRegen",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "ManaRegen", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 55,
         "PercentMovementSpeedMod": 0.06
@@ -16239,12 +14147,7 @@
         "sell": 1680,
         "total": 2400
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 65
       },
@@ -16266,12 +14169,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 45
       },
@@ -16293,13 +14191,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatMagicDamageMod": 35
@@ -16322,13 +14214,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatMagicDamageMod": 35
@@ -16351,10 +14237,7 @@
         "sell": 2030,
         "total": 2900
       },
-      "tags": [
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 50
       },
@@ -16376,13 +14259,7 @@
         "sell": 1820,
         "total": 2600
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "Mana",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "HealthRegen", "Mana", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 500,
         "FlatHPPoolMod": 350,
@@ -16406,13 +14283,7 @@
         "sell": 1995,
         "total": 2850
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "MagicResist",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "MagicResist", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 50,
         "FlatHPPoolMod": 350
@@ -16435,11 +14306,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Armor",
-        "AttackSpeed",
-        "NonbootsMovement"
-      ],
+      "tags": ["Armor", "AttackSpeed", "NonbootsMovement"],
       "stats": {
         "FlatArmorMod": 55,
         "PercentAttackSpeedMod": 0.5,
@@ -16463,11 +14330,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 55,
         "PercentAttackSpeedMod": 0.45,
@@ -16519,10 +14382,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Armor",
-        "Health"
-      ],
+      "tags": ["Armor", "Health"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatArmorMod": 100
@@ -16545,10 +14405,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 100,
         "FlatHPPoolMod": 300
@@ -16571,11 +14428,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage",
-        "SpellDamage"
-      ],
+      "tags": ["CriticalStrike", "Damage", "SpellDamage"],
       "stats": {
         "FlatCritChanceMod": 0.5
       },
@@ -16597,12 +14450,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Armor",
-        "CriticalStrike",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["Armor", "CriticalStrike", "Health", "SpellBlock"],
       "stats": {
         "FlatHPPoolMod": 900,
         "FlatCritChanceMod": 0.25
@@ -16625,11 +14473,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["AbilityHaste", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatMagicDamageMod": 80
       },
@@ -16651,11 +14495,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 50,
         "FlatArmorMod": 50
@@ -16718,11 +14558,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["AttackSpeed", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 45,
@@ -16746,11 +14582,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Active",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "Health", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 600
       },
@@ -16800,11 +14632,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Health",
-        "NonbootsMovement"
-      ],
+      "tags": ["AttackSpeed", "Health", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 70,
         "PercentAttackSpeedMod": 0.5,
@@ -16828,11 +14656,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Health",
-        "HealthRegen",
-        "NonbootsMovement"
-      ],
+      "tags": ["Health", "HealthRegen", "NonbootsMovement"],
       "stats": {
         "FlatHPPoolMod": 1100,
         "PercentMovementSpeedMod": 0.04
@@ -16855,13 +14679,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement", "OnHit", "SpellDamage"],
       "stats": {
         "PercentAttackSpeedMod": 0.5,
         "PercentMovementSpeedMod": 0.05
@@ -16884,13 +14702,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "CooldownReduction",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "CooldownReduction", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 65,
         "FlatArmorMod": 65,
@@ -16914,13 +14726,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 90
@@ -16943,10 +14749,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 700,
         "FlatMagicDamageMod": 80
@@ -16969,12 +14772,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatHPPoolMod": 350,
@@ -17061,14 +14859,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Armor",
-        "Aura",
-        "CooldownReduction",
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Armor", "Aura", "CooldownReduction", "Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 35,
         "FlatHPPoolMod": 400,
@@ -17092,13 +14883,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Active",
-        "AttackSpeed",
-        "CriticalStrike",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["Active", "AttackSpeed", "CriticalStrike", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 65,
@@ -17152,12 +14937,7 @@
         "sell": 400,
         "total": 1000
       },
-      "tags": [
-        "AbilityHaste",
-        "ArmorPenetration",
-        "CooldownReduction",
-        "Damage"
-      ],
+      "tags": ["AbilityHaste", "ArmorPenetration", "CooldownReduction", "Damage"],
       "stats": {
         "FlatPhysicalDamageMod": 60
       },
@@ -17179,13 +14959,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "Damage", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "PercentAttackSpeedMod": 0.6,
         "PercentMovementSpeedMod": 0.06
@@ -17208,11 +14982,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "NonbootsMovement"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "NonbootsMovement"],
       "stats": {
         "PercentAttackSpeedMod": 0.7,
         "PercentMovementSpeedMod": 0.08
@@ -17235,11 +15005,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 300,
         "FlatMagicDamageMod": 80,
@@ -17263,11 +15029,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "SpellVamp"
-      ],
+      "tags": ["AbilityHaste", "Damage", "SpellVamp"],
       "stats": {
         "FlatPhysicalDamageMod": 70
       },
@@ -17289,11 +15051,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 200,
         "FlatMagicDamageMod": 70
@@ -17316,11 +15074,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "ManaRegen", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 70
       },
@@ -17370,12 +15124,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage",
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["AttackSpeed", "Damage", "NonbootsMovement", "SpellDamage"],
       "stats": {
         "PercentAttackSpeedMod": 0.5,
         "PercentMovementSpeedMod": 0.08
@@ -17398,10 +15147,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "NonbootsMovement",
-        "SpellDamage"
-      ],
+      "tags": ["NonbootsMovement", "SpellDamage"],
       "stats": {
         "FlatMagicDamageMod": 80,
         "PercentMovementSpeedMod": 0.04
@@ -17424,11 +15170,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Armor",
-        "MagicResist",
-        "SpellDamage"
-      ],
+      "tags": ["Armor", "MagicResist", "SpellDamage"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatMagicDamageMod": 80,
@@ -17452,11 +15194,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Health",
-        "SpellDamage",
-        "Tenacity"
-      ],
+      "tags": ["Health", "SpellDamage", "Tenacity"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatMagicDamageMod": 85
@@ -17479,10 +15217,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Damage",
-        "Health"
-      ],
+      "tags": ["Damage", "Health"],
       "stats": {
         "FlatHPPoolMod": 400,
         "FlatPhysicalDamageMod": 40
@@ -17505,12 +15240,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 500
       },
@@ -17532,11 +15262,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "MagicPenetration",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["MagicPenetration", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatMagicDamageMod": 90
@@ -17559,13 +15285,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Armor",
-        "AttackSpeed",
-        "Health",
-        "MagicResist",
-        "OnHit"
-      ],
+      "tags": ["Armor", "AttackSpeed", "Health", "MagicResist", "OnHit"],
       "stats": {
         "FlatSpellBlockMod": 35,
         "FlatArmorMod": 35,
@@ -17589,11 +15309,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "NonbootsMovement"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "NonbootsMovement"],
       "stats": {
         "FlatPhysicalDamageMod": 60,
         "PercentMovementSpeedMod": 0.08
@@ -17616,12 +15332,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "Damage",
-        "Health",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Damage", "Health", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 400
       },
@@ -17643,12 +15354,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "Damage",
-        "Health",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["Damage", "Health", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatHPPoolMod": 400
       },
@@ -17670,10 +15376,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage"
-      ],
+      "tags": ["AttackSpeed", "Damage"],
       "stats": {
         "FlatSpellBlockMod": 30,
         "FlatHPPoolMod": 500,
@@ -17697,10 +15400,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AttackSpeed",
-        "Damage"
-      ],
+      "tags": ["AttackSpeed", "Damage"],
       "stats": {
         "PercentAttackSpeedMod": 0.4
       },
@@ -17753,12 +15453,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "AttackSpeed",
-        "OnHit",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "AttackSpeed", "OnHit", "SpellBlock"],
       "stats": {
         "FlatHPPoolMod": 900
       },
@@ -17780,11 +15475,7 @@
         "sell": 1100,
         "total": 2750
       },
-      "tags": [
-        "AbilityHaste",
-        "ManaRegen",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "ManaRegen", "SpellDamage"],
       "stats": {
         "PercentAttackSpeedMod": 0.3
       },
@@ -18177,11 +15868,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Health",
-        "Lane"
-      ],
+      "tags": ["CriticalStrike", "Health", "Lane"],
       "stats": {
         "FlatHPPoolMod": 500,
         "FlatCritChanceMod": 0.2
@@ -18232,10 +15919,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "Health"
-      ],
+      "tags": ["Armor", "Health"],
       "stats": {
         "FlatHPPoolMod": 250,
         "FlatArmorMod": 80
@@ -18258,10 +15942,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "Health",
-        "SpellBlock"
-      ],
+      "tags": ["Health", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 60,
         "FlatHPPoolMod": 250
@@ -18284,11 +15965,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "CriticalStrike",
-        "Damage",
-        "SpellDamage"
-      ],
+      "tags": ["CriticalStrike", "Damage", "SpellDamage"],
       "stats": {
         "FlatCritChanceMod": 0.5
       },
@@ -18330,13 +16007,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "Active",
-        "Damage",
-        "LifeSteal",
-        "SpellDamage",
-        "SpellVamp"
-      ],
+      "tags": ["Active", "Damage", "LifeSteal", "SpellDamage", "SpellVamp"],
       "stats": {
         "FlatMagicDamageMod": 90,
         "FlatPhysicalDamageMod": 45
@@ -18359,13 +16030,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AttackSpeed",
-        "CooldownReduction",
-        "NonbootsMovement",
-        "OnHit",
-        "Tenacity"
-      ],
+      "tags": ["AttackSpeed", "CooldownReduction", "NonbootsMovement", "OnHit", "Tenacity"],
       "stats": {
         "PercentAttackSpeedMod": 0.4,
         "PercentMovementSpeedMod": 0.08
@@ -18388,13 +16053,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Active",
-        "Armor",
-        "CooldownReduction",
-        "SpellBlock"
-      ],
+      "tags": ["AbilityHaste", "Active", "Armor", "CooldownReduction", "SpellBlock"],
       "stats": {
         "FlatSpellBlockMod": 55,
         "FlatArmorMod": 55,
@@ -18418,13 +16077,7 @@
         "sell": 1250,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "CooldownReduction",
-        "Health",
-        "OnHit",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "CooldownReduction", "Health", "OnHit", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 150,
         "FlatMagicDamageMod": 35
@@ -18491,12 +16144,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "AbilityHaste",
-        "Health",
-        "Mana",
-        "SpellDamage"
-      ],
+      "tags": ["AbilityHaste", "Health", "Mana", "SpellDamage"],
       "stats": {
         "FlatMPPoolMod": 600,
         "FlatHPPoolMod": 250,
@@ -18548,11 +16196,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "Armor",
-        "MagicResist",
-        "SpellDamage"
-      ],
+      "tags": ["Armor", "MagicResist", "SpellDamage"],
       "stats": {
         "FlatSpellBlockMod": 25,
         "FlatMagicDamageMod": 60,
@@ -18576,12 +16220,7 @@
         "sell": 1000,
         "total": 2500
       },
-      "tags": [
-        "ArmorPenetration",
-        "Damage",
-        "MagicPenetration",
-        "SpellDamage"
-      ],
+      "tags": ["ArmorPenetration", "Damage", "MagicPenetration", "SpellDamage"],
       "stats": {
         "FlatHPPoolMod": 500
       },
@@ -18603,11 +16242,7 @@
         "sell": 2100,
         "total": 3000
       },
-      "tags": [
-        "ArmorPenetration",
-        "CriticalStrike",
-        "Damage"
-      ],
+      "tags": ["ArmorPenetration", "CriticalStrike", "Damage"],
       "stats": {
         "FlatCritChanceMod": 0.25,
         "FlatPhysicalDamageMod": 50

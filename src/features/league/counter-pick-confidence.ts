@@ -46,8 +46,7 @@ export const strongCounterPickConfidenceGames = 250;
 
 export const counterPickConfidenceThresholds = [
   {
-    description:
-      "Fewer than five stored Riot matches is not enough to rank this matchup publicly.",
+    description: "Fewer than five stored Riot matches is not enough to rank this matchup publicly.",
     label: "Insufficient data",
     level: "insufficient",
     minimumGames: 0,

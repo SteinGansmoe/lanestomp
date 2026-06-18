@@ -116,20 +116,16 @@ export const smolderCombatProfile = {
         reason: "Each threshold improves Smolder's poke and scaling threat",
         changesGameplay:
           "A quiet lane becomes increasingly favorable for Smolder even without early kills.",
-        playerAction:
-          "Prioritize safe (Q) last hits and avoid trades that cost stack access.",
-        enemyResponse:
-          "Pressure him before thresholds instead of letting him farm calmly.",
+        playerAction: "Prioritize safe (Q) last hits and avoid trades that cost stack access.",
+        enemyResponse: "Pressure him before thresholds instead of letting him farm calmly.",
       },
       {
         timing: "Level 6",
         reason: "(R) can swing low-health lane fights and punish dives",
         changesGameplay:
           "Enemies must account for a long-range damage and healing swing before committing.",
-        playerAction:
-          "Use (R) when the enemy commits or when it protects a stack and wave state.",
-        enemyResponse:
-          "Do not dive or all-in low health without tracking (R).",
+        playerAction: "Use (R) when the enemy commits or when it protects a stack and wave state.",
+        enemyResponse: "Do not dive or all-in low health without tracking (R).",
       },
     ],
   },
@@ -189,4 +185,3 @@ export const smolderCombatProfile = {
     "Freezes that deny (Q) last hits slow his win condition.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

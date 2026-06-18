@@ -107,10 +107,7 @@ export const emptyCounterPickStatistics: CounterPickStatistics = {
 };
 
 export function getCounterPickStatisticsFromCounterPick(
-  counterPick: Pick<
-    LeagueCounterPick,
-    "games" | "patch" | "rank_filter" | "region" | "win_rate"
-  >,
+  counterPick: Pick<LeagueCounterPick, "games" | "patch" | "rank_filter" | "region" | "win_rate">,
 ): CounterPickStatistics {
   const sampleConfidence = getCounterPickSampleConfidence(counterPick.games);
 
@@ -177,9 +174,8 @@ export function getCounterPickStatisticsTier(
   }
 
   const tier =
-    counterPickStatisticsTierThresholds.find(
-      (threshold) => winRate >= threshold.minimumWinRate,
-    )?.tier ?? "D";
+    counterPickStatisticsTierThresholds.find((threshold) => winRate >= threshold.minimumWinRate)
+      ?.tier ?? "D";
 
   if (
     sampleConfidence === "low" &&

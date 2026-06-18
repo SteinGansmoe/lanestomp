@@ -276,7 +276,8 @@ export function compareCounterPickProviderStats(
   right: CounterPickMatchupStats,
   direction: "asc" | "desc",
 ) {
-  const confidenceSort = confidenceSortValue[right.confidence] - confidenceSortValue[left.confidence];
+  const confidenceSort =
+    confidenceSortValue[right.confidence] - confidenceSortValue[left.confidence];
 
   if (confidenceSort !== 0) {
     return confidenceSort;

@@ -34,12 +34,27 @@ function testRankScoringAndBoundaries() {
   assert.equal(getRankScore({ division: null, tier: "CHALLENGER" }), 30);
   assert.equal(getRankScore({ division: null, tier: "DIAMOND" }), null);
 
-  assert.equal(getRankBracketFromScore(average(rank("IRON", "I"), rank("SILVER", "IV"))), "iron-silver");
-  assert.equal(getRankBracketFromScore(average(rank("GOLD", "I"), rank("EMERALD", "IV"))), "gold-emerald");
-  assert.equal(getRankBracketFromScore(average(rank("DIAMOND", "IV"), rank("DIAMOND", "I"))), "diamond");
+  assert.equal(
+    getRankBracketFromScore(average(rank("IRON", "I"), rank("SILVER", "IV"))),
+    "iron-silver",
+  );
+  assert.equal(
+    getRankBracketFromScore(average(rank("GOLD", "I"), rank("EMERALD", "IV"))),
+    "gold-emerald",
+  );
+  assert.equal(
+    getRankBracketFromScore(average(rank("DIAMOND", "IV"), rank("DIAMOND", "I"))),
+    "diamond",
+  );
   assert.equal(getRankBracketFromScore(average(rank("MASTER"), rank("CHALLENGER"))), "master-plus");
-  assert.equal(getRankBracketFromScore(average(rank("EMERALD", "I"), rank("DIAMOND", "IV"))), "gold-emerald");
-  assert.equal(getRankBracketFromScore(average(rank("GOLD", "I"), rank("PLATINUM", "IV"))), "gold-emerald");
+  assert.equal(
+    getRankBracketFromScore(average(rank("EMERALD", "I"), rank("DIAMOND", "IV"))),
+    "gold-emerald",
+  );
+  assert.equal(
+    getRankBracketFromScore(average(rank("GOLD", "I"), rank("PLATINUM", "IV"))),
+    "gold-emerald",
+  );
 }
 
 function testTwoPlayerAttributionScenarios() {

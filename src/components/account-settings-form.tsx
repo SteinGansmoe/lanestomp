@@ -101,7 +101,10 @@ export function AccountSettingsForm() {
 
       setProfile(data);
       const nextCurrentEmail = authEmail || data.email || "";
-      const wasEmailChangeCompleted = reconcileStoredPendingEmail(nextCurrentEmail, nextPendingEmail);
+      const wasEmailChangeCompleted = reconcileStoredPendingEmail(
+        nextCurrentEmail,
+        nextPendingEmail,
+      );
 
       setCurrentEmail(nextCurrentEmail);
       setNewEmail(nextPendingEmail ?? "");

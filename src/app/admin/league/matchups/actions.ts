@@ -922,9 +922,8 @@ function getGenerationFailureDetails(error: string) {
   const rejectedSectionMatch =
     error.match(/(?:contained .*?language|content).*?:\s*([a-z_]+)\s*\(/i) ??
     error.match(/Rejected section:\s*([a-z_]+)/i);
-  const hasSupportFarmingLanguage = /support matchup draft.*CS, farming, or last-hit language/i.test(
-    error,
-  );
+  const hasSupportFarmingLanguage =
+    /support matchup draft.*CS, farming, or last-hit language/i.test(error);
 
   return {
     reason: hasSupportFarmingLanguage ? "Support farming language detected" : summarizeError(error),

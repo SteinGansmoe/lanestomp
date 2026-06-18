@@ -143,10 +143,7 @@ export function ResetPasswordForm() {
             <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm leading-6 text-rose-100">
               {error}
             </p>
-            <Button
-              asChild
-              className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500"
-            >
+            <Button asChild className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500">
               <Link href="/auth/forgot-password">Request a new reset link</Link>
             </Button>
           </div>
@@ -157,10 +154,7 @@ export function ResetPasswordForm() {
             <div className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100">
               <p>Your password has been updated.</p>
             </div>
-            <Button
-              asChild
-              className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500"
-            >
+            <Button asChild className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500">
               <Link href="/league/matchups">
                 Continue to LaneStomp
                 <ArrowRight className="size-4" aria-hidden="true" />

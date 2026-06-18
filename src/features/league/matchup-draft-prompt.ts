@@ -981,10 +981,7 @@ function formatSupportArchetypeThemes(archetypes: readonly SupportArchetype[]) {
     .join("; ");
 }
 
-function formatSupportChampionIdentityNotes(
-  championName: string,
-  perspective: "enemy" | "player",
-) {
+function formatSupportChampionIdentityNotes(championName: string, perspective: "enemy" | "player") {
   const normalizedName = normalizeSupportIdentityName(championName);
   const subject = perspective === "player" ? "player champion" : "enemy champion";
 

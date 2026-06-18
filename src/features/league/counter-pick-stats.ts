@@ -239,7 +239,8 @@ export async function upsertCounterPickStat({
   }
 
   const wins = clampCount(stat.wins);
-  const providedLosses = stat.losses === null || stat.losses === undefined ? null : clampCount(stat.losses);
+  const providedLosses =
+    stat.losses === null || stat.losses === undefined ? null : clampCount(stat.losses);
   const requestedGames = Math.max(clampCount(stat.games), wins);
   const losses = providedLosses ?? Math.max(requestedGames - wins, 0);
   const games = wins + losses;
@@ -295,13 +296,7 @@ export function calculateCounterPickStatTier({
   );
 }
 
-export function calculateCounterPickStatWinRate({
-  games,
-  wins,
-}: {
-  games: number;
-  wins: number;
-}) {
+export function calculateCounterPickStatWinRate({ games, wins }: { games: number; wins: number }) {
   if (games <= 0) {
     return 0;
   }

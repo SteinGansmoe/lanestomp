@@ -43,15 +43,11 @@ function testRankGroupDefinitions() {
   assert.equal(getRiotSeedCandidateRankGroup(candidate({ rankTier: "SILVER" })), "iron-silver");
   assert.equal(getRiotSeedCandidateRankGroup(candidate({ rankTier: "IRON" })), "iron-silver");
   assert.equal(
-    getRiotSeedCandidateRankGroup(
-      candidate({ rankEnrichmentStatus: "pending", rankTier: null }),
-    ),
+    getRiotSeedCandidateRankGroup(candidate({ rankEnrichmentStatus: "pending", rankTier: null })),
     "unknown",
   );
   assert.equal(
-    getRiotSeedCandidateRankGroup(
-      candidate({ rankEnrichmentStatus: "failed", rankTier: null }),
-    ),
+    getRiotSeedCandidateRankGroup(candidate({ rankEnrichmentStatus: "failed", rankTier: null })),
     "unknown",
   );
 }
@@ -143,14 +139,8 @@ function testSelectionPruningAndLimits() {
   const pruned = pruneRiotSeedCandidateSelection(selected, ["visible-1", "visible-2"]);
 
   assert.deepEqual([...pruned].sort(), ["visible-1", "visible-2"]);
-  assert.equal(
-    isRiotSeedCandidateBulkSelectionWithinLimit(makeSelectionOfSize(20), 20),
-    true,
-  );
-  assert.equal(
-    isRiotSeedCandidateBulkSelectionWithinLimit(makeSelectionOfSize(21), 20),
-    false,
-  );
+  assert.equal(isRiotSeedCandidateBulkSelectionWithinLimit(makeSelectionOfSize(20), 20), true);
+  assert.equal(isRiotSeedCandidateBulkSelectionWithinLimit(makeSelectionOfSize(21), 20), false);
 }
 
 function makeSelectionOfSize(size) {

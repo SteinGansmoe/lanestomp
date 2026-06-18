@@ -195,10 +195,7 @@ export default async function LeagueMatchupPage({ params, searchParams }: League
                   />
                 </div>
 
-                <aside
-                  aria-hidden="true"
-                  className="hidden"
-                />
+                <aside aria-hidden="true" className="hidden" />
               </section>
             ) : (
               <UnavailableMatchupState

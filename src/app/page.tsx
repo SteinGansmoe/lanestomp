@@ -32,8 +32,7 @@ import {
 import { leagueRoles } from "@/src/features/league/roles";
 
 export const metadata: Metadata = {
-  title:
-    "League of Legends Matchup Guides, Counter Picks & Champion Data",
+  title: "League of Legends Matchup Guides, Counter Picks & Champion Data",
 
   description:
     "Find League of Legends matchup guides, counter picks, champion data, power spikes, and role-specific advice. Prepare before champion select and win more games with LaneStomp.",
@@ -58,10 +57,7 @@ export default async function Home() {
 
           <HeroSection champion={heroChampion} matchupCount={progressStats.matchupCount} />
 
-          <PlatformStatusSection
-            champions={champions}
-            matchupCount={progressStats.matchupCount}
-          />
+          <PlatformStatusSection champions={champions} matchupCount={progressStats.matchupCount} />
 
           <WhyLaneStompSection />
 
@@ -159,8 +155,8 @@ function HeroSection({
             Be prepared in champion select. Win more games.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-[#AAB7C8] sm:text-lg">
-            LaneStomp helps you understand matchups, counter picks, power
-            spikes, and champion strengths before the game begins.
+            LaneStomp helps you understand matchups, counter picks, power spikes, and champion
+            strengths before the game begins.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
@@ -183,9 +179,7 @@ function HeroSection({
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#9FB0C4]">
             Current coverage
           </p>
-          <p className="mt-3 text-4xl font-semibold text-[#E6EDF5]">
-            {formatNumber(matchupCount)}
-          </p>
+          <p className="mt-3 text-4xl font-semibold text-[#E6EDF5]">{formatNumber(matchupCount)}</p>
           <p className="mt-1 text-sm text-cyan-100">reviewed matchup guides available now</p>
           <div className="mt-5 grid gap-3 text-sm text-[#AAB7C8]">
             {["Role-specific guidance", "Champion-specific advice", "Admin-reviewed drafts"].map(

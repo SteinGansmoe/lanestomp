@@ -59,9 +59,18 @@ assert.deepEqual(
   sections.map((section) => section.title),
   ["Against this matchup", "Against heavy AD", "Against heavy AP", "When behind"],
 );
-assert.equal(sections.some((section) => section.key === "ad-heavy"), true);
-assert.equal(sections.some((section) => section.key === "ap-heavy"), true);
-assert.equal(sections.some((section) => section.key === "alternative-build"), false);
+assert.equal(
+  sections.some((section) => section.key === "ad-heavy"),
+  true,
+);
+assert.equal(
+  sections.some((section) => section.key === "ap-heavy"),
+  true,
+);
+assert.equal(
+  sections.some((section) => section.key === "alternative-build"),
+  false,
+);
 assert.equal(sections.find((section) => section.key === "behind")?.note, "Play from behind");
 
 const emptySections = getCounterPickAlternativeBuildSections({

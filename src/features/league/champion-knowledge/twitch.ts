@@ -73,7 +73,11 @@ export const twitchCombatProfile = {
       "Scaling into itemized ambush fights.",
     ],
   },
-  majorPowerSpikes: ["Level 6 (R)", "First completed marksman item", "Two-item stealth carry spike"],
+  majorPowerSpikes: [
+    "Level 6 (R)",
+    "First completed marksman item",
+    "Two-item stealth carry spike",
+  ],
   matchupPreferences: {
     strongInto: [
       "Passive lanes that let him scale.",
@@ -118,18 +122,14 @@ export const twitchCombatProfile = {
           "Twitch can punish enemies standing near minions, support, or objective choke lines.",
         playerAction:
           "Open from stealth or fog where (R) hits multiple targets before they can spread.",
-        enemyResponse:
-          "Do not line up with the wave or support when Twitch is missing.",
+        enemyResponse: "Do not line up with the wave or support when Twitch is missing.",
       },
       {
         timing: "Two items",
         reason: "Stealth openings become real teamfight carry threats",
-        changesGameplay:
-          "If Twitch finds a flank, one opening can decide the entire fight.",
-        playerAction:
-          "Use vision denial and support cover to create unseen (R) angles.",
-        enemyResponse:
-          "Control wards and sweepers must track his flank before objectives.",
+        changesGameplay: "If Twitch finds a flank, one opening can decide the entire fight.",
+        playerAction: "Use vision denial and support cover to create unseen (R) angles.",
+        enemyResponse: "Control wards and sweepers must track his flank before objectives.",
       },
     ],
   },
@@ -189,4 +189,3 @@ export const twitchCombatProfile = {
     "Control vision around stealth paths before objectives.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

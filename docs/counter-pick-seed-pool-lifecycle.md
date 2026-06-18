@@ -21,16 +21,16 @@ Priority order:
 
 States:
 
-| State | Meaning | Selectable |
-| --- | --- | --- |
-| `observed` | Candidate exists and has enough observations to inspect, but has not been fully evaluated yet. | No |
-| `needs-rank-enrichment` | Candidate needs rank data, has stale rank data, or the latest rank refresh failed. | No |
-| `ready-to-scan` | Candidate has enough observations, a usable rank, no active cooldown/backoff, and no blocking failure/rejection. | Yes, unless the scan-job status is already queued/running |
-| `recently-scanned` | Candidate had a successful scan inside the recent window. | No |
-| `cooling-down` | Candidate has a successful scan but is not yet eligible for another scan. | No |
-| `failed` | Candidate is in scan failure/backoff or exceeded the consecutive failure threshold. | No |
-| `low-signal` | Candidate is stored for history/deduplication, but does not meet minimum signal requirements. | No |
-| `rejected` | Candidate was manually removed from the operational queue. | No |
+| State                   | Meaning                                                                                                          | Selectable                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `observed`              | Candidate exists and has enough observations to inspect, but has not been fully evaluated yet.                   | No                                                        |
+| `needs-rank-enrichment` | Candidate needs rank data, has stale rank data, or the latest rank refresh failed.                               | No                                                        |
+| `ready-to-scan`         | Candidate has enough observations, a usable rank, no active cooldown/backoff, and no blocking failure/rejection. | Yes, unless the scan-job status is already queued/running |
+| `recently-scanned`      | Candidate had a successful scan inside the recent window.                                                        | No                                                        |
+| `cooling-down`          | Candidate has a successful scan but is not yet eligible for another scan.                                        | No                                                        |
+| `failed`                | Candidate is in scan failure/backoff or exceeded the consecutive failure threshold.                              | No                                                        |
+| `low-signal`            | Candidate is stored for history/deduplication, but does not meet minimum signal requirements.                    | No                                                        |
+| `rejected`              | Candidate was manually removed from the operational queue.                                                       | No                                                        |
 
 Reason codes are stable strings intended for admin UI tooltips and tests:
 

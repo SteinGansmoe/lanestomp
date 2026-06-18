@@ -73,7 +73,11 @@ export const kalistaCombatProfile = {
       "Converting lane pressure into early dragons.",
     ],
   },
-  majorPowerSpikes: ["Level 2-3 support all-in", "Level 6 (R)", "First completed attack-speed item"],
+  majorPowerSpikes: [
+    "Level 2-3 support all-in",
+    "Level 6 (R)",
+    "First completed attack-speed item",
+  ],
   matchupPreferences: {
     strongInto: [
       "Short-range ADCs that must trade inside her hop range.",
@@ -126,10 +130,8 @@ export const kalistaCombatProfile = {
         reason: "More autos mean faster Rend threat and stronger objective control",
         changesGameplay:
           "Extended fights and dragon contests become much more dangerous if she can keep autoing.",
-        playerAction:
-          "Force longer trades and objective control while Rend stacks are reliable.",
-        enemyResponse:
-          "Disengage before stacks build or slow her movement before she can chase.",
+        playerAction: "Force longer trades and objective control while Rend stacks are reliable.",
+        enemyResponse: "Disengage before stacks build or slow her movement before she can chase.",
       },
     ],
   },
@@ -189,4 +191,3 @@ export const kalistaCombatProfile = {
     "If early lane control fails, her short range becomes harder to play.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

@@ -13,7 +13,14 @@ export const apheliosCombatProfile = {
   primaryWinCondition: [
     "Manage weapon states so lane trades, wave control, and objective fights happen around the gun pair that gives Aphelios the strongest temporary window.",
   ],
-  dangerAbilities: ["Calibrum poke", "Severum sustain", "Gravitum root", "Infernum AoE", "Crescendum DPS", "(R) weapon burst"],
+  dangerAbilities: [
+    "Calibrum poke",
+    "Severum sustain",
+    "Gravitum root",
+    "Infernum AoE",
+    "Crescendum DPS",
+    "(R) weapon burst",
+  ],
   dangerProfile: {
     dangerousWhen: [
       "Calibrum gives long-range mark punishment while enemies step up for CS.",
@@ -123,16 +130,14 @@ export const apheliosCombatProfile = {
           "Aphelios can move from weak to threatening depending on whether his current guns match the trade or wave state.",
         playerAction:
           "Plan trades around the active and next weapon pair instead of fighting whenever cooldowns are up.",
-        enemyResponse:
-          "Check his weapons before contesting CS, dragon, or all-in windows.",
+        enemyResponse: "Check his weapons before contesting CS, dragon, or all-in windows.",
       },
       {
         timing: "Level 6",
         reason: "(R) gains different value based on the active weapon",
         changesGameplay:
           "Moonlight Vigil can become poke, CC setup, AoE burst, sustain, or close-range DPS amplification.",
-        playerAction:
-          "Use (R) only when the active weapon effect fits the fight you are starting.",
+        playerAction: "Use (R) only when the active weapon effect fits the fight you are starting.",
         enemyResponse:
           "Spread, disengage, or force him before the dangerous weapon pairing is ready.",
       },
@@ -194,4 +199,3 @@ export const apheliosCombatProfile = {
     "After Gravitum is spent, his setup threat drops sharply.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

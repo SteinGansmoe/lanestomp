@@ -118,8 +118,7 @@ export const nilahCombatProfile = {
           "Nilah can keep multiple enemies close long enough for her short-range damage to matter.",
         playerAction:
           "Commit with support setup and use (W) to deny the enemy ADC's auto response.",
-        enemyResponse:
-          "Disengage before she reaches melee range or wait out (W).",
+        enemyResponse: "Disengage before she reaches melee range or wait out (W).",
       },
       {
         timing: "First completed marksman item",
@@ -128,8 +127,7 @@ export const nilahCombatProfile = {
           "Her short-range commits can become kill threats instead of only defensive trades.",
         playerAction:
           "Use item timing to force fights when support can start and enemy poke is down.",
-        enemyResponse:
-          "Keep the wave away from her and punish before she dashes in.",
+        enemyResponse: "Keep the wave away from her and punish before she dashes in.",
       },
     ],
   },
@@ -180,8 +178,7 @@ export const nilahCombatProfile = {
       "Support engage gives her a target for (E).",
       "(W) can deny the enemy ADC's main auto response.",
     ],
-    primaryPattern:
-      "Nilah wants protected farm into decisive all-ins, not repeated poke trades.",
+    primaryPattern: "Nilah wants protected farm into decisive all-ins, not repeated poke trades.",
   },
   punishWindows: [
     "Before support setup, her short range is exploitable.",
@@ -189,4 +186,3 @@ export const nilahCombatProfile = {
     "If (E) is used forward without a kill angle, she can be kited.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

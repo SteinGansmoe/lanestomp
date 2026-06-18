@@ -126,7 +126,8 @@ export function deriveSeedCandidateLifecycle(
   const isRunning = candidate.status === "active" || candidate.status === "queued";
   const hasEnoughSignal = Number(candidate.observed_games ?? 0) >= MIN_SEED_OBSERVATIONS;
   const hasUsableRank = candidate.rank_enrichment_status === "ranked" && rankBracket !== "unknown";
-  const rankIsStale = hasUsableRank && isOlderThanDays(candidate.rank_last_success_at, now, RANK_SNAPSHOT_STALE_DAYS);
+  const rankIsStale =
+    hasUsableRank && isOlderThanDays(candidate.rank_last_success_at, now, RANK_SNAPSHOT_STALE_DAYS);
   const recentlyScanned = isWithinHours(
     candidate.last_successful_scan_at,
     now,
@@ -229,10 +230,7 @@ export function getSeedScanCooldownEligibleAt(
   return new Date(date.getTime() + cooldownDays * 24 * 60 * 60 * 1000).toISOString();
 }
 
-export function getSeedScanRetryEligibleAt(
-  failedAt: Date | string,
-  consecutiveFailures: number,
-) {
+export function getSeedScanRetryEligibleAt(failedAt: Date | string, consecutiveFailures: number) {
   const date = typeof failedAt === "string" ? new Date(failedAt) : failedAt;
   const hours = consecutiveFailures <= 1 ? 1 : consecutiveFailures === 2 ? 6 : 24;
 

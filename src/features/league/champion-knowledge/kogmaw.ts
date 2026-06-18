@@ -118,16 +118,13 @@ export const kogMawCombatProfile = {
           "Kog'Maw can contest CS and trades during (W), but becomes much easier to pressure after it ends.",
         playerAction:
           "Trade and contest last hits while (W) is active, then reset spacing when it is down.",
-        enemyResponse:
-          "Wait out (W) or force engage before he can free-hit with peel.",
+        enemyResponse: "Wait out (W) or force engage before he can free-hit with peel.",
       },
       {
         timing: "Two on-hit items",
         reason: "On-hit scaling turns protected fights into tank-shred windows",
-        changesGameplay:
-          "If he is protected, front-to-back fights become heavily Kog'Maw favored.",
-        playerAction:
-          "Group with peel and force objectives where enemies must walk into (W).",
+        changesGameplay: "If he is protected, front-to-back fights become heavily Kog'Maw favored.",
+        playerAction: "Group with peel and force objectives where enemies must walk into (W).",
         enemyResponse:
           "Reach him directly or force his support cooldowns before starting front-to-back.",
       },
@@ -189,4 +186,3 @@ export const kogMawCombatProfile = {
     "Early forced fights delay his item-scaling plan.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

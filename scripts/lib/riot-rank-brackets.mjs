@@ -24,15 +24,10 @@ export const attributedCounterPickRankBrackets = counterPickRankBrackets.filter(
   (bracket) => bracket !== "all" && bracket !== "unknown",
 );
 
-export const matchupRankAttributionMethods = [
-  "two-player-average",
-  "single-player",
-  "unknown",
-];
+export const matchupRankAttributionMethods = ["two-player-average", "single-player", "unknown"];
 
 export const MAX_RANK_SNAPSHOT_DISTANCE_DAYS = 30;
-export const MAX_RANK_SNAPSHOT_DISTANCE_MS =
-  MAX_RANK_SNAPSHOT_DISTANCE_DAYS * 24 * 60 * 60 * 1000;
+export const MAX_RANK_SNAPSHOT_DISTANCE_MS = MAX_RANK_SNAPSHOT_DISTANCE_DAYS * 24 * 60 * 60 * 1000;
 
 const divisionScores = {
   IV: 0,
@@ -94,7 +89,11 @@ export function normalizeRiotRankDivision(value) {
 }
 
 export function isRiotRankTier(value) {
-  return riotRankTiers.includes(String(value ?? "").trim().toUpperCase());
+  return riotRankTiers.includes(
+    String(value ?? "")
+      .trim()
+      .toUpperCase(),
+  );
 }
 
 export function isCounterPickRankBracket(value) {
@@ -114,7 +113,11 @@ export function getRankScore({ division = null, tier }) {
 
   const baseScore = tierBaseScores[normalizedTier];
 
-  if (normalizedTier === "MASTER" || normalizedTier === "GRANDMASTER" || normalizedTier === "CHALLENGER") {
+  if (
+    normalizedTier === "MASTER" ||
+    normalizedTier === "GRANDMASTER" ||
+    normalizedTier === "CHALLENGER"
+  ) {
     return baseScore;
   }
 
@@ -137,8 +140,7 @@ export function getRankBracketFromScore(score) {
   return (
     rankBracketBoundaries.find(
       (boundary) =>
-        numericScore >= boundary.minInclusiveScore &&
-        numericScore < boundary.maxExclusiveScore,
+        numericScore >= boundary.minInclusiveScore && numericScore < boundary.maxExclusiveScore,
     )?.bracket ?? "unknown"
   );
 }

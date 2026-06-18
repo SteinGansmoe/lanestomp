@@ -4,10 +4,8 @@ const optionsModule = await import("../src/features/league/public-counter-pick-o
 const statisticsModule = await import("../src/features/league/counter-pick-statistics.ts");
 const confidenceModule = await import("../src/features/league/counter-pick-confidence.ts");
 
-const {
-  getPublicCounterPickChampionSearchText,
-  matchesPublicCounterPickChampionSearch,
-} = optionsModule;
+const { getPublicCounterPickChampionSearchText, matchesPublicCounterPickChampionSearch } =
+  optionsModule;
 const {
   compareCounterPickStatistics,
   getPublicCounterResultsForSelectedChampionStats,
@@ -40,7 +38,10 @@ const activeOptions = championRows
 
 assert.equal(activeOptions.length, championRows.filter((row) => row.is_active).length);
 assert.equal(new Set(activeOptions.map((row) => row.id)).size, activeOptions.length);
-assert.equal(activeOptions.some((row) => row.id === "OldAatrox"), false);
+assert.equal(
+  activeOptions.some((row) => row.id === "OldAatrox"),
+  false,
+);
 
 for (const [query, expectedId] of [
   ["Ahri", "Ahri"],

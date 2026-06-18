@@ -39,21 +39,36 @@ for (const [games, expectedLevel, publiclyRanked, tierVisible] of [
 
 assert.equal(publicCounterPickMinimumRankedGames, 5);
 
-assert.equal(getCounterPickPublicTierLabel(stat({ games: 0, tier: "S+", winRate: 100 })), "Not enough data");
-assert.equal(getCounterPickPublicTierLabel(stat({ games: 4, tier: "S+", winRate: 75 })), "Not enough data");
-assert.equal(getCounterPickPublicTierLabel(stat({ games: 5, tier: "S+", winRate: 60 })), "Preliminary");
-assert.equal(getCounterPickPublicTierLabel(stat({ games: 20, tier: "S+", winRate: 56 })), "S+ Tier");
+assert.equal(
+  getCounterPickPublicTierLabel(stat({ games: 0, tier: "S+", winRate: 100 })),
+  "Not enough data",
+);
+assert.equal(
+  getCounterPickPublicTierLabel(stat({ games: 4, tier: "S+", winRate: 75 })),
+  "Not enough data",
+);
+assert.equal(
+  getCounterPickPublicTierLabel(stat({ games: 5, tier: "S+", winRate: 60 })),
+  "Preliminary",
+);
+assert.equal(
+  getCounterPickPublicTierLabel(stat({ games: 20, tier: "S+", winRate: 56 })),
+  "S+ Tier",
+);
 assert.equal(getCounterPickPublicTierLabel(stat({ games: 250, tier: "A", winRate: 52 })), "A Tier");
 
-const visibilityRows = [1, 4, 5, 20, 100].map((games) =>
-  stat({ games, tier: "A", winRate: 52 }),
-);
-assert.deepEqual(
-  visibilityRows.map(isCounterPickStatisticsPubliclyRanked),
-  [false, false, true, true, true],
-);
+const visibilityRows = [1, 4, 5, 20, 100].map((games) => stat({ games, tier: "A", winRate: 52 }));
+assert.deepEqual(visibilityRows.map(isCounterPickStatisticsPubliclyRanked), [
+  false,
+  false,
+  true,
+  true,
+  true,
+]);
 
-const hiddenCount = visibilityRows.filter((row) => !isCounterPickStatisticsPubliclyRanked(row)).length;
+const hiddenCount = visibilityRows.filter(
+  (row) => !isCounterPickStatisticsPubliclyRanked(row),
+).length;
 const rankedCount = visibilityRows.filter(isCounterPickStatisticsPubliclyRanked).length;
 assert.equal(hiddenCount, 2);
 assert.equal(rankedCount, 3);

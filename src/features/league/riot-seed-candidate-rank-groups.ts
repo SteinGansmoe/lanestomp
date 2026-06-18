@@ -89,9 +89,7 @@ export const riotSeedCandidateRankGroups = [
   },
 ] as const satisfies readonly RiotSeedCandidateRankGroupDefinition[];
 
-export const riotSeedCandidateRankGroupIds = riotSeedCandidateRankGroups.map(
-  (group) => group.id,
-);
+export const riotSeedCandidateRankGroupIds = riotSeedCandidateRankGroups.map((group) => group.id);
 
 export const riotSeedCandidateRankGroupsById = new Map(
   riotSeedCandidateRankGroups.map((group) => [group.id, group] as const),
@@ -230,8 +228,7 @@ export function sortRiotSeedCandidateRows(
       }
     }
 
-    const lpSort =
-      Number(left.rank_league_points ?? -1) - Number(right.rank_league_points ?? -1);
+    const lpSort = Number(left.rank_league_points ?? -1) - Number(right.rank_league_points ?? -1);
 
     if (lpSort !== 0) {
       return -lpSort;
@@ -245,10 +242,7 @@ export function sortRiotSeedCandidateRows(
   });
 }
 
-export function toggleRiotSeedCandidateSelection(
-  selectedIds: Set<string>,
-  candidateId: string,
-) {
+export function toggleRiotSeedCandidateSelection(selectedIds: Set<string>, candidateId: string) {
   const nextSelection = new Set(selectedIds);
 
   if (nextSelection.has(candidateId)) {

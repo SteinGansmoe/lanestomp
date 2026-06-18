@@ -122,8 +122,7 @@ export const dravenCombatProfile = {
           "The enemy ADC cannot safely contest early CS if Draven has room to throw axes.",
         playerAction:
           "Stand forward with support cover and punish every exposed last-hit attempt with axe autos.",
-        enemyResponse:
-          "Concede some CS or aim support pressure at his axe catch path.",
+        enemyResponse: "Concede some CS or aim support pressure at his axe catch path.",
       },
       {
         timing: "First completed damage item",
@@ -132,8 +131,7 @@ export const dravenCombatProfile = {
           "A winning Draven can turn one auto trade into a forced recall, dive setup, or cash-in.",
         playerAction:
           "Use item lead to force short axe trades before the enemy ADC reaches stable DPS.",
-        enemyResponse:
-          "Avoid trading into axes and force him to catch in dangerous zones.",
+        enemyResponse: "Avoid trading into axes and force him to catch in dangerous zones.",
       },
     ],
   },

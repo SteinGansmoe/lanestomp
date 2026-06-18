@@ -349,45 +349,44 @@ export async function rebuildCounterPickStatsForGroups({
       supabase,
     });
 
-   const writeResult = await writeResilientBatches({
-  createRowIdentity: getCounterPickAggregateIdentity,
-  createSafeFailureFields: getSafeCounterPickAggregateFields,
-  initialBatchSize: 2,
-  rows: aggregatePartition.valid,
-  stage: "counter_pick_stat_aggregate_upsert",
-  table: "counter_pick_stats",
-  writeBatch: async (rows) => {
-    const { data, error } = await supabase
-      .from("counter_pick_stats")
-      .upsert(rows, {
-        onConflict:
-          "enemy_champion_id,counter_champion_id,role,patch,rank_bracket",
-      })
-      .select(
-        "enemy_champion_id, counter_champion_id, role, patch, rank_bracket, games, wins, losses, win_rate, tier",
-      );
+    const writeResult = await writeResilientBatches({
+      createRowIdentity: getCounterPickAggregateIdentity,
+      createSafeFailureFields: getSafeCounterPickAggregateFields,
+      initialBatchSize: 2,
+      rows: aggregatePartition.valid,
+      stage: "counter_pick_stat_aggregate_upsert",
+      table: "counter_pick_stats",
+      writeBatch: async (rows) => {
+        const { data, error } = await supabase
+          .from("counter_pick_stats")
+          .upsert(rows, {
+            onConflict: "enemy_champion_id,counter_champion_id,role,patch,rank_bracket",
+          })
+          .select(
+            "enemy_champion_id, counter_champion_id, role, patch, rank_bracket, games, wins, losses, win_rate, tier",
+          );
 
-    if (error) {
-      console.error("Counter-pick aggregate upsert error", {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-      });
+        if (error) {
+          console.error("Counter-pick aggregate upsert error", {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+          });
 
-      return {
-        error,
-        ok: false,
-      };
-    }
+          return {
+            error,
+            ok: false,
+          };
+        }
 
-    return {
-      inserted: data?.length ?? rows.length,
-      insertedRows: data ?? rows,
-      ok: true,
-    };
-  },
-});
+        return {
+          inserted: data?.length ?? rows.length,
+          insertedRows: data ?? rows,
+          ok: true,
+        };
+      },
+    });
 
     counterPickAggregateBatchAttempts += writeResult.batchAttempts;
     counterPickAggregateSuccessfulBatches += writeResult.successfulBatches;

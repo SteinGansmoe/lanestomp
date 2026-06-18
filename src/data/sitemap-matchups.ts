@@ -41,9 +41,7 @@ export async function getMatchupsForSitemap(): Promise<MetadataRoute.Sitemap> {
 
     return {
       url: `${baseUrl}/league/matchups/${championASlug}-vs-${championBSlug}?role=${matchup.role}`,
-      lastModified: matchup.updated_at
-        ? new Date(matchup.updated_at)
-        : new Date(),
+      lastModified: matchup.updated_at ? new Date(matchup.updated_at) : new Date(),
     };
   });
 }

@@ -116,9 +116,7 @@ export const jinxCombatProfile = {
   counteredBy: [
     {
       champion: "Draven",
-      reasons: [
-        "Draven can punish Jinx before she has attack speed and rocket range items.",
-      ],
+      reasons: ["Draven can punish Jinx before she has attack speed and rocket range items."],
     },
     {
       champion: "Caitlyn",

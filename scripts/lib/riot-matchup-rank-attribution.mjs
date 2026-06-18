@@ -64,11 +64,7 @@ export async function attributeStoredMatchupRankBrackets({
   });
 }
 
-export async function attributeMatchupRankBrackets({
-  force = false,
-  observations,
-  repository,
-}) {
+export async function attributeMatchupRankBrackets({ force = false, observations, repository }) {
   const summary = createEmptyMatchupRankAttributionSummary();
   const rows = observations ?? [];
   summary.total = rows.length;
@@ -80,9 +76,7 @@ export async function attributeMatchupRankBrackets({
     };
   }
 
-  const snapshotsByPuuid = await repository.fetchRankSnapshotsByPuuid(
-    getObservationPuuids(rows),
-  );
+  const snapshotsByPuuid = await repository.fetchRankSnapshotsByPuuid(getObservationPuuids(rows));
   const results = [];
 
   for (const observation of rows) {
@@ -121,7 +115,10 @@ export async function attributeMatchupRankBrackets({
     } catch (error) {
       summary.failures += 1;
       try {
-        await repository.persistMatchupRankAttribution(observation.id, getUnknownAttributionPatch());
+        await repository.persistMatchupRankAttribution(
+          observation.id,
+          getUnknownAttributionPatch(),
+        );
       } catch (fallbackError) {
         console.error("Fallback unknown rank attribution update failed", {
           error: fallbackError instanceof Error ? fallbackError.message : "Unknown error",
@@ -165,9 +162,7 @@ export function attributeMatchupObservation({ observation, snapshotsByPuuid }) {
   };
 
   if (participantRanks.length === 2) {
-    const averageRankScore = Number(
-      ((championA.rank.score + championB.rank.score) / 2).toFixed(4),
-    );
+    const averageRankScore = Number(((championA.rank.score + championB.rank.score) / 2).toFixed(4));
     const rankBracket = getRankBracketFromScore(averageRankScore);
 
     return {
@@ -327,46 +322,46 @@ export function createSupabaseMatchupRankAttributionRepository(supabase) {
       const candidateRows = [];
 
       for (const puuidChunk of chunkArray(uniquePuuids, CANDIDATE_PUUID_LOOKUP_CHUNK_SIZE)) {
-  let candidates;
-  let candidateError;
+        let candidates;
+        let candidateError;
 
-  try {
-    const result = await supabase
-      .from("riot_seed_candidates")
-      .select("id, puuid")
-      .in("puuid", puuidChunk);
+        try {
+          const result = await supabase
+            .from("riot_seed_candidates")
+            .select("id, puuid")
+            .in("puuid", puuidChunk);
 
-    candidates = result.data;
-    candidateError = result.error;
-  } catch (fetchError) {
-    console.error("Seed candidate lookup fetch threw", {
-      name: fetchError?.name ?? null,
-      message: fetchError?.message ?? null,
-      cause: fetchError?.cause ?? null,
-      causeCode: fetchError?.cause?.code ?? null,
-      causeErrno: fetchError?.cause?.errno ?? null,
-      causeSyscall: fetchError?.cause?.syscall ?? null,
-      causeHostname: fetchError?.cause?.hostname ?? null,
-    });
+          candidates = result.data;
+          candidateError = result.error;
+        } catch (fetchError) {
+          console.error("Seed candidate lookup fetch threw", {
+            name: fetchError?.name ?? null,
+            message: fetchError?.message ?? null,
+            cause: fetchError?.cause ?? null,
+            causeCode: fetchError?.cause?.code ?? null,
+            causeErrno: fetchError?.cause?.errno ?? null,
+            causeSyscall: fetchError?.cause?.syscall ?? null,
+            causeHostname: fetchError?.cause?.hostname ?? null,
+          });
 
-    throw fetchError;
-  }
+          throw fetchError;
+        }
 
-  if (candidateError) {
-    console.error("Seed candidate lookup query failed", {
-      code: candidateError.code ?? null,
-      message: candidateError.message ?? null,
-      details: candidateError.details ?? null,
-      hint: candidateError.hint ?? null,
-    });
+        if (candidateError) {
+          console.error("Seed candidate lookup query failed", {
+            code: candidateError.code ?? null,
+            message: candidateError.message ?? null,
+            details: candidateError.details ?? null,
+            hint: candidateError.hint ?? null,
+          });
 
-    throw new Error(
-      `Seed candidate rank attribution lookup failed: ${candidateError.message}`,
-    );
-  }
+          throw new Error(
+            `Seed candidate rank attribution lookup failed: ${candidateError.message}`,
+          );
+        }
 
-  candidateRows.push(...(candidates ?? []));
-}
+        candidateRows.push(...(candidates ?? []));
+      }
 
       if (candidateRows.length === 0) {
         return snapshotsByPuuid;
@@ -377,7 +372,10 @@ export function createSupabaseMatchupRankAttributionRepository(supabase) {
       );
       const snapshots = [];
 
-      for (const candidateIdChunk of chunkArray(Array.from(puuidByCandidateId.keys()), RANK_SNAPSHOT_LOOKUP_CHUNK_SIZE)) {
+      for (const candidateIdChunk of chunkArray(
+        Array.from(puuidByCandidateId.keys()),
+        RANK_SNAPSHOT_LOOKUP_CHUNK_SIZE,
+      )) {
         const { data, error: snapshotError } = await supabase
           .from("riot_seed_candidate_rank_snapshots")
           .select(rankSnapshotSelect)

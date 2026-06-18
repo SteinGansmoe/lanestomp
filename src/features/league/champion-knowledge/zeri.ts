@@ -73,7 +73,11 @@ export const zeriCombatProfile = {
       "Taking extended fights only when (R) can stay active.",
     ],
   },
-  majorPowerSpikes: ["Level 6 (R)", "First completed marksman item", "Two-item extended fight spike"],
+  majorPowerSpikes: [
+    "Level 6 (R)",
+    "First completed marksman item",
+    "Two-item extended fight spike",
+  ],
   matchupPreferences: {
     strongInto: [
       "Slow fights where she can kite.",
@@ -114,22 +118,16 @@ export const zeriCombatProfile = {
       {
         timing: "Level 6",
         reason: "(R) turns Zeri into an extended-fight kite carry",
-        changesGameplay:
-          "Chasing Zeri during (R) can feed her movement and damage uptime.",
-        playerAction:
-          "Use (R) when the fight will last and there is room to kite around terrain.",
-        enemyResponse:
-          "Disengage or lock her down quickly instead of taking a long chase.",
+        changesGameplay: "Chasing Zeri during (R) can feed her movement and damage uptime.",
+        playerAction: "Use (R) when the fight will last and there is room to kite around terrain.",
+        enemyResponse: "Disengage or lock her down quickly instead of taking a long chase.",
       },
       {
         timing: "Two items",
         reason: "Extended fights become much more favorable if she has space",
-        changesGameplay:
-          "Zeri can take over objectives when enemies cannot pin her down.",
-        playerAction:
-          "Fight around walls and peel so she can keep firing through the whole fight.",
-        enemyResponse:
-          "Force her (E) before committing or fight away from wall escape routes.",
+        changesGameplay: "Zeri can take over objectives when enemies cannot pin her down.",
+        playerAction: "Fight around walls and peel so she can keep firing through the whole fight.",
+        enemyResponse: "Force her (E) before committing or fight away from wall escape routes.",
       },
     ],
   },
@@ -143,10 +141,7 @@ export const zeriCombatProfile = {
       "ADC last-hit paths exposed to wall (W).",
       "Skillshot lanes that miss into her movement near walls.",
     ],
-    strugglesToPunish: [
-      "Point-and-click lockdown.",
-      "Early range pressure before item spikes.",
-    ],
+    strugglesToPunish: ["Point-and-click lockdown.", "Early range pressure before item spikes."],
   },
   shields: [],
   softCrowdControl: ["(W) slow"],
@@ -189,4 +184,3 @@ export const zeriCombatProfile = {
     "Fight away from walls to reduce her mobility options.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

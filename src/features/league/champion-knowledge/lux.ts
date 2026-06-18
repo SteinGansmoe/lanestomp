@@ -160,7 +160,7 @@ export const luxCombatProfile = {
       "Caitlyn and Jhin convert Lux binding into traps, roots, or guaranteed burst.",
       "Poke ADCs help Lux maintain lane pressure without overstepping.",
       "Hard all-in ADCs often want a tankier support or more reliable engage.",
-  ],
+    ],
   },
   sustain: [],
   trading: {

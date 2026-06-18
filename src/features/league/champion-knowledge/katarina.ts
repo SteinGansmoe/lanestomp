@@ -94,9 +94,7 @@ export const katarinaCombatProfile = {
     },
     {
       champion: "Lux",
-      reasons: [
-        "Katarina can jump past Lux poke and punish her hard if binding is unavailable.",
-      ],
+      reasons: ["Katarina can jump past Lux poke and punish her hard if binding is unavailable."],
     },
     {
       champion: "Xerath",
@@ -114,9 +112,7 @@ export const katarinaCombatProfile = {
   counteredBy: [
     {
       champion: "Lissandra",
-      reasons: [
-        "Lissandra can hold crowd control for Katarina's jump and stop her reset chain.",
-      ],
+      reasons: ["Lissandra can hold crowd control for Katarina's jump and stop her reset chain."],
     },
     {
       champion: "Galio",

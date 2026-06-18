@@ -78,13 +78,7 @@ type CounterPickSelectorProps = {
 };
 
 type CounterDirection = "best-counter" | "countered-by";
-type CounterPrepSectionKey =
-  | "alternative-build"
-  | "build"
-  | "guide"
-  | "lane"
-  | "mastery"
-  | "why";
+type CounterPrepSectionKey = "alternative-build" | "build" | "guide" | "lane" | "mastery" | "why";
 
 type CounterRowModel = {
   champion: LeagueChampion | null;
@@ -488,7 +482,10 @@ export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
             text="Select a champion and role to start building the counter-pick picture."
           />
         ) : matchStatisticsState.isLoading ? (
-          <CounterPickLoadingState selectedChampion={selectedChampion} selectedRole={selectedRole} />
+          <CounterPickLoadingState
+            selectedChampion={selectedChampion}
+            selectedRole={selectedRole}
+          />
         ) : matchStatisticsState.error ? (
           <CounterPickErrorState
             error={matchStatisticsState.error}
@@ -733,9 +730,9 @@ function CounterPickConfidenceSummary({
             Confidence guide
           </summary>
           <div className="mt-3 max-w-md border border-white/10 bg-black/30 p-3 text-xs leading-5 text-zinc-400">
-            Confidence currently reflects how many stored Riot matches each result is based on.
-            It does not yet include unique-player spread, rank diversity, specialist share, or
-            patch freshness.
+            Confidence currently reflects how many stored Riot matches each result is based on. It
+            does not yet include unique-player spread, rank diversity, specialist share, or patch
+            freshness.
           </div>
         </details>
       </div>
@@ -948,7 +945,8 @@ function CounterPreparationSection({
     ? (getChampionCombatProfile(selectedCounter.champion.id) ??
       getChampionCombatProfile(selectedCounter.champion.name))
     : null;
-  const selectedProfile = getChampionCombatProfile(selectedChampion.id) ??
+  const selectedProfile =
+    getChampionCombatProfile(selectedChampion.id) ??
     getChampionCombatProfile(selectedChampion.name);
   const whyPrepNotes = getMatchupPrepReasons({
     counterProfile,
@@ -1071,7 +1069,8 @@ function MatchupSnapshotSidebar({
       getChampionCombatProfile(selectedCounter.champion.name))
     : null;
   const selectedProfile =
-    getChampionCombatProfile(selectedChampion.id) ?? getChampionCombatProfile(selectedChampion.name);
+    getChampionCombatProfile(selectedChampion.id) ??
+    getChampionCombatProfile(selectedChampion.name);
   const snapshot = getMatchupSnapshot({
     counterName,
     counterProfile,
@@ -2007,7 +2006,10 @@ function getLanePrepNotes({
       concept: "positioning",
       text: "Fight around minion waves so you have both engage angles and a way back out.",
     });
-  } else if (counterProfile.mobilityLevel === "high" || counterProfile.mobilityLevel === "very_high") {
+  } else if (
+    counterProfile.mobilityLevel === "high" ||
+    counterProfile.mobilityLevel === "very_high"
+  ) {
     candidates.push({
       concept: "positioning",
       text: `Plan the exit before using mobility forward into ${selectedName}.`,
@@ -2315,7 +2317,10 @@ function CounterPickLoadingState({
           <div className="mb-3 h-6 w-44 bg-white/10" />
           <div className="grid gap-2">
             {[0, 1, 2].map((rowIndex) => (
-              <div className="h-[4.625rem] animate-pulse border border-white/10 bg-white/[0.035]" key={rowIndex} />
+              <div
+                className="h-[4.625rem] animate-pulse border border-white/10 bg-white/[0.035]"
+                key={rowIndex}
+              />
             ))}
           </div>
         </section>
@@ -2534,8 +2539,8 @@ function getCachedCounterPickStatistics({
   fallbackStatistics?: CounterPickStatistics;
   statisticsByCounterChampion: Map<string, CounterPickStatistics>;
 }) {
-  const lookupKeys = [champion?.id, champion?.name, fallbackName].filter(
-    (key): key is string => Boolean(key),
+  const lookupKeys = [champion?.id, champion?.name, fallbackName].filter((key): key is string =>
+    Boolean(key),
   );
 
   for (const lookupKey of lookupKeys) {
@@ -2553,7 +2558,11 @@ function sortCounterRows(rows: CounterRowModel[], direction: CounterDirection) {
   const statisticDirection = direction === "best-counter" ? "desc" : "asc";
 
   return [...rows].sort((left, right) => {
-    const statisticsSort = compareCounterPickStatistics(left.stats, right.stats, statisticDirection);
+    const statisticsSort = compareCounterPickStatistics(
+      left.stats,
+      right.stats,
+      statisticDirection,
+    );
 
     if (statisticsSort !== 0) {
       return statisticsSort;

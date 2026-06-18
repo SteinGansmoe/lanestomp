@@ -9,7 +9,9 @@ export const akaliCombatProfile = {
     R: "Perfect Execution",
   },
   archetype: ["assassin", "skirmisher", "burst"],
-  primaryWinCondition: ["Correct use of (W) with (Q) hit and passive will make Akali a formidable threat."],
+  primaryWinCondition: [
+    "Correct use of (W) with (Q) hit and passive will make Akali a formidable threat.",
+  ],
   dangerAbilities: ["(W), (E)"],
   dangerProfile: {
     dangerousWhen: ["(W), (E)"],
@@ -60,9 +62,7 @@ export const akaliCombatProfile = {
   counters: [
     {
       champion: "Veigar",
-      reasons: [
-        "Akali can use shroud and mobility to force onto Veigar after cage is down.",
-      ],
+      reasons: ["Akali can use shroud and mobility to force onto Veigar after cage is down."],
     },
     {
       champion: "Syndra",
@@ -98,9 +98,7 @@ export const akaliCombatProfile = {
     },
     {
       champion: "Pantheon",
-      reasons: [
-        "Pantheon can point-and-click stun Akali before shroud buys enough time.",
-      ],
+      reasons: ["Pantheon can point-and-click stun Akali before shroud buys enough time."],
     },
     {
       champion: "Twisted Fate",
@@ -169,14 +167,10 @@ export const akaliCombatProfile = {
   stealthOrInvisibility: "(W) obscures Akali and enables trades.",
   sustain: [],
   trading: {
-    badTradeConditions: [
-      "Bad use of (W) can lead to enemy laner winning trades.",
-    ],
+    badTradeConditions: ["Bad use of (W) can lead to enemy laner winning trades."],
     goodTradeConditions: [],
     primaryPattern:
       "Look for (Q) poke into passive autos, then commit harder with (W) or (E) when the opponent is exposed.",
   },
-  punishWindows: [
-    "Akali can be punished when (W) is down.",
-  ],
+  punishWindows: ["Akali can be punished when (W) is down."],
 } satisfies LeagueChampionKnowledgeProfile;

@@ -100,9 +100,7 @@ export const kassadinCombatProfile = {
     },
     {
       champion: "Lux",
-      reasons: [
-        "Kassadin can absorb Lux poke and punish her immobility after level 6.",
-      ],
+      reasons: ["Kassadin can absorb Lux poke and punish her immobility after level 6."],
     },
     {
       champion: "Twisted Fate",
@@ -114,9 +112,7 @@ export const kassadinCombatProfile = {
   counteredBy: [
     {
       champion: "Yone",
-      reasons: [
-        "Yone can punish Kassadin's weak early lane before Riftwalk becomes reliable.",
-      ],
+      reasons: ["Yone can punish Kassadin's weak early lane before Riftwalk becomes reliable."],
     },
     {
       champion: "Zed",
@@ -132,9 +128,7 @@ export const kassadinCombatProfile = {
     },
     {
       champion: "Tristana",
-      reasons: [
-        "Tristana can shove Kassadin under tower and threaten all-ins before he scales.",
-      ],
+      reasons: ["Tristana can shove Kassadin under tower and threaten all-ins before he scales."],
     },
   ],
   mobilityLevel: "very_high",

@@ -84,9 +84,7 @@ export const veigarCombatProfile = {
   counters: [
     {
       champion: "Akali",
-      reasons: [
-        "Veigar can punish Akali's dash paths by holding (E) until she commits.",
-      ],
+      reasons: ["Veigar can punish Akali's dash paths by holding (E) until she commits."],
     },
     {
       champion: "Katarina",
@@ -110,9 +108,7 @@ export const veigarCombatProfile = {
   counteredBy: [
     {
       champion: "Xerath",
-      reasons: [
-        "Xerath outranges Veigar and can poke without entering cage range.",
-      ],
+      reasons: ["Xerath outranges Veigar and can poke without entering cage range."],
     },
     {
       champion: "Zed",

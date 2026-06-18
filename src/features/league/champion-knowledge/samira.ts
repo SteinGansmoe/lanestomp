@@ -116,20 +116,15 @@ export const samiraCombatProfile = {
         reason: "(R) rewards full Style stacks in committed fights",
         changesGameplay:
           "A support engage can become a fight-winning burst if Samira enters with cooldowns ready.",
-        playerAction:
-          "Wait for allied CC, stack Style quickly, and use (W) to protect the commit.",
-        enemyResponse:
-          "Hold disengage or CC for her dash and stop the S-rank channel.",
+        playerAction: "Wait for allied CC, stack Style quickly, and use (W) to protect the commit.",
+        enemyResponse: "Hold disengage or CC for her dash and stop the S-rank channel.",
       },
       {
         timing: "First completed damage item",
         reason: "All-in damage and reset threat become harder to survive",
-        changesGameplay:
-          "If she gets the first reset, she can run through bot-side skirmishes.",
-        playerAction:
-          "Force fights only with support setup and enemy escape tools tracked.",
-        enemyResponse:
-          "Do not offer a low-health reset target after her item timing.",
+        changesGameplay: "If she gets the first reset, she can run through bot-side skirmishes.",
+        playerAction: "Force fights only with support setup and enemy escape tools tracked.",
+        enemyResponse: "Do not offer a low-health reset target after her item timing.",
       },
     ],
   },
@@ -189,4 +184,3 @@ export const samiraCombatProfile = {
     "If (E) is used in without a reset, she can be kited or locked down.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

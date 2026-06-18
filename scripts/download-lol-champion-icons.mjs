@@ -27,7 +27,9 @@ for (const champion of champions) {
   const imageFile = champion?.image?.full;
 
   if (!champion?.id || !imageFile) {
-    throw new Error(`Champion payload is missing id or image metadata: ${JSON.stringify(champion)}`);
+    throw new Error(
+      `Champion payload is missing id or image metadata: ${JSON.stringify(champion)}`,
+    );
   }
 
   const iconUrl = `${dataDragonBaseUrl}/cdn/${version}/img/champion/${imageFile}`;

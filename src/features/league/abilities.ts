@@ -54,10 +54,7 @@ export function getLeagueChampionAbilitySet(championId: string) {
   return abilitySetsByChampionLookupKey.get(normalizeAbilityChampionLookupKey(championId)) ?? null;
 }
 
-export function getLeagueChampionAbility(
-  championId: string,
-  abilityKey: LeagueAbilityKey,
-) {
+export function getLeagueChampionAbility(championId: string, abilityKey: LeagueAbilityKey) {
   return getLeagueChampionAbilitySet(championId)?.abilities[abilityKey] ?? null;
 }
 

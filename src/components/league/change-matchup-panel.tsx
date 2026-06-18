@@ -1,14 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import {
-  type KeyboardEvent,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeftRight, ChevronDown, Search, Swords } from "lucide-react";
 

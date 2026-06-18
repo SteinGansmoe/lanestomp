@@ -45,8 +45,14 @@ export const zoeCombatProfile = {
   },
   majorPowerSpikes: ["Level 6 (R) for extended poke angles.", "First completed AP burst item."],
   matchupPreferences: {
-    strongInto: ["Short range champions who struggle to punish missed (E).", "Champions who rely on dodging skillshots to trade."],
-    weakInto: ["Champions with reliable point-and-click CC", "Champions that can easily dodge (E) and punish the cooldown."],
+    strongInto: [
+      "Short range champions who struggle to punish missed (E).",
+      "Champions who rely on dodging skillshots to trade.",
+    ],
+    weakInto: [
+      "Champions with reliable point-and-click CC",
+      "Champions that can easily dodge (E) and punish the cooldown.",
+    ],
   },
   counters: [
     {

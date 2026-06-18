@@ -199,9 +199,18 @@ async function testRiotErrorMapping() {
 }
 
 function testSortWeight() {
-  assert(getRankSortWeight({ rank_tier: "CHALLENGER", rank_division: null }) < getRankSortWeight({ rank_tier: "DIAMOND", rank_division: "I" }));
-  assert(getRankSortWeight({ rank_tier: "DIAMOND", rank_division: "I" }) < getRankSortWeight({ rank_tier: "DIAMOND", rank_division: "IV" }));
-  assert(getRankSortWeight({ rank_tier: null }) > getRankSortWeight({ rank_tier: "IRON", rank_division: "IV" }));
+  assert(
+    getRankSortWeight({ rank_tier: "CHALLENGER", rank_division: null }) <
+      getRankSortWeight({ rank_tier: "DIAMOND", rank_division: "I" }),
+  );
+  assert(
+    getRankSortWeight({ rank_tier: "DIAMOND", rank_division: "I" }) <
+      getRankSortWeight({ rank_tier: "DIAMOND", rank_division: "IV" }),
+  );
+  assert(
+    getRankSortWeight({ rank_tier: null }) >
+      getRankSortWeight({ rank_tier: "IRON", rank_division: "IV" }),
+  );
 }
 
 function makeCandidate() {

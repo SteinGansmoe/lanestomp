@@ -119,9 +119,7 @@ export function LeagueDataTooltip({
             <span className="block font-mono text-sm font-semibold uppercase tracking-[0.12em] text-cyan-100">
               {title}
             </span>
-            {subtitle ? (
-              <span className="mt-1 block text-xs text-zinc-400">{subtitle}</span>
-            ) : null}
+            {subtitle ? <span className="mt-1 block text-xs text-zinc-400">{subtitle}</span> : null}
           </span>
         </span>
 
@@ -141,9 +139,7 @@ export function LeagueDataTooltip({
         ) : null}
 
         {goldCost ? (
-          <span className="mt-3 block text-sm font-semibold text-[#D8B14A]">
-            {goldCost}
-          </span>
+          <span className="mt-3 block text-sm font-semibold text-[#D8B14A]">{goldCost}</span>
         ) : null}
       </span>
     </span>
@@ -172,5 +168,8 @@ function formatTooltipStatValue(value: number) {
 }
 
 function toTooltipId(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
