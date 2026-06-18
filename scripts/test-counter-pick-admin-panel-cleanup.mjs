@@ -13,6 +13,7 @@ const actionsSource = readFileSync(
 testResolverPanelRemoved();
 testCoverageQueueLazyLoaded();
 testSeedCandidateAccordionControlled();
+testCollectionPollingIsPassive();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -54,4 +55,19 @@ function testSeedCandidateAccordionControlled() {
   assert.equal(panelSource.includes("aria-expanded={groupState.isExpanded}"), true);
   assert.equal(panelSource.includes("isExpanded: true,"), false);
   assert.equal(panelSource.includes('isExpanded: group.id === "master-plus"'), true);
+}
+
+function testCollectionPollingIsPassive() {
+  assert.equal(panelSource.includes("function refreshCollection"), true);
+  assert.equal(panelSource.includes("getRiotCollectionJob"), true);
+  assert.equal(
+    panelSource.includes("void refreshCollection(activeJob.id, { silent: true });"),
+    true,
+  );
+  assert.equal(
+    panelSource.includes("void resumeCollection(activeJob.id, { silent: true });"),
+    false,
+  );
+  assert.equal(panelSource.includes('label="Child stage"'), true);
+  assert.equal(panelSource.includes('label="Matches scanned"'), true);
 }

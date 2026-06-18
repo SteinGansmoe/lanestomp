@@ -77,6 +77,19 @@ export type RiotScanSummary = {
   focus_matchup_pairs_discovered?: number;
   games?: number;
   losses?: number;
+  currentMatchIdPreview?: string | null;
+  currentMatchIndex?: number;
+  currentSeedIndex?: number;
+  currentSeedPuuidPreview?: string | null;
+  currentStage?:
+    | "cancelled"
+    | "fetching-match-ids"
+    | "fetching-matches"
+    | "initializing"
+    | "persisting"
+    | "scan-complete";
+  lastProgressAt?: string;
+  matchesTotal?: number;
   matchesScanned?: number;
   matchupPairsDiscovered?: number;
   newCandidatesCreated?: number;
@@ -519,6 +532,7 @@ export type RiotScanDiscoveryResult = {
 
 export type RiotScanJobView = {
   collection_job_id: number | null;
+  collection_result_consumed_at: string | null;
   completed_at: string | null;
   counter_champion: string | null;
   created_at: string;

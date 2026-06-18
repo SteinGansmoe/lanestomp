@@ -37,6 +37,7 @@ export async function scanRiotCounterPickMatchups({
   riot,
   role,
   seedPuuids,
+  shouldContinue = null,
   focusChampionId = null,
   target = null,
 }) {
@@ -86,6 +87,13 @@ export async function scanRiotCounterPickMatchups({
     throw new Error("Enemy and counter champion cannot be the same.");
   }
 
+  await assertScanShouldContinue(shouldContinue);
+  await emitProgress(onProgress, {
+    currentStage: "initializing",
+    lastProgressAt: new Date().toISOString(),
+    seedCount: uniqueSeedPuuids.length,
+  });
+
   const matchIdResult = await fetchUniqueMatchIds({
     count: matchCount,
     logger,
@@ -93,6 +101,7 @@ export async function scanRiotCounterPickMatchups({
     puuids: uniqueSeedPuuids,
     queue,
     riot,
+    shouldContinue,
   });
   const matchIds = matchIdResult.uniqueMatchIds;
   const candidateObservations = [];
@@ -127,21 +136,41 @@ export async function scanRiotCounterPickMatchups({
   };
   const observations = [];
 
-  await emitProgress(onProgress, getSummary(aggregate));
+  await emitProgress(onProgress, {
+    ...getSummary(aggregate),
+    currentStage: "fetching-matches",
+    lastProgressAt: new Date().toISOString(),
+    matchesTotal: matchIds.length,
+  });
 
-  for (const matchId of matchIds) {
+  for (const [matchIndex, matchId] of matchIds.entries()) {
+    await assertScanShouldContinue(shouldContinue);
+    await emitProgress(onProgress, {
+      ...getSummary(aggregate),
+      currentMatchIdPreview: getSafeIdentifierPreview(matchId),
+      currentMatchIndex: matchIndex + 1,
+      currentStage: "fetching-matches",
+      lastProgressAt: new Date().toISOString(),
+      matchesTotal: matchIds.length,
+    });
     const match = await riot.fetchMatch(matchId);
     aggregate.matchesScanned += 1;
 
     if (patch && getPatchFromMatch(match) !== patch) {
       aggregate.patchSkipped += 1;
-      await emitProgress(onProgress, getSummary(aggregate));
+      await emitProgress(
+        onProgress,
+        createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+      );
       continue;
     }
 
     if (Number(match?.info?.queueId) !== queue) {
       aggregate.queueSkipped += 1;
-      await emitProgress(onProgress, getSummary(aggregate));
+      await emitProgress(
+        onProgress,
+        createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+      );
       continue;
     }
 
@@ -169,7 +198,10 @@ export async function scanRiotCounterPickMatchups({
 
     if (roleMatchups.length === 0) {
       aggregate.roleSkipped += 1;
-      await emitProgress(onProgress, getSummary(aggregate));
+      await emitProgress(
+        onProgress,
+        createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+      );
       continue;
     }
 
@@ -199,7 +231,10 @@ export async function scanRiotCounterPickMatchups({
         role: normalizedRole,
       });
       aggregate.observationsFound = observations.length;
-      await emitProgress(onProgress, getSummary(aggregate));
+      await emitProgress(
+        onProgress,
+        createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+      );
       continue;
     }
 
@@ -207,7 +242,10 @@ export async function scanRiotCounterPickMatchups({
 
     if (!result) {
       aggregate.observationsFound = observations.length;
-      await emitProgress(onProgress, getSummary(aggregate));
+      await emitProgress(
+        onProgress,
+        createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+      );
       continue;
     }
 
@@ -222,7 +260,10 @@ export async function scanRiotCounterPickMatchups({
     }
 
     aggregate.observationsFound = observations.length;
-    await emitProgress(onProgress, getSummary(aggregate));
+    await emitProgress(
+      onProgress,
+      createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+    );
   }
 
   updateFocusedDiscoveryAggregate({
@@ -231,7 +272,13 @@ export async function scanRiotCounterPickMatchups({
     registry: championRegistry,
     role: normalizedRole,
   });
-  const summary = getSummary(aggregate);
+  const summary = {
+    ...getSummary(aggregate),
+    currentMatchIdPreview: null,
+    currentStage: "scan-complete",
+    lastProgressAt: new Date().toISOString(),
+    matchesTotal: matchIds.length,
+  };
   const targetResult = discover
     ? null
     : getTargetResult({
@@ -360,11 +407,30 @@ export function getParticipantRole(participant) {
   return positionToRole[position] ?? null;
 }
 
-async function fetchUniqueMatchIds({ count, logger, onProgress, puuids, queue, riot }) {
+async function fetchUniqueMatchIds({
+  count,
+  logger,
+  onProgress,
+  puuids,
+  queue,
+  riot,
+  shouldContinue,
+}) {
   const matchIds = new Set();
   let totalFetched = 0;
 
-  for (const puuid of puuids) {
+  for (const [seedIndex, puuid] of puuids.entries()) {
+    await assertScanShouldContinue(shouldContinue);
+    await emitProgress(onProgress, {
+      currentSeedIndex: seedIndex + 1,
+      currentSeedPuuidPreview: getSafeIdentifierPreview(puuid),
+      currentStage: "fetching-match-ids",
+      fetchedMatchIds: totalFetched,
+      lastProgressAt: new Date().toISOString(),
+      seedCount: puuids.length,
+      uniqueMatchIds: matchIds.size,
+    });
+
     const ids = await riot.fetchRecentRankedMatchIdsByPuuid({
       count,
       puuid,
@@ -378,7 +444,12 @@ async function fetchUniqueMatchIds({ count, logger, onProgress, puuids, queue, r
 
     logger?.log(`Fetched ${Array.isArray(ids) ? ids.length : 0} match IDs for one seed PUUID.`);
     await emitProgress(onProgress, {
+      currentSeedIndex: seedIndex + 1,
+      currentSeedPuuidPreview: getSafeIdentifierPreview(puuid),
+      currentStage: "fetching-match-ids",
       fetchedMatchIds: totalFetched,
+      lastProgressAt: new Date().toISOString(),
+      seedCount: puuids.length,
       uniqueMatchIds: matchIds.size,
     });
   }
@@ -390,6 +461,39 @@ async function fetchUniqueMatchIds({ count, logger, onProgress, puuids, queue, r
     totalFetched,
     uniqueMatchIds: Array.from(matchIds),
   };
+}
+
+async function assertScanShouldContinue(shouldContinue) {
+  if (typeof shouldContinue !== "function") {
+    return;
+  }
+
+  const result = await shouldContinue();
+
+  if (result === false) {
+    throw new Error("Riot scan stopped by control state.");
+  }
+}
+
+function createLiveScanProgress(aggregate, matchId, matchIndex, matchIds) {
+  return {
+    ...getSummary(aggregate),
+    currentMatchIdPreview: getSafeIdentifierPreview(matchId),
+    currentMatchIndex: matchIndex + 1,
+    currentStage: "fetching-matches",
+    lastProgressAt: new Date().toISOString(),
+    matchesTotal: matchIds.length,
+  };
+}
+
+function getSafeIdentifierPreview(value) {
+  const text = String(value ?? "").trim();
+
+  if (text.length <= 12) {
+    return text || null;
+  }
+
+  return `${text.slice(0, 6)}...${text.slice(-4)}`;
 }
 
 function getTargetMatchupResult(roleMatchups, target) {

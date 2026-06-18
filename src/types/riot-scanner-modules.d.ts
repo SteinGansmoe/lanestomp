@@ -239,6 +239,7 @@ declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
     riot: unknown;
     role: string;
     seedPuuids: string[];
+    shouldContinue?: (() => boolean | Promise<boolean>) | null;
     target?: {
       counterChampionId: string;
       enemyChampionId: string;

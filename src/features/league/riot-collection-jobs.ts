@@ -1,6 +1,9 @@
 import type { LeagueRole } from "./roles";
 import type { RiotScanJobView, RiotScanSummary } from "./riot-scan-jobs";
-import type { SeedCandidateRankBracket } from "./riot-seed-candidate-lifecycle";
+import type {
+  SeedCandidateLifecycleState,
+  SeedCandidateRankBracket,
+} from "./riot-seed-candidate-lifecycle";
 
 export type RiotCollectionRankBracket = Exclude<SeedCandidateRankBracket, "unknown">;
 export type RiotCollectionRole = LeagueRole | "any";
@@ -34,6 +37,8 @@ export type RiotCollectionTarget = 50 | 100 | 200;
 
 export type RiotCollectionJobProgress = {
   activeScanJobId?: number | null;
+  activeScanProgress?: RiotScanSummary | null;
+  activeScanProgressAt?: string | null;
   lastAdvancedAt?: string;
   lastMessage?: string;
   recordedScanJobIds?: number[];
@@ -46,6 +51,47 @@ export type RiotCollectionSafetyLimits = {
   maxLadderPagesPerJob: number;
   maxNewCandidatesPerJob: number;
   maxSeedBatchSize: number;
+};
+
+export type RiotCollectionDiscoveryDiagnostics = {
+  api: {
+    failures: number;
+    rateLimited: boolean;
+    requestCount: number;
+    retryCount: number;
+  };
+  candidates: {
+    created: number;
+    enriched: number;
+    existingMatched: number;
+    persistenceFailures: number;
+    rankSnapshotFailures: number;
+    rankSnapshotsInserted: number;
+    reused: number;
+  };
+  candidateIds: string[];
+  entriesFetched: number;
+  identifiers: {
+    directPuuids: number;
+    failed: number;
+    lookupsAttempted: number;
+    missing: number;
+    resolved: number;
+  };
+  invocation: {
+    collectionJobId: number;
+    event: "ladder-discovery-started";
+    rankBracket: RiotCollectionRankBracket;
+    readySeedsBeforeDiscovery: number;
+    remainingTargetMatches: number;
+    role: RiotCollectionRole;
+  } | null;
+  lifecycle: Record<SeedCandidateLifecycleState, number> & {
+    eligibleSeedsProduced: number;
+  };
+  pagesFetched: number;
+  reasonCodes: string[];
+  sourcesAttempted: number;
 };
 
 export type RiotCollectionJobView = {
@@ -76,6 +122,7 @@ export type RiotCollectionJobView = {
   started_at: string | null;
   stat_rows_updated: number;
   status: RiotCollectionStatus;
+  stop_detail: string | null;
   stop_reason: RiotCollectionStopReason | null;
   summary: Record<string, unknown>;
   target_unique_matches: RiotCollectionTarget;
@@ -135,7 +182,7 @@ export type RiotCollectionLadderSource =
       tier: "CHALLENGER" | "GRANDMASTER" | "MASTER";
     }
   | {
-      divisions: readonly ["I", "II", "III", "IV"];
+      divisions: readonly ["IV", "III", "II", "I"];
       route: "tier-division";
       tier: "BRONZE" | "DIAMOND" | "EMERALD" | "GOLD" | "IRON" | "PLATINUM" | "SILVER";
     };
@@ -179,7 +226,20 @@ export const defaultRiotCollectionSafetyLimits = {
   maxSeedBatchSize: 20,
 } as const satisfies RiotCollectionSafetyLimits;
 
-const standardDivisions = ["I", "II", "III", "IV"] as const;
+export const riotCollectionDiscoveryReasonLabels = {
+  "api-failure": "One or more Riot ladder API requests failed.",
+  "identifier-resolution-failed": "Ladder players were found, but PUUID resolution failed.",
+  "missing-riot-api-key": "Missing Riot API configuration.",
+  "no-eligible-seeds": "Ladder candidates were stored, but none were eligible for the next scan.",
+  "no-ladder-entries": "Ladder discovery returned no entries from the requested pages.",
+  "no-ladder-sources": "No ladder sources are configured for the selected rank bracket.",
+  "no-ready-seeds-after-discovery":
+    "Discovery finished, but selection found no ready unused seeds.",
+  "persistence-failed": "Ladder players were resolved, but candidate persistence failed.",
+  "rate-limited": "Riot rate limit reached; resume later.",
+} as const;
+
+const standardDivisions = ["IV", "III", "II", "I"] as const;
 
 export const riotCollectionLadderSourcesByBracket = {
   diamond: [{ divisions: standardDivisions, route: "tier-division", tier: "DIAMOND" }],
@@ -255,4 +315,102 @@ export function normalizeCollectionScanSummary(summary: RiotScanSummary | null |
     statRowsUpdated: Number(summary?.statsRowsUpdated ?? 0),
     uniqueMatchIds: Number(summary?.uniqueMatchIds ?? 0),
   };
+}
+
+export function getAdaptiveRiotCollectionSeedBatchSize({
+  maxSeedBatchSize = defaultRiotCollectionSafetyLimits.maxSeedBatchSize,
+  seedsUsed,
+  targetUniqueMatches,
+  uniqueMatchesProcessed,
+}: {
+  maxSeedBatchSize?: number;
+  seedsUsed: number;
+  targetUniqueMatches: number;
+  uniqueMatchesProcessed: number;
+}) {
+  const remainingTargetMatches = Math.max(targetUniqueMatches - uniqueMatchesProcessed, 1);
+  const observedMatchesPerSeed = seedsUsed > 0 ? uniqueMatchesProcessed / seedsUsed : 0;
+  const estimatedMatchesPerSeed =
+    Number.isFinite(observedMatchesPerSeed) && observedMatchesPerSeed > 0
+      ? Math.min(Math.max(observedMatchesPerSeed, 1), 20)
+      : 4;
+  const adaptiveSize = Math.ceil(remainingTargetMatches / estimatedMatchesPerSeed);
+
+  return Math.min(Math.max(adaptiveSize, 1), maxSeedBatchSize);
+}
+
+export function createEmptyRiotCollectionDiscoveryDiagnostics(
+  invocation: RiotCollectionDiscoveryDiagnostics["invocation"] = null,
+): RiotCollectionDiscoveryDiagnostics {
+  return {
+    api: {
+      failures: 0,
+      rateLimited: false,
+      requestCount: 0,
+      retryCount: 0,
+    },
+    candidates: {
+      created: 0,
+      enriched: 0,
+      existingMatched: 0,
+      persistenceFailures: 0,
+      rankSnapshotFailures: 0,
+      rankSnapshotsInserted: 0,
+      reused: 0,
+    },
+    candidateIds: [],
+    entriesFetched: 0,
+    identifiers: {
+      directPuuids: 0,
+      failed: 0,
+      lookupsAttempted: 0,
+      missing: 0,
+      resolved: 0,
+    },
+    invocation,
+    lifecycle: {
+      "cooling-down": 0,
+      failed: 0,
+      "low-signal": 0,
+      "needs-rank-enrichment": 0,
+      observed: 0,
+      "ready-to-scan": 0,
+      "recently-scanned": 0,
+      rejected: 0,
+      eligibleSeedsProduced: 0,
+    },
+    pagesFetched: 0,
+    reasonCodes: [],
+    sourcesAttempted: 0,
+  };
+}
+
+export function getRiotCollectionDiscoveryStopDetail(
+  diagnostics: RiotCollectionDiscoveryDiagnostics | null | undefined,
+) {
+  if (!diagnostics) {
+    return "Discovery diagnostics are unavailable.";
+  }
+
+  if (diagnostics.api.rateLimited) {
+    return "Discovery paused because the Riot API rate limit was reached.";
+  }
+
+  if (diagnostics.entriesFetched === 0) {
+    return `Ladder discovery returned no entries from ${diagnostics.pagesFetched} requested ${diagnostics.pagesFetched === 1 ? "page" : "pages"}.`;
+  }
+
+  if (diagnostics.identifiers.resolved === 0) {
+    return `${diagnostics.entriesFetched} ladder ${diagnostics.entriesFetched === 1 ? "player was" : "players were"} found, but no PUUIDs could be resolved.`;
+  }
+
+  if (diagnostics.candidates.created + diagnostics.candidates.reused === 0) {
+    return `${diagnostics.identifiers.resolved} PUUIDs were resolved, but no seed candidates could be persisted.`;
+  }
+
+  if (diagnostics.lifecycle.eligibleSeedsProduced === 0) {
+    return `${diagnostics.candidates.created} candidates were created and ${diagnostics.candidates.reused} existing candidates were refreshed, but none were eligible for the next scan.`;
+  }
+
+  return `${diagnostics.lifecycle.eligibleSeedsProduced} eligible ${diagnostics.lifecycle.eligibleSeedsProduced === 1 ? "seed was" : "seeds were"} produced, but seed selection still found no unused candidate.`;
 }

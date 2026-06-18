@@ -8,17 +8,22 @@ import {
   normalizeRiotScanJobMetrics,
 } from "@/src/features/league/counter-pick-management-metrics";
 import {
+  createEmptyRiotCollectionDiscoveryDiagnostics,
   defaultRiotCollectionSafetyLimits,
+  getAdaptiveRiotCollectionSeedBatchSize,
+  getRiotCollectionDiscoveryStopDetail,
   isRiotCollectionTerminalStatus,
   normalizeCollectionScanSummary,
   riotCollectionLadderSourcesByBracket,
   riotCollectionRankBrackets,
   riotCollectionTargets,
+  type RiotCollectionDiscoveryDiagnostics,
   type RiotCollectionInventoryResult,
   type RiotCollectionJobProgress,
   type RiotCollectionJobResult,
   type RiotCollectionJobsResult,
   type RiotCollectionJobView,
+  type RiotCollectionLadderSource,
   type RiotCollectionRankBracket,
   type RiotCollectionRole,
   type RiotCollectionStatus,
@@ -89,7 +94,7 @@ const defaultPlatformRegion = "EUW1";
 const maxWarningOnlyPersistenceFailureCount = 5;
 const maxWarningOnlyPersistenceFailureRate = 0.01;
 const riotScanJobSelect =
-  "id, collection_job_id, mode, status, role, seed_puuids, enemy_champion, counter_champion, focus_champion_id, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at";
+  "id, collection_job_id, collection_result_consumed_at, mode, status, role, seed_puuids, enemy_champion, counter_champion, focus_champion_id, match_count, minimum_games, progress, summary, results, error_message, created_at, started_at, completed_at";
 const riotSeedCandidateSelect = [
   "id",
   "last_scan_candidate_observations_discovered",
@@ -168,6 +173,7 @@ type AuthorizedClientResult =
 
 type RiotScanJobRow = {
   collection_job_id: number | null;
+  collection_result_consumed_at: string | null;
   completed_at: string | null;
   counter_champion: string | null;
   created_at: string;
@@ -214,6 +220,7 @@ type RiotCollectionJobRow = {
   started_at: string | null;
   stat_rows_updated: number;
   status: RiotCollectionStatus;
+  stop_detail: string | null;
   stop_reason: RiotCollectionStopReason | null;
   summary: Record<string, unknown> | null;
   target_unique_matches: 50 | 100 | 200;
@@ -373,6 +380,7 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
   }
 
   void runRiotScanJob({
+    collectionJobId: input.collectionJobId ?? null,
     input: validation,
     jobId: insertedJob.id,
     supabase: serviceClientResult.supabase,
@@ -663,6 +671,7 @@ export async function resumeRiotCollectionJob({
           lastMessage: "Resumed by administrator.",
         }),
         status: "queued",
+        stop_detail: null,
         stop_reason: null,
       },
       supabase: serviceClientResult.supabase,
@@ -778,7 +787,32 @@ export async function getRiotCollectionJob({
     return serviceClientResult;
   }
 
-  return fetchCollectionJob(serviceClientResult.supabase, collectionJobId);
+  const jobResult = await fetchCollectionJob(serviceClientResult.supabase, collectionJobId);
+
+  if (!jobResult.ok) {
+    return jobResult;
+  }
+
+  const consistencyIssue = await getRiotCollectionConsistencyIssue({
+    job: jobResult.job,
+    supabase: serviceClientResult.supabase,
+  });
+
+  if (!consistencyIssue) {
+    return jobResult;
+  }
+
+  console.warn("Recovering stalled Riot collection", {
+    collectionJobId,
+    reasonCode: consistencyIssue.reasonCode,
+    scanJobId: consistencyIssue.scanJobId,
+  });
+
+  return advanceRiotCollectionJob({
+    accessToken,
+    job: jobResult.job,
+    supabase: serviceClientResult.supabase,
+  });
 }
 
 export async function getRiotCollectionInventory({
@@ -1481,10 +1515,12 @@ export async function getRiotScanJob({
 }
 
 async function runRiotScanJob({
+  collectionJobId,
   input,
   jobId,
   supabase,
 }: {
+  collectionJobId: number | null;
   input: ValidatedStartInput;
   jobId: number;
   supabase: SupabaseClient;
@@ -1504,6 +1540,12 @@ async function runRiotScanJob({
   const { persistSeedCandidatesFromObservations } =
     await import("@/scripts/lib/riot-seed-candidates.mjs");
   const startedAt = new Date().toISOString();
+  const progressBase = {
+    currentPatchOnly: input.currentPatchOnly,
+    discoveryFocusChampion: input.discoveryFocusChampion,
+    maxDisplayedResults: input.maxDisplayedResults,
+    seedCount: input.seedPuuids.length,
+  };
 
   try {
     await supabase
@@ -1545,28 +1587,35 @@ async function runRiotScanJob({
           .join(", ")}`,
       );
     }
-    const progressBase = {
-      currentPatchOnly: input.currentPatchOnly,
-      discoveryFocusChampion: input.discoveryFocusChampion,
-      maxDisplayedResults: input.maxDisplayedResults,
-      seedCount: input.seedPuuids.length,
+    const updateProgress = async (progress: RiotScanSummary) => {
+      const nextProgress: RiotScanSummary = {
+        ...progressBase,
+        ...progress,
+        lastProgressAt: new Date().toISOString(),
+      };
+
+      await supabase
+        .from("riot_scan_jobs")
+        .update({
+          progress: nextProgress,
+        })
+        .eq("id", jobId);
+
+      if (collectionJobId) {
+        await mirrorScanProgressToCollectionJob({
+          collectionJobId,
+          progress: nextProgress,
+          scanJobId: jobId,
+          supabase,
+        });
+      }
     };
     const scanResult = await scanRiotCounterPickMatchups({
       championRegistry,
       discover: input.mode === "discovery",
       focusChampionId: input.discoveryFocusChampion,
       matchCount: input.matchCount,
-      onProgress: async (progress) => {
-        await supabase
-          .from("riot_scan_jobs")
-          .update({
-            progress: {
-              ...progressBase,
-              ...progress,
-            },
-          })
-          .eq("id", jobId);
-      },
+      onProgress: updateProgress,
       patch,
       platformRegion,
       queue: rankedSoloDuoQueueId,
@@ -1574,6 +1623,12 @@ async function runRiotScanJob({
       riot,
       role: input.role,
       seedPuuids: input.seedPuuids,
+      shouldContinue: async () =>
+        assertScanControlAllowsProgress({
+          collectionJobId,
+          jobId,
+          supabase,
+        }),
       target:
         input.mode === "target"
           ? {
@@ -1586,6 +1641,10 @@ async function runRiotScanJob({
       ...progressBase,
       ...scanResult.summary,
     };
+    await updateProgress({
+      ...summary,
+      currentStage: "persisting",
+    });
     const persistenceResult = await persistObservationsAndRebuildStats({
       championRegistry,
       observations: scanResult.observations,
@@ -1791,6 +1850,34 @@ async function runRiotScanJob({
       });
     }
   } catch (error) {
+    if (isRiotScanControlError(error)) {
+      const message =
+        error.controlState === "cancelled"
+          ? "Collection scan cancelled by administrator."
+          : "Collection scan paused by administrator.";
+
+      await supabase
+        .from("riot_scan_jobs")
+        .update({
+          completed_at: new Date().toISOString(),
+          error_message: message,
+          progress: {
+            ...progressBase,
+            currentStage: "cancelled",
+            lastProgressAt: new Date().toISOString(),
+          },
+          status: "cancelled",
+        })
+        .eq("id", jobId);
+
+      await releaseSeedCandidatesFromControlledScan({
+        seedPuuids: input.seedPuuids,
+        supabase,
+      });
+
+      return;
+    }
+
     console.error("Riot counter pick scan failed", {
       error: getScannerErrorMessage(error),
       scanJobId: jobId,
@@ -1808,6 +1895,116 @@ async function runRiotScanJob({
       supabase,
     });
   }
+}
+
+class RiotScanControlError extends Error {
+  controlState: "cancelled" | "paused";
+
+  constructor(controlState: "cancelled" | "paused") {
+    super(`Riot scan stopped because the collection job is ${controlState}.`);
+    this.controlState = controlState;
+  }
+}
+
+function isRiotScanControlError(error: unknown): error is RiotScanControlError {
+  return error instanceof RiotScanControlError;
+}
+
+async function assertScanControlAllowsProgress({
+  collectionJobId,
+  jobId,
+  supabase,
+}: {
+  collectionJobId: number | null;
+  jobId: number;
+  supabase: SupabaseClient;
+}) {
+  const { data: scanJob } = await supabase
+    .from("riot_scan_jobs")
+    .select("status")
+    .eq("id", jobId)
+    .maybeSingle<{ status: RiotScanStatus }>();
+
+  if (scanJob?.status === "cancelled") {
+    throw new RiotScanControlError("cancelled");
+  }
+
+  if (!collectionJobId) {
+    return true;
+  }
+
+  const { data: collectionJob } = await supabase
+    .from("riot_collection_jobs")
+    .select("status")
+    .eq("id", collectionJobId)
+    .maybeSingle<{ status: RiotCollectionStatus }>();
+
+  if (collectionJob?.status === "cancelled") {
+    throw new RiotScanControlError("cancelled");
+  }
+
+  if (collectionJob?.status === "paused") {
+    throw new RiotScanControlError("paused");
+  }
+
+  return true;
+}
+
+async function mirrorScanProgressToCollectionJob({
+  collectionJobId,
+  progress,
+  scanJobId,
+  supabase,
+}: {
+  collectionJobId: number;
+  progress: RiotScanSummary;
+  scanJobId: number;
+  supabase: SupabaseClient;
+}) {
+  const { data: collectionJob } = await supabase
+    .from("riot_collection_jobs")
+    .select("progress, status")
+    .eq("id", collectionJobId)
+    .maybeSingle<Pick<RiotCollectionJobRow, "progress" | "status">>();
+
+  if (!collectionJob || isRiotCollectionTerminalStatus(collectionJob.status)) {
+    return;
+  }
+
+  if (collectionJob.status === "paused") {
+    return;
+  }
+
+  await supabase
+    .from("riot_collection_jobs")
+    .update({
+      progress: {
+        ...(collectionJob.progress ?? {}),
+        activeScanJobId: scanJobId,
+        activeScanProgress: progress,
+        activeScanProgressAt: new Date().toISOString(),
+        lastAdvancedAt: new Date().toISOString(),
+        lastMessage: getLiveScanProgressMessage(progress),
+        safetyLimits: defaultRiotCollectionSafetyLimits,
+      },
+    })
+    .eq("id", collectionJobId);
+}
+
+function getLiveScanProgressMessage(progress: RiotScanSummary) {
+  if (progress.currentStage === "fetching-match-ids") {
+    return `Fetching match IDs from seed ${progress.currentSeedIndex ?? "?"}/${progress.seedCount ?? "?"}.`;
+  }
+
+  if (progress.currentStage === "fetching-matches") {
+    return `Scanning match ${progress.currentMatchIndex ?? progress.matchesScanned ?? 0}/${progress.matchesTotal ?? progress.uniqueMatchIds ?? "?"}.`;
+  }
+
+  if (progress.currentStage === "persisting") {
+    return "Persisting child scan observations and rebuilding matchup stats.";
+  }
+
+  return "Child scan progress updated.";
 }
 
 type RiotCounterPickScanLogPersistence = {
@@ -2239,6 +2436,29 @@ async function markSeedCandidatesScanFailed({
   }
 }
 
+async function releaseSeedCandidatesFromControlledScan({
+  seedPuuids,
+  supabase,
+}: {
+  seedPuuids: string[];
+  supabase: SupabaseClient;
+}) {
+  const candidates = await fetchScanSeedCandidates({ seedPuuids, supabase });
+
+  for (const candidate of candidates) {
+    const { error } = await supabase
+      .from("riot_seed_candidates")
+      .update({
+        status: "candidate",
+      })
+      .eq("id", candidate.id);
+
+    if (error) {
+      console.error("Seed candidate controlled-scan release failed", getSafeDatabaseError(error));
+    }
+  }
+}
+
 async function fetchScanSeedCandidates({
   seedPuuids,
   supabase,
@@ -2593,29 +2813,6 @@ async function advanceRiotCollectionJob({
     };
   }
 
-  if (job.status === "paused") {
-    return {
-      job,
-      ok: true,
-    };
-  }
-
-  const activeScanResult = await getActiveCollectionScan(supabase, job.id);
-
-  if (activeScanResult) {
-    return updateCollectionJob({
-      patch: {
-        progress: getCollectionProgressPatch(job, {
-          activeScanJobId: activeScanResult.id,
-          lastMessage: `Waiting for child scan ${activeScanResult.id}.`,
-        }),
-        status: "scanning",
-      },
-      supabase,
-      id: job.id,
-    });
-  }
-
   const reconciledJobResult = await reconcileCompletedCollectionScans({ job, supabase });
 
   if (!reconciledJobResult.ok) {
@@ -2623,6 +2820,29 @@ async function advanceRiotCollectionJob({
   }
 
   let nextJob = reconciledJobResult.job;
+
+  if (nextJob.status === "paused") {
+    return {
+      job: nextJob,
+      ok: true,
+    };
+  }
+
+  const activeScanResult = await getActiveCollectionScan(supabase, nextJob.id);
+
+  if (activeScanResult) {
+    return updateCollectionJob({
+      patch: {
+        progress: getCollectionProgressPatch(nextJob, {
+          activeScanJobId: activeScanResult.id,
+          lastMessage: `Waiting for child scan ${activeScanResult.id}.`,
+        }),
+        status: "scanning",
+      },
+      supabase,
+      id: nextJob.id,
+    });
+  }
 
   if (nextJob.unique_matches_processed >= nextJob.target_unique_matches) {
     return completeCollectionJob({
@@ -2634,9 +2854,15 @@ async function advanceRiotCollectionJob({
   }
 
   const usedCandidateIds = await fetchUsedCollectionCandidateIds(supabase, nextJob.id);
+  const seedBatchLimit = getAdaptiveRiotCollectionSeedBatchSize({
+    maxSeedBatchSize: defaultRiotCollectionSafetyLimits.maxSeedBatchSize,
+    seedsUsed: nextJob.seeds_used,
+    targetUniqueMatches: nextJob.target_unique_matches,
+    uniqueMatchesProcessed: nextJob.unique_matches_processed,
+  });
   let selected = await fetchReadyCollectionCandidates({
     focusChampionId: nextJob.focus_champion_id,
-    limit: defaultRiotCollectionSafetyLimits.maxSeedBatchSize,
+    limit: seedBatchLimit,
     rankBracket: nextJob.rank_bracket,
     role: nextJob.role,
     supabase,
@@ -2654,6 +2880,7 @@ async function advanceRiotCollectionJob({
   if (selected.candidates.length === 0 && nextJob.automatic_seed_discovery) {
     const discovery = await discoverCollectionSeeds({
       job: nextJob,
+      readySeedsBeforeDiscovery: selected.candidates.length,
       supabase,
     });
 
@@ -2663,6 +2890,7 @@ async function advanceRiotCollectionJob({
       return completeCollectionJob({
         job: nextJob,
         stopReason: "rate-limited",
+        stopDetail: getRiotCollectionDiscoveryStopDetail(discovery.diagnostics),
         status: "paused",
         supabase,
       });
@@ -2671,7 +2899,7 @@ async function advanceRiotCollectionJob({
     const nextUsedCandidateIds = await fetchUsedCollectionCandidateIds(supabase, nextJob.id);
     selected = await fetchReadyCollectionCandidates({
       focusChampionId: nextJob.focus_champion_id,
-      limit: defaultRiotCollectionSafetyLimits.maxSeedBatchSize,
+      limit: seedBatchLimit,
       rankBracket: nextJob.rank_bracket,
       role: nextJob.role,
       supabase,
@@ -2688,9 +2916,14 @@ async function advanceRiotCollectionJob({
   }
 
   if (selected.candidates.length === 0) {
+    const discoveryDiagnostics = getLatestCollectionDiscoveryDiagnostics(nextJob);
+
     return completeCollectionJob({
       job: nextJob,
       stopReason: nextJob.automatic_seed_discovery ? "discovery-exhausted" : "discovery-disabled",
+      stopDetail: nextJob.automatic_seed_discovery
+        ? getRiotCollectionDiscoveryStopDetail(discoveryDiagnostics)
+        : "Automatic seed discovery is disabled.",
       status: nextJob.unique_matches_processed > 0 ? "completed-partial" : "failed",
       supabase,
     });
@@ -2756,7 +2989,6 @@ async function reconcileCompletedCollectionScans({
   job: RiotCollectionJobView;
   supabase: SupabaseClient;
 }): Promise<RiotCollectionJobResult> {
-  const recordedScanJobIds = new Set(job.progress.recordedScanJobIds ?? []);
   const { data, error } = await supabase
     .from("riot_scan_jobs")
     .select(riotScanJobSelect)
@@ -2775,11 +3007,11 @@ async function reconcileCompletedCollectionScans({
   let nextJob = job;
 
   for (const scanJob of data ?? []) {
-    if (recordedScanJobIds.has(scanJob.id)) {
-      continue;
-    }
-
     if (scanJob.status === "failed") {
+      if (nextJob.status === "paused") {
+        continue;
+      }
+
       return completeCollectionJob({
         job: nextJob,
         stopReason: "aggregation-failed",
@@ -2788,44 +3020,209 @@ async function reconcileCompletedCollectionScans({
       });
     }
 
-    const childSummary = normalizeCollectionScanSummary(scanJob.summary);
-    const matchResult = await recordCollectionMatchesForScan({
-      collectionJob: nextJob,
+    const childResult = await reconcileCompletedCollectionChild({
+      job: nextJob,
       scanJob,
       supabase,
     });
-    const nextRecordedScanIds = [...recordedScanJobIds, scanJob.id];
-    const patch = {
-      duplicate_match_ids:
-        nextJob.duplicate_match_ids + childSummary.duplicates + matchResult.duplicates,
-      new_matchup_observations: nextJob.new_matchup_observations + childSummary.newObservations,
-      progress: getCollectionProgressPatch(nextJob, {
-        activeScanJobId: null,
-        lastMessage: `Reconciled child scan ${scanJob.id}.`,
-        recordedScanJobIds: nextRecordedScanIds,
-      }),
-      scan_batches_completed: nextJob.scan_batches_completed + 1,
-      stat_rows_updated: nextJob.stat_rows_updated + childSummary.statRowsUpdated,
-      status: "selecting-seeds" as RiotCollectionStatus,
-      unique_matches_processed: matchResult.totalCount,
-    };
-    const updated = await updateCollectionJob({
-      id: nextJob.id,
-      patch,
-      supabase,
-    });
 
-    if (!updated.ok) {
-      return updated;
+    if (!childResult.ok) {
+      return childResult;
     }
 
-    nextJob = updated.job;
-    recordedScanJobIds.add(scanJob.id);
+    nextJob = childResult.job;
   }
 
   return {
     job: nextJob,
     ok: true,
+  };
+}
+
+async function reconcileCompletedCollectionChild({
+  job,
+  scanJob,
+  supabase,
+}: {
+  job: RiotCollectionJobView;
+  scanJob: RiotScanJobRow;
+  supabase: SupabaseClient;
+}): Promise<RiotCollectionJobResult> {
+  if (scanJob.status !== "completed") {
+    return {
+      job,
+      ok: true,
+    };
+  }
+
+  console.info("Reconciling completed Riot collection child", {
+    childStatus: scanJob.status,
+    collectionJobId: job.id,
+    scanJobId: scanJob.id,
+  });
+
+  await recordCollectionMatchesForScan({
+    collectionJob: job,
+    scanJob,
+    supabase,
+  });
+
+  const consumedNow = await claimCollectionChildConsumption({
+    collectionJobId: job.id,
+    scanJobId: scanJob.id,
+    supabase,
+  });
+  const totals = await calculateCollectionConsumedTotals({
+    fallbackUniqueMatches: job.unique_matches_processed,
+    job,
+    supabase,
+  });
+  const status: RiotCollectionStatus = job.status === "paused" ? "paused" : "selecting-seeds";
+  const nextAction =
+    status === "paused"
+      ? "paused"
+      : totals.uniqueMatchesProcessed >= job.target_unique_matches
+        ? "target-reached"
+        : "select-next-batch";
+  const updated = await updateCollectionJob({
+    id: job.id,
+    patch: {
+      duplicate_match_ids: totals.duplicateMatchIds,
+      new_matchup_observations: totals.newMatchupObservations,
+      progress: getCollectionProgressPatch(job, {
+        activeScanJobId: null,
+        activeScanProgress: null,
+        activeScanProgressAt: null,
+        lastMessage:
+          status === "paused"
+            ? `${totals.uniqueMatchesProcessed}/${job.target_unique_matches} confirmed unique matches. Collection remains paused.`
+            : `${totals.uniqueMatchesProcessed}/${job.target_unique_matches} confirmed unique matches after child scan ${scanJob.id}.`,
+      }),
+      scan_batches_completed: totals.consumedChildScans,
+      stat_rows_updated: totals.statRowsUpdated,
+      status,
+      unique_matches_processed: totals.uniqueMatchesProcessed,
+    },
+    supabase,
+  });
+
+  if (!updated.ok) {
+    return updated;
+  }
+
+  console.info("Riot collection child reconciled", {
+    collectionJobId: job.id,
+    collectionUniqueMatches: totals.uniqueMatchesProcessed,
+    consumedNow,
+    nextAction,
+    observationsInserted: totals.newMatchupObservations,
+    scanJobId: scanJob.id,
+    statRowsUpdated: totals.statRowsUpdated,
+  });
+
+  return updated;
+}
+
+async function claimCollectionChildConsumption({
+  collectionJobId,
+  scanJobId,
+  supabase,
+}: {
+  collectionJobId: number;
+  scanJobId: number;
+  supabase: SupabaseClient;
+}) {
+  const { data, error } = await supabase
+    .from("riot_scan_jobs")
+    .update({
+      collection_result_consumed_at: new Date().toISOString(),
+    })
+    .eq("id", scanJobId)
+    .eq("collection_job_id", collectionJobId)
+    .eq("status", "completed")
+    .is("collection_result_consumed_at", null)
+    .select("id")
+    .maybeSingle<{ id: number }>();
+
+  if (error) {
+    console.warn("Riot collection child consumption claim failed", {
+      collectionJobId,
+      error: getSafeDatabaseError(error),
+      scanJobId,
+    });
+  }
+
+  return Boolean(data);
+}
+
+async function calculateCollectionConsumedTotals({
+  fallbackUniqueMatches,
+  job,
+  supabase,
+}: {
+  fallbackUniqueMatches: number;
+  job: RiotCollectionJobView;
+  supabase: SupabaseClient;
+}) {
+  const { data: scanRows } = await supabase
+    .from("riot_scan_jobs")
+    .select("id, summary")
+    .eq("collection_job_id", job.id)
+    .eq("status", "completed")
+    .not("collection_result_consumed_at", "is", null)
+    .returns<Array<{ id: number; summary: RiotScanSummary | null }>>();
+  const consumedRows = scanRows ?? [];
+  const consumedScanIds = consumedRows.map((row) => row.id);
+  const totals = consumedRows.reduce(
+    (result, row) => {
+      const summary = normalizeCollectionScanSummary(row.summary);
+
+      return {
+        duplicateMatchIds: result.duplicateMatchIds + summary.duplicates,
+        newMatchupObservations: result.newMatchupObservations + summary.newObservations,
+        statRowsUpdated: result.statRowsUpdated + summary.statRowsUpdated,
+      };
+    },
+    {
+      duplicateMatchIds: 0,
+      newMatchupObservations: 0,
+      statRowsUpdated: 0,
+    },
+  );
+  const { count } = await supabase
+    .from("riot_collection_job_matches")
+    .select("*", { count: "exact", head: true })
+    .eq("collection_job_id", job.id)
+    .eq("counted_toward_target", true);
+  const uniqueMatchesProcessed = count ?? fallbackUniqueMatches;
+  let validObservationRows = uniqueMatchesProcessed;
+
+  if (consumedScanIds.length > 0) {
+    let observationQuery = supabase
+      .from("riot_matchup_observations")
+      .select("*", { count: "exact", head: true })
+      .in("scan_job_id", consumedScanIds);
+
+    if (job.role !== "any") {
+      observationQuery = observationQuery.eq("role", job.role);
+    }
+
+    if (job.focus_champion_id) {
+      observationQuery = observationQuery.or(
+        `champion_a.eq.${job.focus_champion_id},champion_b.eq.${job.focus_champion_id}`,
+      );
+    }
+
+    const { count: observationCount } = await observationQuery;
+    validObservationRows = observationCount ?? validObservationRows;
+  }
+
+  return {
+    ...totals,
+    consumedChildScans: consumedRows.length,
+    duplicateMatchIds:
+      totals.duplicateMatchIds + Math.max(validObservationRows - uniqueMatchesProcessed, 0),
+    uniqueMatchesProcessed,
   };
 }
 
@@ -2892,25 +3289,52 @@ async function fetchReadyCollectionCandidates({
 
 async function discoverCollectionSeeds({
   job,
+  readySeedsBeforeDiscovery,
   supabase,
 }: {
   job: RiotCollectionJobView;
+  readySeedsBeforeDiscovery: number;
   supabase: SupabaseClient;
 }) {
+  const diagnostics = createEmptyRiotCollectionDiscoveryDiagnostics({
+    collectionJobId: job.id,
+    event: "ladder-discovery-started",
+    rankBracket: job.rank_bracket,
+    readySeedsBeforeDiscovery,
+    remainingTargetMatches: Math.max(job.target_unique_matches - job.unique_matches_processed, 0),
+    role: job.role,
+  });
+
   await updateCollectionJob({
     id: job.id,
     patch: {
       progress: getCollectionProgressPatch(job, {
         lastMessage: "Discovering ranked ladder seeds.",
       }),
+      summary: getCollectionSummaryPatch(job, { discovery: diagnostics }),
       status: "discovering-seeds",
     },
     supabase,
   });
 
   if (!process.env.RIOT_API_KEY) {
+    addDiscoveryReasonCode(diagnostics, "missing-riot-api-key");
+
+    const updated = await updateCollectionJob({
+      id: job.id,
+      patch: {
+        progress: getCollectionProgressPatch(job, {
+          lastMessage: "Ladder discovery skipped because Riot API configuration is missing.",
+        }),
+        summary: getCollectionSummaryPatch(job, { discovery: diagnostics }),
+        warning_count: job.warning_count + 1,
+      },
+      supabase,
+    });
+
     return {
-      job,
+      diagnostics,
+      job: updated.ok ? updated.job : job,
       rateLimited: false,
     };
   }
@@ -2922,18 +3346,17 @@ async function discoverCollectionSeeds({
     regionalRoute: job.regional_route,
     requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
   });
-  let apiRequests = 0;
-  let candidatesCreated = 0;
-  let candidatesReused = 0;
-  let entriesSeen = 0;
-  let pagesFetched = 0;
-  let rateLimited = false;
-  const sources = riotCollectionLadderSourcesByBracket[job.rank_bracket];
+  const sources: readonly RiotCollectionLadderSource[] =
+    riotCollectionLadderSourcesByBracket[job.rank_bracket];
+
+  if (sources.length === 0) {
+    addDiscoveryReasonCode(diagnostics, "no-ladder-sources");
+  }
 
   for (const source of sources) {
     if (
-      candidatesCreated >= defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
-      pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob
+      diagnostics.candidates.created >= defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
+      diagnostics.pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob
     ) {
       break;
     }
@@ -2945,12 +3368,14 @@ async function discoverCollectionSeeds({
 
     for (const ladderSource of divisionSources) {
       if (
-        apiRequests >= defaultRiotCollectionSafetyLimits.maxIdentifierLookupsPerJob ||
-        pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob
+        diagnostics.api.requestCount >=
+          defaultRiotCollectionSafetyLimits.maxIdentifierLookupsPerJob ||
+        diagnostics.pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob
       ) {
         break;
       }
 
+      diagnostics.sourcesAttempted += 1;
       const cursor = await getOrCreateLadderCursor({
         division: ladderSource.division,
         job,
@@ -2962,13 +3387,19 @@ async function discoverCollectionSeeds({
 
       try {
         if (source.route === "tier-division") {
-          entries = await riot.fetchLeagueEntriesByTierDivision({
+          const tierDivisionEntries = await riot.fetchLeagueEntriesByTierDivision({
             division: ladderSource.division,
             page,
             platformRegion: job.platform,
             queue: job.queue_type,
             tier: ladderSource.tier,
           });
+          entries = Array.isArray(tierDivisionEntries) ? tierDivisionEntries : [];
+
+          if (!Array.isArray(tierDivisionEntries)) {
+            diagnostics.api.failures += 1;
+            addDiscoveryReasonCode(diagnostics, "api-failure");
+          }
         } else {
           const highTierLeague = await riot.fetchHighTierLeagueEntries({
             platformRegion: job.platform,
@@ -2976,12 +3407,20 @@ async function discoverCollectionSeeds({
             tier: ladderSource.tier,
           });
           entries = Array.isArray(highTierLeague?.entries) ? highTierLeague.entries : [];
+
+          if (!Array.isArray(highTierLeague?.entries)) {
+            diagnostics.api.failures += 1;
+            addDiscoveryReasonCode(diagnostics, "api-failure");
+          }
         }
-        apiRequests += 1;
-        pagesFetched += 1;
+        diagnostics.api.requestCount += 1;
+        diagnostics.pagesFetched += 1;
       } catch (error) {
+        diagnostics.api.failures += 1;
+
         if (Number((error as { status?: number }).status ?? 0) === 429) {
-          rateLimited = true;
+          diagnostics.api.rateLimited = true;
+          addDiscoveryReasonCode(diagnostics, "rate-limited");
           await updateLadderCursorFailure({
             cursorId: cursor.id,
             errorCode: "rate_limited",
@@ -2995,11 +3434,13 @@ async function discoverCollectionSeeds({
           errorCode: "ladder_fetch_failed",
           supabase,
         });
+        addDiscoveryReasonCode(diagnostics, "api-failure");
         continue;
       }
 
-      entriesSeen += entries.length;
+      diagnostics.entriesFetched += entries.length;
       const discoveryResult = await persistDiscoveredLadderEntries({
+        diagnostics,
         entries,
         job,
         normalizeRankEntry,
@@ -3007,10 +3448,6 @@ async function discoverCollectionSeeds({
         supabase,
       });
 
-      apiRequests += discoveryResult.apiRequests;
-      candidatesCreated += discoveryResult.created;
-      candidatesReused += discoveryResult.reused;
-      rateLimited = rateLimited || discoveryResult.rateLimited;
       await updateLadderCursorSuccess({
         candidatesCreated: discoveryResult.created,
         candidatesReused: discoveryResult.reused,
@@ -3022,43 +3459,136 @@ async function discoverCollectionSeeds({
       });
 
       if (
-        entriesSeen >= defaultRiotCollectionSafetyLimits.maxLadderEntriesPerJob ||
-        candidatesCreated >= defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
-        pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob ||
-        rateLimited
+        diagnostics.entriesFetched >= defaultRiotCollectionSafetyLimits.maxLadderEntriesPerJob ||
+        diagnostics.candidates.created >=
+          defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
+        diagnostics.pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob ||
+        diagnostics.api.rateLimited
       ) {
         break;
       }
     }
   }
 
+  const lifecycleDiagnostics = await loadDiscoveryLifecycleDiagnostics({
+    candidateIds: diagnosticsCandidateIds(diagnostics),
+    supabase,
+  });
+
+  diagnostics.lifecycle = lifecycleDiagnostics;
+  addDiscoveryOutcomeReasonCodes(diagnostics);
+
   const updated = await updateCollectionJob({
     id: job.id,
     patch: {
-      api_requests_used: job.api_requests_used + apiRequests,
+      api_requests_used: job.api_requests_used + diagnostics.api.requestCount,
       progress: getCollectionProgressPatch(job, {
-        lastMessage: `Discovered ${candidatesCreated} new seeds from ranked ladders; refreshed ${candidatesReused} existing seeds.`,
+        lastMessage: getRiotCollectionDiscoveryStopDetail(diagnostics),
       }),
-      seeds_discovered: job.seeds_discovered + candidatesCreated,
+      seeds_discovered: job.seeds_discovered + diagnostics.lifecycle.eligibleSeedsProduced,
       status: "selecting-seeds",
-      warning_count: job.warning_count + (candidatesCreated === 0 ? 1 : 0),
+      summary: getCollectionSummaryPatch(job, { discovery: diagnostics }),
+      warning_count:
+        job.warning_count + (diagnostics.lifecycle.eligibleSeedsProduced === 0 ? 1 : 0),
     },
     supabase,
   });
 
   return {
+    diagnostics,
     job: updated.ok ? updated.job : job,
-    rateLimited,
+    rateLimited: diagnostics.api.rateLimited,
   };
 }
 
+function diagnosticsCandidateIds(diagnostics: RiotCollectionDiscoveryDiagnostics) {
+  return Array.from(new Set(diagnostics.candidateIds));
+}
+
+function addDiscoveryReasonCode(
+  diagnostics: RiotCollectionDiscoveryDiagnostics,
+  reasonCode: string,
+) {
+  if (!diagnostics.reasonCodes.includes(reasonCode)) {
+    diagnostics.reasonCodes.push(reasonCode);
+  }
+}
+
+function addDiscoveryOutcomeReasonCodes(diagnostics: RiotCollectionDiscoveryDiagnostics) {
+  if (diagnostics.entriesFetched === 0) {
+    addDiscoveryReasonCode(diagnostics, "no-ladder-entries");
+  }
+
+  if (diagnostics.entriesFetched > 0 && diagnostics.identifiers.resolved === 0) {
+    addDiscoveryReasonCode(diagnostics, "identifier-resolution-failed");
+  }
+
+  if (
+    diagnostics.identifiers.resolved > 0 &&
+    diagnostics.candidates.created + diagnostics.candidates.reused === 0
+  ) {
+    addDiscoveryReasonCode(diagnostics, "persistence-failed");
+  }
+
+  if (
+    diagnostics.candidates.created + diagnostics.candidates.reused > 0 &&
+    diagnostics.lifecycle.eligibleSeedsProduced === 0
+  ) {
+    addDiscoveryReasonCode(diagnostics, "no-eligible-seeds");
+  }
+}
+
+async function loadDiscoveryLifecycleDiagnostics({
+  candidateIds,
+  supabase,
+}: {
+  candidateIds: string[];
+  supabase: SupabaseClient;
+}): Promise<RiotCollectionDiscoveryDiagnostics["lifecycle"]> {
+  const lifecycle = createEmptyRiotCollectionDiscoveryDiagnostics().lifecycle;
+
+  if (candidateIds.length === 0) {
+    return lifecycle;
+  }
+
+  const { data } = await supabase
+    .from("riot_seed_candidates")
+    .select(riotSeedCandidateSelect)
+    .in("id", candidateIds)
+    .returns<RiotSeedCandidateView[]>();
+
+  for (const candidate of (data ?? []).map(hydrateSeedCandidateLifecycle)) {
+    lifecycle[candidate.lifecycle.state] += 1;
+
+    if (candidate.lifecycle.isSelectableForScan) {
+      lifecycle.eligibleSeedsProduced += 1;
+    }
+  }
+
+  return lifecycle;
+}
+
+function getLatestCollectionDiscoveryDiagnostics(
+  job: RiotCollectionJobView,
+): RiotCollectionDiscoveryDiagnostics | null {
+  const discovery = job.summary.discovery;
+
+  if (!discovery || typeof discovery !== "object") {
+    return null;
+  }
+
+  return discovery as RiotCollectionDiscoveryDiagnostics;
+}
+
 async function persistDiscoveredLadderEntries({
+  diagnostics,
   entries,
   job,
   normalizeRankEntry,
   riot,
   supabase,
 }: {
+  diagnostics: RiotCollectionDiscoveryDiagnostics;
   entries: unknown[];
   job: RiotCollectionJobView;
   normalizeRankEntry: (entry: unknown) => {
@@ -3082,36 +3612,52 @@ async function persistDiscoveredLadderEntries({
   };
   supabase: SupabaseClient;
 }) {
-  let apiRequests = 0;
   let created = 0;
   let reused = 0;
-  let rateLimited = false;
   const now = new Date().toISOString();
 
   for (const entry of entries.slice(0, defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob)) {
     const normalizedEntry =
       entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
-    const encryptedSummonerId = String(normalizedEntry.summonerId ?? "").trim();
+    const directPuuid = String(normalizedEntry.puuid ?? "").trim();
+    const encryptedSummonerId = String(
+      normalizedEntry.summonerId ??
+        normalizedEntry.encryptedSummonerId ??
+        normalizedEntry.encrypted_summoner_id ??
+        "",
+    ).trim();
 
-    if (!encryptedSummonerId) {
+    let puuid: string | null = directPuuid || null;
+
+    if (puuid) {
+      diagnostics.identifiers.directPuuids += 1;
+      diagnostics.identifiers.resolved += 1;
+    } else if (encryptedSummonerId) {
+      const cachedPuuid = await getCachedSummonerPuuid({
+        encryptedSummonerId,
+        platform: job.platform,
+        supabase,
+      });
+      puuid = cachedPuuid;
+
+      if (puuid) {
+        diagnostics.identifiers.resolved += 1;
+      }
+    } else {
+      diagnostics.identifiers.missing += 1;
       continue;
     }
 
-    const cachedPuuid = await getCachedSummonerPuuid({
-      encryptedSummonerId,
-      platform: job.platform,
-      supabase,
-    });
-    let puuid = cachedPuuid;
-
-    if (!puuid) {
+    if (!puuid && encryptedSummonerId) {
       try {
+        diagnostics.identifiers.lookupsAttempted += 1;
         const summoner = await riot.fetchSummonerByEncryptedId({
           encryptedSummonerId,
           platformRegion: job.platform,
         });
-        apiRequests += 1;
+        diagnostics.api.requestCount += 1;
         puuid = String(summoner?.puuid ?? "").trim();
+        diagnostics.identifiers.resolved += puuid ? 1 : 0;
         await upsertSummonerPuuidCache({
           encryptedSummonerId,
           platform: job.platform,
@@ -3120,7 +3666,9 @@ async function persistDiscoveredLadderEntries({
           supabase,
         });
       } catch (error) {
-        apiRequests += 1;
+        diagnostics.api.requestCount += 1;
+        diagnostics.identifiers.failed += 1;
+        diagnostics.api.failures += 1;
         await upsertSummonerPuuidCache({
           encryptedSummonerId,
           errorCode:
@@ -3133,12 +3681,21 @@ async function persistDiscoveredLadderEntries({
             Number((error as { status?: number }).status ?? 0) === 429 ? "rate_limited" : "failed",
           supabase,
         });
-        rateLimited = rateLimited || Number((error as { status?: number }).status ?? 0) === 429;
+        diagnostics.api.rateLimited =
+          diagnostics.api.rateLimited || Number((error as { status?: number }).status ?? 0) === 429;
+
+        if (Number((error as { status?: number }).status ?? 0) === 429) {
+          addDiscoveryReasonCode(diagnostics, "rate-limited");
+        } else {
+          addDiscoveryReasonCode(diagnostics, "identifier-resolution-failed");
+        }
+
         continue;
       }
     }
 
     if (!puuid) {
+      diagnostics.identifiers.failed += 1;
       continue;
     }
 
@@ -3148,17 +3705,21 @@ async function persistDiscoveredLadderEntries({
     });
     const { data: existingCandidate } = await supabase
       .from("riot_seed_candidates")
-      .select("id")
+      .select("id, observed_games, source")
       .eq("platform_region", job.platform)
       .eq("puuid", puuid)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle<{ id: string; observed_games: number | null; source: string | null }>();
+    const observedGames = Math.max(
+      Number(existingCandidate?.observed_games ?? 0),
+      MIN_SEED_OBSERVATIONS,
+    );
     const { data: savedCandidate, error } = await supabase
       .from("riot_seed_candidates")
       .upsert(
         {
           first_seen_at: now,
           last_seen_at: now,
-          observed_games: MIN_SEED_OBSERVATIONS,
+          observed_games: observedGames,
           platform_region: job.platform,
           puuid,
           rank_division: rank?.division ?? null,
@@ -3178,7 +3739,7 @@ async function persistDiscoveredLadderEntries({
           rank_wins: rank?.wins ?? null,
           ranked_at: rank ? now : null,
           regional_routing: job.regional_route,
-          source: "ladder_import",
+          source: existingCandidate?.source ?? "ladder_import",
           status: "candidate",
         },
         {
@@ -3189,40 +3750,54 @@ async function persistDiscoveredLadderEntries({
       .single<{ id: string }>();
 
     if (error || !savedCandidate) {
+      diagnostics.candidates.persistenceFailures += 1;
+      addDiscoveryReasonCode(diagnostics, "persistence-failed");
       continue;
     }
 
+    diagnostics.candidateIds.push(savedCandidate.id);
+    diagnostics.candidates.enriched += 1;
+
     if (rank) {
-      await supabase.from("riot_seed_candidate_rank_snapshots").insert({
-        candidate_id: savedCandidate.id,
-        division: rank.division,
-        fresh_blood: rank.freshBlood,
-        hot_streak: rank.hotStreak,
-        inactive: rank.inactive,
-        league_points: rank.leaguePoints,
-        losses: rank.losses,
-        platform_region: job.platform,
-        queue_type: rank.queueType,
-        snapshot_status: "ranked",
-        source: "ladder_import",
-        tier: rank.tier,
-        veteran: rank.veteran,
-        win_rate: rank.winRate,
-        wins: rank.wins,
-      });
+      const { error: snapshotError } = await supabase
+        .from("riot_seed_candidate_rank_snapshots")
+        .insert({
+          candidate_id: savedCandidate.id,
+          division: rank.division,
+          fresh_blood: rank.freshBlood,
+          hot_streak: rank.hotStreak,
+          inactive: rank.inactive,
+          league_points: rank.leaguePoints,
+          losses: rank.losses,
+          platform_region: job.platform,
+          queue_type: rank.queueType,
+          snapshot_status: "ranked",
+          source: "ladder_import",
+          tier: rank.tier,
+          veteran: rank.veteran,
+          win_rate: rank.winRate,
+          wins: rank.wins,
+        });
+
+      if (snapshotError && snapshotError.code !== "23505") {
+        diagnostics.candidates.rankSnapshotFailures += 1;
+      } else if (!snapshotError) {
+        diagnostics.candidates.rankSnapshotsInserted += 1;
+      }
     }
 
     if (existingCandidate) {
       reused += 1;
+      diagnostics.candidates.existingMatched += 1;
+      diagnostics.candidates.reused += 1;
     } else {
       created += 1;
+      diagnostics.candidates.created += 1;
     }
   }
 
   return {
-    apiRequests,
     created,
-    rateLimited,
     reused,
   };
 }
@@ -3354,6 +3929,79 @@ async function getActiveCollectionScan(supabase: SupabaseClient, collectionJobId
   return data ? sanitizeJobRow(data) : null;
 }
 
+async function getRiotCollectionConsistencyIssue({
+  job,
+  supabase,
+}: {
+  job: RiotCollectionJobView;
+  supabase: SupabaseClient;
+}): Promise<{
+  reasonCode:
+    | "active-parent-no-child"
+    | "child-missing"
+    | "child-parent-mismatch"
+    | "terminal-child-consumed-parent-not-advanced"
+    | "terminal-child-unconsumed";
+  scanJobId: number | null;
+} | null> {
+  if (isRiotCollectionTerminalStatus(job.status)) {
+    return null;
+  }
+
+  if (job.status !== "scanning" && job.status !== "paused") {
+    return null;
+  }
+
+  const activeScanJobId = Number(job.progress.activeScanJobId ?? 0);
+
+  if (!activeScanJobId) {
+    return job.status === "scanning"
+      ? {
+          reasonCode: "active-parent-no-child",
+          scanJobId: null,
+        }
+      : null;
+  }
+
+  const { data: scanJob } = await supabase
+    .from("riot_scan_jobs")
+    .select(riotScanJobSelect)
+    .eq("id", activeScanJobId)
+    .maybeSingle<RiotScanJobRow>();
+
+  if (!scanJob) {
+    return {
+      reasonCode: "child-missing",
+      scanJobId: activeScanJobId,
+    };
+  }
+
+  if (scanJob.collection_job_id !== job.id) {
+    return {
+      reasonCode: "child-parent-mismatch",
+      scanJobId: scanJob.id,
+    };
+  }
+
+  if (scanJob.status === "completed") {
+    return {
+      reasonCode: scanJob.collection_result_consumed_at
+        ? "terminal-child-consumed-parent-not-advanced"
+        : "terminal-child-unconsumed",
+      scanJobId: scanJob.id,
+    };
+  }
+
+  if (scanJob.status === "failed" || scanJob.status === "cancelled") {
+    return {
+      reasonCode: "terminal-child-unconsumed",
+      scanJobId: scanJob.id,
+    };
+  }
+
+  return null;
+}
+
 async function fetchCollectionJob(
   supabase: SupabaseClient,
   collectionJobId: number,
@@ -3448,14 +4096,26 @@ async function updateCollectionJob({
   };
 }
 
+function getCollectionSummaryPatch(
+  job: RiotCollectionJobView,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    ...job.summary,
+    ...patch,
+  };
+}
+
 async function completeCollectionJob({
   job,
   status,
+  stopDetail = null,
   stopReason,
   supabase,
 }: {
   job: RiotCollectionJobView;
   status: RiotCollectionStatus;
+  stopDetail?: string | null;
   stopReason: RiotCollectionStopReason;
   supabase: SupabaseClient;
 }) {
@@ -3472,6 +4132,7 @@ async function completeCollectionJob({
         lastMessage: stopReason,
       }),
       status,
+      stop_detail: stopDetail,
       stop_reason: stopReason,
     },
     supabase,
@@ -3497,6 +4158,7 @@ async function failCollectionJob({
         lastMessage: errorMessage,
       }),
       status: "failed",
+      stop_detail: errorMessage,
       stop_reason: "error-budget-reached",
     },
     supabase,
@@ -3530,6 +4192,7 @@ async function updateCollectionJobControlState({
 
   const patch: Partial<RiotCollectionJobRow> = {
     status,
+    stop_detail: null,
     stop_reason: stopReason,
   };
 
@@ -4096,6 +4759,7 @@ function sanitizeJobRow(row: RiotScanJobRow): RiotScanJobView {
 
   return {
     collection_job_id: row.collection_job_id,
+    collection_result_consumed_at: row.collection_result_consumed_at,
     completed_at: row.completed_at,
     counter_champion: row.counter_champion,
     created_at: row.created_at,

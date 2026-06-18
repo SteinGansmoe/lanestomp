@@ -17,6 +17,7 @@ import {
   getRecentRiotCollectionJobs,
   getLeagueChampionRegistryAdminStatus,
   getPaginatedRiotSeedCandidates,
+  getRiotCollectionJob,
   getRiotCollectionInventory,
   getRecentRiotScanJobs,
   pauseRiotCollectionJob,
@@ -62,6 +63,7 @@ import {
   riotCollectionStatusLabels,
   riotCollectionStopReasonLabels,
   riotCollectionTargets,
+  type RiotCollectionDiscoveryDiagnostics,
   type RiotCollectionJobView,
   type RiotCollectionRankBracket,
   type RiotCollectionRole,
@@ -1705,6 +1707,16 @@ function CoverageMetric({ label, value }: { label: string; value: number | strin
   );
 }
 
+function getCollectionDiscoveryDiagnostics(
+  job: RiotCollectionJobView,
+): RiotCollectionDiscoveryDiagnostics | null {
+  const discovery = job.summary.discovery;
+
+  return discovery && typeof discovery === "object"
+    ? (discovery as RiotCollectionDiscoveryDiagnostics)
+    : null;
+}
+
 function RiotCollectionJobsPanel({
   champions,
   championDisplayNamesById,
@@ -1760,7 +1772,7 @@ function RiotCollectionJobsPanel({
     }
 
     const intervalId = window.setInterval(() => {
-      void resumeCollection(activeJob.id, { silent: true });
+      void refreshCollection(activeJob.id, { silent: true });
     }, 4000);
 
     return () => window.clearInterval(intervalId);
@@ -1900,6 +1912,34 @@ function RiotCollectionJobsPanel({
     if (!silent) {
       setStatus({ error: null, isLoading: false, success: "Collection job advanced." });
     }
+  }
+
+  async function refreshCollection(collectionJobId: number, { silent = false } = {}) {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      if (!silent) {
+        setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      }
+      return;
+    }
+
+    const result = await getRiotCollectionJob({
+      accessToken: tokenResult.accessToken,
+      collectionJobId,
+    });
+
+    if (!result.ok) {
+      if (!silent) {
+        setStatus({ error: result.error, isLoading: false, success: null });
+      }
+      return;
+    }
+
+    setActiveJob(result.job);
+    setRecentJobs((currentJobs) =>
+      [result.job, ...currentJobs.filter((job) => job.id !== result.job.id)].slice(0, 5),
+    );
   }
 
   async function pauseCollection(collectionJobId: number) {
@@ -2150,8 +2190,20 @@ function RiotCollectionJobCard({
     uniqueMatchesProcessed: job.unique_matches_processed,
   });
   const canPause = !isRiotCollectionTerminalStatus(job.status) && job.status !== "paused";
-  const canResume = job.status === "paused" || !isRiotCollectionTerminalStatus(job.status);
+  const canResume =
+    job.status === "paused" ||
+    job.status === "queued" ||
+    job.status === "selecting-seeds" ||
+    job.status === "discovering-seeds" ||
+    job.status === "aggregating";
   const canCancel = !isRiotCollectionTerminalStatus(job.status);
+  const discoveryDiagnostics = getCollectionDiscoveryDiagnostics(job);
+  const activeScanProgress = job.latest_scan_job?.progress ?? job.progress.activeScanProgress;
+  const activeScanStage = activeScanProgress?.currentStage
+    ? formatEnumLabel(activeScanProgress.currentStage)
+    : job.latest_scan_job?.status
+      ? riotCollectionStatusLabels[job.status]
+      : "Pending";
 
   return (
     <div className="rounded-lg border border-cyan-300/20 bg-cyan-500/10 p-4">
@@ -2175,23 +2227,82 @@ function RiotCollectionJobCard({
           label="Unique matches"
           value={`${job.unique_matches_processed}/${job.target_unique_matches}`}
         />
-        <Metric label="Seeds discovered" value={job.seeds_discovered} />
+        <Metric label="Eligible seeds produced" value={job.seeds_discovered} />
         <Metric label="Seeds used" value={job.seeds_used} />
         <Metric label="Current batch" value={job.progress.activeScanJobId ?? "Pending"} />
+        <Metric label="Child stage" value={activeScanStage} />
+        <Metric
+          label="Match IDs"
+          value={
+            activeScanProgress
+              ? `${activeScanProgress.uniqueMatchIds ?? 0}/${activeScanProgress.fetchedMatchIds ?? 0}`
+              : "Pending"
+          }
+        />
+        <Metric
+          label="Matches scanned"
+          value={
+            activeScanProgress
+              ? `${activeScanProgress.matchesScanned ?? 0}/${activeScanProgress.matchesTotal ?? activeScanProgress.uniqueMatchIds ?? "?"}`
+              : "Pending"
+          }
+        />
         <Metric label="New observations" value={job.new_matchup_observations} />
         <Metric label="Duplicates skipped" value={job.duplicate_match_ids} />
         <Metric label="Stat rows updated" value={job.stat_rows_updated} />
         <Metric label="Failures" value={job.error_count} />
         <Metric label="Started" value={formatDateTime(job.started_at)} />
+        <Metric
+          label="Child updated"
+          value={formatDateTime(
+            activeScanProgress?.lastProgressAt ?? job.progress.activeScanProgressAt,
+          )}
+        />
       </div>
       {job.stop_reason ? (
-        <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">
-          {riotCollectionStopReasonLabels[job.stop_reason]}
-        </p>
+        <div className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">
+          <p>{riotCollectionStopReasonLabels[job.stop_reason]}</p>
+          {job.stop_detail ? <p className="mt-2 text-zinc-400">{job.stop_detail}</p> : null}
+        </div>
       ) : job.progress.lastMessage ? (
         <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">
           {job.progress.lastMessage}
         </p>
+      ) : null}
+      {discoveryDiagnostics ? (
+        <div className="mt-4 rounded-md border border-cyan-300/20 bg-black/15 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200">
+            Seed discovery diagnostics
+          </p>
+          <div className="mt-3 grid gap-2 text-xs text-zinc-300 sm:grid-cols-2 lg:grid-cols-3">
+            <Metric label="Sources attempted" value={discoveryDiagnostics.sourcesAttempted} />
+            <Metric label="Ladder pages fetched" value={discoveryDiagnostics.pagesFetched} />
+            <Metric label="Ladder entries returned" value={discoveryDiagnostics.entriesFetched} />
+            <Metric label="Direct PUUIDs" value={discoveryDiagnostics.identifiers.directPuuids} />
+            <Metric
+              label="PUUID lookups"
+              value={discoveryDiagnostics.identifiers.lookupsAttempted}
+            />
+            <Metric label="PUUIDs resolved" value={discoveryDiagnostics.identifiers.resolved} />
+            <Metric label="Existing reused" value={discoveryDiagnostics.candidates.reused} />
+            <Metric label="New candidates" value={discoveryDiagnostics.candidates.created} />
+            <Metric
+              label="Rank snapshots"
+              value={discoveryDiagnostics.candidates.rankSnapshotsInserted}
+            />
+            <Metric
+              label="Ready seeds"
+              value={discoveryDiagnostics.lifecycle.eligibleSeedsProduced}
+            />
+            <Metric label="Low signal" value={discoveryDiagnostics.lifecycle["low-signal"]} />
+            <Metric label="API failures" value={discoveryDiagnostics.api.failures} />
+          </div>
+          {discoveryDiagnostics.reasonCodes.length > 0 ? (
+            <p className="mt-3 text-xs text-zinc-500">
+              Reason codes: {discoveryDiagnostics.reasonCodes.join(", ")}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
