@@ -165,9 +165,64 @@ The shared defaults are:
 - 100 new candidates imported
 - 150 encrypted ID lookups
 
-The seed batch size adapts to the remaining target and observed yield. New jobs assume roughly four unique target matches per seed until the parent has enough completed child batches to estimate actual yield.
+The seed batch size adapts to the remaining target, observed yield, and development-key request budget. New 50-match jobs begin around four seeds instead of treating 20 as the default. Twenty remains the absolute maximum, not the normal starting point.
 
 The job pauses on Riot rate limits and can be resumed later from the admin UI. It completes partially when it has useful data but cannot continue because discovery is disabled, discovery is exhausted, or a child aggregation step fails after some progress.
+
+## Riot Rate Limiting
+
+All in-app Riot requests pass through the shared `RiotApiClient` request layer and the process-wide `RiotRateLimiter`. This includes:
+
+- Match-V5 match ID lookup
+- Match-V5 match detail lookup
+- League-V4 ladder discovery
+- League-V4 rank enrichment
+- Summoner-V4 encrypted ID resolution
+- Account-V1 Riot ID lookup
+
+The configured development-key guardrails are:
+
+- 20 requests per 1 second
+- 100 requests per 2 minutes
+
+The default safety factor is `0.85`, producing effective in-process limits of approximately:
+
+- 17 requests per 1 second
+- 85 requests per 2 minutes
+
+`RIOT_RATE_LIMIT_SAFETY_FACTOR` can tune that margin for future Riot key profiles. The limiter enforces both windows as sliding windows, permits safe bursts when both windows have capacity, and calculates the next safe request time without busy-waiting.
+
+Riot response headers can tighten runtime behavior. The limiter parses `X-App-Rate-Limit`, `X-Method-Rate-Limit`, and `Retry-After` when present, tolerates malformed headers, and never treats local config as permission to exceed a stricter Riot-provided limit.
+
+`429` responses are classified as rate-limit waits. Requests retry with bounded attempts, respect `Retry-After`, and then pause the collection instead of marking seed candidates failed if the budget remains unavailable. While waiting for budget, the limiter re-checks Pause and Cancel in short intervals before sending any queued request.
+
+The collection card shows the active child scan's current Riot budget snapshot:
+
+- short-window usage and limit
+- long-window usage and limit
+- wait episodes
+- requests delayed
+- actual Riot 429 responses
+- last request and wait-until details in progress state
+
+Request-budget accounting uses the dispatch timestamp of an actual outbound Riot HTTP request. Capacity checks, queueing, polling, pause/cancel checks, heartbeat updates, retry timers, and wait events do not consume budget. If Pause or Cancel interrupts a pending limiter wait, no request timestamp is written and the next job does not inherit phantom usage.
+
+The issue 257 root cause was stale header-derived limiter state and ambiguous telemetry. Riot method headers such as `X-Method-Rate-Limit: 20:120` were folded into the process runtime limit without an expiry, so the UI could keep showing a stale `20/20` long-window limit after the real two-minute window had already passed. Wait counters were also global limiter telemetry, so a new collection could display wait counts from a previous job.
+
+Header-derived limiter windows are now stored as expiring snapshots with:
+
+- scope (`application`, `method`, `service`, or `unknown`)
+- limit
+- current observed count
+- window duration
+- observed time
+- expiry time
+
+Expired request timestamps and expired header snapshots are ignored and pruned. Wait episodes do not renew or extend any request window; the next safe request time is calculated only from dispatched request timestamps, active `Retry-After`, and non-expired Riot header windows.
+
+Per-job rate-limit metrics start at zero for each child scan or collection discovery step. A new job may wait because the shared process budget was legitimately used by recent requests, but it does not inherit the previous job's wait episodes, delayed-request count, or total wait time.
+
+The current implementation is process-wide, not distributed. It coordinates manual scans, rank refreshes, ladder discovery, and automated collection requests that run inside the same application process. It does not claim to coordinate separate deployment instances or external scripts that use the same Riot key from another process. Until a distributed Postgres/advisory-lock limiter is added, the admin action allows at most one active automated collection job per platform.
 
 ## Admin Controls
 

@@ -6,6 +6,11 @@ import { CounterPickSelector } from "@/src/components/league/counter-pick-select
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import { getLeagueChampions } from "@/src/features/league/champions";
+import { isLeagueRole } from "@/src/features/league/roles";
+
+type LeagueCountersPageProps = {
+  searchParams: Promise<{ champion?: string | string[]; role?: string | string[] }>;
+};
 
 export const metadata: Metadata = {
   title: "Counter Picks | LaneStomp",
@@ -13,10 +18,13 @@ export const metadata: Metadata = {
     "Find League of Legends counter picks by champion and role with LaneStomp matchup explanations.",
 };
 
-export default async function LeagueCountersPage() {
+export default async function LeagueCountersPage({ searchParams }: LeagueCountersPageProps) {
   await connection();
 
-  const { champions, error } = await getLeagueChampions();
+  const [{ champions, error }, query] = await Promise.all([getLeagueChampions(), searchParams]);
+  const initialChampionId = getSingleSearchParam(query.champion);
+  const initialRoleValue = getSingleSearchParam(query.role);
+  const initialRole = isLeagueRole(initialRoleValue) ? initialRoleValue : null;
 
   return (
     <main className="min-h-screen bg-[#050b18] text-white">
@@ -40,7 +48,11 @@ export default async function LeagueCountersPage() {
             </div>
           </Card>
         ) : champions.length > 0 ? (
-          <CounterPickSelector champions={champions} />
+          <CounterPickSelector
+            champions={champions}
+            initialChampionId={initialChampionId}
+            initialRole={initialRole}
+          />
         ) : (
           <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-zinc-300">
             <CardTitle className="font-mono text-xl">No champions imported yet</CardTitle>
@@ -52,4 +64,8 @@ export default async function LeagueCountersPage() {
       </section>
     </main>
   );
+}
+
+function getSingleSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }

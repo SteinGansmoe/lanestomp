@@ -213,7 +213,7 @@ export function ChangeMatchupPanel({
 
               {matchupHref ? (
                 <Link
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-violet-300/20 bg-violet-500/80 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-950/20 transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/50"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-cyan-300/20 bg-cyan-300 px-4 text-sm font-semibold text-[#05111d] shadow-lg shadow-cyan-950/20 transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
                   href={matchupHref}
                   onClick={() => setIsExpanded(false)}
                   scroll={false}

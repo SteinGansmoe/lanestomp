@@ -59,7 +59,7 @@ function SelectorPanelSkeleton() {
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
               <SelectionSlotSkeleton tone="cyan" />
               <div className="hidden size-11 rounded-md border border-cyan-300/15 bg-cyan-400/10 md:block" />
-              <SelectionSlotSkeleton tone="violet" />
+              <SelectionSlotSkeleton tone="gold" />
             </div>
             <div className="h-11 w-44 rounded-md border border-white/10 bg-white/10" />
           </div>
@@ -117,19 +117,19 @@ function SelectorPanelSkeleton() {
   );
 }
 
-function SelectionSlotSkeleton({ tone }: { tone: "cyan" | "violet" }) {
+function SelectionSlotSkeleton({ tone }: { tone: "cyan" | "gold" }) {
   return (
     <div className="flex min-h-16 items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-2.5">
       <div
         className={`size-12 shrink-0 rounded-md border ${
           tone === "cyan"
             ? "border-cyan-300/30 bg-cyan-400/10"
-            : "border-violet-300/30 bg-violet-400/10"
+            : "border-[#C9AA5A]/35 bg-[#C9AA5A]/10"
         }`}
       />
       <div className="grid min-w-0 flex-1 gap-2">
         <div
-          className={`h-3 w-24 rounded ${tone === "cyan" ? "bg-cyan-200/18" : "bg-violet-200/18"}`}
+          className={`h-3 w-24 rounded ${tone === "cyan" ? "bg-cyan-200/18" : "bg-[#C9AA5A]/18"}`}
         />
         <div className="h-4 w-36 max-w-full rounded bg-zinc-200/12" />
       </div>

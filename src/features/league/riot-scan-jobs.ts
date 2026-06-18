@@ -87,8 +87,23 @@ export type RiotScanSummary = {
     | "fetching-matches"
     | "initializing"
     | "persisting"
-    | "scan-complete";
+    | "scan-complete"
+    | "waiting-for-rate-limit";
   lastProgressAt?: string;
+  lastRiotRequestAt?: string | null;
+  rateLimitLongWindowLimit?: number;
+  rateLimitLongWindowUsage?: number;
+  rateLimitReason?: string | null;
+  rateLimitRetries?: number;
+  rateLimitRequestsDelayed?: number;
+  rateLimitShortWindowLimit?: number;
+  rateLimitShortWindowUsage?: number;
+  rateLimitWaitEpisodes?: number;
+  rateLimitWaitMs?: number;
+  rateLimitWaitUntil?: string | null;
+  rateLimitWaits?: number;
+  riot429Responses?: number;
+  riotRateLimitTotalWaitMs?: number;
   matchesTotal?: number;
   matchesScanned?: number;
   matchupPairsDiscovered?: number;

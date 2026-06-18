@@ -16,6 +16,7 @@ import {
   normalizeCollectionScanSummary,
   riotCollectionLadderSourcesByBracket,
   riotCollectionRankBrackets,
+  riotCollectionStatusLabels,
   riotCollectionTargets,
   type RiotCollectionDiscoveryDiagnostics,
   type RiotCollectionInventoryResult,
@@ -596,6 +597,18 @@ export async function startRiotCollectionJob(
 
   if (!validation.ok) {
     return validation;
+  }
+
+  const activeCollection = await fetchActiveCollectionJobForPlatform({
+    platform: validation.platform,
+    supabase: serviceClientResult.supabase,
+  });
+
+  if (activeCollection) {
+    return {
+      error: `A Riot collection job is already active for ${validation.platform} (#${activeCollection.id}, ${riotCollectionStatusLabels[activeCollection.status]}). Pause, cancel, or finish it before starting another collection.`,
+      ok: false,
+    };
   }
 
   const now = new Date().toISOString();
@@ -1563,6 +1576,25 @@ async function runRiotScanJob({
     const patch = input.currentPatchOnly ? await fetchCurrentPatch() : null;
     const riot = new RiotApiClient({
       apiKey: process.env.RIOT_API_KEY ?? "",
+      rateLimitContext: {
+        collectionJobId,
+        onWait: async (rateLimitState: RiotRateLimitWaitState) => {
+          await updateRiotScanRateLimitProgress({
+            collectionJobId,
+            jobId,
+            progressBase,
+            rateLimitState,
+            supabase,
+          });
+        },
+        scanJobId: jobId,
+        shouldContinue: async () =>
+          assertScanControlAllowsProgress({
+            collectionJobId,
+            jobId,
+            supabase,
+          }),
+      },
       regionalRoute: process.env.RIOT_REGIONAL_ROUTING ?? defaultRegionalRoute,
       requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
     });
@@ -1850,6 +1882,50 @@ async function runRiotScanJob({
       });
     }
   } catch (error) {
+    if (isRiotRateLimitError(error)) {
+      const message = getRiotRateLimitStopDetail(error);
+
+      await supabase
+        .from("riot_scan_jobs")
+        .update({
+          completed_at: new Date().toISOString(),
+          error_message: message,
+          progress: {
+            ...progressBase,
+            currentStage: "waiting-for-rate-limit",
+            lastProgressAt: new Date().toISOString(),
+            rateLimitReason: "rate-limit-retry-exhausted",
+            rateLimitWaitUntil:
+              typeof error.retryAfterMs === "number"
+                ? new Date(Date.now() + error.retryAfterMs).toISOString()
+                : null,
+          },
+          status: "cancelled",
+        })
+        .eq("id", jobId);
+
+      await releaseSeedCandidatesFromControlledScan({
+        seedPuuids: input.seedPuuids,
+        supabase,
+      });
+
+      if (collectionJobId) {
+        const currentJobResult = await fetchCollectionJob(supabase, collectionJobId);
+
+        if (currentJobResult.ok && !isRiotCollectionTerminalStatus(currentJobResult.job.status)) {
+          await completeCollectionJob({
+            job: currentJobResult.job,
+            status: "paused",
+            stopDetail: message,
+            stopReason: "rate-limited",
+            supabase,
+          });
+        }
+      }
+
+      return;
+    }
+
     if (isRiotScanControlError(error)) {
       const message =
         error.controlState === "cancelled"
@@ -1908,6 +1984,25 @@ class RiotScanControlError extends Error {
 
 function isRiotScanControlError(error: unknown): error is RiotScanControlError {
   return error instanceof RiotScanControlError;
+}
+
+function isRiotRateLimitError(error: unknown): error is { retryAfterMs?: number; status?: number } {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "status" in error &&
+    Number((error as { status?: number }).status) === 429
+  );
+}
+
+function getRiotRateLimitStopDetail(error: { retryAfterMs?: number }) {
+  const retryAfterMs = Number(error.retryAfterMs ?? 0);
+
+  if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+    return `Riot request budget remained unavailable after bounded retries. Resume after ${new Date(Date.now() + retryAfterMs).toISOString()}.`;
+  }
+
+  return "Riot request budget remained unavailable after bounded retries.";
 }
 
 async function assertScanControlAllowsProgress({
@@ -1992,6 +2087,12 @@ async function mirrorScanProgressToCollectionJob({
 }
 
 function getLiveScanProgressMessage(progress: RiotScanSummary) {
+  if (progress.currentStage === "waiting-for-rate-limit") {
+    return progress.rateLimitWaitUntil
+      ? `Waiting for Riot request budget until ${progress.rateLimitWaitUntil}.`
+      : "Waiting for Riot request budget.";
+  }
+
   if (progress.currentStage === "fetching-match-ids") {
     return `Fetching match IDs from seed ${progress.currentSeedIndex ?? "?"}/${progress.seedCount ?? "?"}.`;
   }
@@ -2005,6 +2106,154 @@ function getLiveScanProgressMessage(progress: RiotScanSummary) {
   }
 
   return "Child scan progress updated.";
+}
+
+type RiotRateLimitWaitState = {
+  activeHeaderWindows?: Array<Record<string, unknown>>;
+  endpointGroup?: string;
+  lastRiotRequestAt?: string | null;
+  longWindowLimit?: number;
+  longWindowUsage?: number;
+  requestDelayed?: boolean;
+  retries?: number;
+  riot429Responses?: number;
+  shortWindowLimit?: number;
+  shortWindowUsage?: number;
+  totalWaitMs?: number;
+  waitEpisodeStarted?: boolean;
+  waitMs?: number;
+  waitUntil?: string | null;
+};
+
+async function updateRiotScanRateLimitProgress({
+  collectionJobId,
+  jobId,
+  progressBase,
+  rateLimitState,
+  supabase,
+}: {
+  collectionJobId: number | null;
+  jobId: number;
+  progressBase: Partial<RiotScanSummary>;
+  rateLimitState: RiotRateLimitWaitState;
+  supabase: SupabaseClient;
+}) {
+  const { data: scanJob } = await supabase
+    .from("riot_scan_jobs")
+    .select("progress")
+    .eq("id", jobId)
+    .maybeSingle<{ progress: RiotScanSummary | null }>();
+  const existingProgress = scanJob?.progress ?? {};
+  const nextWaitEpisodes =
+    Number(existingProgress.rateLimitWaitEpisodes ?? existingProgress.rateLimitWaits ?? 0) +
+    (rateLimitState.waitEpisodeStarted ? 1 : 0);
+  const nextRequestsDelayed =
+    Number(existingProgress.rateLimitRequestsDelayed ?? 0) +
+    (rateLimitState.requestDelayed ? 1 : 0);
+  const nextTotalWaitMs =
+    Number(existingProgress.riotRateLimitTotalWaitMs ?? 0) + Number(rateLimitState.waitMs ?? 0);
+  const nextProgress: RiotScanSummary = {
+    ...progressBase,
+    currentStage: "waiting-for-rate-limit",
+    lastProgressAt: new Date().toISOString(),
+    lastRiotRequestAt: rateLimitState.lastRiotRequestAt ?? null,
+    rateLimitLongWindowLimit: rateLimitState.longWindowLimit,
+    rateLimitLongWindowUsage: rateLimitState.longWindowUsage,
+    rateLimitReason: rateLimitState.endpointGroup ?? "unknown",
+    rateLimitRetries: rateLimitState.retries,
+    rateLimitRequestsDelayed: nextRequestsDelayed,
+    rateLimitShortWindowLimit: rateLimitState.shortWindowLimit,
+    rateLimitShortWindowUsage: rateLimitState.shortWindowUsage,
+    rateLimitWaitEpisodes: nextWaitEpisodes,
+    rateLimitWaitMs: rateLimitState.waitMs,
+    rateLimitWaitUntil: rateLimitState.waitUntil ?? null,
+    rateLimitWaits: nextWaitEpisodes,
+    riot429Responses: rateLimitState.riot429Responses,
+    riotRateLimitTotalWaitMs: nextTotalWaitMs,
+  };
+
+  await supabase
+    .from("riot_scan_jobs")
+    .update({
+      progress: nextProgress,
+    })
+    .eq("id", jobId);
+
+  if (collectionJobId) {
+    await mirrorScanProgressToCollectionJob({
+      collectionJobId,
+      progress: nextProgress,
+      scanJobId: jobId,
+      supabase,
+    });
+  }
+}
+
+async function updateCollectionRateLimitProgress({
+  job,
+  rateLimitState,
+  supabase,
+}: {
+  job: RiotCollectionJobView;
+  rateLimitState: RiotRateLimitWaitState;
+  supabase: SupabaseClient;
+}) {
+  const existingRateLimit =
+    job.summary.rateLimit && typeof job.summary.rateLimit === "object"
+      ? (job.summary.rateLimit as Record<string, unknown>)
+      : {};
+  const waitEpisodes =
+    Number(existingRateLimit.waitEpisodes ?? existingRateLimit.rateLimitWaits ?? 0) +
+    (rateLimitState.waitEpisodeStarted ? 1 : 0);
+  const requestsDelayed =
+    Number(existingRateLimit.requestsDelayed ?? 0) + (rateLimitState.requestDelayed ? 1 : 0);
+  const totalWaitMs =
+    Number(existingRateLimit.totalWaitMs ?? 0) + Number(rateLimitState.waitMs ?? 0);
+
+  await supabase
+    .from("riot_collection_jobs")
+    .update({
+      progress: getCollectionProgressPatch(job, {
+        lastMessage: rateLimitState.waitUntil
+          ? `Waiting for Riot request budget until ${rateLimitState.waitUntil}.`
+          : "Waiting for Riot request budget.",
+      }),
+      summary: getCollectionSummaryPatch(job, {
+        rateLimit: {
+          endpointGroup: rateLimitState.endpointGroup ?? "unknown",
+          lastRiotRequestAt: rateLimitState.lastRiotRequestAt ?? null,
+          longWindowLimit: rateLimitState.longWindowLimit,
+          longWindowUsage: rateLimitState.longWindowUsage,
+          requestsDelayed,
+          retries: rateLimitState.retries,
+          riot429Responses: rateLimitState.riot429Responses,
+          shortWindowLimit: rateLimitState.shortWindowLimit,
+          shortWindowUsage: rateLimitState.shortWindowUsage,
+          totalWaitMs,
+          waitMs: rateLimitState.waitMs,
+          waitEpisodes,
+          waitUntil: rateLimitState.waitUntil ?? null,
+        },
+      }),
+    })
+    .eq("id", job.id)
+    .not("status", "in", "(cancelled,completed,completed-partial,failed)");
+}
+
+async function assertCollectionJobAllowsRiotRequest({
+  collectionJobId,
+  supabase,
+}: {
+  collectionJobId: number;
+  supabase: SupabaseClient;
+}) {
+  const { data } = await supabase
+    .from("riot_collection_jobs")
+    .select("status")
+    .eq("id", collectionJobId)
+    .maybeSingle<{ status: RiotCollectionStatus }>();
+
+  return data?.status !== "cancelled" && data?.status !== "paused";
 }
 
 type RiotCounterPickScanLogPersistence = {
@@ -3343,6 +3592,21 @@ async function discoverCollectionSeeds({
   const { normalizeRankEntry } = await import("@/scripts/lib/riot-seed-rank-enrichment.mjs");
   const riot = new RiotApiClient({
     apiKey: process.env.RIOT_API_KEY,
+    rateLimitContext: {
+      collectionJobId: job.id,
+      onWait: async (rateLimitState: RiotRateLimitWaitState) => {
+        await updateCollectionRateLimitProgress({
+          job,
+          rateLimitState,
+          supabase,
+        });
+      },
+      shouldContinue: async () =>
+        assertCollectionJobAllowsRiotRequest({
+          collectionJobId: job.id,
+          supabase,
+        }),
+    },
     regionalRoute: job.regional_route,
     requestDelayMs: Number(process.env.RIOT_REQUEST_DELAY_MS ?? 1200),
   });
@@ -3914,6 +4178,32 @@ async function fetchUsedCollectionCandidateIds(supabase: SupabaseClient, collect
     .returns<Array<{ candidate_id: string }>>();
 
   return new Set((data ?? []).map((row) => row.candidate_id));
+}
+
+async function fetchActiveCollectionJobForPlatform({
+  platform,
+  supabase,
+}: {
+  platform: string;
+  supabase: SupabaseClient;
+}) {
+  const { data } = await supabase
+    .from("riot_collection_jobs")
+    .select("*")
+    .eq("platform", platform)
+    .in("status", [
+      "queued",
+      "discovering-seeds",
+      "selecting-seeds",
+      "scanning",
+      "aggregating",
+      "paused",
+    ])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<RiotCollectionJobRow>();
+
+  return data ? sanitizeCollectionJobRow(data) : null;
 }
 
 async function getActiveCollectionScan(supabase: SupabaseClient, collectionJobId: number) {

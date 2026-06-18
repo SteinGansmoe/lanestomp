@@ -1,8 +1,15 @@
+import {
+  MAX_RATE_LIMIT_RETRIES_PER_REQUEST,
+  RiotRateLimitError,
+  sharedRiotRateLimiter,
+} from "./riot-rate-limiter.mjs";
+
 // Script-only Riot client. Do not import this from public UI code.
 export class RiotApiError extends Error {
-  constructor(message, { status, url }) {
+  constructor(message, { retryAfterMs = null, status, url }) {
     super(message);
     this.name = "RiotApiError";
+    this.retryAfterMs = retryAfterMs;
     this.status = status;
     this.url = url;
   }
@@ -11,6 +18,8 @@ export class RiotApiError extends Error {
 export class RiotApiClient {
   constructor({
     apiKey,
+    rateLimitContext = {},
+    rateLimiter = sharedRiotRateLimiter,
     regionalRoute = "europe",
     retryOnRateLimit = true,
     requestDelayMs = 1200,
@@ -20,10 +29,11 @@ export class RiotApiClient {
     }
 
     this.apiKey = apiKey;
+    this.rateLimitContext = rateLimitContext;
+    this.rateLimiter = rateLimiter;
     this.regionalRoute = regionalRoute;
     this.retryOnRateLimit = retryOnRateLimit;
     this.requestDelayMs = requestDelayMs;
-    this.nextRequestAt = 0;
   }
 
   async fetchRecentRankedMatchIdsByPuuid({ count, puuid, queue = 420, start = 0 }) {
@@ -37,6 +47,9 @@ export class RiotApiClient {
       `https://${this.regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(
         puuid,
       )}/ids?${searchParams.toString()}`,
+      {
+        endpointGroup: "match-v5-match-ids",
+      },
     );
   }
 
@@ -45,6 +58,9 @@ export class RiotApiClient {
       `https://${this.regionalRoute}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(
         matchId,
       )}`,
+      {
+        endpointGroup: "match-v5-match-detail",
+      },
     );
   }
 
@@ -53,6 +69,9 @@ export class RiotApiClient {
       `https://${this.regionalRoute}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
         gameName,
       )}/${encodeURIComponent(tagLine)}`,
+      {
+        endpointGroup: "account-v1-riot-id",
+      },
     );
   }
 
@@ -62,6 +81,7 @@ export class RiotApiClient {
         puuid,
       )}`,
       {
+        endpointGroup: "league-v4-entries-by-puuid",
         retryOnRateLimit: false,
       },
     );
@@ -83,6 +103,7 @@ export class RiotApiClient {
         queue,
       )}/${encodeURIComponent(tier)}/${encodeURIComponent(division)}?${searchParams.toString()}`,
       {
+        endpointGroup: "league-v4-ladder",
         retryOnRateLimit: false,
       },
     );
@@ -98,6 +119,7 @@ export class RiotApiClient {
         normalizedTier,
       )}leagues/by-queue/${encodeURIComponent(queue)}`,
       {
+        endpointGroup: "league-v4-high-tier-ladder",
         retryOnRateLimit: false,
       },
     );
@@ -109,49 +131,78 @@ export class RiotApiClient {
         encryptedSummonerId,
       )}`,
       {
+        endpointGroup: "summoner-v4-encrypted-id",
         retryOnRateLimit: false,
       },
     );
   }
 
-  async fetchJson(url, { retryOnRateLimit = this.retryOnRateLimit } = {}) {
-    await this.waitForRateLimitSlot();
-
-    const response = await fetch(url, {
-      headers: {
-        "X-Riot-Token": this.apiKey,
-      },
-    });
-
-    if (response.status === 429 && retryOnRateLimit) {
-      const retryAfterSeconds = Number(response.headers.get("retry-after") ?? 2);
-      const retryAfterMs = Math.max(retryAfterSeconds * 1000, this.requestDelayMs);
-
-      console.log(`Riot rate limit hit. Waiting ${retryAfterMs}ms before retrying.`);
-      await wait(retryAfterMs);
-
-      return this.fetchJson(url, { retryOnRateLimit });
-    }
-
-    if (!response.ok) {
-      throw new RiotApiError(`Riot API request failed (${response.status}) for ${redactUrl(url)}`, {
-        status: response.status,
-        url: redactUrl(url),
+  async fetchJson(
+    url,
+    { endpointGroup = "unknown", retryOnRateLimit = this.retryOnRateLimit } = {},
+  ) {
+    for (
+      let retryAttempt = 0;
+      retryAttempt <= MAX_RATE_LIMIT_RETRIES_PER_REQUEST;
+      retryAttempt += 1
+    ) {
+      await this.rateLimiter.acquire({
+        ...this.rateLimitContext,
+        endpointGroup,
+        retryAttempt,
       });
+      this.rateLimiter.recordDispatchedRequest({
+        ...this.rateLimitContext,
+        endpointGroup,
+        retryAttempt,
+      });
+
+      const response = await fetch(url, {
+        headers: {
+          "X-Riot-Token": this.apiKey,
+        },
+      });
+      const rateLimitResult = this.rateLimiter.observeResponse(response, {
+        ...this.rateLimitContext,
+        endpointGroup,
+        retryAttempt,
+      });
+
+      if (response.status === 429 && retryOnRateLimit) {
+        if (retryAttempt >= MAX_RATE_LIMIT_RETRIES_PER_REQUEST) {
+          throw new RiotRateLimitError(
+            `Riot API rate limit persisted after ${MAX_RATE_LIMIT_RETRIES_PER_REQUEST} retries for ${redactUrl(
+              url,
+            )}`,
+            {
+              endpointGroup,
+              rateLimitType: "unknown",
+              retryAfterMs: rateLimitResult.retryAfterMs,
+            },
+          );
+        }
+
+        this.rateLimiter.recordRetry();
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new RiotApiError(
+          `Riot API request failed (${response.status}) for ${redactUrl(url)}`,
+          {
+            retryAfterMs: rateLimitResult.retryAfterMs,
+            status: response.status,
+            url: redactUrl(url),
+          },
+        );
+      }
+
+      return response.json();
     }
 
-    return response.json();
-  }
-
-  async waitForRateLimitSlot() {
-    const now = Date.now();
-    const waitMs = Math.max(this.nextRequestAt - now, 0);
-
-    if (waitMs > 0) {
-      await wait(waitMs);
-    }
-
-    this.nextRequestAt = Date.now() + this.requestDelayMs;
+    throw new RiotRateLimitError(`Riot API rate limit persisted for ${redactUrl(url)}`, {
+      endpointGroup,
+    });
   }
 }
 

@@ -1,4 +1,5 @@
-import { BookOpen, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, CalendarDays, Scale } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { SiteHeader } from "@/src/components/site-header";
@@ -7,6 +8,12 @@ type LegalSection = {
   body: ReactNode;
   title: string;
 };
+
+const legalLinks = [
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/legal", label: "Legal" },
+];
 
 export function LegalPageShell({
   children,
@@ -29,44 +36,102 @@ export function LegalPageShell({
         <SiteHeader />
 
         <header className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.2),transparent_28rem),radial-gradient(circle_at_top_right,rgba(168,85,247,0.16),transparent_30rem),linear-gradient(135deg,rgba(8,17,32,0.98),rgba(11,18,32,0.92))] p-5 sm:p-7">
-            <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-              {eyebrow}
-            </p>
-            <h1 className="mt-3 font-mono text-3xl font-semibold tracking-normal text-white sm:text-5xl">
-              {title}
-            </h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-zinc-300 sm:text-base">
-              {description}
-            </p>
-            <p className="mt-5 inline-flex items-center gap-2 rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-zinc-300">
-              <CalendarDays className="size-4 text-cyan-200" aria-hidden="true" />
-              Last updated: {lastUpdated}
-            </p>
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_28rem),radial-gradient(circle_at_85%_0%,rgba(201,170,90,0.14),transparent_26rem),linear-gradient(135deg,rgba(8,17,32,0.98),rgba(11,18,32,0.92))] p-5 sm:p-7">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
+                  {eyebrow}
+                </p>
+                <h1 className="mt-3 font-mono text-3xl font-semibold tracking-normal text-white sm:text-5xl">
+                  {title}
+                </h1>
+                <p className="mt-4 max-w-3xl text-sm leading-6 text-zinc-300 sm:text-base">
+                  {description}
+                </p>
+              </div>
+              <p className="inline-flex w-fit items-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-2 text-sm text-cyan-50">
+                <CalendarDays className="size-4 text-cyan-200" aria-hidden="true" />
+                Last updated: {lastUpdated}
+              </p>
+            </div>
           </div>
         </header>
 
         {children}
 
-        <div className="grid gap-4">
-          {sections.map((section) => (
-            <section
-              className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/80 shadow-xl shadow-black/20 ring-1 ring-white/5"
-              key={section.title}
-            >
-              <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4 sm:px-5">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-violet-500/15 text-violet-200 ring-1 ring-white/10">
-                  <BookOpen className="size-5" aria-hidden="true" />
+        <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
+          <aside className="rounded-lg border border-white/10 bg-[#10182b]/78 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5 lg:sticky lg:top-6">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+                <Scale className="size-4" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-cyan-200">
+                  On this page
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">Legal documents</p>
+              </div>
+            </div>
+
+            <nav className="mt-4 grid gap-1 text-sm" aria-label={`${title} sections`}>
+              {sections.map((section) => (
+                <a
+                  className="rounded-md px-2 py-1.5 text-zinc-400 transition hover:bg-white/[0.04] hover:text-cyan-100"
+                  href={`#${getSectionId(section.title)}`}
+                  key={section.title}
+                >
+                  {section.title}
+                </a>
+              ))}
+            </nav>
+
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-zinc-500">
+                Related
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2 lg:grid">
+                {legalLinks.map((link) => (
+                  <Link
+                    className="rounded-md border border-white/10 bg-white/[0.035] px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                    href={link.href}
+                    key={link.href}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <div className="grid min-w-0 gap-4">
+            {sections.map((section) => (
+              <section
+                className="scroll-mt-6 overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/80 shadow-xl shadow-black/20 ring-1 ring-white/5"
+                id={getSectionId(section.title)}
+                key={section.title}
+              >
+                <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4 sm:px-5">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-white/10">
+                    <BookOpen className="size-5" aria-hidden="true" />
+                  </div>
+                  <h2 className="font-mono text-lg font-semibold text-white">{section.title}</h2>
                 </div>
-                <h2 className="font-mono text-lg font-semibold text-white">{section.title}</h2>
-              </div>
-              <div className="space-y-3 px-4 py-4 text-sm leading-6 text-zinc-300 sm:px-5">
-                {section.body}
-              </div>
-            </section>
-          ))}
+                <div className="space-y-3 px-4 py-4 text-sm leading-6 text-zinc-300 sm:px-5">
+                  {section.body}
+                </div>
+              </section>
+            ))}
+          </div>
         </div>
       </section>
     </main>
   );
+}
+
+function getSectionId(title: string) {
+  return title
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }

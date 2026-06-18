@@ -84,6 +84,9 @@ function testDiscoverySourceCodeGuards() {
   assert.equal(collectionActionsSource.includes("getRiotCollectionConsistencyIssue"), true);
   assert.equal(collectionActionsSource.includes("terminal-child-unconsumed"), true);
   assert.equal(collectionActionsSource.includes("calculateCollectionConsumedTotals"), true);
+  assert.equal(collectionActionsSource.includes("fetchActiveCollectionJobForPlatform"), true);
+  assert.equal(collectionActionsSource.includes("updateRiotScanRateLimitProgress"), true);
+  assert.equal(collectionActionsSource.includes("rateLimitContext"), true);
   assert.equal(
     collectionActionsSource.includes("void refreshCollection(activeJob.id, { silent: true });"),
     false,
@@ -173,7 +176,7 @@ function testAdaptiveSeedBatchSize() {
       targetUniqueMatches: 50,
       uniqueMatchesProcessed: 0,
     }),
-    13,
+    4,
   );
   assert.equal(
     getAdaptiveRiotCollectionSeedBatchSize({

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ShieldAlert, Swords } from "lucide-react";
+import type { Metadata } from "next";
+import { Database, ShieldAlert, Swords } from "lucide-react";
 import { connection } from "next/server";
 
 import { BackButton } from "@/src/components/back-button";
@@ -8,6 +9,15 @@ import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
 import { getLeagueChampions } from "@/src/features/league/champions";
 import { getLeagueMatchupCoverageSummary } from "@/src/features/league/matchups";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/league/matchups",
+  },
+  description:
+    "Find League of Legends matchup guides by champion and role with LaneStomp matchup prep.",
+  title: "League Matchup Guides",
+};
 
 export default async function LeagueMatchupsPage() {
   await connection();
@@ -24,9 +34,10 @@ export default async function LeagueMatchupsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <BackButton href="/" label="Back to LaneStomp" />
           <Link
-            className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-200"
+            className="inline-flex items-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/10"
             href="/champions"
           >
+            <Database className="size-4" aria-hidden="true" />
             Champion data
           </Link>
         </div>
@@ -39,13 +50,14 @@ export default async function LeagueMatchupsPage() {
               </div>
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                  LaneStomp
+                  Matchup guides
                 </p>
                 <h1 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-white sm:text-3xl">
-                  Pick your lane opponent
+                  Find your lane plan
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">
-                  Select two champions and a role for fast LaneStomp matchup prep.
+                  Search champions directly, filter by role, and open the matchup guide for the
+                  lane you want to study.
                 </p>
               </div>
             </div>

@@ -76,7 +76,7 @@ export function AuthConfirmedPanel() {
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild className="h-11 bg-violet-500/85 px-5 text-white hover:bg-violet-500">
+        <Button asChild className="h-11 bg-cyan-300 px-5 text-[#05111d] hover:bg-cyan-200">
           <Link href={primaryHref}>
             {primaryLabel}
             <ArrowRight className="size-4" aria-hidden="true" />

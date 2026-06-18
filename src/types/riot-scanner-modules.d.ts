@@ -35,6 +35,13 @@ declare module "@/scripts/lib/riot-api-client.mjs" {
   export class RiotApiClient {
     constructor(options: {
       apiKey: string;
+      rateLimitContext?: {
+        collectionJobId?: number | null;
+        onWait?: (state: Record<string, unknown>) => Promise<void> | void;
+        scanJobId?: number | null;
+        shouldContinue?: () => boolean | Promise<boolean>;
+      };
+      rateLimiter?: unknown;
       regionalRoute?: string;
       requestDelayMs?: number;
       retryOnRateLimit?: boolean;

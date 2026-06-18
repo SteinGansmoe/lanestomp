@@ -75,6 +75,8 @@ import { cn } from "@/src/lib/utils";
 
 type CounterPickSelectorProps = {
   champions: LeagueChampion[];
+  initialChampionId?: string | null;
+  initialRole?: LeagueRole | null;
 };
 
 type CounterDirection = "best-counter" | "countered-by";
@@ -158,17 +160,24 @@ const roleOptions = [
 }>;
 type ChampionSelectorRoleFilter = LeagueRole | "all";
 
-export function CounterPickSelector({ champions }: CounterPickSelectorProps) {
+export function CounterPickSelector({
+  champions,
+  initialChampionId,
+  initialRole,
+}: CounterPickSelectorProps) {
   const [selectedChampionId, setSelectedChampionId] = useState<string | null>(
     () =>
+      findCounterPickInitialChampion(champions, initialChampionId)?.id ??
       champions.find((champion) => normalizeChampionLookupKey(champion.id) === "ahri")?.id ??
       champions.find((champion) => isChampionInRole(champion, "mid"))?.id ??
       champions[0]?.id ??
       null,
   );
-  const [selectedRole, setSelectedRole] = useState<LeagueRole>("mid");
+  const [selectedRole, setSelectedRole] = useState<LeagueRole>(initialRole ?? "mid");
   const [selectorQuery, setSelectorQuery] = useState("");
-  const [selectorRole, setSelectorRole] = useState<ChampionSelectorRoleFilter>("all");
+  const [selectorRole, setSelectorRole] = useState<ChampionSelectorRoleFilter>(
+    initialRole ?? "all",
+  );
   const [includeOffMeta, setIncludeOffMeta] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [selectedCounterKey, setSelectedCounterKey] = useState<string | null>(null);
@@ -2652,6 +2661,26 @@ function normalizeChampionLookupKey(value: string) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
+}
+
+function findCounterPickInitialChampion(
+  champions: LeagueChampion[],
+  initialChampionId: string | null | undefined,
+) {
+  if (!initialChampionId) {
+    return null;
+  }
+
+  const normalizedInitialChampionId = normalizeChampionLookupKey(initialChampionId);
+
+  return (
+    champions.find(
+      (champion) =>
+        normalizeChampionLookupKey(champion.id) === normalizedInitialChampionId ||
+        normalizeChampionLookupKey(champion.name) === normalizedInitialChampionId ||
+        normalizeChampionLookupKey(champion.slug ?? "") === normalizedInitialChampionId,
+    ) ?? null
+  );
 }
 
 function dedupePrepBullets(items: readonly string[]) {

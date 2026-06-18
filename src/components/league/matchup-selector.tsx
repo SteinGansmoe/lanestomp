@@ -170,7 +170,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
                     >
                       <ArrowLeftRight className="size-5" aria-hidden="true" />
                     </button>
-                    <SelectionSlot champion={championB} label="Opponent" tone="violet" />
+                    <SelectionSlot champion={championB} label="Opponent" tone="gold" />
                   </div>
 
                   <Button className="h-11 bg-white/10 px-4 text-zinc-400" disabled type="button">
@@ -333,7 +333,7 @@ function RoleIconSelector({
 function MatchupCoverageIndicator({ coverage }: { coverage: LeagueMatchupCoverageSummary["all"] }) {
   const helperText =
     "We're actively expanding the matchup database and adding new guides every day.";
-  const label = `🚀 ${formatMatchupCount(
+  const label = `Coverage ${formatMatchupCount(
     coverage.generatedCount,
   )} / ${formatMatchupCount(coverage.totalCount)} matchups available`;
 
@@ -344,7 +344,7 @@ function MatchupCoverageIndicator({ coverage }: { coverage: LeagueMatchupCoverag
       title={helperText}
     >
       <span className="mr-2" aria-hidden="true">
-        🚀
+        Coverage
       </span>
       <span className="whitespace-nowrap font-medium">
         {formatMatchupCount(coverage.generatedCount)} / {formatMatchupCount(coverage.totalCount)}{" "}
@@ -375,7 +375,7 @@ function ChampionButton({
       className={cn(
         "group relative aspect-square min-w-0 overflow-hidden rounded-md border border-white/10 bg-white/[0.035] shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-cyan-300/35 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
         isChampionA && "border-cyan-300/80 ring-2 ring-cyan-300/30",
-        isChampionB && "border-violet-300/80 ring-2 ring-violet-300/30",
+        isChampionB && "border-[#C9AA5A]/80 ring-2 ring-[#C9AA5A]/30",
       )}
       onClick={onClick}
       title={`${champion.name}${championRoles.length ? ` - ${championRoles.map(getRoleLabel).join(", ")}` : ""}`}
@@ -398,7 +398,7 @@ function ChampionButton({
         <span
           className={cn(
             "absolute right-1 top-1 rounded px-1.5 py-0.5 font-mono text-[0.6rem] font-semibold uppercase",
-            isChampionA ? "bg-cyan-300 text-cyan-950" : "bg-violet-300 text-violet-950",
+            isChampionA ? "bg-cyan-300 text-cyan-950" : "bg-[#C9AA5A] text-[#100b05]",
           )}
         >
           {isChampionA ? "You" : "VS"}
@@ -415,7 +415,7 @@ function SelectionSlot({
 }: {
   champion: LeagueChampion | null;
   label: string;
-  tone: "cyan" | "violet";
+  tone: "cyan" | "gold";
 }) {
   return (
     <div className="flex min-h-16 items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-2.5">
@@ -424,7 +424,7 @@ function SelectionSlot({
           "relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border",
           tone === "cyan"
             ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-100"
-            : "border-violet-300/30 bg-violet-400/10 text-violet-100",
+            : "border-[#C9AA5A]/35 bg-[#C9AA5A]/10 text-[#F4D88A]",
         )}
       >
         {champion ? (
@@ -445,7 +445,7 @@ function SelectionSlot({
         <p
           className={cn(
             "font-mono text-[0.65rem] uppercase tracking-[0.16em]",
-            tone === "cyan" ? "text-cyan-200" : "text-violet-200",
+            tone === "cyan" ? "text-cyan-200" : "text-[#F4D88A]",
           )}
         >
           {label}

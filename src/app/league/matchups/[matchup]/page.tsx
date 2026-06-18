@@ -214,7 +214,7 @@ export default async function LeagueMatchupPage({ params, searchParams }: League
               Pick two champions from the selector to create a matchup route.
             </p>
             <Link
-              className="mt-5 inline-flex items-center gap-2 rounded-md border border-violet-300/20 bg-violet-500/20 px-3 py-2 text-sm font-medium text-violet-100 transition hover:bg-violet-500/30"
+              className="mt-5 inline-flex items-center gap-2 rounded-md border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/15"
               href="/league/matchups"
             >
               Open selector
@@ -359,11 +359,11 @@ function CoverageProgressCard({
   return (
     <div className="rounded-lg border border-white/10 bg-black/15 p-4">
       <div className="flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/15 text-violet-100">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-[#C9AA5A]/25 bg-[#C9AA5A]/10 text-[#F4D88A]">
           <Sparkles className="size-4" aria-hidden="true" />
         </span>
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-violet-200">
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#F4D88A]">
             Current {roleLabel} Lane progress
           </p>
           <p className="mt-1 text-xs text-zinc-500">Publicly available guides</p>

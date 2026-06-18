@@ -7,11 +7,19 @@ export default function AccountSettingsLoading() {
       role="status"
       aria-label="Loading account settings"
     >
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
         <SiteHeader />
 
-        <div className="mx-auto w-full max-w-2xl rounded-lg border border-white/10 bg-[#10182b]/90 p-6 shadow-xl shadow-black/25">
-          <div className="size-12 rounded-lg bg-violet-500/20 ring-1 ring-violet-300/20" />
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.2),transparent_28rem),radial-gradient(circle_at_85%_0%,rgba(201,170,90,0.12),transparent_26rem),linear-gradient(135deg,rgba(8,17,32,0.98),rgba(11,18,32,0.92))] p-5 sm:p-7">
+            <div className="size-12 rounded-lg border border-cyan-300/20 bg-cyan-400/10" />
+            <div className="mt-5 h-9 w-72 max-w-full rounded bg-white/10" />
+            <div className="mt-3 h-4 w-full max-w-2xl rounded bg-white/5" />
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-4xl rounded-lg border border-white/10 bg-[#10182b]/90 p-6 shadow-xl shadow-black/25">
+          <div className="size-12 rounded-lg bg-cyan-400/10 ring-1 ring-cyan-300/20" />
           <div className="mt-5 h-8 w-56 rounded bg-white/10" />
           <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
 
@@ -26,7 +34,7 @@ export default function AccountSettingsLoading() {
               <div className="h-11 rounded-lg border border-white/10 bg-white/[0.03]" />
             </div>
             <div className="h-28 rounded-lg border border-white/10 bg-white/[0.03]" />
-            <div className="h-11 w-40 rounded-lg bg-violet-500/20" />
+            <div className="h-11 w-40 rounded-lg bg-cyan-400/15" />
           </div>
         </div>
       </section>

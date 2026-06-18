@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Mail, Save, UserCircle } from "lucide-react";
+import { KeyRound, Mail, Save, UserCircle, X } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -18,11 +18,13 @@ import { validatePasswordConfirmation } from "@/src/lib/password";
 import { supabase } from "@/src/lib/supabase";
 
 const pendingEmailStorageKey = "lanestomp.account.pendingEmailChange";
+const pendingEmailNoticeDismissedStorageKey = "lanestomp.account.pendingEmailNoticeDismissed";
+const emailResendCooldownSeconds = 60;
 
 function AccountSettingsFormSkeleton() {
   return (
-    <Card className="mx-auto w-full max-w-2xl border-white/10 bg-[#10182b]/90 p-6 text-white shadow-xl shadow-black/25">
-      <div className="size-12 rounded-lg bg-violet-500/20 ring-1 ring-violet-300/20" />
+    <Card className="mx-auto w-full max-w-4xl rounded-lg border-white/10 bg-[#10182b]/90 p-6 text-white shadow-xl shadow-black/25">
+      <div className="size-12 rounded-lg bg-cyan-400/10 ring-1 ring-cyan-300/20" />
       <div className="mt-5 h-8 w-56 rounded bg-white/10" />
       <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
 
@@ -37,7 +39,7 @@ function AccountSettingsFormSkeleton() {
           <div className="h-11 rounded-lg border border-white/10 bg-white/[0.03]" />
         </div>
         <div className="h-28 rounded-lg border border-white/10 bg-white/[0.03]" />
-        <div className="h-11 w-40 rounded-lg bg-violet-500/20" />
+        <div className="h-11 w-40 rounded-lg bg-cyan-400/15" />
       </div>
     </Card>
   );
@@ -49,6 +51,7 @@ export function AccountSettingsForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEmailSaving, setIsEmailSaving] = useState(false);
+  const [isPendingEmailNoticeDismissed, setIsPendingEmailNoticeDismissed] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentEmail, setCurrentEmail] = useState("");
@@ -59,6 +62,7 @@ export function AccountSettingsForm() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [emailResendCooldown, setEmailResendCooldown] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [username, setUsername] = useState("");
@@ -109,6 +113,7 @@ export function AccountSettingsForm() {
       setCurrentEmail(nextCurrentEmail);
       setNewEmail(nextPendingEmail ?? "");
       setPendingEmail(nextPendingEmail);
+      setIsPendingEmailNoticeDismissed(getStoredPendingEmailNoticeDismissed(nextPendingEmail));
       setUsername(data.username ?? "");
       setEmailSuccess(wasEmailChangeCompleted ? "Email updated successfully." : null);
 
@@ -126,6 +131,18 @@ export function AccountSettingsForm() {
       isMounted = false;
     };
   }, [router]);
+
+  useEffect(() => {
+    if (emailResendCooldown <= 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setEmailResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [emailResendCooldown]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -236,14 +253,17 @@ export function AccountSettingsForm() {
     const nextPendingEmail = data.user?.new_email?.trim() || nextEmail;
 
     window.localStorage.setItem(pendingEmailStorageKey, nextPendingEmail);
+    window.localStorage.removeItem(getPendingEmailDismissalKey(nextPendingEmail));
     setCurrentEmail(data.user?.email ?? currentEmail);
     setNewEmail("");
     setPendingEmail(nextPendingEmail);
+    setIsPendingEmailNoticeDismissed(false);
+    setEmailResendCooldown(emailResendCooldownSeconds);
     setEmailSuccess("Verification email sent.");
   }
 
   async function resendEmailVerification() {
-    if (!pendingEmail) {
+    if (!pendingEmail || emailResendCooldown > 0) {
       return;
     }
 
@@ -266,10 +286,22 @@ export function AccountSettingsForm() {
     const nextPendingEmail = data.user?.new_email?.trim() || pendingEmail;
 
     window.localStorage.setItem(pendingEmailStorageKey, nextPendingEmail);
+    window.localStorage.removeItem(getPendingEmailDismissalKey(nextPendingEmail));
     setCurrentEmail(data.user?.email ?? currentEmail);
     setNewEmail("");
     setPendingEmail(nextPendingEmail);
+    setIsPendingEmailNoticeDismissed(false);
+    setEmailResendCooldown(emailResendCooldownSeconds);
     setEmailSuccess("Verification email sent.");
+  }
+
+  function dismissPendingEmailNotice() {
+    if (!pendingEmail) {
+      return;
+    }
+
+    window.localStorage.setItem(getPendingEmailDismissalKey(pendingEmail), "true");
+    setIsPendingEmailNoticeDismissed(true);
   }
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
@@ -328,9 +360,9 @@ export function AccountSettingsForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-2xl border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25">
+    <Card className="mx-auto w-full max-w-4xl rounded-lg border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25 ring-1 ring-white/5">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
+        <div className="mb-3 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
           <UserCircle className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Account settings</CardTitle>
@@ -344,7 +376,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">Username</span>
             <Input
               autoComplete="username"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
               disabled={isSaving}
               maxLength={24}
               minLength={3}
@@ -359,7 +391,7 @@ export function AccountSettingsForm() {
           </label>
 
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <h2 className="font-mono text-sm font-semibold uppercase text-violet-200">
+            <h2 className="font-mono text-sm font-semibold uppercase text-cyan-200">
               Riot account
             </h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
@@ -380,7 +412,7 @@ export function AccountSettingsForm() {
           ) : null}
 
           <Button
-            className="h-11 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+            className="h-11 bg-cyan-300 px-4 text-[#05111d] hover:bg-cyan-200"
             disabled={isSaving}
             type="submit"
           >
@@ -410,8 +442,8 @@ export function AccountSettingsForm() {
               className="h-11 border-white/10 bg-white/[0.03] text-zinc-400"
               disabled
               readOnly
-              type="email"
-              value={currentEmail}
+              type="text"
+              value={maskEmail(currentEmail)}
             />
           </label>
 
@@ -429,22 +461,65 @@ export function AccountSettingsForm() {
             />
           </label>
 
-          {pendingEmail ? (
-            <div className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100">
-              <p>
-                Pending email change: <span className="font-medium text-white">{pendingEmail}</span>
-              </p>
-              <p className="text-cyan-100/80">Verification email sent.</p>
+          {pendingEmail && !isPendingEmailNoticeDismissed ? (
+            <div
+              className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100"
+              role="status"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-[0.16em] text-cyan-200">
+                    Verification pending
+                  </p>
+                  <p className="mt-2">
+                    Pending email change to{" "}
+                    <span className="font-medium text-white">{maskEmail(pendingEmail)}</span>.
+                  </p>
+                  <p className="mt-1 text-cyan-100/80">
+                    Your current email stays active until the verification link is confirmed.
+                    Depending on account security settings, confirmation may require the new inbox
+                    and the current inbox.
+                  </p>
+                </div>
+                <button
+                  aria-label="Dismiss pending email verification notice"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45"
+                  onClick={dismissPendingEmailNotice}
+                  type="button"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              </div>
               <Button
                 className="mt-3 h-9 border-cyan-300/20 bg-cyan-400/10 px-3 text-cyan-100 hover:bg-cyan-400/15"
-                disabled={isEmailSaving}
+                disabled={isEmailSaving || emailResendCooldown > 0}
                 onClick={resendEmailVerification}
                 type="button"
                 variant="ghost"
               >
                 <Mail className="size-3.5" aria-hidden="true" />
-                {isEmailSaving ? "Sending..." : "Resend verification"}
+                {isEmailSaving
+                  ? "Sending..."
+                  : emailResendCooldown > 0
+                    ? `Resend in ${emailResendCooldown}s`
+                    : "Resend verification"}
               </Button>
+            </div>
+          ) : null}
+
+          {pendingEmail && isPendingEmailNoticeDismissed ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-300">
+              <span>Verification pending for {maskEmail(pendingEmail)}.</span>
+              <button
+                className="text-sm font-medium text-cyan-200 transition hover:text-white"
+                onClick={() => {
+                  window.localStorage.removeItem(getPendingEmailDismissalKey(pendingEmail));
+                  setIsPendingEmailNoticeDismissed(false);
+                }}
+                type="button"
+              >
+                Show details
+              </button>
             </div>
           ) : null}
 
@@ -475,11 +550,11 @@ export function AccountSettingsForm() {
           onSubmit={handlePasswordSubmit}
         >
           <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
               <KeyRound className="size-5" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="font-mono text-sm font-semibold uppercase text-violet-200">
+              <h2 className="font-mono text-sm font-semibold uppercase text-cyan-200">
                 Change Password
               </h2>
               <p className="mt-1 text-sm leading-6 text-zinc-400">
@@ -492,7 +567,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">Current password</span>
             <Input
               autoComplete="current-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
               disabled={isPasswordSaving}
               onChange={(event) => setCurrentPassword(event.target.value)}
               required
@@ -505,7 +580,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">New password</span>
             <Input
               autoComplete="new-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
               disabled={isPasswordSaving}
               minLength={8}
               onChange={(event) => setNewPassword(event.target.value)}
@@ -519,7 +594,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">Confirm password</span>
             <Input
               autoComplete="new-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
               disabled={isPasswordSaving}
               minLength={8}
               onChange={(event) => setConfirmPassword(event.target.value)}
@@ -545,7 +620,7 @@ export function AccountSettingsForm() {
           ) : null}
 
           <Button
-            className="h-11 bg-violet-500/80 px-4 text-white hover:bg-violet-500"
+            className="h-11 bg-cyan-300 px-4 text-[#05111d] hover:bg-cyan-200"
             disabled={isPasswordSaving}
             type="submit"
           >
@@ -610,12 +685,39 @@ function reconcileStoredPendingEmail(currentEmail: string, pendingEmail: string 
 
   if (!pendingEmail && normalizedStoredEmail === normalizedCurrentEmail) {
     window.localStorage.removeItem(pendingEmailStorageKey);
+    window.localStorage.removeItem(getPendingEmailDismissalKey(storedPendingEmail));
     return true;
   }
 
   if (!pendingEmail && normalizedStoredEmail !== normalizedCurrentEmail) {
     window.localStorage.removeItem(pendingEmailStorageKey);
+    window.localStorage.removeItem(getPendingEmailDismissalKey(storedPendingEmail));
   }
 
   return false;
+}
+
+function getPendingEmailDismissalKey(email: string) {
+  return `${pendingEmailNoticeDismissedStorageKey}:${email.trim().toLowerCase()}`;
+}
+
+function getStoredPendingEmailNoticeDismissed(pendingEmail: string | null) {
+  if (typeof window === "undefined" || !pendingEmail) {
+    return false;
+  }
+
+  return window.localStorage.getItem(getPendingEmailDismissalKey(pendingEmail)) === "true";
+}
+
+function maskEmail(email: string) {
+  const [localPart = "", domain = ""] = email.split("@");
+
+  if (!localPart || !domain) {
+    return email ? "Email hidden" : "";
+  }
+
+  const visibleStart = localPart.slice(0, 1);
+  const visibleEnd = localPart.length > 2 ? localPart.slice(-1) : "";
+
+  return `${visibleStart}${"*".repeat(Math.max(2, localPart.length - 2))}${visibleEnd}@${domain}`;
 }

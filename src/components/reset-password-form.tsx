@@ -121,9 +121,9 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25">
+    <Card className="mx-auto w-full max-w-md rounded-lg border-white/10 bg-[#10182b]/92 text-white shadow-2xl shadow-black/30 ring-1 ring-white/5">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
+        <div className="mb-3 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
           <KeyRound className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Reset your password</CardTitle>
@@ -143,7 +143,7 @@ export function ResetPasswordForm() {
             <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm leading-6 text-rose-100">
               {error}
             </p>
-            <Button asChild className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500">
+            <Button asChild className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200">
               <Link href="/auth/forgot-password">Request a new reset link</Link>
             </Button>
           </div>
@@ -154,7 +154,7 @@ export function ResetPasswordForm() {
             <div className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100">
               <p>Your password has been updated.</p>
             </div>
-            <Button asChild className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500">
+            <Button asChild className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200">
               <Link href="/league/matchups">
                 Continue to LaneStomp
                 <ArrowRight className="size-4" aria-hidden="true" />
@@ -169,7 +169,7 @@ export function ResetPasswordForm() {
               <span className="text-sm text-zinc-300">New password</span>
               <Input
                 autoComplete="new-password"
-                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
                 disabled={isSubmitting}
                 minLength={8}
                 onChange={(event) => setNewPassword(event.target.value)}
@@ -183,7 +183,7 @@ export function ResetPasswordForm() {
               <span className="text-sm text-zinc-300">Confirm password</span>
               <Input
                 autoComplete="new-password"
-                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
                 disabled={isSubmitting}
                 minLength={8}
                 onChange={(event) => setConfirmPassword(event.target.value)}
@@ -197,13 +197,16 @@ export function ResetPasswordForm() {
             </label>
 
             {error ? (
-              <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+              <p
+                className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+                role="alert"
+              >
                 {error}
               </p>
             ) : null}
 
             <Button
-              className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500"
+              className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200"
               disabled={isSubmitting}
               type="submit"
             >

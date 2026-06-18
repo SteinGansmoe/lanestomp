@@ -2258,6 +2258,27 @@ function RiotCollectionJobCard({
             activeScanProgress?.lastProgressAt ?? job.progress.activeScanProgressAt,
           )}
         />
+        <Metric
+          label="Riot budget"
+          value={
+            activeScanProgress?.rateLimitShortWindowLimit
+              ? `${activeScanProgress.rateLimitShortWindowUsage ?? 0}/${activeScanProgress.rateLimitShortWindowLimit} short, ${activeScanProgress.rateLimitLongWindowUsage ?? 0}/${activeScanProgress.rateLimitLongWindowLimit ?? "?"} long`
+              : "Pending"
+          }
+        />
+        <Metric
+          label="Wait episodes"
+          value={
+            activeScanProgress?.rateLimitWaitEpisodes
+              ? `${activeScanProgress.rateLimitWaitEpisodes} episodes`
+              : "None"
+          }
+        />
+        <Metric
+          label="Requests delayed"
+          value={activeScanProgress?.rateLimitRequestsDelayed ?? 0}
+        />
+        <Metric label="Riot 429s" value={activeScanProgress?.riot429Responses ?? 0} />
       </div>
       {job.stop_reason ? (
         <div className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">

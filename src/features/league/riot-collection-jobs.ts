@@ -226,6 +226,11 @@ export const defaultRiotCollectionSafetyLimits = {
   maxSeedBatchSize: 20,
 } as const satisfies RiotCollectionSafetyLimits;
 
+export const minRiotCollectionSeedsPerBatch = 1;
+export const maxRiotCollectionSeedsPerBatch = 20;
+export const defaultDevKeyRiotCollectionSeedsPerBatch = 3;
+export const defaultDevKeyEstimatedRiotRequestsPerSeed = 21;
+
 export const riotCollectionDiscoveryReasonLabels = {
   "api-failure": "One or more Riot ladder API requests failed.",
   "identifier-resolution-failed": "Ladder players were found, but PUUID resolution failed.",
@@ -330,13 +335,18 @@ export function getAdaptiveRiotCollectionSeedBatchSize({
 }) {
   const remainingTargetMatches = Math.max(targetUniqueMatches - uniqueMatchesProcessed, 1);
   const observedMatchesPerSeed = seedsUsed > 0 ? uniqueMatchesProcessed / seedsUsed : 0;
+  const requestBudgetSeedLimit = defaultDevKeyRiotCollectionSeedsPerBatch + 1;
   const estimatedMatchesPerSeed =
     Number.isFinite(observedMatchesPerSeed) && observedMatchesPerSeed > 0
       ? Math.min(Math.max(observedMatchesPerSeed, 1), 20)
-      : 4;
+      : Math.ceil(remainingTargetMatches / requestBudgetSeedLimit);
   const adaptiveSize = Math.ceil(remainingTargetMatches / estimatedMatchesPerSeed);
 
-  return Math.min(Math.max(adaptiveSize, 1), maxSeedBatchSize);
+  return Math.min(
+    Math.max(adaptiveSize, minRiotCollectionSeedsPerBatch),
+    maxSeedBatchSize,
+    maxRiotCollectionSeedsPerBatch,
+  );
 }
 
 export function createEmptyRiotCollectionDiscoveryDiagnostics(
