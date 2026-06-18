@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BookOpen, CalendarDays, Scale } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { SiteHeader } from "@/src/components/site-header";
 
 type LegalSection = {
@@ -31,11 +32,10 @@ export function LegalPageShell({
   title: string;
 }) {
   return (
-    <main className="min-h-screen bg-[#050b18] text-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
+    <LaneStompPageShell>
         <SiteHeader />
 
-        <header className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
+        <header className="overflow-hidden border border-cyan-100/15 bg-[#06111f]/88">
           <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_28rem),radial-gradient(circle_at_85%_0%,rgba(201,170,90,0.14),transparent_26rem),linear-gradient(135deg,rgba(8,17,32,0.98),rgba(11,18,32,0.92))] p-5 sm:p-7">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0">
@@ -49,7 +49,7 @@ export function LegalPageShell({
                   {description}
                 </p>
               </div>
-              <p className="inline-flex w-fit items-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-2 text-sm text-cyan-50">
+              <p className="inline-flex w-fit items-center gap-2 rounded border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-2 text-sm text-cyan-50">
                 <CalendarDays className="size-4 text-cyan-200" aria-hidden="true" />
                 Last updated: {lastUpdated}
               </p>
@@ -60,9 +60,9 @@ export function LegalPageShell({
         {children}
 
         <div className="grid gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
-          <aside className="rounded-lg border border-white/10 bg-[#10182b]/78 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5 lg:sticky lg:top-6">
+          <aside className="border border-cyan-100/15 bg-[#06111f]/80 p-4 lg:sticky lg:top-6">
             <div className="flex items-center gap-3">
-              <span className="flex size-9 items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+              <span className="flex size-9 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
                 <Scale className="size-4" aria-hidden="true" />
               </span>
               <div>
@@ -76,7 +76,7 @@ export function LegalPageShell({
             <nav className="mt-4 grid gap-1 text-sm" aria-label={`${title} sections`}>
               {sections.map((section) => (
                 <a
-                  className="rounded-md px-2 py-1.5 text-zinc-400 transition hover:bg-white/[0.04] hover:text-cyan-100"
+                  className="rounded px-2 py-1.5 text-zinc-400 transition hover:bg-cyan-400/[0.06] hover:text-cyan-100"
                   href={`#${getSectionId(section.title)}`}
                   key={section.title}
                 >
@@ -92,7 +92,7 @@ export function LegalPageShell({
               <div className="mt-2 flex flex-wrap gap-2 lg:grid">
                 {legalLinks.map((link) => (
                   <Link
-                    className="rounded-md border border-white/10 bg-white/[0.035] px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-cyan-300/30 hover:text-cyan-100"
+                    className="rounded border border-cyan-100/15 bg-cyan-400/[0.035] px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-cyan-300/30 hover:text-cyan-100"
                     href={link.href}
                     key={link.href}
                   >
@@ -106,12 +106,12 @@ export function LegalPageShell({
           <div className="grid min-w-0 gap-4">
             {sections.map((section) => (
               <section
-                className="scroll-mt-6 overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/80 shadow-xl shadow-black/20 ring-1 ring-white/5"
+                className="scroll-mt-6 overflow-hidden border border-cyan-100/15 bg-[#06111f]/80"
                 id={getSectionId(section.title)}
                 key={section.title}
               >
                 <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4 sm:px-5">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-white/10">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
                     <BookOpen className="size-5" aria-hidden="true" />
                   </div>
                   <h2 className="font-mono text-lg font-semibold text-white">{section.title}</h2>
@@ -123,8 +123,7 @@ export function LegalPageShell({
             ))}
           </div>
         </div>
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }
 

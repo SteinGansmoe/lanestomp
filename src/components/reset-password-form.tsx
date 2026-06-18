@@ -121,9 +121,9 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md rounded-lg border-white/10 bg-[#10182b]/92 text-white shadow-2xl shadow-black/30 ring-1 ring-white/5">
+    <Card className="mx-auto w-full max-w-md border-cyan-100/15 bg-[#06111f]/92 text-white">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
+        <div className="mb-3 flex size-12 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
           <KeyRound className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Reset your password</CardTitle>
@@ -133,14 +133,14 @@ export function ResetPasswordForm() {
       </CardHeader>
       <CardContent>
         {sessionState === "checking" ? (
-          <p className="rounded-md border border-white/10 bg-white/5 p-3 text-sm text-zinc-300">
+          <p className="rounded border border-cyan-100/15 bg-white/[0.035] p-3 text-sm text-zinc-300">
             Checking reset link...
           </p>
         ) : null}
 
         {sessionState === "invalid" ? (
           <div className="space-y-5">
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm leading-6 text-rose-100">
+            <p className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm leading-6 text-rose-100">
               {error}
             </p>
             <Button asChild className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200">
@@ -151,7 +151,7 @@ export function ResetPasswordForm() {
 
         {sessionState === "updated" ? (
           <div className="space-y-5">
-            <div className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100">
+            <div className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100">
               <p>Your password has been updated.</p>
             </div>
             <Button asChild className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200">
@@ -169,7 +169,7 @@ export function ResetPasswordForm() {
               <span className="text-sm text-zinc-300">New password</span>
               <Input
                 autoComplete="new-password"
-                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+                className="h-11"
                 disabled={isSubmitting}
                 minLength={8}
                 onChange={(event) => setNewPassword(event.target.value)}
@@ -183,7 +183,7 @@ export function ResetPasswordForm() {
               <span className="text-sm text-zinc-300">Confirm password</span>
               <Input
                 autoComplete="new-password"
-                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+                className="h-11"
                 disabled={isSubmitting}
                 minLength={8}
                 onChange={(event) => setConfirmPassword(event.target.value)}
@@ -198,7 +198,7 @@ export function ResetPasswordForm() {
 
             {error ? (
               <p
-                className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+                className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
                 role="alert"
               >
                 {error}

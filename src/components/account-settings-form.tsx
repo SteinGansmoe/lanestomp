@@ -23,23 +23,23 @@ const emailResendCooldownSeconds = 60;
 
 function AccountSettingsFormSkeleton() {
   return (
-    <Card className="mx-auto w-full max-w-4xl rounded-lg border-white/10 bg-[#10182b]/90 p-6 text-white shadow-xl shadow-black/25">
-      <div className="size-12 rounded-lg bg-cyan-400/10 ring-1 ring-cyan-300/20" />
+    <Card className="mx-auto w-full max-w-4xl border-cyan-100/15 bg-[#06111f]/90 p-6 text-white">
+      <div className="size-12 rounded bg-cyan-400/10" />
       <div className="mt-5 h-8 w-56 rounded bg-white/10" />
       <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
 
       <div className="mt-8 space-y-5">
         <div className="space-y-2">
           <div className="h-4 w-20 rounded bg-white/10" />
-          <div className="h-11 rounded-lg border border-white/10 bg-white/[0.04]" />
+          <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.04]" />
           <div className="h-3 w-52 rounded bg-white/5" />
         </div>
         <div className="space-y-2">
           <div className="h-4 w-14 rounded bg-white/10" />
-          <div className="h-11 rounded-lg border border-white/10 bg-white/[0.03]" />
+          <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.03]" />
         </div>
-        <div className="h-28 rounded-lg border border-white/10 bg-white/[0.03]" />
-        <div className="h-11 w-40 rounded-lg bg-cyan-400/15" />
+        <div className="h-28 rounded border border-cyan-100/15 bg-white/[0.03]" />
+        <div className="h-11 w-40 rounded bg-cyan-400/15" />
       </div>
     </Card>
   );
@@ -360,9 +360,9 @@ export function AccountSettingsForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-4xl rounded-lg border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25 ring-1 ring-white/5">
+    <Card className="mx-auto w-full max-w-4xl border-cyan-100/15 bg-[#06111f]/90 text-white">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
+        <div className="mb-3 flex size-12 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
           <UserCircle className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Account settings</CardTitle>
@@ -376,7 +376,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">Username</span>
             <Input
               autoComplete="username"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isSaving}
               maxLength={24}
               minLength={3}
@@ -390,7 +390,7 @@ export function AccountSettingsForm() {
             </span>
           </label>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded border border-cyan-100/15 bg-white/[0.03] p-4">
             <h2 className="font-mono text-sm font-semibold uppercase text-cyan-200">
               Riot account
             </h2>
@@ -400,13 +400,13 @@ export function AccountSettingsForm() {
           </div>
 
           {error ? (
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
               {error}
             </p>
           ) : null}
 
           {success ? (
-            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+            <p className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
               {success}
             </p>
           ) : null}
@@ -422,8 +422,8 @@ export function AccountSettingsForm() {
         </form>
 
         <form className="mt-8 space-y-5 border-t border-white/10 pt-6" onSubmit={handleEmailSubmit}>
-          <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 text-cyan-100 ring-1 ring-cyan-300/20">
+          <div className="flex items-start gap-3 rounded border border-cyan-100/15 bg-white/[0.03] p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded bg-cyan-400/15 text-cyan-100">
               <Mail className="size-5" aria-hidden="true" />
             </div>
             <div>
@@ -439,7 +439,7 @@ export function AccountSettingsForm() {
           <label className="block space-y-2">
             <span className="text-sm text-zinc-300">Current email</span>
             <Input
-              className="h-11 border-white/10 bg-white/[0.03] text-zinc-400"
+              className="h-11 border-cyan-100/15 bg-white/[0.03] text-zinc-400"
               disabled
               readOnly
               type="text"
@@ -451,7 +451,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">New email</span>
             <Input
               autoComplete="email"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isEmailSaving}
               onChange={(event) => setNewEmail(event.target.value)}
               placeholder="new@email.com"
@@ -463,7 +463,7 @@ export function AccountSettingsForm() {
 
           {pendingEmail && !isPendingEmailNoticeDismissed ? (
             <div
-              className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100"
+              className="rounded border border-cyan-300/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100"
               role="status"
             >
               <div className="flex items-start justify-between gap-3">
@@ -483,7 +483,7 @@ export function AccountSettingsForm() {
                 </div>
                 <button
                   aria-label="Dismiss pending email verification notice"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45"
+                  className="flex size-8 shrink-0 items-center justify-center rounded border border-cyan-300/15 bg-cyan-400/10 text-cyan-100 transition hover:bg-cyan-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45"
                   onClick={dismissPendingEmailNotice}
                   type="button"
                 >
@@ -508,7 +508,7 @@ export function AccountSettingsForm() {
           ) : null}
 
           {pendingEmail && isPendingEmailNoticeDismissed ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm text-zinc-300">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-cyan-100/15 bg-white/[0.03] p-3 text-sm text-zinc-300">
               <span>Verification pending for {maskEmail(pendingEmail)}.</span>
               <button
                 className="text-sm font-medium text-cyan-200 transition hover:text-white"
@@ -524,13 +524,13 @@ export function AccountSettingsForm() {
           ) : null}
 
           {emailError ? (
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
               {emailError}
             </p>
           ) : null}
 
           {emailSuccess ? (
-            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+            <p className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
               {emailSuccess}
             </p>
           ) : null}
@@ -549,8 +549,8 @@ export function AccountSettingsForm() {
           className="mt-8 space-y-5 border-t border-white/10 pt-6"
           onSubmit={handlePasswordSubmit}
         >
-          <div className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
+          <div className="flex items-start gap-3 rounded border border-cyan-100/15 bg-white/[0.03] p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
               <KeyRound className="size-5" aria-hidden="true" />
             </div>
             <div>
@@ -567,7 +567,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">Current password</span>
             <Input
               autoComplete="current-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isPasswordSaving}
               onChange={(event) => setCurrentPassword(event.target.value)}
               required
@@ -580,7 +580,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">New password</span>
             <Input
               autoComplete="new-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isPasswordSaving}
               minLength={8}
               onChange={(event) => setNewPassword(event.target.value)}
@@ -594,7 +594,7 @@ export function AccountSettingsForm() {
             <span className="text-sm text-zinc-300">Confirm password</span>
             <Input
               autoComplete="new-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isPasswordSaving}
               minLength={8}
               onChange={(event) => setConfirmPassword(event.target.value)}
@@ -608,13 +608,13 @@ export function AccountSettingsForm() {
           </label>
 
           {passwordError ? (
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
               {passwordError}
             </p>
           ) : null}
 
           {passwordSuccess ? (
-            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+            <p className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
               {passwordSuccess}
             </p>
           ) : null}

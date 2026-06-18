@@ -1,21 +1,17 @@
 import { ArrowLeft, Search, Swords } from "lucide-react";
 
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { SiteHeader } from "@/src/components/site-header";
 
 const roleSkeletons = ["All", "Top", "Jungle", "Mid", "Bot", "Support"];
 
 export default function Loading() {
   return (
-    <main
-      className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6"
-      role="status"
-      aria-label="Loading League matchup selector"
-    >
-      <section className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <LaneStompPageShell role="status" aria-label="Loading League matchup selector">
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="inline-flex h-10 w-44 animate-pulse items-center gap-2 rounded-xl border border-white/10 bg-[#10182b]/85 px-4 shadow-lg shadow-black/10">
+          <div className="inline-flex h-10 w-44 animate-pulse items-center gap-2 rounded border border-cyan-100/15 bg-[#06111f]/85 px-4">
             <ArrowLeft className="size-4 text-zinc-500" aria-hidden="true" />
             <div className="h-3 w-28 rounded bg-zinc-200/12" />
           </div>
@@ -25,17 +21,16 @@ export default function Loading() {
         <SelectorHeroSkeleton />
 
         <SelectorPanelSkeleton />
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }
 
 function SelectorHeroSkeleton() {
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
+    <section className="overflow-hidden rounded border border-cyan-100/15 bg-[#06111f]/88">
       <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30rem),linear-gradient(135deg,rgba(88,28,135,0.18),transparent_38rem)] p-5 sm:p-6">
         <div className="flex animate-pulse flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
             <Swords className="size-6 opacity-45" aria-hidden="true" />
           </div>
           <div className="grid gap-3">
@@ -51,7 +46,7 @@ function SelectorHeroSkeleton() {
 
 function SelectorPanelSkeleton() {
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-[#07101f] shadow-2xl shadow-black/25">
+    <section className="overflow-hidden rounded border border-cyan-100/15 bg-[#07101f]">
       <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_28rem),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_26rem)] p-4 sm:p-5">
         <div className="grid animate-pulse gap-3">
           <div className="h-3 w-32 rounded bg-cyan-200/20" />

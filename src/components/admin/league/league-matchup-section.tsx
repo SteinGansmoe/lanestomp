@@ -821,7 +821,7 @@ export function AdminLeagueMatchupsSection({
 
                 return (
                   <li
-                    className="overflow-hidden rounded-xl border border-white/10 bg-black/10"
+                    className="overflow-hidden rounded border border-cyan-100/15 bg-black/10"
                     key={laneGroup.role}
                   >
                     <div

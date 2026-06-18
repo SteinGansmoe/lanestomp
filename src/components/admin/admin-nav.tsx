@@ -86,7 +86,7 @@ const adminNavGroups: Array<{
 export function AdminNavigation({ activeSection }: { activeSection: AdminSection }) {
   return (
     <nav
-      className="grid gap-4 rounded-lg border border-white/10 bg-[#10182b]/70 p-4 md:grid-cols-2 xl:grid-cols-4"
+      className="grid gap-4 border border-cyan-100/15 bg-[#06111f]/78 p-4 md:grid-cols-2 xl:grid-cols-4"
       aria-label="Admin sections"
     >
       {adminNavGroups.map((group) => (
@@ -98,7 +98,7 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
                 return (
                   <span
                     aria-disabled="true"
-                    className="inline-flex items-center gap-2 rounded-md border border-white/5 bg-white/[0.025] px-3 py-2 text-sm text-zinc-600"
+                    className="inline-flex items-center gap-2 rounded border border-cyan-100/10 bg-white/[0.025] px-3 py-2 text-sm text-zinc-600"
                     key={`${group.label}-${item.label}`}
                   >
                     {item.label}
@@ -114,10 +114,10 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
               return (
                 <Link
                   className={cn(
-                    "rounded-md border px-3 py-2 text-sm transition",
+                    "rounded border px-3 py-2 text-sm transition",
                     isActive
-                      ? "border-violet-300/30 bg-violet-500/30 text-violet-100"
-                      : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white",
+                      ? "border-cyan-300/35 bg-cyan-400/[0.08] text-cyan-100"
+                      : "border-cyan-100/15 bg-white/[0.035] text-zinc-300 hover:border-cyan-300/30 hover:bg-cyan-400/[0.06] hover:text-cyan-100",
                   )}
                   href={item.href}
                   key={`${group.label}-${item.label}`}

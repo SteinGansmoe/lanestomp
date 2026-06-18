@@ -85,9 +85,9 @@ export function RegisterForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md rounded-lg border-white/10 bg-[#10182b]/92 text-white shadow-2xl shadow-black/30 ring-1 ring-white/5">
+    <Card className="mx-auto w-full max-w-md border-cyan-100/15 bg-[#06111f]/92 text-white">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg border border-[#C9AA5A]/25 bg-[#C9AA5A]/10 text-[#F4D88A] ring-1 ring-[#C9AA5A]/15">
+        <div className="mb-3 flex size-12 items-center justify-center rounded border border-[#C9AA5A]/25 bg-[#C9AA5A]/10 text-[#F4D88A]">
           <UserPlus className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Create account</CardTitle>
@@ -101,7 +101,7 @@ export function RegisterForm() {
             <span className="text-sm text-zinc-300">Username</span>
             <Input
               autoComplete="username"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isSubmitting}
               maxLength={24}
               minLength={3}
@@ -120,7 +120,7 @@ export function RegisterForm() {
             <span className="text-sm text-zinc-300">Email</span>
             <Input
               autoComplete="email"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isSubmitting}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
@@ -134,7 +134,7 @@ export function RegisterForm() {
             <span className="text-sm text-zinc-300">Password</span>
             <Input
               autoComplete="new-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+              className="h-11"
               disabled={isSubmitting}
               minLength={6}
               onChange={(event) => setPassword(event.target.value)}
@@ -147,7 +147,7 @@ export function RegisterForm() {
 
           {error ? (
             <p
-              className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+              className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
               role="alert"
             >
               {error}
@@ -156,7 +156,7 @@ export function RegisterForm() {
 
           {success ? (
             <p
-              className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100"
+              className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100"
               aria-live="polite"
             >
               {success}

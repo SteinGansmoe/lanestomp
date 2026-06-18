@@ -1,6 +1,11 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import {
+  LaneStompPageBackground,
+  laneStompContentClassName,
+  laneStompPageClassName,
+} from "@/src/components/lane-stomp-page";
 import { SiteHeader } from "@/src/components/site-header";
 
 type AuthPageShellProps = {
@@ -14,12 +19,9 @@ const authHighlights = ["Counter Pick ready", "Matchup guides", "Saved account t
 
 export function AuthPageShell({ children, description, eyebrow, title }: AuthPageShellProps) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050b18] text-white">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28rem),radial-gradient(circle_at_80%_12%,rgba(201,170,90,0.12),transparent_24rem),linear-gradient(180deg,#050b18,#07101f_40%,#050b18)]"
-        aria-hidden="true"
-      />
-      <section className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
+    <main className={laneStompPageClassName}>
+      <LaneStompPageBackground />
+      <section className={laneStompContentClassName}>
         <SiteHeader />
 
         <section className="grid min-h-[calc(100vh-13rem)] items-center gap-8 py-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(24rem,28rem)] lg:gap-10">
@@ -48,7 +50,7 @@ export function AuthPageShell({ children, description, eyebrow, title }: AuthPag
             <div className="mt-6 flex flex-wrap gap-2">
               {authHighlights.map((highlight) => (
                 <span
-                  className="rounded-md border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-1.5 text-xs font-medium text-cyan-100"
+                  className="rounded border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-1.5 text-xs font-medium text-cyan-100"
                   key={highlight}
                 >
                   {highlight}

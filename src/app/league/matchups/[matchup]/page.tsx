@@ -5,6 +5,7 @@ import { Crosshair, Hourglass, Lightbulb, ShieldAlert, Sparkles } from "lucide-r
 import { connection } from "next/server";
 
 import { BackButton } from "@/src/components/back-button";
+import { LaneStompPageBackground, laneStompContentClassName, laneStompPageClassName } from "@/src/components/lane-stomp-page";
 import { ChangeMatchupPanel } from "@/src/components/league/change-matchup-panel";
 import { LeagueMatchupReviewPanel } from "@/src/components/league/league-matchup-review-panel";
 import { SiteHeader } from "@/src/components/site-header";
@@ -90,12 +91,13 @@ export default async function LeagueMatchupPage({ params, searchParams }: League
       : [null, null];
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050b18] px-4 py-4 text-white sm:px-6 lg:px-8">
+    <main className={laneStompPageClassName}>
+      <LaneStompPageBackground />
       {championA && championB ? (
         <MatchupPageTheme championA={championA} championB={championB} />
       ) : null}
 
-      <section className="relative z-10 mx-auto flex max-w-7xl flex-col gap-3 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+      <section className={laneStompContentClassName}>
         <SiteHeader />
 
         <div className="flex flex-wrap items-center gap-3">

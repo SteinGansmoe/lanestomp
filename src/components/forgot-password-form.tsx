@@ -48,9 +48,9 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md rounded-lg border-white/10 bg-[#10182b]/92 text-white shadow-2xl shadow-black/30 ring-1 ring-white/5">
+    <Card className="mx-auto w-full max-w-md border-cyan-100/15 bg-[#06111f]/92 text-white">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 ring-1 ring-cyan-300/15">
+        <div className="mb-3 flex size-12 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
           <MailCheck className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Reset password</CardTitle>
@@ -61,12 +61,12 @@ export function ForgotPasswordForm() {
       <CardContent>
         {success ? (
           <div className="space-y-5">
-            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100">
+            <p className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm leading-6 text-emerald-100">
               {resetEmailSuccessMessage}
             </p>
             <Button
               asChild
-              className="h-11 w-full border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              className="h-11 w-full border-cyan-100/15 bg-[#06111f]/80 text-zinc-100 hover:border-cyan-300/35 hover:bg-cyan-400/[0.08]"
               variant="ghost"
             >
               <Link href="/login">
@@ -81,7 +81,7 @@ export function ForgotPasswordForm() {
               <span className="text-sm text-zinc-300">Email</span>
               <Input
                 autoComplete="email"
-                className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/70 focus-visible:ring-cyan-300/20"
+                className="h-11"
                 disabled={isSubmitting}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
@@ -93,7 +93,7 @@ export function ForgotPasswordForm() {
 
             {error ? (
               <p
-                className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+                className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
                 role="alert"
               >
                 {error}

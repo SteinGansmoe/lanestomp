@@ -4,6 +4,7 @@ import { Database, ShieldAlert, Swords } from "lucide-react";
 import { connection } from "next/server";
 
 import { BackButton } from "@/src/components/back-button";
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { MatchupSelector } from "@/src/components/league/matchup-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
@@ -27,8 +28,7 @@ export default async function LeagueMatchupsPage() {
     champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
 
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
-      <section className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <LaneStompPageShell>
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -90,7 +90,6 @@ export default async function LeagueMatchupsPage() {
             </p>
           </Card>
         )}
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }

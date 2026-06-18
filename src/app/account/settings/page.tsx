@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { UserCircle } from "lucide-react";
 
 import { AccountSettingsForm } from "@/src/components/account-settings-form";
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { SiteHeader } from "@/src/components/site-header";
 
 export const metadata: Metadata = {
@@ -11,14 +12,13 @@ export const metadata: Metadata = {
 
 export default function AccountSettingsPage() {
   return (
-    <main className="min-h-screen bg-[#050b18] text-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
+    <LaneStompPageShell>
         <SiteHeader />
 
-        <header className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
+        <header className="overflow-hidden border border-cyan-100/15 bg-[#06111f]/88">
           <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.2),transparent_28rem),radial-gradient(circle_at_85%_0%,rgba(201,170,90,0.12),transparent_26rem),linear-gradient(135deg,rgba(8,17,32,0.98),rgba(11,18,32,0.92))] p-5 sm:p-7">
             <div className="flex items-start gap-4">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
                 <UserCircle className="size-6" aria-hidden="true" />
               </span>
               <div className="min-w-0">
@@ -39,7 +39,6 @@ export default function AccountSettingsPage() {
         <div className="flex justify-center pb-8">
           <AccountSettingsForm />
         </div>
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }

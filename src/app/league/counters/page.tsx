@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 import { connection } from "next/server";
 
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { CounterPickSelector } from "@/src/components/league/counter-pick-selector";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
@@ -27,8 +28,7 @@ export default async function LeagueCountersPage({ searchParams }: LeagueCounter
   const initialRole = isLeagueRole(initialRoleValue) ? initialRoleValue : null;
 
   return (
-    <main className="min-h-screen bg-[#050b18] text-white">
-      <section className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <LaneStompPageShell>
         <SiteHeader />
 
         {error ? (
@@ -61,8 +61,7 @@ export default async function LeagueCountersPage({ searchParams }: LeagueCounter
             </p>
           </Card>
         )}
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }
 

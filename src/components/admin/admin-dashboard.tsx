@@ -61,6 +61,7 @@ import {
   generateLeagueMatchupDraft,
 } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { Card } from "@/src/components/ui/card";
 import { isChampionInRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
@@ -2229,8 +2230,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <LaneStompPageShell>
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -2443,8 +2443,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             </ViewTransition>
           </>
         ) : null}
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }
 

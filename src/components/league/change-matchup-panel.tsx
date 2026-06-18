@@ -26,7 +26,7 @@ type ChangeMatchupPanelProps = {
 };
 
 const selectClassName =
-  "h-11 w-full rounded-md border border-white/10 bg-[#081120] px-3 text-sm text-zinc-100 shadow-inner shadow-black/15 transition focus:border-cyan-300/60 focus:outline-none focus:ring-2 focus:ring-cyan-300/20";
+  "h-11 w-full rounded border border-cyan-100/15 bg-[#081120] px-3 text-sm text-zinc-100 transition focus:border-cyan-300/60 focus:outline-none focus:ring-2 focus:ring-cyan-300/20";
 const optionClassName = "bg-[#10182b] text-zinc-100";
 type OpenPicker = "champion" | "opponent" | null;
 type ChampionFilter = LeagueRole;
@@ -150,7 +150,7 @@ export function ChangeMatchupPanel({
         <div className={cn("min-h-0", isExpanded ? "overflow-visible" : "overflow-hidden")}>
           <div
             className={cn(
-              "rounded-xl border border-white/10 bg-[#10182b]/90 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5",
+              "rounded border border-cyan-100/15 bg-[#06111f]/90 p-4",
               !isInline && "mt-3",
             )}
           >
@@ -398,7 +398,7 @@ function MatchupChampionPicker({
 
       {isOpen ? (
         <div
-          className="absolute left-0 top-full z-30 mt-2 w-[18rem] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-[#081120] p-3 shadow-2xl shadow-black/40 ring-1 ring-white/5"
+          className="absolute left-0 top-full z-30 mt-2 w-[18rem] max-w-[calc(100vw-2rem)] rounded border border-cyan-100/15 bg-[#081120] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.42)]"
           id={`${id}-menu`}
         >
           <label className="relative block">

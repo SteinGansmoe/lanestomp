@@ -4,21 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Crown, Home, Menu, Search, ShieldCheck, Swords, X } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
 
 import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
+import { cn } from "@/src/lib/utils";
 
 const navItems = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/league/matchups", icon: Swords, label: "Matchups" },
-  { href: "/league/counters", icon: ShieldCheck, label: "Counters" },
-  {
-    href: "/champions",
-    icon: Crown,
-    label: "Champions",
-  },
+  { href: "/", label: "Home" },
+  { href: "/league/counters", label: "Counter Pick" },
+  { href: "/league/matchups", label: "Matchup Guides" },
+  { href: "/champions", label: "Champions" },
 ];
 
 type SiteHeaderProps = {
@@ -43,70 +40,81 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
   }
 
   return (
-    <>
-      <header className="border-b border-white/10 pb-5 lg:hidden">
-        <div className="flex items-center justify-between gap-4">
-          <BrandLink className="h-14 w-40 justify-start" />
-          <Button
-            aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={isMenuOpen}
-            className="size-10 rounded-md border-cyan-100/10 bg-[#10182b]/85 text-cyan-100 shadow-lg shadow-black/15 hover:border-cyan-300/25 hover:bg-cyan-400/10"
-            onClick={() => setIsMenuOpen((current) => !current)}
-            variant="ghost"
+    <header className="relative z-40 overflow-visible border-b border-cyan-100/15 bg-[#030914]/75 backdrop-blur">
+      <div className="flex min-h-16 items-center gap-4 py-3">
+        <BrandLink />
+
+        <NavigationLinks className="ml-8 hidden min-w-0 flex-1 gap-6 md:flex" pathname={pathname} />
+
+        {shouldShowSearch ? (
+          <SearchInput
+            className="ml-auto hidden w-full max-w-xs xl:block"
+            onSearchChange={handleSearchChange}
+            searchValue={currentSearch}
+          />
+        ) : null}
+
+        <div className="ml-auto hidden shrink-0 items-center gap-3 sm:flex xl:ml-0">
+          <AuthenticatedAccountMenu menuPlacement="inline" variant="topbar" />
+          <Link
+            className="hidden h-10 items-center justify-center bg-cyan-300 px-5 font-mono text-xs font-bold uppercase tracking-[0.08em] text-[#04111d] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 lg:inline-flex"
+            href="/league/counters"
           >
-            {isMenuOpen ? (
-              <X className="size-5" aria-hidden="true" />
-            ) : (
-              <Menu className="size-5" aria-hidden="true" />
-            )}
-          </Button>
+            Start Counter Pick
+          </Link>
         </div>
 
-        {shouldShowSearch ? (
-          <SearchInput
-            className="mt-4"
-            onSearchChange={handleSearchChange}
-            searchValue={currentSearch}
-          />
-        ) : null}
+        <Button
+          aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={isMenuOpen}
+          className="ml-auto size-10 border-cyan-100/15 bg-[#06111f]/92 p-0 text-cyan-100 hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] sm:hidden"
+          onClick={() => setIsMenuOpen((current) => !current)}
+          variant="ghost"
+        >
+          {isMenuOpen ? (
+            <X className="size-5" aria-hidden="true" />
+          ) : (
+            <Menu className="size-5" aria-hidden="true" />
+          )}
+        </Button>
+      </div>
 
-        {isMenuOpen ? (
-          <div className="mt-4 rounded-md border border-cyan-100/10 bg-[linear-gradient(180deg,#10182b,#07101f)] p-3 shadow-xl shadow-black/25">
-            <NavigationLinks onNavigate={() => setIsMenuOpen(false)} pathname={pathname} />
-            <AuthenticatedAccountMenu
-              className="mt-4 border-t border-white/10 pt-4"
-              menuPlacement="inline"
-            />
-          </div>
-        ) : null}
-      </header>
+      {shouldShowSearch ? (
+        <SearchInput
+          className="mb-3 xl:hidden"
+          onSearchChange={handleSearchChange}
+          searchValue={currentSearch}
+        />
+      ) : null}
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-cyan-100/10 bg-[linear-gradient(180deg,#07101f_0%,#081120_48%,#050b18_100%)] px-5 py-6 text-white shadow-2xl shadow-black/30 lg:flex">
-        <BrandLink className="h-32 w-full justify-center" />
-        {shouldShowSearch ? (
-          <SearchInput
-            className="mt-7"
-            onSearchChange={handleSearchChange}
-            searchValue={currentSearch}
+      {isMenuOpen ? (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 border border-cyan-100/15 bg-[linear-gradient(180deg,#081524,#050d19)] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.42)] sm:hidden">
+          <NavigationLinks
+            className="grid gap-1.5"
+            onNavigate={() => setIsMenuOpen(false)}
+            pathname={pathname}
           />
-        ) : null}
-        <NavigationLinks className="mt-8" pathname={pathname} />
-        <AuthenticatedAccountMenu className="mt-auto pt-6" />
-      </aside>
-    </>
+          <AuthenticatedAccountMenu
+            className="mt-4 border-t border-cyan-100/10 pt-4"
+            menuPlacement="inline"
+            variant="topbar"
+          />
+        </div>
+      ) : null}
+    </header>
   );
 }
 
-function BrandLink({ className }: { className?: string }) {
+function BrandLink() {
   return (
     <Link
       aria-label="LaneStomp home"
-      className={`relative flex items-center ${className ?? ""}`}
+      className="relative h-12 w-36 shrink-0 drop-shadow-[0_0_12px_rgba(34,211,238,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55 sm:h-14 sm:w-52"
       href="/"
     >
       <Image
         alt="LaneStomp"
-        className="object-contain"
+        className="object-contain object-left"
         fill
         priority
         sizes="176px"
@@ -133,7 +141,7 @@ function SearchInput({
         aria-hidden="true"
       />
       <Input
-        className="h-11 rounded-md border-cyan-100/10 bg-black/20 pl-4 pr-11 text-sm text-zinc-100 placeholder:text-zinc-500 shadow-inner shadow-black/10 focus-visible:border-cyan-300/60 focus-visible:ring-cyan-300/20"
+        className="h-10 border-cyan-100/15 bg-[#06111f]/82 pl-4 pr-11 text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:ring-cyan-300/20"
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder="Search..."
         type="search"
@@ -153,44 +161,34 @@ function NavigationLinks({
   pathname: string;
 }) {
   return (
-    <nav className={`space-y-1.5 ${className ?? ""}`}>
+    <nav
+      className={cn(
+        "font-mono text-xs font-semibold uppercase tracking-[0.08em] text-zinc-300",
+        className,
+      )}
+      aria-label="Primary navigation"
+    >
       {navItems.map((item) => {
-        const Icon = item.icon;
         const isActive =
           item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
-        const itemClassName = `group relative flex items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition ${
-          isActive
-            ? "border-cyan-300/25 bg-cyan-400/[0.08] text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.12)]"
-            : "border-transparent text-zinc-400 hover:border-cyan-100/10 hover:bg-cyan-400/[0.04] hover:text-zinc-100"
-        }`;
-        const iconClassName = `flex size-7 shrink-0 items-center justify-center rounded border transition ${
-          isActive
-            ? "border-amber-300/25 bg-amber-400/10 text-amber-100"
-            : "border-white/10 bg-white/[0.03] text-zinc-500 group-hover:border-cyan-300/20 group-hover:text-cyan-100"
-        }`;
 
-        const content = (
-          <>
+        return (
+          <Link
+            className={cn(
+              "relative shrink-0 px-2 py-3 transition hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55 md:px-0",
+              isActive ? "text-cyan-100" : "text-zinc-300",
+            )}
+            href={item.href}
+            key={item.label}
+            onClick={onNavigate}
+          >
+            {item.label}
             {isActive ? (
               <span
-                className="absolute bottom-2 left-0 top-2 w-px rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.9)]"
+                className="absolute bottom-0 left-0 h-px w-full bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.9)]"
                 aria-hidden="true"
               />
             ) : null}
-            <span className={iconClassName}>
-              <Icon className="size-4" aria-hidden="true" />
-            </span>
-            <span className="font-medium">{item.label}</span>
-          </>
-        );
-
-        return item.href === "#" ? (
-          <a className={itemClassName} href="#" key={item.label} onClick={onNavigate}>
-            {content}
-          </a>
-        ) : (
-          <Link className={itemClassName} href={item.href} key={item.label} onClick={onNavigate}>
-            {content}
           </Link>
         );
       })}

@@ -59,7 +59,7 @@ export function AuthConfirmedPanel() {
 
   return (
     <div className="grid gap-6 px-5 py-6 sm:px-8 sm:py-7">
-      <div className="flex items-start gap-3 rounded-lg border border-emerald-300/15 bg-emerald-400/10 p-4 text-emerald-50">
+      <div className="flex items-start gap-3 rounded border border-emerald-300/15 bg-emerald-400/10 p-4 text-emerald-50">
         <ShieldCheck className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
         <div>
           <h2 className="font-mono text-base font-semibold">Verification complete</h2>
@@ -70,7 +70,7 @@ export function AuthConfirmedPanel() {
       </div>
 
       {username ? (
-        <p className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-200">
+        <p className="rounded border border-cyan-100/15 bg-white/[0.035] px-4 py-3 text-sm text-zinc-200">
           Welcome to LaneStomp, <span className="font-medium text-white">{username}</span>.
         </p>
       ) : null}
@@ -84,7 +84,7 @@ export function AuthConfirmedPanel() {
         </Button>
         <Button
           asChild
-          className="h-11 border-white/10 bg-white/5 px-5 text-zinc-100 hover:bg-white/10"
+          className="h-11 border-cyan-100/15 bg-[#06111f]/80 px-5 text-zinc-100 hover:border-cyan-300/35 hover:bg-cyan-400/[0.08]"
           variant="ghost"
         >
           <Link href="/">

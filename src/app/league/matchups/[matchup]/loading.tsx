@@ -1,4 +1,5 @@
 import { SiteHeader } from "@/src/components/site-header";
+import { LaneStompPageBackground, laneStompContentClassName, laneStompPageClassName } from "@/src/components/lane-stomp-page";
 
 const skeletonSections = [
   "Overview",
@@ -11,14 +12,11 @@ const skeletonSections = [
 
 export default function Loading() {
   return (
-    <main
-      className="relative min-h-screen overflow-hidden bg-[#050b18] px-4 py-4 text-white sm:px-6 lg:px-8"
-      role="status"
-      aria-label="Loading League matchup guide"
-    >
+    <main className={laneStompPageClassName} role="status" aria-label="Loading League matchup guide">
+      <LaneStompPageBackground />
       <LoadingPageTheme />
 
-      <section className="relative z-10 mx-auto flex max-w-7xl flex-col gap-3 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+      <section className={laneStompContentClassName}>
         <SiteHeader />
 
         <div className="flex flex-wrap items-center gap-3">
