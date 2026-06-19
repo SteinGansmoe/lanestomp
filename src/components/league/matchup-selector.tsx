@@ -137,8 +137,8 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
   );
 
   return (
-    <section className="overflow-hidden rounded-lg border border-white/10 bg-[#07101f] shadow-2xl shadow-black/25">
-      <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_28rem),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_26rem)] p-4 sm:p-5">
+    <section className="overflow-hidden border border-cyan-100/15 bg-[#06111f]/88">
+      <div className="border-b border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.13),transparent_28rem),linear-gradient(135deg,rgba(8,24,40,0.9),rgba(3,9,20,0.82))] p-4 sm:p-5">
         <div className="grid gap-3">
           <div className="min-w-0">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
@@ -163,7 +163,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
                     <SelectionSlot champion={championA} label="Your champion" tone="cyan" />
                     <button
                       aria-label="Swap selected champions"
-                      className="hidden size-11 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:flex"
+                      className="hidden size-11 items-center justify-center rounded border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:flex"
                       disabled={!championAId && !championBId}
                       onClick={handleSwapChampions}
                       type="button"
@@ -173,7 +173,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
                     <SelectionSlot champion={championB} label="Opponent" tone="gold" />
                   </div>
 
-                  <Button className="h-11 bg-white/10 px-4 text-zinc-400" disabled type="button">
+                  <Button className="h-11 border-cyan-100/15 bg-white/[0.035] px-4 text-zinc-500" disabled type="button">
                     Select two champions
                   </Button>
                 </div>
@@ -187,7 +187,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
 
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0">
-          <div className="flex flex-col gap-3 border-b border-white/10 pb-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-3 border-b border-cyan-100/10 pb-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:items-center">
               <label className="relative block w-full xl:max-w-md">
                 <span className="sr-only">Search champions</span>
@@ -196,7 +196,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
                   aria-hidden="true"
                 />
                 <Input
-                  className="h-11 border-white/10 bg-black/25 pl-10 pr-4 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:ring-cyan-300/20"
+                  className="h-11 border-cyan-100/15 bg-[#071321]/80 pl-10 pr-4 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:ring-cyan-300/20"
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search champions..."
                   type="search"
@@ -210,7 +210,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
             {!championAId ? (
               <button
                 aria-label="Swap selected champions"
-                className="flex h-11 items-center justify-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:hidden"
+                className="flex h-11 items-center justify-center gap-2 rounded border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 md:hidden"
                 disabled
                 onClick={handleSwapChampions}
                 type="button"
@@ -221,7 +221,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
             ) : null}
           </div>
 
-          <div className="grid max-h-[36rem] grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2 overflow-y-auto border-b border-white/10 py-4 sm:grid-cols-[repeat(auto-fill,minmax(4rem,1fr))]">
+          <div className="grid max-h-[36rem] grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2 overflow-y-auto border-b border-cyan-100/10 py-4 [scrollbar-color:rgba(34,211,238,0.35)_rgba(7,19,33,0.8)] [scrollbar-width:thin] sm:grid-cols-[repeat(auto-fill,minmax(4rem,1fr))]">
             {filteredChampions.length > 0 ? (
               filteredChampions.map((champion) => (
                 <ChampionButton
@@ -233,20 +233,20 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
                 />
               ))
             ) : (
-              <div className="col-span-full rounded-lg border border-white/10 bg-white/[0.035] p-8 text-center text-sm text-zinc-400">
+              <div className="col-span-full rounded border border-cyan-100/15 bg-white/[0.035] p-8 text-center text-sm text-zinc-400">
                 No champions match that search.
               </div>
             )}
           </div>
 
-          <p className="mt-3 rounded-md border border-cyan-300/10 bg-cyan-400/[0.04] px-3 py-2 text-xs text-zinc-400">
+          <p className="mt-3 rounded border border-cyan-300/10 bg-cyan-400/[0.04] px-3 py-2 text-xs text-zinc-400">
             Search ignores role filters, so off-meta picks stay easy to find.
           </p>
         </div>
 
-        <aside className="grid gap-3 lg:content-start">
+        <aside className="grid gap-3 border border-cyan-100/15 bg-[#071321]/62 p-4 lg:content-start">
           <InfoPanel />
-          <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/[0.025] p-4 text-sm text-zinc-300">
+          <label className="flex items-start gap-3 border-t border-cyan-100/10 pt-4 text-sm text-zinc-300">
             <input
               checked={includeOffMeta}
               className="mt-0.5 size-4 accent-cyan-400"
@@ -260,7 +260,7 @@ export function MatchupSelector({ champions, initialRole, matchupCoverage }: Mat
               </span>
             </span>
           </label>
-          <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+          <div className="border-t border-cyan-100/10 pt-4">
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
               Current pool
             </p>
@@ -300,9 +300,9 @@ function RoleIconSelector({
               aria-checked={isActive}
               aria-label={`${option.label} role filter`}
               className={cn(
-                "group flex h-12 min-w-0 items-center justify-center rounded-md border border-white/10 bg-black/20 px-2 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                "group flex h-12 min-w-0 items-center justify-center rounded border border-cyan-100/15 bg-black/20 px-2 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
                 isActive &&
-                  "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_22px_rgba(34,211,238,0.16)] ring-1 ring-cyan-300/25",
+                  "border-cyan-300/55 bg-cyan-400/15 text-cyan-100",
               )}
               key={option.value}
               onClick={() => onChange(option.value)}
@@ -340,7 +340,7 @@ function MatchupCoverageIndicator({ coverage }: { coverage: LeagueMatchupCoverag
   return (
     <div
       aria-label={`${label}. ${helperText}`}
-      className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/[0.06] px-3 text-sm text-cyan-100 shadow-inner shadow-cyan-950/10 xl:w-auto xl:justify-start"
+      className="inline-flex min-h-11 w-full items-center justify-center rounded border border-cyan-300/15 bg-cyan-400/[0.06] px-3 text-sm text-cyan-100 xl:w-auto xl:justify-start"
       title={helperText}
     >
       <span className="mr-2" aria-hidden="true">
@@ -373,9 +373,9 @@ function ChampionButton({
       aria-label={`Select ${champion.name}`}
       aria-pressed={isChampionA || isChampionB}
       className={cn(
-        "group relative aspect-square min-w-0 overflow-hidden rounded-md border border-white/10 bg-white/[0.035] shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-cyan-300/35 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
-        isChampionA && "border-cyan-300/80 ring-2 ring-cyan-300/30",
-        isChampionB && "border-[#C9AA5A]/80 ring-2 ring-[#C9AA5A]/30",
+        "group relative aspect-square min-w-0 overflow-hidden rounded border border-cyan-100/15 bg-white/[0.035] transition hover:border-cyan-300/35 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
+        isChampionA && "border-cyan-300/80 ring-2 ring-cyan-300/25",
+        isChampionB && "border-[#C9AA5A]/80 ring-2 ring-[#C9AA5A]/25",
       )}
       onClick={onClick}
       title={`${champion.name}${championRoles.length ? ` - ${championRoles.map(getRoleLabel).join(", ")}` : ""}`}
@@ -418,10 +418,10 @@ function SelectionSlot({
   tone: "cyan" | "gold";
 }) {
   return (
-    <div className="flex min-h-16 items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-2.5">
+    <div className="flex min-h-16 items-center gap-3 rounded border border-cyan-100/15 bg-black/20 p-2.5">
       <div
         className={cn(
-          "relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border",
+          "relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded border",
           tone === "cyan"
             ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-100"
             : "border-[#C9AA5A]/35 bg-[#C9AA5A]/10 text-[#F4D88A]",
@@ -460,13 +460,13 @@ function SelectionSlot({
 
 function InfoPanel() {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+    <div>
       <p className="font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">Flow</p>
       <ol className="mt-3 space-y-3 text-sm text-zinc-400">
         {["Pick your champion", "Pick the opponent", "Choose role", "Open guide"].map(
           (step, index) => (
             <li className="flex items-center gap-3" key={step}>
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-cyan-300/15 bg-cyan-400/10 font-mono text-xs text-cyan-100">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded border border-cyan-300/15 bg-cyan-400/10 font-mono text-xs text-cyan-100">
                 {index + 1}
               </span>
               <span>{step}</span>

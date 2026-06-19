@@ -36,7 +36,7 @@ export default function AccountSettingsPage() {
           </div>
         </header>
 
-        <div className="flex justify-center pb-8">
+        <div className="pb-8">
           <AccountSettingsForm />
         </div>
     </LaneStompPageShell>

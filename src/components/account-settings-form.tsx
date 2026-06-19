@@ -23,25 +23,43 @@ const emailResendCooldownSeconds = 60;
 
 function AccountSettingsFormSkeleton() {
   return (
-    <Card className="mx-auto w-full max-w-4xl border-cyan-100/15 bg-[#06111f]/90 p-6 text-white">
-      <div className="size-12 rounded bg-cyan-400/10" />
-      <div className="mt-5 h-8 w-56 rounded bg-white/10" />
-      <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
+    <div className="grid w-full gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
+      <aside className="border border-cyan-100/15 bg-[#06111f]/78 p-4">
+        <div className="h-3 w-24 rounded bg-cyan-400/15" />
+        <div className="mt-5 grid gap-2">
+          <div className="h-8 rounded bg-white/[0.05]" />
+          <div className="h-8 rounded bg-white/[0.04]" />
+          <div className="h-8 rounded bg-white/[0.04]" />
+        </div>
+        <div className="mt-5 border-t border-cyan-100/10 pt-4">
+          <div className="h-3 w-full rounded bg-white/[0.04]" />
+          <div className="mt-2 h-3 w-3/4 rounded bg-white/[0.04]" />
+        </div>
+      </aside>
 
-      <div className="mt-8 space-y-5">
-        <div className="space-y-2">
-          <div className="h-4 w-20 rounded bg-white/10" />
-          <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.04]" />
-          <div className="h-3 w-52 rounded bg-white/5" />
+      <Card className="w-full max-w-none border-cyan-100/15 bg-[#06111f]/90 p-6 text-white">
+        <div className="size-12 rounded bg-cyan-400/10" />
+        <div className="mt-5 h-8 w-56 rounded bg-white/10" />
+        <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
+
+        <div className="mt-8 space-y-5">
+          <div className="space-y-2">
+            <div className="h-4 w-20 rounded bg-white/10" />
+            <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.04]" />
+            <div className="h-3 w-52 rounded bg-white/5" />
+          </div>
+          <div className="space-y-2 border-t border-cyan-100/10 pt-5">
+            <div className="h-4 w-28 rounded bg-white/10" />
+            <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.03]" />
+          </div>
+          <div className="space-y-2 border-t border-cyan-100/10 pt-5">
+            <div className="h-4 w-32 rounded bg-white/10" />
+            <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.03]" />
+          </div>
+          <div className="h-11 w-40 rounded bg-cyan-400/15" />
         </div>
-        <div className="space-y-2">
-          <div className="h-4 w-14 rounded bg-white/10" />
-          <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.03]" />
-        </div>
-        <div className="h-28 rounded border border-cyan-100/15 bg-white/[0.03]" />
-        <div className="h-11 w-40 rounded bg-cyan-400/15" />
+      </Card>
       </div>
-    </Card>
   );
 }
 
@@ -360,12 +378,33 @@ export function AccountSettingsForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-4xl border-cyan-100/15 bg-[#06111f]/90 text-white">
+    <div className="grid w-full gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
+      <aside className="border border-cyan-100/15 bg-[#06111f]/78 p-4 lg:sticky lg:top-24">
+        <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+          Settings
+        </p>
+        <nav className="mt-4 grid gap-1 text-sm" aria-label="Account settings sections">
+          {["Profile", "Email", "Password"].map((section) => (
+            <a
+              className="rounded px-2 py-2 text-zinc-400 transition hover:bg-cyan-400/[0.06] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
+              href={`#${section.toLowerCase()}`}
+              key={section}
+            >
+              {section}
+            </a>
+          ))}
+        </nav>
+        <div className="mt-5 border-t border-cyan-100/10 pt-4 text-xs leading-5 text-zinc-500">
+          <p>Signed-in account details stay private and masked where needed.</p>
+        </div>
+      </aside>
+
+      <Card className="w-full max-w-none border-cyan-100/15 bg-[#06111f]/90 text-white">
       <CardHeader>
         <div className="mb-3 flex size-12 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
           <UserCircle className="size-6" aria-hidden="true" />
         </div>
-        <CardTitle className="font-mono text-2xl">Account settings</CardTitle>
+        <CardTitle className="font-mono text-2xl" id="profile">Profile</CardTitle>
         <p className="text-sm leading-6 text-zinc-400">
           Manage your LaneStomp identity. Your username is separate from any Riot account details.
         </p>
@@ -421,8 +460,12 @@ export function AccountSettingsForm() {
           </Button>
         </form>
 
-        <form className="mt-8 space-y-5 border-t border-white/10 pt-6" onSubmit={handleEmailSubmit}>
-          <div className="flex items-start gap-3 rounded border border-cyan-100/15 bg-white/[0.03] p-4">
+        <form
+          className="mt-8 space-y-5 border-t border-cyan-100/10 pt-6"
+          id="email"
+          onSubmit={handleEmailSubmit}
+        >
+          <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded bg-cyan-400/15 text-cyan-100">
               <Mail className="size-5" aria-hidden="true" />
             </div>
@@ -546,10 +589,11 @@ export function AccountSettingsForm() {
         </form>
 
         <form
-          className="mt-8 space-y-5 border-t border-white/10 pt-6"
+          className="mt-8 space-y-5 border-t border-cyan-100/10 pt-6"
+          id="password"
           onSubmit={handlePasswordSubmit}
         >
-          <div className="flex items-start gap-3 rounded border border-cyan-100/15 bg-white/[0.03] p-4">
+          <div className="flex items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
               <KeyRound className="size-5" aria-hidden="true" />
             </div>
@@ -630,6 +674,7 @@ export function AccountSettingsForm() {
         </form>
       </CardContent>
     </Card>
+    </div>
   );
 }
 

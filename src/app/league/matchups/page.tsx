@@ -31,10 +31,10 @@ export default async function LeagueMatchupsPage() {
     <LaneStompPageShell>
         <SiteHeader />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
           <BackButton href="/" label="Back to LaneStomp" />
           <Link
-            className="inline-flex items-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/10"
+            className="inline-flex w-fit max-w-full items-center gap-2 rounded border border-cyan-300/15 bg-cyan-400/[0.07] px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/10"
             href="/champions"
           >
             <Database className="size-4" aria-hidden="true" />
@@ -42,10 +42,10 @@ export default async function LeagueMatchupsPage() {
           </Link>
         </div>
 
-        <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-          <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30rem),linear-gradient(135deg,rgba(88,28,135,0.18),transparent_38rem)] p-5 sm:p-6">
+        <section className="overflow-hidden border border-cyan-100/15 bg-[#06111f]/88">
+          <div className="bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.15),transparent_30rem),linear-gradient(135deg,rgba(8,24,40,0.94),rgba(3,9,20,0.84))] p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
                 <Swords className="size-6" aria-hidden="true" />
               </div>
               <div>

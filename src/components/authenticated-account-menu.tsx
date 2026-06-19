@@ -189,7 +189,7 @@ export function AuthenticatedAccountMenu({
 
     return (
       <div className={cn(variant === "topbar" ? "w-24 sm:w-32" : "w-full", className)}>
-        <div className="h-11 w-full rounded-md border border-cyan-100/10 bg-white/[0.04]" />
+        <div className="h-10 w-full border border-cyan-100/15 bg-[#06111f]/80" />
       </div>
     );
   }
@@ -208,7 +208,7 @@ export function AuthenticatedAccountMenu({
       >
         <Link
           className={cn(
-            "inline-flex h-10 items-center justify-center rounded-md border border-cyan-100/10 bg-white/[0.04] px-3 text-sm text-zinc-100 transition hover:border-cyan-300/25 hover:bg-cyan-400/[0.07] hover:text-cyan-100",
+            "inline-flex h-10 items-center justify-center border border-cyan-100/15 bg-[#06111f]/88 px-3 text-sm text-zinc-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55",
             variant === "topbar" &&
               "min-w-20 px-2 font-mono text-xs font-semibold uppercase tracking-[0.08em] sm:min-w-24 sm:px-3",
           )}
@@ -218,7 +218,7 @@ export function AuthenticatedAccountMenu({
         </Link>
         {variant === "sidebar" ? (
           <Link
-            className="inline-flex h-10 items-center justify-center rounded-md border border-amber-300/20 bg-amber-400/10 px-3 text-sm font-medium text-amber-100 transition hover:border-amber-300/35 hover:bg-amber-400/15"
+            className="inline-flex h-10 items-center justify-center rounded border border-amber-300/20 bg-amber-400/10 px-3 text-sm font-medium text-amber-100 transition hover:border-amber-300/35 hover:bg-amber-400/15"
             href="/register"
           >
             Create account
@@ -236,7 +236,8 @@ export function AuthenticatedAccountMenu({
         aria-expanded={isMenuOpen}
         aria-haspopup="menu"
         className={cn(
-          "flex h-11 w-full items-center gap-2 rounded border border-cyan-100/15 bg-[#06111f]/92 px-2.5 text-left text-sm text-zinc-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55",
+          "flex w-full items-center gap-2 rounded border border-cyan-100/15 bg-[#06111f]/92 px-2.5 text-left text-sm text-zinc-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55",
+          variant === "topbar" ? "h-10" : "h-11",
           isMenuOpen && "border-cyan-300/45 bg-cyan-400/[0.08]",
         )}
         onClick={() => setIsMenuOpen((current) => !current)}

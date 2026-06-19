@@ -40,8 +40,12 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
   }
 
   return (
-    <header className="relative z-40 overflow-visible border-b border-cyan-100/15 bg-[#030914]/75 backdrop-blur">
-      <div className="flex min-h-16 items-center gap-4 py-3">
+    <header className="relative z-40 isolate overflow-visible">
+      <div
+        className="pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-[min(100vw,104rem)] -translate-x-1/2 border-b border-cyan-100/12 bg-[linear-gradient(90deg,rgba(3,9,20,0)_0%,rgba(3,9,20,0.72)_10%,rgba(3,9,20,0.9)_24%,rgba(3,9,20,0.9)_76%,rgba(3,9,20,0.72)_90%,rgba(3,9,20,0)_100%)] backdrop-blur [mask-image:linear-gradient(90deg,transparent_0%,black_10%,black_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(90deg,transparent_0%,black_10%,black_90%,transparent_100%)]"
+        aria-hidden="true"
+      />
+      <div className="relative z-10 flex min-h-16 items-center gap-4 py-3">
         <BrandLink />
 
         <NavigationLinks className="ml-8 hidden min-w-0 flex-1 gap-6 md:flex" pathname={pathname} />
@@ -54,13 +58,13 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
           />
         ) : null}
 
-        <div className="ml-auto hidden shrink-0 items-center gap-3 sm:flex xl:ml-0">
+        <div className="ml-auto mr-1 hidden shrink-0 items-center gap-3 sm:flex lg:mr-3 xl:ml-0 xl:mr-5">
           <AuthenticatedAccountMenu menuPlacement="inline" variant="topbar" />
           <Link
             className="hidden h-10 items-center justify-center bg-cyan-300 px-5 font-mono text-xs font-bold uppercase tracking-[0.08em] text-[#04111d] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 lg:inline-flex"
             href="/league/counters"
           >
-            Start Counter Pick
+            Counter Pick
           </Link>
         </div>
 

@@ -96,7 +96,7 @@ export function AdminLoginForm() {
               className="h-11"
               disabled={isCheckingSession || isSubmitting}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@example.com"
+              placeholder="you@example.com"
               required
               type="email"
               value={email}
