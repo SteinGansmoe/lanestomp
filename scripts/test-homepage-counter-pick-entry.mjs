@@ -106,8 +106,8 @@ assert.match(
 );
 assert.match(
   startForm,
-  /router\.push\(\s*`\/league\/counters\?champion=\$\{encodeURIComponent\(selectedChampion\.id\)\}&role=\$\{selectedRole\}`/,
-  "Counter Pick hero search should navigate with selected champion and role.",
+  /buildCounterPickUrl\(\{ champion: selectedChampion, role: selectedRole \}\)/,
+  "Counter Pick hero search should navigate through the shared Counter Pick URL builder.",
 );
 assert.match(
   startForm,

@@ -56,6 +56,11 @@ import {
   sortChampionsForRole,
 } from "@/src/features/league/champion-roles";
 import {
+  getCounterPickChampionOptionsForRole,
+  isCounterPickChampionSupportedInRole,
+  type CounterPickChampionOption,
+} from "@/src/features/league/counter-pick-champion-selection";
+import {
   getChampionSplashUrl,
   getChampionIconPath,
   type LeagueChampion,
@@ -70,6 +75,10 @@ import {
   matchesPublicCounterPickChampionSearch,
   normalizePublicCounterPickSearchValue,
 } from "@/src/features/league/public-counter-pick-options";
+import {
+  buildCounterPickUrl,
+  resolveCounterPickChampion,
+} from "@/src/features/league/counter-pick-routes";
 import { getLeagueRoleLabel, type LeagueRole } from "@/src/features/league/roles";
 import { supabase } from "@/src/lib/supabase";
 import { cn } from "@/src/lib/utils";
@@ -114,6 +123,7 @@ type CounterPrepSectionItem = {
 type ReviewedCounterPickState = {
   counterPicks: LeagueCounterPick[];
   error: string | null;
+  requestKey: string | null;
 };
 
 type GuideAvailabilityState = {
@@ -124,12 +134,14 @@ type MatchStatisticsState = {
   countersIntoSelectedChampion: Map<string, CounterPickStatistics>;
   error: string | null;
   isLoading: boolean;
+  requestKey: string | null;
   selectedChampionGoodInto: Map<string, CounterPickStatistics>;
 };
 
 const emptyReviewedCounterPickState: ReviewedCounterPickState = {
   counterPicks: [],
   error: null,
+  requestKey: null,
 };
 
 const emptyGuideAvailabilityState: GuideAvailabilityState = {
@@ -140,6 +152,7 @@ const emptyMatchStatisticsState: MatchStatisticsState = {
   countersIntoSelectedChampion: new Map(),
   error: null,
   isLoading: false,
+  requestKey: null,
   selectedChampionGoodInto: new Map(),
 };
 
@@ -177,10 +190,6 @@ export function CounterPickSelector({
   initialRole,
 }: CounterPickSelectorProps) {
   const router = useRouter();
-  const [selectedChampionId, setSelectedChampionId] = useState<string | null>(
-    () => findCounterPickInitialChampion(champions, initialChampionId)?.id ?? null,
-  );
-  const [selectedRole, setSelectedRole] = useState<LeagueRole | null>(initialRole ?? null);
   const [selectorQuery, setSelectorQuery] = useState("");
   const [selectorRole, setSelectorRole] = useState<ChampionSelectorRoleFilter>(
     initialRole ?? "all",
@@ -200,7 +209,13 @@ export function CounterPickSelector({
   const [matchStatisticsState, setMatchStatisticsState] =
     useState<MatchStatisticsState>(emptyMatchStatisticsState);
 
-  const selectedChampion = champions.find((champion) => champion.id === selectedChampionId) ?? null;
+  const selectedChampion = useMemo(
+    () => resolveCounterPickChampion(champions, initialChampionId),
+    [champions, initialChampionId],
+  );
+  const selectedRole = selectedChampion && initialRole ? initialRole : null;
+  const activeSelectionKey =
+    selectedChampion && selectedRole ? getCounterPickSelectionKey(selectedChampion, selectedRole) : null;
   const selectedProfile = selectedChampion
     ? (getChampionCombatProfile(selectedChampion.id) ??
       getChampionCombatProfile(selectedChampion.name))
@@ -240,9 +255,20 @@ export function CounterPickSelector({
     () => buildCombatRelationshipLookup([...bestCounterRelationships, ...counteredByRelationships]),
     [bestCounterRelationships, counteredByRelationships],
   );
-  const reviewedCounterPicks = reviewedCounterPickState.counterPicks;
-  const countersIntoSelectedChampion = matchStatisticsState.countersIntoSelectedChampion;
-  const selectedChampionGoodInto = matchStatisticsState.selectedChampionGoodInto;
+  const isReviewedCounterPickStateCurrent =
+    reviewedCounterPickState.requestKey === activeSelectionKey;
+  const isMatchStatisticsStateCurrent = matchStatisticsState.requestKey === activeSelectionKey;
+  const isCounterPickDataLoading =
+    hasCompleteSelection && (!isMatchStatisticsStateCurrent || matchStatisticsState.isLoading);
+  const reviewedCounterPicks = isReviewedCounterPickStateCurrent
+    ? reviewedCounterPickState.counterPicks
+    : emptyReviewedCounterPickState.counterPicks;
+  const countersIntoSelectedChampion = isMatchStatisticsStateCurrent
+    ? matchStatisticsState.countersIntoSelectedChampion
+    : emptyMatchStatisticsState.countersIntoSelectedChampion;
+  const selectedChampionGoodInto = isMatchStatisticsStateCurrent
+    ? matchStatisticsState.selectedChampionGoodInto
+    : emptyMatchStatisticsState.selectedChampionGoodInto;
   const bestCounterRows = useMemo(() => {
     return buildCounterRowsFromStatistics({
       champions,
@@ -342,11 +368,12 @@ export function CounterPickSelector({
 
   useEffect(() => {
     let isMounted = true;
+    const requestKey = activeSelectionKey;
 
     async function loadMatchStatistics() {
       await Promise.resolve();
 
-      if (!selectedChampion || !selectedRole) {
+      if (!selectedChampion || !selectedRole || !requestKey) {
         if (isMounted) {
           setMatchStatisticsState(emptyMatchStatisticsState);
         }
@@ -356,6 +383,7 @@ export function CounterPickSelector({
       setMatchStatisticsState({
         ...emptyMatchStatisticsState,
         isLoading: true,
+        requestKey,
       });
 
       const result = await fetchCounterPickStatsForSelectedChampion({
@@ -370,6 +398,7 @@ export function CounterPickSelector({
       setMatchStatisticsState({
         error: result.error,
         isLoading: false,
+        requestKey,
         countersIntoSelectedChampion: result.countersIntoSelectedChampion,
         selectedChampionGoodInto: result.selectedChampionGoodInto,
       });
@@ -380,15 +409,16 @@ export function CounterPickSelector({
     return () => {
       isMounted = false;
     };
-  }, [selectedChampion, selectedRole]);
+  }, [activeSelectionKey, selectedChampion, selectedRole]);
 
   useEffect(() => {
     let isMounted = true;
+    const requestKey = activeSelectionKey;
 
     async function loadReviewedCounterPicks() {
       await Promise.resolve();
 
-      if (!selectedChampion || !selectedRole) {
+      if (!selectedChampion || !selectedRole || !requestKey) {
         if (isMounted) {
           setReviewedCounterPickState(emptyReviewedCounterPickState);
         }
@@ -407,6 +437,7 @@ export function CounterPickSelector({
       setReviewedCounterPickState({
         counterPicks: result.counterPicks,
         error: result.error,
+        requestKey,
       });
       setSelectedCounterKey(null);
     }
@@ -416,7 +447,7 @@ export function CounterPickSelector({
     return () => {
       isMounted = false;
     };
-  }, [selectedChampion, selectedRole]);
+  }, [activeSelectionKey, selectedChampion, selectedRole]);
 
   useEffect(() => {
     let isMounted = true;
@@ -450,27 +481,49 @@ export function CounterPickSelector({
     };
   }, [guideAvailabilityRequestKey]);
 
-  function handleChampionSelect(champion: LeagueChampion) {
-    setSelectedChampionId(champion.id);
-    setSelectorQuery("");
+  function resetCounterPickResultUi() {
     setSelectedCounterKey(null);
     setIsBestCountersExpanded(false);
     setIsCounteredByExpanded(false);
     setOpenPrepSections(defaultOpenPrepSections);
     setIsSelectorOpen(false);
+    setSelectorQuery("");
+  }
+
+  function handleChampionSelect(champion: LeagueChampion) {
+    if (!selectedRole) {
+      return;
+    }
+
+    const url = buildCounterPickUrl({ champion, role: selectedRole });
+
+    if (url) {
+      resetCounterPickResultUi();
+      router.push(url);
+    }
   }
 
   function handleRoleChange(role: LeagueRole) {
-    setSelectedRole(role);
-    setSelectorRole(role);
-    setSelectedCounterKey(null);
-    setIsBestCountersExpanded(false);
-    setIsCounteredByExpanded(false);
-    setOpenPrepSections(defaultOpenPrepSections);
+    if (!selectedChampion) {
+      return;
+    }
+
+    const url = buildCounterPickUrl({ champion: selectedChampion, role });
+
+    if (url) {
+      resetCounterPickResultUi();
+      setSelectorRole(role);
+      router.push(url);
+    }
   }
 
   function handleEntrySubmit(champion: LeagueChampion, role: LeagueRole) {
-    router.push(`/league/counters?champion=${encodeURIComponent(champion.id)}&role=${role}`);
+    const url = buildCounterPickUrl({ champion, role });
+
+    if (url) {
+      resetCounterPickResultUi();
+      router.push(url);
+    }
   }
 
   function handleCounterSelect(counterKey: string) {
@@ -503,12 +556,12 @@ export function CounterPickSelector({
 
       {hasCompleteSelection && selectedChampion && selectedRole ? (
         <div className="px-4 pb-8 sm:px-6 lg:px-8">
-          {matchStatisticsState.isLoading ? (
+          {isCounterPickDataLoading ? (
           <CounterPickLoadingState
             selectedChampion={selectedChampion}
             selectedRole={selectedRole}
           />
-        ) : matchStatisticsState.error ? (
+        ) : matchStatisticsState.error && isMatchStatisticsStateCurrent ? (
           <CounterPickErrorState
             error={matchStatisticsState.error}
             selectedChampion={selectedChampion}
@@ -585,7 +638,7 @@ export function CounterPickSelector({
           onQueryChange={setSelectorQuery}
           onRoleChange={setSelectorRole}
           query={selectorQuery}
-          selectedChampionId={selectedChampionId}
+          selectedChampionId={selectedChampion?.id ?? null}
           selectedRole={selectorRole}
         />
       ) : null}
@@ -639,25 +692,34 @@ function CounterPickEntryHero({
     onSubmit(selectedChampion, selectedRole);
   }
 
+  function handleRoleSelect(role: LeagueRole) {
+    setSelectedRole(role);
+
+    if (selectedChampion && !isCounterPickChampionSupportedInRole(selectedChampion, role)) {
+      setSelectedChampion(null);
+    }
+  }
+
   return (
-    <section className="relative min-h-[36rem] overflow-hidden border border-cyan-100/15 bg-[#06111f]/88">
+    <HextechFrame className="relative min-h-[38rem] w-[calc(100vw-2rem)] max-w-full overflow-hidden bg-[#06111f]/88 sm:w-full sm:overflow-visible lg:min-h-[44rem]">
       {backgroundChampion ? (
         <Image
           alt=""
           aria-hidden="true"
-          className="object-cover opacity-70 transition-opacity duration-700"
+          className="object-cover opacity-[0.82] transition-opacity duration-700"
           fill
           priority
           sizes="(min-width: 1024px) 86rem, 100vw"
           src={getChampionSplashUrl(backgroundChampion)}
-          style={{ objectPosition: "72% 28%" }}
+          style={{ objectPosition: "70% 22%" }}
           unoptimized
         />
       ) : null}
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#030914_0%,rgba(3,9,20,0.94)_32%,rgba(3,9,20,0.56)_62%,rgba(3,9,20,0.84)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_28%,rgba(34,211,238,0.16),transparent_28rem),radial-gradient(circle_at_78%_18%,rgba(201,170,90,0.12),transparent_30rem)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#030914_0%,rgba(3,9,20,0.91)_28%,rgba(3,9,20,0.3)_58%,rgba(3,9,20,0.44)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(3,9,20,0.96)_0%,rgba(3,9,20,0.68)_24%,transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_34%,rgba(34,211,238,0.14),transparent_26rem),radial-gradient(circle_at_68%_20%,rgba(34,211,238,0.16),transparent_25rem),radial-gradient(circle_at_86%_58%,rgba(201,170,90,0.08),transparent_28rem)]" />
       <div
-        className="absolute inset-0 opacity-[0.08] mix-blend-screen"
+        className="absolute inset-0 opacity-[0.075] mix-blend-screen"
         style={{
           backgroundImage:
             "linear-gradient(rgba(103,232,249,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,0.12) 1px, transparent 1px)",
@@ -665,56 +727,190 @@ function CounterPickEntryHero({
         }}
       />
 
-      <div className="relative z-10 grid min-h-[36rem] content-center gap-8 p-5 sm:p-7 lg:grid-cols-[minmax(0,0.95fr)_minmax(24rem,0.75fr)] lg:items-center">
-        <div className="max-w-3xl">
-          <p className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
-            Counter Pick
-          </p>
-          <h1 className="mt-4 font-mono text-5xl font-semibold uppercase tracking-normal text-white sm:text-6xl">
-            Find the right counter
+      <div className="relative z-10 flex min-h-[38rem] min-w-0 flex-col justify-between gap-10 px-3 py-8 sm:px-8 sm:py-10 lg:min-h-[44rem] lg:px-14 lg:py-14">
+        <div className="max-w-3xl pt-8 sm:pt-12 lg:pt-20">
+          <div className="flex items-center gap-4">
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
+              Counter Pick
+            </p>
+            <span
+              className="hidden h-px w-28 bg-[linear-gradient(90deg,rgba(103,232,249,0.85),rgba(103,232,249,0.08))] sm:block"
+              aria-hidden="true"
+            />
+            <span className="hidden size-1.5 rotate-45 border border-cyan-300/70 bg-cyan-300/20 sm:block" aria-hidden="true" />
+          </div>
+          <h1 className="mt-6 max-w-[20rem] font-mono text-4xl font-semibold uppercase leading-[0.98] tracking-normal text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)] min-[430px]:max-w-2xl min-[430px]:text-5xl sm:text-6xl lg:text-7xl">
+            Find the
+            <span className="block min-[430px]:inline"> right</span>
+            <span className="block">counter</span>
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-200">
+          <span className="mt-6 block h-0.5 w-12 bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.85)]" aria-hidden="true" />
+          <p className="mt-5 max-w-[20rem] text-base leading-7 text-zinc-200 sm:max-w-2xl">
             Choose the champion you are playing against and your role to see ranked counter picks,
             matchup context, and practical preparation.
           </p>
         </div>
 
         <form
-          className="border border-cyan-100/15 bg-[#06111f]/82 p-4 backdrop-blur"
+          className="relative w-[calc(100vw-3.5rem)] max-w-full min-w-0 border border-cyan-300/35 bg-[#06111f]/82 shadow-[0_24px_60px_rgba(0,0,0,0.34),0_0_28px_rgba(34,211,238,0.08)] backdrop-blur sm:w-full"
           onSubmit={(event) => {
             event.preventDefault();
             handleSubmit();
           }}
         >
-          <div className="grid gap-4">
-            <ChampionSearchCombobox
-              champions={champions}
-              idPrefix="counter-entry"
-              onChampionSelect={setSelectedChampion}
-              selectedChampion={selectedChampion}
-            />
-
-            <div>
-              <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/80">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(103,232,249,0.72),transparent)]" aria-hidden="true" />
+          <div className="grid w-full max-w-full min-w-0 gap-0 lg:grid-cols-[minmax(18rem,0.78fr)_minmax(20rem,1fr)_minmax(14rem,0.48fr)]">
+            <div className="min-w-0 border-b border-cyan-100/10 p-4 lg:border-b-0 lg:border-r lg:p-7">
+              <p className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
                 Your role
               </p>
               <CounterPickRoleControls
-                onChange={setSelectedRole}
+                onChange={handleRoleSelect}
                 selectedRole={selectedRole}
               />
             </div>
 
-            <button
-              className="inline-flex h-12 items-center justify-center gap-3 border border-transparent bg-cyan-300 px-5 font-mono text-sm font-bold uppercase tracking-[0.08em] text-[#04111d] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 disabled:cursor-not-allowed disabled:border-cyan-100/15 disabled:bg-[#071321]/80 disabled:text-zinc-500"
-              disabled={!canSubmit}
-              type="submit"
-            >
-              Find counters
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </button>
+            <div className="min-w-0 border-b border-cyan-100/10 p-4 lg:border-b-0 lg:border-r lg:p-7">
+              <p className="mb-4 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                VS Champion
+              </p>
+              <ChampionSearchCombobox
+                champions={champions}
+                idPrefix="counter-entry"
+                key={selectedRole ?? "no-role"}
+                onChampionSelect={setSelectedChampion}
+                selectedChampion={selectedChampion}
+                selectedRole={selectedRole}
+              />
+              {selectedRole && !selectedChampion ? (
+                <p className="mt-3 text-xs text-cyan-100/65">
+                  Choose a {getLeagueRoleLabel(selectedRole)} champion to continue.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex min-w-0 items-end p-4 lg:p-7">
+              <button
+                className="inline-flex h-16 w-full items-center justify-center gap-4 border border-cyan-300/70 bg-cyan-300/10 px-5 font-mono text-sm font-bold uppercase tracking-[0.16em] text-cyan-100 shadow-[inset_0_0_22px_rgba(34,211,238,0.08),0_0_24px_rgba(34,211,238,0.08)] transition hover:border-cyan-200 hover:bg-cyan-300 hover:text-[#04111d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 disabled:cursor-not-allowed disabled:border-cyan-100/15 disabled:bg-[#071321]/80 disabled:text-zinc-500 disabled:shadow-none"
+                disabled={!canSubmit}
+                type="submit"
+              >
+                Find counters
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </form>
       </div>
+    </HextechFrame>
+  );
+}
+
+function HextechFrame({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "relative border border-cyan-300/35 shadow-[inset_0_0_34px_rgba(34,211,238,0.08),0_0_36px_rgba(34,211,238,0.1)]",
+        className,
+      )}
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-20 border border-cyan-100/10"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-8 top-0 z-20 h-px bg-[linear-gradient(90deg,transparent,rgba(103,232,249,0.86),transparent)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-8 bottom-0 z-20 h-px bg-[linear-gradient(90deg,transparent,rgba(103,232,249,0.72),transparent)]"
+      />
+
+      {["left-0 top-0", "right-0 top-0", "bottom-0 left-0", "bottom-0 right-0"].map(
+        (position) => {
+          const isRight = position.includes("right");
+          const isBottom = position.includes("bottom");
+
+          return (
+            <div
+              aria-hidden="true"
+              className={cn("pointer-events-none absolute z-30 size-16", position)}
+              key={position}
+            >
+              <span
+                className={cn(
+                  "absolute h-px w-16 bg-cyan-200 shadow-[0_0_16px_rgba(34,211,238,0.72)]",
+                  isBottom ? "bottom-0" : "top-0",
+                  isRight ? "right-0" : "left-0",
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute h-16 w-px bg-cyan-200 shadow-[0_0_16px_rgba(34,211,238,0.72)]",
+                  isBottom ? "bottom-0" : "top-0",
+                  isRight ? "right-0" : "left-0",
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute h-px w-8 bg-[#C9AA5A]/80",
+                  isBottom ? "bottom-3" : "top-3",
+                  isRight ? "right-3" : "left-3",
+                )}
+              />
+            </div>
+          );
+        },
+      )}
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2"
+      >
+        <span className="absolute left-0 top-0 h-px w-12 bg-cyan-200/80" />
+        <span className="absolute right-0 top-0 h-px w-12 bg-cyan-200/80" />
+        <span className="absolute left-1/2 top-0 size-4 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-cyan-200/80 bg-[#06111f] shadow-[0_0_18px_rgba(34,211,238,0.58)]" />
+        <span className="absolute left-1/2 top-3 h-px w-20 -translate-x-1/2 bg-[#C9AA5A]/55" />
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-0 left-1/2 z-30 h-7 w-36 -translate-x-1/2"
+      >
+        <span className="absolute bottom-0 left-0 h-px w-12 bg-cyan-200/70" />
+        <span className="absolute bottom-0 right-0 h-px w-12 bg-cyan-200/70" />
+        <span className="absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-1/2 rotate-45 border border-cyan-200/75 bg-[#06111f] shadow-[0_0_18px_rgba(34,211,238,0.5)]" />
+        <span className="absolute bottom-3 left-1/2 h-px w-20 -translate-x-1/2 bg-[#C9AA5A]/45" />
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-1/2 z-30 hidden h-48 w-5 -translate-y-1/2 lg:block"
+      >
+        <span className="absolute left-0 top-0 h-16 w-px bg-[linear-gradient(180deg,transparent,rgba(103,232,249,0.82))]" />
+        <span className="absolute left-0 bottom-0 h-16 w-px bg-[linear-gradient(0deg,transparent,rgba(103,232,249,0.82))]" />
+        <span className="absolute left-0 top-1/2 h-10 w-px -translate-y-1/2 bg-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.7)]" />
+        <span className="absolute left-0 top-1/2 h-px w-5 -translate-y-1/2 bg-[#C9AA5A]/70" />
+      </div>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-1/2 z-30 hidden h-48 w-5 -translate-y-1/2 lg:block"
+      >
+        <span className="absolute right-0 top-0 h-16 w-px bg-[linear-gradient(180deg,transparent,rgba(103,232,249,0.82))]" />
+        <span className="absolute bottom-0 right-0 h-16 w-px bg-[linear-gradient(0deg,transparent,rgba(103,232,249,0.82))]" />
+        <span className="absolute right-0 top-1/2 h-10 w-px -translate-y-1/2 bg-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.7)]" />
+        <span className="absolute right-0 top-1/2 h-px w-5 -translate-y-1/2 bg-[#C9AA5A]/70" />
+      </div>
+
+      {children}
     </section>
   );
 }
@@ -724,35 +920,31 @@ function ChampionSearchCombobox({
   idPrefix,
   onChampionSelect,
   selectedChampion,
+  selectedRole,
 }: {
   champions: LeagueChampion[];
   idPrefix: string;
   onChampionSelect: (champion: LeagueChampion | null) => void;
   selectedChampion: LeagueChampion | null;
+  selectedRole: LeagueRole | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [highlightedChampionId, setHighlightedChampionId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(selectedChampion?.name ?? "");
-  const normalizedQuery = normalizePublicCounterPickSearchValue(query);
-  const filteredChampions = useMemo(() => {
-    const nextChampions = normalizedQuery
-      ? champions.filter((champion) =>
-          matchesPublicCounterPickChampionSearch(
-            champion,
-            normalizedQuery,
-            getChampionRoles(champion).map(getLeagueRoleLabel),
-          ),
-        )
-      : champions;
-
-    return nextChampions.slice(0, 80);
-  }, [champions, normalizedQuery]);
-  const highlightedChampion =
-    filteredChampions.find((champion) => champion.id === highlightedChampionId) ??
-    filteredChampions[0] ??
+  const filteredOptions = useMemo<CounterPickChampionOption[]>(() => {
+    return getCounterPickChampionOptionsForRole({
+      champions,
+      query,
+      role: selectedRole,
+    }).slice(0, 80);
+  }, [champions, query, selectedRole]);
+  const highlightedOption =
+    filteredOptions.find((option) => option.champion.id === highlightedChampionId) ??
+    filteredOptions[0] ??
     null;
+  const highlightedChampion = highlightedOption?.champion ?? null;
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -777,11 +969,15 @@ function ChampionSearchCombobox({
     onChampionSelect(null);
     setQuery("");
     setHighlightedChampionId(null);
-    setIsOpen(true);
+    setIsOpen(Boolean(selectedRole));
     inputRef.current?.focus();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!selectedRole) {
+      return;
+    }
+
     if (event.key === "Escape") {
       setIsOpen(false);
       return;
@@ -796,12 +992,12 @@ function ChampionSearchCombobox({
       return;
     }
 
-    if (filteredChampions.length === 0) {
+    if (filteredOptions.length === 0) {
       return;
     }
 
     const currentIndex = Math.max(
-      filteredChampions.findIndex((champion) => champion.id === highlightedChampion?.id),
+      filteredOptions.findIndex((option) => option.champion.id === highlightedChampion?.id),
       0,
     );
 
@@ -809,7 +1005,7 @@ function ChampionSearchCombobox({
       event.preventDefault();
       setIsOpen(true);
       setHighlightedChampionId(
-        filteredChampions[(currentIndex + 1) % filteredChampions.length].id,
+        filteredOptions[(currentIndex + 1) % filteredOptions.length].champion.id,
       );
       return;
     }
@@ -818,9 +1014,9 @@ function ChampionSearchCombobox({
       event.preventDefault();
       setIsOpen(true);
       setHighlightedChampionId(
-        filteredChampions[
-          (currentIndex - 1 + filteredChampions.length) % filteredChampions.length
-        ].id,
+        filteredOptions[
+          (currentIndex - 1 + filteredOptions.length) % filteredOptions.length
+        ].champion.id,
       );
     }
   }
@@ -839,19 +1035,25 @@ function ChampionSearchCombobox({
           }
           aria-autocomplete="list"
           aria-controls={`${idPrefix}-results`}
+          aria-disabled={!selectedRole}
           aria-expanded={isOpen}
           aria-label="Search champions"
           autoComplete="off"
-          className="h-12 w-full border border-cyan-100/15 bg-[#020a14]/86 pl-10 pr-11 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-cyan-300/55 focus:ring-2 focus:ring-cyan-300/20"
+          className="h-14 w-full border border-cyan-100/15 bg-[#020a14]/86 pl-10 pr-11 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 transition focus:border-cyan-300/55 focus:ring-2 focus:ring-cyan-300/20 disabled:cursor-not-allowed disabled:bg-[#020814]/72 disabled:text-zinc-600 disabled:placeholder:text-zinc-600"
+          disabled={!selectedRole}
           onChange={(event) => {
+            if (!selectedRole) {
+              return;
+            }
+
             setQuery(event.target.value);
             setHighlightedChampionId(null);
             onChampionSelect(null);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => setIsOpen(Boolean(selectedRole))}
           onKeyDown={handleKeyDown}
-          placeholder="Search any champion..."
+          placeholder={selectedRole ? "Search champion..." : "Select your role first..."}
           ref={inputRef}
           role="combobox"
           type="search"
@@ -860,7 +1062,7 @@ function ChampionSearchCombobox({
         {selectedChampion ? (
           <button
             aria-label="Clear selected champion"
-            className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center border border-cyan-100/15 bg-[#06111f] text-zinc-400 transition hover:border-cyan-300/35 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45"
+            className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center border border-cyan-100/15 bg-[#06111f] text-zinc-400 transition hover:border-cyan-300/35 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45"
             onClick={clearChampion}
             type="button"
           >
@@ -869,14 +1071,15 @@ function ChampionSearchCombobox({
         ) : null}
       </label>
 
-      {isOpen ? (
+      {selectedRole && isOpen ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 max-h-80 overflow-y-auto border border-cyan-300/30 bg-[#06111f]/98 p-1 shadow-[0_18px_44px_rgba(0,0,0,0.38)] [scrollbar-color:rgba(34,211,238,0.38)_rgba(7,19,33,0.9)] [scrollbar-width:thin]"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-80 overflow-y-auto border border-cyan-300/30 bg-[#06111f]/98 p-1 shadow-[0_18px_44px_rgba(0,0,0,0.38)] [scrollbar-color:rgba(34,211,238,0.38)_rgba(7,19,33,0.9)] [scrollbar-width:thin]"
           id={`${idPrefix}-results`}
           role="listbox"
         >
-          {filteredChampions.length > 0 ? (
-            filteredChampions.map((champion) => {
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => {
+              const champion = option.champion;
               const isHighlighted = highlightedChampion?.id === champion.id;
               const isSelected = selectedChampion?.id === champion.id;
 
@@ -910,15 +1113,20 @@ function ChampionSearchCombobox({
                       {champion.name}
                     </span>
                     <span className="block truncate text-xs text-zinc-500">
-                      {champion.title}
+                      {option.roleLabels.map(getLeagueRoleLabel).join(", ") || champion.title}
                     </span>
                   </span>
+                  {option.isOffRole ? (
+                    <span className="ml-auto shrink-0 border border-[#C9AA5A]/35 bg-[#C9AA5A]/10 px-2 py-1 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#D8B14A]">
+                      Exact off-role
+                    </span>
+                  ) : null}
                 </button>
               );
             })
           ) : (
             <p className="border border-cyan-100/10 bg-white/[0.035] p-4 text-center text-sm text-zinc-400">
-              No champions match that search.
+              No {getLeagueRoleLabel(selectedRole)} champions match that search.
             </p>
           )}
         </div>
@@ -935,7 +1143,11 @@ function CounterPickRoleControls({
   selectedRole: LeagueRole | null;
 }) {
   return (
-    <div aria-label="Counter Pick role" className="grid grid-cols-5 gap-2" role="radiogroup">
+    <div
+      aria-label="Counter Pick role"
+      className="grid min-w-0 grid-cols-3 gap-1.5 sm:grid-cols-5 sm:gap-2"
+      role="radiogroup"
+    >
       {roleOptions.map((option) => {
         const isActive = selectedRole === option.value;
 
@@ -944,8 +1156,9 @@ function CounterPickRoleControls({
             aria-checked={isActive}
             aria-label={`${option.label} role`}
             className={cn(
-              "flex h-12 min-w-0 items-center justify-center border border-cyan-100/15 bg-black/25 px-2 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
-              isActive && "border-cyan-300/60 bg-cyan-400/15 text-cyan-100",
+              "relative flex h-11 w-full min-w-0 items-center justify-center border border-cyan-100/15 bg-[#020a14]/78 px-1 text-[#C9AA5A]/62 transition hover:border-cyan-300/35 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 sm:h-14 sm:px-2",
+              isActive &&
+                "border-cyan-300/70 bg-cyan-400/[0.12] text-cyan-100 shadow-[inset_0_-2px_0_rgba(103,232,249,0.82),0_0_20px_rgba(34,211,238,0.12)]",
             )}
             key={option.value}
             onClick={() => onChange(option.value)}
@@ -956,11 +1169,17 @@ function CounterPickRoleControls({
             <Image
               alt=""
               aria-hidden="true"
-              className="size-6 object-contain"
+              className="size-5 object-contain sm:size-6"
               height={24}
               src={option.iconSrc}
               width={24}
             />
+            {isActive ? (
+              <span
+                aria-hidden="true"
+                className="absolute left-1/2 top-0 size-1.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-cyan-200 bg-[#06111f] shadow-[0_0_12px_rgba(34,211,238,0.65)]"
+              />
+            ) : null}
           </button>
         );
       })}
@@ -2961,6 +3180,10 @@ function getVisibleCounterRows({
   return rows.slice(0, isExpanded ? maxVisibleCounterCount : defaultVisibleCounterCount);
 }
 
+function getCounterPickSelectionKey(champion: Pick<LeagueChampion, "id">, role: LeagueRole) {
+  return `${champion.id}:${role}`;
+}
+
 function buildCombatRelationshipLookup(
   relationships: readonly LeagueChampionCounterRelationship[],
 ) {
@@ -3097,26 +3320,6 @@ function normalizeChampionLookupKey(value: string) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
-}
-
-function findCounterPickInitialChampion(
-  champions: LeagueChampion[],
-  initialChampionId: string | null | undefined,
-) {
-  if (!initialChampionId) {
-    return null;
-  }
-
-  const normalizedInitialChampionId = normalizeChampionLookupKey(initialChampionId);
-
-  return (
-    champions.find(
-      (champion) =>
-        normalizeChampionLookupKey(champion.id) === normalizedInitialChampionId ||
-        normalizeChampionLookupKey(champion.name) === normalizedInitialChampionId ||
-        normalizeChampionLookupKey(champion.slug ?? "") === normalizedInitialChampionId,
-    ) ?? null
-  );
 }
 
 function dedupePrepBullets(items: readonly string[]) {

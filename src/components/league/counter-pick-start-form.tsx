@@ -15,6 +15,7 @@ import {
   matchesPublicCounterPickChampionSearch,
   normalizePublicCounterPickSearchValue,
 } from "@/src/features/league/public-counter-pick-options";
+import { buildCounterPickUrl } from "@/src/features/league/counter-pick-routes";
 import { getLeagueRoleLabel, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 
@@ -157,9 +158,13 @@ export function CounterPickStartForm({ champions, popularChampions }: CounterPic
     }
 
     setIsSubmitting(true);
-    router.push(
-      `/league/counters?champion=${encodeURIComponent(selectedChampion.id)}&role=${selectedRole}`,
-    );
+    const url = buildCounterPickUrl({ champion: selectedChampion, role: selectedRole });
+
+    if (url) {
+      router.push(url);
+    } else {
+      setIsSubmitting(false);
+    }
   }
 
   function promptChampionSelection() {
