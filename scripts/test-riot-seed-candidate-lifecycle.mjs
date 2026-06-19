@@ -19,6 +19,7 @@ testCooldownCandidate();
 testCandidateReadyAfterCooldown();
 testRunningCandidateCannotBeSelected();
 testLowSignalCandidate();
+testProvisionalLadderCandidateReadyWithoutObservations();
 testManualRejectionAndRestore();
 testSuccessfulScanResetsFailures();
 testRetryBackoff();
@@ -97,6 +98,18 @@ function testLowSignalCandidate() {
   assert.equal(lifecycle.reasonCodes.includes("too-few-observations"), true);
 }
 
+function testProvisionalLadderCandidateReadyWithoutObservations() {
+  const lifecycle = deriveSeedCandidateLifecycle(
+    candidate({ observedGames: 0, source: "ladder_import" }),
+    { now },
+  );
+
+  assert.equal(lifecycle.state, "ready-to-scan");
+  assert.equal(lifecycle.isSelectableForScan, true);
+  assert.equal(lifecycle.reasonCodes.includes("too-few-observations"), true);
+  assert.equal(lifecycle.reasonCodes.includes("ready"), true);
+}
+
 function testManualRejectionAndRestore() {
   const rejected = deriveSeedCandidateLifecycle(
     candidate({ manuallyRejectedAt: "2026-06-17T10:00:00.000Z" }),
@@ -173,6 +186,7 @@ function candidate({
   rankLastSuccessAt = "2026-06-16T12:00:00.000Z",
   rankStatus = "ranked",
   rankTier = "GOLD",
+  source = "match_discovery",
   status = "candidate",
 } = {}) {
   return {
@@ -187,6 +201,7 @@ function candidate({
     rank_last_success_at: rankLastSuccessAt,
     rank_next_eligible_at: null,
     rank_tier: rankTier,
+    source,
     status,
   };
 }

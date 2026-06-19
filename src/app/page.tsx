@@ -26,6 +26,7 @@ import {
   getLeagueChampions,
   type LeagueChampion,
 } from "@/src/features/league/champions";
+import { getPopularCounterPickChampions } from "@/src/features/league/counter-pick-popular-champions";
 import {
   getLeagueMatchupCoverageSummary,
   type LeagueMatchupCoverageSummary,
@@ -43,6 +44,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const { champions, error } = await getLeagueChampions();
+  const popularChampions =
+    champions.length > 0 ? await getPopularCounterPickChampions(champions) : [];
   const { coverage } =
     champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
   const stats = getHomepageStats(champions.length, coverage);
@@ -58,7 +61,7 @@ export default async function Home() {
           {error ? (
             <ChampionDataError message={error} />
           ) : champions.length > 0 ? (
-            <CounterPickStartForm champions={champions} />
+            <CounterPickStartForm champions={champions} popularChampions={popularChampions} />
           ) : (
             <div className="max-w-xl border border-cyan-100/15 bg-[#07101f]/90 p-4 text-zinc-300">
               <h2 className="font-mono text-lg font-semibold text-white">

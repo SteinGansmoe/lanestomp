@@ -18,7 +18,7 @@ assert.match(
 );
 assert.match(
   homepage,
-  /<CounterPickStartForm champions=\{champions\} \/>/,
+  /<CounterPickStartForm champions=\{champions\} popularChampions=\{popularChampions\} \/>/,
   "Homepage hero should render the integrated Counter Pick search.",
 );
 assert.match(
@@ -76,15 +76,24 @@ assert.match(homepage, /LaneStomp in Numbers/, "Homepage should include the stat
 
 assert.match(
   startForm,
-  /quickAccessChampionIds/,
-  "Counter Pick hero search should render a curated quick-access row.",
+  /popularChampions\.slice\(0, 9\)/,
+  "Counter Pick hero search should render exactly nine popular champion shortcuts.",
 );
 assert.match(
   startForm,
-  /Browse all \{champions\.length\}\+ champions/,
-  "Champion quick-access row should use the dynamic active champion count.",
+  /Most popular picks/,
+  "Champion quick-access row should use the approved popular picks label.",
 );
-assert.match(startForm, /MoreHorizontal/, "Champion quick-access row should include an ALL control.");
+assert.doesNotMatch(
+  startForm,
+  /MoreHorizontal/,
+  "Champion quick-access row should not include an ALL control.",
+);
+assert.match(
+  startForm,
+  /Choose a champion from the results to continue\./,
+  "Counter Pick hero search should explain the empty CTA state inline.",
+);
 assert.match(
   startForm,
   /document\.addEventListener\("mousedown", closeResultsOnOutsideClick\)/,

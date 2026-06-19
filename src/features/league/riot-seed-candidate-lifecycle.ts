@@ -114,6 +114,7 @@ export function deriveSeedCandidateLifecycle(
     | "rank_last_success_at"
     | "rank_next_eligible_at"
     | "rank_tier"
+    | "source"
     | "status"
   >,
   context: SeedCandidateLifecycleContext = {},
@@ -125,6 +126,7 @@ export function deriveSeedCandidateLifecycle(
   const nextEligibleAt = candidate.next_retry_at ?? candidate.next_eligible_scan_at ?? null;
   const isRunning = candidate.status === "active" || candidate.status === "queued";
   const hasEnoughSignal = Number(candidate.observed_games ?? 0) >= MIN_SEED_OBSERVATIONS;
+  const isProvisionalLadderSeed = candidate.source === "ladder_import";
   const hasUsableRank = candidate.rank_enrichment_status === "ranked" && rankBracket !== "unknown";
   const rankIsStale =
     hasUsableRank && isOlderThanDays(candidate.rank_last_success_at, now, RANK_SNAPSHOT_STALE_DAYS);
@@ -157,7 +159,7 @@ export function deriveSeedCandidateLifecycle(
     return lifecycle("failed", false);
   }
 
-  if (!hasEnoughSignal) {
+  if (!hasEnoughSignal && !isProvisionalLadderSeed) {
     reasonCodes.push("too-few-observations");
     return lifecycle("low-signal", false);
   }
@@ -187,6 +189,10 @@ export function deriveSeedCandidateLifecycle(
   if (rankIsStale) {
     reasonCodes.push("stale-rank");
     return lifecycle("needs-rank-enrichment", false);
+  }
+
+  if (!hasEnoughSignal) {
+    reasonCodes.push("too-few-observations");
   }
 
   reasonCodes.push("ready");

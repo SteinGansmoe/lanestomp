@@ -2308,16 +2308,181 @@ function RiotCollectionJobCard({
             <Metric label="Existing reused" value={discoveryDiagnostics.candidates.reused} />
             <Metric label="New candidates" value={discoveryDiagnostics.candidates.created} />
             <Metric
+              label="Candidates enriched"
+              value={discoveryDiagnostics.candidates.enriched}
+            />
+            <Metric
+              label="Missing enrichment"
+              value={discoveryDiagnostics.candidates.missingEnrichment ?? 0}
+            />
+            <Metric
               label="Rank snapshots"
               value={discoveryDiagnostics.candidates.rankSnapshotsInserted}
+            />
+            <Metric
+              label="Candidates evaluated"
+              value={discoveryDiagnostics.eligibility?.candidatesEvaluated ?? 0}
+            />
+            <Metric
+              label="Rows refetched"
+              value={discoveryDiagnostics.pipeline?.candidateRowsFetchedAfterEnrichment ?? 0}
+            />
+            <Metric
+              label="Qualification input"
+              value={discoveryDiagnostics.pipeline?.qualificationInput ?? 0}
             />
             <Metric
               label="Ready seeds"
               value={discoveryDiagnostics.lifecycle.eligibleSeedsProduced}
             />
+            <Metric
+              label="Rejected candidates"
+              value={discoveryDiagnostics.eligibility?.candidatesRejected ?? 0}
+            />
+            <Metric
+              label="Selected seeds"
+              value={discoveryDiagnostics.eligibility?.candidatesSelectedAsSeeds ?? 0}
+            />
             <Metric label="Low signal" value={discoveryDiagnostics.lifecycle["low-signal"]} />
             <Metric label="API failures" value={discoveryDiagnostics.api.failures} />
           </div>
+          {discoveryDiagnostics.progress ? (
+            <div className="mt-4 border border-white/10 bg-black/20 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-300">
+                Discovery progress
+              </p>
+              <div className="mt-3 grid gap-2 text-xs text-zinc-300 sm:grid-cols-2 lg:grid-cols-3">
+                <Metric
+                  label="Target ready seeds"
+                  value={discoveryDiagnostics.progress.targetReadySeeds}
+                />
+                <Metric
+                  label="Ready seeds found"
+                  value={discoveryDiagnostics.progress.readySeedsFound}
+                />
+                <Metric
+                  label="Remaining seeds"
+                  value={discoveryDiagnostics.progress.remainingSeedsNeeded}
+                />
+                <Metric
+                  label="Discovery iterations"
+                  value={discoveryDiagnostics.progress.iterations.length}
+                />
+                <Metric
+                  label="Current source"
+                  value={discoveryDiagnostics.progress.currentSource ?? "Pending"}
+                />
+                <Metric
+                  label="Current page"
+                  value={discoveryDiagnostics.progress.currentPage ?? "Pending"}
+                />
+                <Metric
+                  label="Unique inspected"
+                  value={discoveryDiagnostics.progress.uniqueCandidatesInspected}
+                />
+                <Metric
+                  label="Duplicate PUUIDs"
+                  value={discoveryDiagnostics.progress.duplicatePuuidsSkipped}
+                />
+                <Metric
+                  label="Duplicate candidates"
+                  value={discoveryDiagnostics.progress.duplicateCandidatesSkipped}
+                />
+                <Metric
+                  label="Sources exhausted"
+                  value={discoveryDiagnostics.progress.exhaustedSourceKeys.length}
+                />
+                <Metric
+                  label="Stop reason"
+                  value={discoveryDiagnostics.progress.stopReason ?? "Running"}
+                />
+              </div>
+              {discoveryDiagnostics.progress.iterations.length > 0 ? (
+                <div className="mt-3 space-y-2 text-xs text-zinc-400">
+                  {discoveryDiagnostics.progress.iterations.slice(-3).map((iteration) => (
+                    <div
+                      className="grid gap-2 border border-white/10 bg-white/[0.03] p-2 sm:grid-cols-2 lg:grid-cols-4"
+                      key={`${iteration.iteration}-${iteration.source}-${iteration.page}`}
+                    >
+                      <span className="text-cyan-100">
+                        {iteration.iteration}. {iteration.source} p{iteration.page}
+                      </span>
+                      <span>{iteration.entriesReturned} entries</span>
+                      <span>{iteration.candidatesEvaluated} evaluated</span>
+                      <span>{iteration.readySeedsFound} ready</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {discoveryDiagnostics.pipeline ? (
+            <div className="mt-4 border border-white/10 bg-black/20 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-300">
+                Qualification pipeline
+              </p>
+              <div className="mt-3 grid gap-2 text-xs text-zinc-300 sm:grid-cols-2 lg:grid-cols-3">
+                <Metric label="Discovered PUUIDs" value={discoveryDiagnostics.pipeline.discoveredPuuids} />
+                <Metric
+                  label="Persisted IDs"
+                  value={discoveryDiagnostics.pipeline.persistedCandidateIds}
+                />
+                <Metric
+                  label="Enriched IDs"
+                  value={discoveryDiagnostics.pipeline.enrichedCandidateIds}
+                />
+                <Metric
+                  label="Rows after refetch"
+                  value={discoveryDiagnostics.pipeline.candidateRowsFetchedAfterEnrichment}
+                />
+                <Metric
+                  label="Eligibility results"
+                  value={discoveryDiagnostics.pipeline.eligibilityResults}
+                />
+                <Metric
+                  label="Invariant issues"
+                  value={discoveryDiagnostics.pipeline.invariantErrors.length}
+                />
+              </div>
+              {discoveryDiagnostics.pipeline.invariantErrors.length > 0 ? (
+                <p className="mt-3 text-xs text-rose-200">
+                  Invariants: {discoveryDiagnostics.pipeline.invariantErrors.join(", ")}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {discoveryDiagnostics.eligibility ? (
+            <div className="mt-4 grid gap-3 text-xs text-zinc-300 lg:grid-cols-2">
+              <DiagnosticSummaryList
+                emptyLabel="No hard rejections recorded."
+                items={discoveryDiagnostics.eligibility.hardRejections}
+                title="Eligibility rejection summary"
+              />
+              <DiagnosticSummaryList
+                emptyLabel="No warning-only conditions recorded."
+                items={discoveryDiagnostics.eligibility.warnings}
+                title="Eligibility warnings"
+              />
+            </div>
+          ) : null}
+          {discoveryDiagnostics.eligibility?.rejectionSamples?.length ? (
+            <div className="mt-4 border border-white/10 bg-black/20 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-300">
+                Rejected candidate samples
+              </p>
+              <div className="mt-3 grid gap-2 text-xs text-zinc-400 md:grid-cols-2">
+                {discoveryDiagnostics.eligibility.rejectionSamples.map((sample) => (
+                  <div className="border border-white/10 bg-white/[0.03] p-2" key={sample.id}>
+                    <p className="font-mono text-cyan-100">{sample.id}</p>
+                    <p className="mt-1">Rank: {sample.rank}</p>
+                    <p>Role: {sample.role}</p>
+                    <p>Hard: {sample.hardReasons.join(", ") || "None"}</p>
+                    <p>Warnings: {sample.warnings.join(", ") || "None"}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {discoveryDiagnostics.reasonCodes.length > 0 ? (
             <p className="mt-3 text-xs text-zinc-500">
               Reason codes: {discoveryDiagnostics.reasonCodes.join(", ")}
@@ -2358,6 +2523,38 @@ function RiotCollectionJobCard({
           Cancel
         </Button>
       </div>
+    </div>
+  );
+}
+
+function DiagnosticSummaryList({
+  emptyLabel,
+  items,
+  title,
+}: {
+  emptyLabel: string;
+  items: Record<string, number>;
+  title: string;
+}) {
+  const entries = Object.entries(items ?? {}).sort(
+    (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+  );
+
+  return (
+    <div className="border border-white/10 bg-black/20 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-300">{title}</p>
+      {entries.length > 0 ? (
+        <dl className="mt-3 space-y-2">
+          {entries.map(([reason, count]) => (
+            <div className="flex items-center justify-between gap-3" key={reason}>
+              <dt className="text-zinc-400">{formatEnumLabel(reason)}</dt>
+              <dd className="font-mono text-cyan-100">{count}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p className="mt-3 text-zinc-500">{emptyLabel}</p>
+      )}
     </div>
   );
 }

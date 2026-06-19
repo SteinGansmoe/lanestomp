@@ -46,9 +46,11 @@ export type RiotCollectionJobProgress = {
 };
 
 export type RiotCollectionSafetyLimits = {
+  maxCandidatesInspectedPerDiscovery: number;
   maxIdentifierLookupsPerJob: number;
   maxLadderEntriesPerJob: number;
   maxLadderPagesPerJob: number;
+  maxNoProgressDiscoveryIterations: number;
   maxNewCandidatesPerJob: number;
   maxSeedBatchSize: number;
 };
@@ -64,6 +66,7 @@ export type RiotCollectionDiscoveryDiagnostics = {
     created: number;
     enriched: number;
     existingMatched: number;
+    missingEnrichment: number;
     persistenceFailures: number;
     rankSnapshotFailures: number;
     rankSnapshotsInserted: number;
@@ -88,6 +91,65 @@ export type RiotCollectionDiscoveryDiagnostics = {
   } | null;
   lifecycle: Record<SeedCandidateLifecycleState, number> & {
     eligibleSeedsProduced: number;
+  };
+  eligibility: {
+    candidatesEvaluated: number;
+    candidatesRejected: number;
+    candidatesSelectedAsSeeds: number;
+    hardRejections: Record<string, number>;
+    rejectionSamples: Array<{
+      hardReasons: string[];
+      id: string;
+      rank: string;
+      role: string;
+      warnings: string[];
+    }>;
+    warnings: Record<string, number>;
+  };
+  pipeline: {
+    candidateRowsFetchedAfterEnrichment: number;
+    discoveredPuuids: number;
+    eligibilityResults: number;
+    eligibleCandidates: number;
+    enrichedCandidateIds: number;
+    invariantErrors: string[];
+    persistedCandidateIds: number;
+    qualificationInput: number;
+    rejectedCandidates: number;
+    selectedSeeds: number;
+  };
+  progress: {
+    currentPage: number | null;
+    currentSource: string | null;
+    currentSourceIndex: number;
+    duplicatePuuidsSkipped: number;
+    duplicateCandidatesSkipped: number;
+    evaluatedCandidateIds: string[];
+    exhaustedSourceKeys: string[];
+    iterations: Array<{
+      candidatesEvaluated: number;
+      duplicateCandidatesSkipped: number;
+      duplicatePuuidsSkipped: number;
+      entriesReturned: number;
+      iteration: number;
+      newCandidates: number;
+      page: number;
+      readySeedsFound: number;
+      rejectedRecentlyScanned: number;
+      rejectedTooFewObservations: number;
+      remainingSeedsNeeded: number;
+      reusedCandidates: number;
+      source: string;
+      uniqueCandidatesFound: number;
+      uniquePuuidsFound: number;
+    }>;
+    readySeedIds: string[];
+    readySeedsFound: number;
+    remainingSeedsNeeded: number;
+    selectedSeedIds: string[];
+    stopReason: string | null;
+    targetReadySeeds: number;
+    uniqueCandidatesInspected: number;
   };
   pagesFetched: number;
   reasonCodes: string[];
@@ -219,10 +281,12 @@ export const riotCollectionTargets = [
 ] as const satisfies readonly RiotCollectionTarget[];
 
 export const defaultRiotCollectionSafetyLimits = {
+  maxCandidatesInspectedPerDiscovery: 5000,
   maxIdentifierLookupsPerJob: 150,
-  maxLadderEntriesPerJob: 500,
-  maxLadderPagesPerJob: 5,
-  maxNewCandidatesPerJob: 100,
+  maxLadderEntriesPerJob: 5000,
+  maxLadderPagesPerJob: 50,
+  maxNoProgressDiscoveryIterations: 3,
+  maxNewCandidatesPerJob: 5000,
   maxSeedBatchSize: 20,
 } as const satisfies RiotCollectionSafetyLimits;
 
@@ -233,15 +297,27 @@ export const defaultDevKeyEstimatedRiotRequestsPerSeed = 21;
 
 export const riotCollectionDiscoveryReasonLabels = {
   "api-failure": "One or more Riot ladder API requests failed.",
+  "all-candidates-rejected": "All evaluated candidates were rejected by eligibility rules.",
+  "eligible-candidates-selected": "Eligible candidates were selected for the next scan.",
   "identifier-resolution-failed": "Ladder players were found, but PUUID resolution failed.",
   "missing-riot-api-key": "Missing Riot API configuration.",
+  "no-candidates-after-enrichment-refetch":
+    "Candidates were enriched, but none could be refetched for qualification.",
   "no-eligible-seeds": "Ladder candidates were stored, but none were eligible for the next scan.",
+  "no-qualification-input": "No candidates reached eligibility evaluation.",
   "no-ladder-entries": "Ladder discovery returned no entries from the requested pages.",
   "no-ladder-sources": "No ladder sources are configured for the selected rank bracket.",
   "no-ready-seeds-after-discovery":
     "Discovery finished, but selection found no ready unused seeds.",
+  "candidate-inspection-cap-reached": "Discovery stopped at the candidate inspection safety cap.",
+  "discovery-page-cap-reached": "Discovery stopped at the ladder page safety cap.",
+  "discovery-sources-exhausted": "All configured discovery sources were exhausted.",
+  "no-new-candidates-after-n-iterations":
+    "Discovery stopped after multiple iterations found no new candidates.",
   "persistence-failed": "Ladder players were resolved, but candidate persistence failed.",
   "rate-limited": "Riot rate limit reached; resume later.",
+  "riot-budget-exhausted": "Discovery stopped at the configured Riot request budget.",
+  "target-ready-seeds-reached": "Discovery found enough ready seeds for the next scan.",
 } as const;
 
 const standardDivisions = ["IV", "III", "II", "I"] as const;
@@ -269,7 +345,7 @@ export const riotCollectionStatusLabels = {
   aggregating: "Aggregating",
   cancelled: "Cancelled",
   completed: "Completed",
-  "completed-partial": "Completed partially",
+  "completed-partial": "Completed · Partial",
   "discovering-seeds": "Discovering seeds",
   failed: "Failed",
   paused: "Paused",
@@ -283,7 +359,7 @@ export const riotCollectionStopReasonLabels = {
   "api-budget-reached": "The configured Riot API budget was reached.",
   "cancelled-by-admin": "Cancelled by an administrator.",
   "discovery-disabled": "No eligible seeds remained and automatic discovery is disabled.",
-  "discovery-exhausted": "Automatic discovery did not find more eligible seeds.",
+  "discovery-exhausted": "Discovery complete · qualification produced 0 seeds.",
   "error-budget-reached": "The collection stopped after too many errors.",
   "manual-pause": "Paused by an administrator.",
   "no-new-data": "The last batch did not add new target matches.",
@@ -363,6 +439,7 @@ export function createEmptyRiotCollectionDiscoveryDiagnostics(
       created: 0,
       enriched: 0,
       existingMatched: 0,
+      missingEnrichment: 0,
       persistenceFailures: 0,
       rankSnapshotFailures: 0,
       rankSnapshotsInserted: 0,
@@ -389,10 +466,105 @@ export function createEmptyRiotCollectionDiscoveryDiagnostics(
       rejected: 0,
       eligibleSeedsProduced: 0,
     },
+    eligibility: {
+      candidatesEvaluated: 0,
+      candidatesRejected: 0,
+      candidatesSelectedAsSeeds: 0,
+      hardRejections: {},
+      rejectionSamples: [],
+      warnings: {},
+    },
+    pipeline: {
+      candidateRowsFetchedAfterEnrichment: 0,
+      discoveredPuuids: 0,
+      eligibilityResults: 0,
+      eligibleCandidates: 0,
+      enrichedCandidateIds: 0,
+      invariantErrors: [],
+      persistedCandidateIds: 0,
+      qualificationInput: 0,
+      rejectedCandidates: 0,
+      selectedSeeds: 0,
+    },
+    progress: {
+      currentPage: null,
+      currentSource: null,
+      currentSourceIndex: 0,
+      duplicatePuuidsSkipped: 0,
+      duplicateCandidatesSkipped: 0,
+      evaluatedCandidateIds: [],
+      exhaustedSourceKeys: [],
+      iterations: [],
+      readySeedIds: [],
+      readySeedsFound: 0,
+      remainingSeedsNeeded: 0,
+      selectedSeedIds: [],
+      stopReason: null,
+      targetReadySeeds: 0,
+      uniqueCandidatesInspected: 0,
+    },
     pagesFetched: 0,
     reasonCodes: [],
     sourcesAttempted: 0,
   };
+}
+
+export function shouldContinueRiotCollectionSeedDiscovery({
+  apiRequestCount,
+  maxApiRequests,
+  maxCandidatesInspected,
+  maxNoProgressIterations,
+  maxPages,
+  noProgressIterations,
+  pagesFetched,
+  rateLimited,
+  readySeedsFound,
+  sourcesExhausted,
+  targetReadySeeds,
+  uniqueCandidatesInspected,
+}: {
+  apiRequestCount: number;
+  maxApiRequests: number;
+  maxCandidatesInspected: number;
+  maxNoProgressIterations: number;
+  maxPages: number;
+  noProgressIterations: number;
+  pagesFetched: number;
+  rateLimited: boolean;
+  readySeedsFound: number;
+  sourcesExhausted: boolean;
+  targetReadySeeds: number;
+  uniqueCandidatesInspected: number;
+}) {
+  if (readySeedsFound >= targetReadySeeds) {
+    return { shouldContinue: false, stopReason: "target-ready-seeds-reached" };
+  }
+
+  if (rateLimited) {
+    return { shouldContinue: false, stopReason: "rate-limited" };
+  }
+
+  if (apiRequestCount >= maxApiRequests) {
+    return { shouldContinue: false, stopReason: "riot-budget-exhausted" };
+  }
+
+  if (pagesFetched >= maxPages) {
+    return { shouldContinue: false, stopReason: "discovery-page-cap-reached" };
+  }
+
+  if (uniqueCandidatesInspected >= maxCandidatesInspected) {
+    return { shouldContinue: false, stopReason: "candidate-inspection-cap-reached" };
+  }
+
+  if (noProgressIterations >= maxNoProgressIterations) {
+    return { shouldContinue: false, stopReason: "no-new-candidates-after-n-iterations" };
+  }
+
+  if (sourcesExhausted) {
+    return { shouldContinue: false, stopReason: "discovery-sources-exhausted" };
+  }
+
+  return { shouldContinue: true, stopReason: null };
 }
 
 export function getRiotCollectionDiscoveryStopDetail(
@@ -419,8 +591,22 @@ export function getRiotCollectionDiscoveryStopDetail(
   }
 
   if (diagnostics.lifecycle.eligibleSeedsProduced === 0) {
-    return `${diagnostics.candidates.created} candidates were created and ${diagnostics.candidates.reused} existing candidates were refreshed, but none were eligible for the next scan.`;
+    const topReason = getTopDiscoveryRejectionReason(diagnostics.eligibility.hardRejections);
+
+    if (diagnostics.pipeline.qualificationInput === 0) {
+      return `${diagnostics.candidates.created} candidates were created and ${diagnostics.candidates.reused} existing candidates were refreshed, but 0 candidates reached eligibility evaluation.`;
+    }
+
+    return `${diagnostics.candidates.created} candidates were created and ${diagnostics.candidates.reused} existing candidates were refreshed, but none were eligible for the next scan${topReason ? `; top rejection: ${topReason}` : ""}.`;
   }
 
   return `${diagnostics.lifecycle.eligibleSeedsProduced} eligible ${diagnostics.lifecycle.eligibleSeedsProduced === 1 ? "seed was" : "seeds were"} produced, but seed selection still found no unused candidate.`;
+}
+
+function getTopDiscoveryRejectionReason(rejections: Record<string, number>) {
+  const [topReason] = Object.entries(rejections).sort(
+    (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+  )[0] ?? [null];
+
+  return topReason;
 }

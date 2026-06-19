@@ -18,6 +18,7 @@ const {
   riotCollectionLadderSourcesByBracket,
   riotCollectionRankBrackets,
   riotCollectionTargets,
+  shouldContinueRiotCollectionSeedDiscovery,
 } = collectionModule;
 
 testBracketMappings();
@@ -25,6 +26,7 @@ testSupportedTargets();
 testSafetyLimits();
 testProgressPercentage();
 testAdaptiveSeedBatchSize();
+testIterativeDiscoveryStopConditions();
 testTerminalStatuses();
 testScanSummaryNormalization();
 testDiscoveryDiagnostics();
@@ -87,6 +89,11 @@ function testDiscoverySourceCodeGuards() {
   assert.equal(collectionActionsSource.includes("fetchActiveCollectionJobForPlatform"), true);
   assert.equal(collectionActionsSource.includes("updateRiotScanRateLimitProgress"), true);
   assert.equal(collectionActionsSource.includes("rateLimitContext"), true);
+  assert.equal(collectionActionsSource.includes("while (discoveryTasks.length > 0)"), true);
+  assert.equal(collectionActionsSource.includes("targetReadySeeds"), true);
+  assert.equal(collectionActionsSource.includes("getNextDiscoveryTask"), true);
+  assert.equal(collectionActionsSource.includes("evaluatedCandidateIds"), true);
+  assert.equal(collectionActionsSource.includes("noProgressIterations"), true);
   assert.equal(
     collectionActionsSource.includes("void refreshCollection(activeJob.id, { silent: true });"),
     false,
@@ -106,6 +113,14 @@ function testDiscoveryDiagnostics() {
   assert.equal(diagnostics.invocation.collectionJobId, 17);
   assert.equal(diagnostics.identifiers.directPuuids, 0);
   assert.equal(diagnostics.lifecycle.eligibleSeedsProduced, 0);
+  assert.deepEqual(diagnostics.eligibility.hardRejections, {});
+  assert.deepEqual(diagnostics.eligibility.warnings, {});
+  assert.deepEqual(diagnostics.eligibility.rejectionSamples, []);
+  assert.equal(diagnostics.pipeline.qualificationInput, 0);
+  assert.equal(diagnostics.pipeline.candidateRowsFetchedAfterEnrichment, 0);
+  assert.equal(diagnostics.progress.targetReadySeeds, 0);
+  assert.equal(diagnostics.progress.iterations.length, 0);
+  assert.equal(diagnostics.progress.stopReason, null);
   assert.equal(
     getRiotCollectionDiscoveryStopDetail({
       ...diagnostics,
@@ -116,6 +131,65 @@ function testDiscoveryDiagnostics() {
       },
     }),
     "83 ladder players were found, but no PUUIDs could be resolved.",
+  );
+  assert.equal(
+    getRiotCollectionDiscoveryStopDetail({
+      ...diagnostics,
+      candidates: {
+        ...diagnostics.candidates,
+        created: 2,
+        reused: 1,
+      },
+      pipeline: {
+        ...diagnostics.pipeline,
+        candidateRowsFetchedAfterEnrichment: 0,
+        persistedCandidateIds: 3,
+        qualificationInput: 0,
+      },
+      entriesFetched: 3,
+      identifiers: {
+        ...diagnostics.identifiers,
+        directPuuids: 3,
+        resolved: 3,
+      },
+    }),
+    "2 candidates were created and 1 existing candidates were refreshed, but 0 candidates reached eligibility evaluation.",
+  );
+  assert.equal(
+    getRiotCollectionDiscoveryStopDetail({
+      ...diagnostics,
+      candidates: {
+        ...diagnostics.candidates,
+        created: 2,
+        reused: 1,
+      },
+      eligibility: {
+        ...diagnostics.eligibility,
+        candidatesEvaluated: 3,
+        candidatesRejected: 3,
+        hardRejections: {
+          "missing-rank": 1,
+          "recently-scanned": 2,
+        },
+        warnings: {
+          "missing-role-observation-data": 3,
+        },
+      },
+      entriesFetched: 3,
+      identifiers: {
+        ...diagnostics.identifiers,
+        directPuuids: 3,
+        resolved: 3,
+      },
+      pipeline: {
+        ...diagnostics.pipeline,
+        candidateRowsFetchedAfterEnrichment: 3,
+        eligibilityResults: 3,
+        qualificationInput: 3,
+        rejectedCandidates: 3,
+      },
+    }),
+    "2 candidates were created and 1 existing candidates were refreshed, but none were eligible for the next scan; top rejection: recently-scanned.",
   );
   assert.equal(
     getRiotCollectionDiscoveryStopDetail({
@@ -136,6 +210,11 @@ function testDiscoveryDiagnostics() {
         eligibleSeedsProduced: 3,
         "ready-to-scan": 3,
       },
+      eligibility: {
+        ...diagnostics.eligibility,
+        candidatesEvaluated: 3,
+        candidatesSelectedAsSeeds: 3,
+      },
     }),
     "3 eligible seeds were produced, but seed selection still found no unused candidate.",
   );
@@ -147,9 +226,83 @@ function testSupportedTargets() {
 
 function testSafetyLimits() {
   assert.equal(defaultRiotCollectionSafetyLimits.maxSeedBatchSize, 20);
-  assert.equal(defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob, 5);
-  assert.equal(defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob, 100);
+  assert.equal(defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob, 50);
+  assert.equal(defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob, 5000);
   assert.equal(defaultRiotCollectionSafetyLimits.maxIdentifierLookupsPerJob, 150);
+  assert.equal(defaultRiotCollectionSafetyLimits.maxCandidatesInspectedPerDiscovery, 5000);
+  assert.equal(defaultRiotCollectionSafetyLimits.maxNoProgressDiscoveryIterations, 3);
+}
+
+function testIterativeDiscoveryStopConditions() {
+  const baseInput = {
+    apiRequestCount: 0,
+    maxApiRequests: 150,
+    maxCandidatesInspected: 5000,
+    maxNoProgressIterations: 3,
+    maxPages: 50,
+    noProgressIterations: 0,
+    pagesFetched: 0,
+    rateLimited: false,
+    readySeedsFound: 0,
+    sourcesExhausted: false,
+    targetReadySeeds: 20,
+    uniqueCandidatesInspected: 0,
+  };
+
+  assert.deepEqual(shouldContinueRiotCollectionSeedDiscovery(baseInput), {
+    shouldContinue: true,
+    stopReason: null,
+  });
+  assert.deepEqual(
+    shouldContinueRiotCollectionSeedDiscovery({
+      ...baseInput,
+      readySeedsFound: 20,
+    }),
+    {
+      shouldContinue: false,
+      stopReason: "target-ready-seeds-reached",
+    },
+  );
+  assert.deepEqual(
+    shouldContinueRiotCollectionSeedDiscovery({
+      ...baseInput,
+      pagesFetched: 50,
+    }),
+    {
+      shouldContinue: false,
+      stopReason: "discovery-page-cap-reached",
+    },
+  );
+  assert.deepEqual(
+    shouldContinueRiotCollectionSeedDiscovery({
+      ...baseInput,
+      noProgressIterations: 3,
+    }),
+    {
+      shouldContinue: false,
+      stopReason: "no-new-candidates-after-n-iterations",
+    },
+  );
+  assert.deepEqual(
+    shouldContinueRiotCollectionSeedDiscovery({
+      ...baseInput,
+      sourcesExhausted: true,
+    }),
+    {
+      shouldContinue: false,
+      stopReason: "discovery-sources-exhausted",
+    },
+  );
+  assert.deepEqual(
+    shouldContinueRiotCollectionSeedDiscovery({
+      ...baseInput,
+      apiRequestCount: 150,
+    }),
+    {
+      shouldContinue: false,
+      stopReason: "riot-budget-exhausted",
+    },
+  );
 }
 
 function testProgressPercentage() {

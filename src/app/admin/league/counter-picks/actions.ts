@@ -18,6 +18,7 @@ import {
   riotCollectionRankBrackets,
   riotCollectionStatusLabels,
   riotCollectionTargets,
+  shouldContinueRiotCollectionSeedDiscovery,
   type RiotCollectionDiscoveryDiagnostics,
   type RiotCollectionInventoryResult,
   type RiotCollectionJobProgress,
@@ -88,6 +89,7 @@ const maxMatchCount = 50;
 const maxDisplayedResultsLimit = 100;
 const maxSeedCandidatesPerScan = 20;
 const maxSeedCandidateRankRefreshBatch = 20;
+const maxDiscoveryCandidateRefetchChunkSize = 100;
 const recentSeedCandidateScanHours = RECENTLY_SCANNED_WINDOW_HOURS;
 const recentSeedCandidateRankRefreshHours = 24;
 const defaultRegionalRoute = "europe";
@@ -3128,9 +3130,12 @@ async function advanceRiotCollectionJob({
 
   if (selected.candidates.length === 0 && nextJob.automatic_seed_discovery) {
     const discovery = await discoverCollectionSeeds({
+      focusChampionId: nextJob.focus_champion_id,
       job: nextJob,
       readySeedsBeforeDiscovery: selected.candidates.length,
+      targetReadySeeds: seedBatchLimit,
       supabase,
+      usedCandidateIds,
     });
 
     nextJob = discovery.job;
@@ -3145,23 +3150,32 @@ async function advanceRiotCollectionJob({
       });
     }
 
-    const nextUsedCandidateIds = await fetchUsedCollectionCandidateIds(supabase, nextJob.id);
-    selected = await fetchReadyCollectionCandidates({
-      focusChampionId: nextJob.focus_champion_id,
-      limit: seedBatchLimit,
-      rankBracket: nextJob.rank_bracket,
-      role: nextJob.role,
+    selected = {
+      candidates: discovery.candidates,
+      ok: true,
+    };
+
+    const selectedDiagnostics = {
+      ...discovery.diagnostics,
+      eligibility: {
+        ...discovery.diagnostics.eligibility,
+        candidatesSelectedAsSeeds: selected.candidates.length,
+      },
+      pipeline: {
+        ...discovery.diagnostics.pipeline,
+        selectedSeeds: selected.candidates.length,
+      },
+    } satisfies RiotCollectionDiscoveryDiagnostics;
+
+    const selectedDiagnosticsUpdate = await updateCollectionJob({
+      id: nextJob.id,
+      patch: {
+        summary: getCollectionSummaryPatch(nextJob, { discovery: selectedDiagnostics }),
+      },
       supabase,
-      usedCandidateIds: nextUsedCandidateIds,
     });
 
-    if (!selected.ok) {
-      return failCollectionJob({
-        errorMessage: selected.error,
-        job: nextJob,
-        supabase,
-      });
-    }
+    nextJob = selectedDiagnosticsUpdate.ok ? selectedDiagnosticsUpdate.job : nextJob;
   }
 
   if (selected.candidates.length === 0) {
@@ -3536,14 +3550,73 @@ async function fetchReadyCollectionCandidates({
   };
 }
 
+async function fetchReadyCollectionCandidatesFromIds({
+  candidateIds,
+  focusChampionId,
+  limit,
+  rankBracket,
+  role,
+  supabase,
+  usedCandidateIds,
+}: {
+  candidateIds: string[];
+  focusChampionId: string | null;
+  limit: number;
+  rankBracket: RiotCollectionRankBracket;
+  role: RiotCollectionRole;
+  supabase: SupabaseClient;
+  usedCandidateIds: Set<string>;
+}): Promise<
+  | {
+      candidates: RiotCollectionSeedCandidateRow[];
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    }
+> {
+  const result = await fetchSeedCandidatesByIds({ candidateIds, supabase });
+
+  if (!result.ok) {
+    return {
+      error: "Discovered seed candidates could not be loaded for selection.",
+      ok: false,
+    };
+  }
+
+  const candidates = result.candidates
+    .map(hydrateSeedCandidateLifecycle)
+    .filter((candidate) => isCandidateEligibleForCollectionJob({ candidate, rankBracket }))
+    .filter((candidate) => !usedCandidateIds.has(candidate.id))
+    .sort((left, right) =>
+      compareCollectionSeedCandidates(left, right, {
+        focusChampionId,
+        role,
+      }),
+    )
+    .slice(0, limit) as RiotCollectionSeedCandidateRow[];
+
+  return {
+    candidates,
+    ok: true,
+  };
+}
+
 async function discoverCollectionSeeds({
+  focusChampionId,
   job,
   readySeedsBeforeDiscovery,
+  targetReadySeeds,
   supabase,
+  usedCandidateIds,
 }: {
+  focusChampionId: string | null;
   job: RiotCollectionJobView;
   readySeedsBeforeDiscovery: number;
+  targetReadySeeds: number;
   supabase: SupabaseClient;
+  usedCandidateIds: Set<string>;
 }) {
   const diagnostics = createEmptyRiotCollectionDiscoveryDiagnostics({
     collectionJobId: job.id,
@@ -3552,6 +3625,21 @@ async function discoverCollectionSeeds({
     readySeedsBeforeDiscovery,
     remainingTargetMatches: Math.max(job.target_unique_matches - job.unique_matches_processed, 0),
     role: job.role,
+  });
+  const previousDiagnostics = getLatestCollectionDiscoveryDiagnostics(job);
+  const selectedCandidates: RiotCollectionSeedCandidateRow[] = [];
+  const selectedCandidateIds = new Set<string>();
+  const evaluatedCandidateIds = new Set(previousDiagnostics?.progress?.evaluatedCandidateIds ?? []);
+  const exhaustedSourceKeys = new Set(previousDiagnostics?.progress?.exhaustedSourceKeys ?? []);
+  const seenEncryptedSummonerIds = new Set<string>();
+  const seenPuuids = new Set<string>();
+  let nextJob = job;
+  let noProgressIterations = 0;
+
+  hydrateDiscoveryProgressFromPreviousRun({
+    diagnostics,
+    previousDiagnostics,
+    targetReadySeeds,
   });
 
   await updateCollectionJob({
@@ -3582,6 +3670,7 @@ async function discoverCollectionSeeds({
     });
 
     return {
+      candidates: selectedCandidates,
       diagnostics,
       job: updated.ok ? updated.job : job,
       rateLimited: false,
@@ -3617,156 +3706,516 @@ async function discoverCollectionSeeds({
     addDiscoveryReasonCode(diagnostics, "no-ladder-sources");
   }
 
-  for (const source of sources) {
-    if (
-      diagnostics.candidates.created >= defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
-      diagnostics.pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob
-    ) {
-      break;
-    }
+  const previousReadySeedIds = previousDiagnostics?.progress?.readySeedIds ?? [];
 
-    const divisionSources =
-      source.route === "tier-division"
-        ? source.divisions.map((division) => ({ division, tier: source.tier }))
-        : [{ division: "", tier: source.tier }];
+  if (previousReadySeedIds.length > 0) {
+    const previousReadySeeds = await fetchReadyCollectionCandidatesFromIds({
+      candidateIds: previousReadySeedIds,
+      focusChampionId,
+      limit: targetReadySeeds,
+      rankBracket: job.rank_bracket,
+      role: job.role,
+      supabase,
+      usedCandidateIds,
+    });
 
-    for (const ladderSource of divisionSources) {
-      if (
-        diagnostics.api.requestCount >=
-          defaultRiotCollectionSafetyLimits.maxIdentifierLookupsPerJob ||
-        diagnostics.pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob
-      ) {
-        break;
-      }
-
-      diagnostics.sourcesAttempted += 1;
-      const cursor = await getOrCreateLadderCursor({
-        division: ladderSource.division,
-        job,
-        tier: ladderSource.tier,
-        supabase,
-      });
-      const page = cursor.next_page;
-      let entries: unknown[] = [];
-
-      try {
-        if (source.route === "tier-division") {
-          const tierDivisionEntries = await riot.fetchLeagueEntriesByTierDivision({
-            division: ladderSource.division,
-            page,
-            platformRegion: job.platform,
-            queue: job.queue_type,
-            tier: ladderSource.tier,
-          });
-          entries = Array.isArray(tierDivisionEntries) ? tierDivisionEntries : [];
-
-          if (!Array.isArray(tierDivisionEntries)) {
-            diagnostics.api.failures += 1;
-            addDiscoveryReasonCode(diagnostics, "api-failure");
-          }
-        } else {
-          const highTierLeague = await riot.fetchHighTierLeagueEntries({
-            platformRegion: job.platform,
-            queue: job.queue_type,
-            tier: ladderSource.tier,
-          });
-          entries = Array.isArray(highTierLeague?.entries) ? highTierLeague.entries : [];
-
-          if (!Array.isArray(highTierLeague?.entries)) {
-            diagnostics.api.failures += 1;
-            addDiscoveryReasonCode(diagnostics, "api-failure");
-          }
-        }
-        diagnostics.api.requestCount += 1;
-        diagnostics.pagesFetched += 1;
-      } catch (error) {
-        diagnostics.api.failures += 1;
-
-        if (Number((error as { status?: number }).status ?? 0) === 429) {
-          diagnostics.api.rateLimited = true;
-          addDiscoveryReasonCode(diagnostics, "rate-limited");
-          await updateLadderCursorFailure({
-            cursorId: cursor.id,
-            errorCode: "rate_limited",
-            supabase,
-          });
-          break;
-        }
-
-        await updateLadderCursorFailure({
-          cursorId: cursor.id,
-          errorCode: "ladder_fetch_failed",
-          supabase,
-        });
-        addDiscoveryReasonCode(diagnostics, "api-failure");
-        continue;
-      }
-
-      diagnostics.entriesFetched += entries.length;
-      const discoveryResult = await persistDiscoveredLadderEntries({
-        diagnostics,
-        entries,
-        job,
-        normalizeRankEntry,
-        riot,
-        supabase,
-      });
-
-      await updateLadderCursorSuccess({
-        candidatesCreated: discoveryResult.created,
-        candidatesReused: discoveryResult.reused,
-        cursorId: cursor.id,
-        entriesReturned: entries.length,
-        fetchedPage: page,
-        hasStandardPages: source.route === "tier-division",
-        supabase,
-      });
-
-      if (
-        diagnostics.entriesFetched >= defaultRiotCollectionSafetyLimits.maxLadderEntriesPerJob ||
-        diagnostics.candidates.created >=
-          defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
-        diagnostics.pagesFetched >= defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob ||
-        diagnostics.api.rateLimited
-      ) {
-        break;
+    if (previousReadySeeds.ok) {
+      for (const candidate of previousReadySeeds.candidates) {
+        selectedCandidateIds.add(candidate.id);
+        selectedCandidates.push(candidate);
       }
     }
   }
 
-  const lifecycleDiagnostics = await loadDiscoveryLifecycleDiagnostics({
-    candidateIds: diagnosticsCandidateIds(diagnostics),
-    supabase,
+  diagnostics.progress.readySeedIds = Array.from(selectedCandidateIds);
+  diagnostics.progress.readySeedsFound = selectedCandidates.length;
+  diagnostics.progress.remainingSeedsNeeded = Math.max(targetReadySeeds - selectedCandidates.length, 0);
+  diagnostics.progress.selectedSeedIds = Array.from(selectedCandidateIds);
+
+  const discoveryTasks = getRiotCollectionLadderDiscoveryTasks(sources);
+  let taskIndex = Math.min(
+    Math.max(previousDiagnostics?.progress?.currentSourceIndex ?? 0, 0),
+    Math.max(discoveryTasks.length - 1, 0),
+  );
+
+  while (discoveryTasks.length > 0) {
+    const continuation = shouldContinueRiotCollectionSeedDiscovery({
+      apiRequestCount: diagnostics.api.requestCount,
+      maxApiRequests: defaultRiotCollectionSafetyLimits.maxIdentifierLookupsPerJob,
+      maxCandidatesInspected:
+        defaultRiotCollectionSafetyLimits.maxCandidatesInspectedPerDiscovery,
+      maxNoProgressIterations:
+        defaultRiotCollectionSafetyLimits.maxNoProgressDiscoveryIterations,
+      maxPages: defaultRiotCollectionSafetyLimits.maxLadderPagesPerJob,
+      noProgressIterations,
+      pagesFetched: diagnostics.pagesFetched,
+      rateLimited: diagnostics.api.rateLimited,
+      readySeedsFound: selectedCandidates.length,
+      sourcesExhausted: exhaustedSourceKeys.size >= discoveryTasks.length,
+      targetReadySeeds,
+      uniqueCandidatesInspected: evaluatedCandidateIds.size,
+    });
+
+    if (!continuation.shouldContinue) {
+      diagnostics.progress.stopReason = continuation.stopReason;
+      break;
+    }
+
+    const nextTask = getNextDiscoveryTask({
+      exhaustedSourceKeys,
+      startIndex: taskIndex,
+      tasks: discoveryTasks,
+    });
+
+    if (!nextTask) {
+      diagnostics.progress.stopReason = "discovery-sources-exhausted";
+      break;
+    }
+
+    const { index, task } = nextTask;
+    taskIndex = (index + 1) % discoveryTasks.length;
+    diagnostics.sourcesAttempted += 1;
+    diagnostics.progress.currentSource = task.label;
+    diagnostics.progress.currentSourceIndex = taskIndex;
+
+    const cursor = await getOrCreateLadderCursor({
+      division: task.division,
+      job,
+      tier: task.tier,
+      supabase,
+    });
+    const page = cursor.next_page;
+    diagnostics.progress.currentPage = page;
+    let entries: unknown[] = [];
+
+    try {
+      if (task.route === "tier-division") {
+        const tierDivisionEntries = await riot.fetchLeagueEntriesByTierDivision({
+          division: task.division,
+          page,
+          platformRegion: job.platform,
+          queue: job.queue_type,
+          tier: task.tier,
+        });
+        entries = Array.isArray(tierDivisionEntries) ? tierDivisionEntries : [];
+
+        if (!Array.isArray(tierDivisionEntries)) {
+          diagnostics.api.failures += 1;
+          addDiscoveryReasonCode(diagnostics, "api-failure");
+        }
+      } else {
+        const highTierLeague = await riot.fetchHighTierLeagueEntries({
+          platformRegion: job.platform,
+          queue: job.queue_type,
+          tier: task.tier,
+        });
+        entries = Array.isArray(highTierLeague?.entries) ? highTierLeague.entries : [];
+
+        if (!Array.isArray(highTierLeague?.entries)) {
+          diagnostics.api.failures += 1;
+          addDiscoveryReasonCode(diagnostics, "api-failure");
+        }
+      }
+      diagnostics.api.requestCount += 1;
+      diagnostics.pagesFetched += 1;
+    } catch (error) {
+      diagnostics.api.failures += 1;
+
+      if (Number((error as { status?: number }).status ?? 0) === 429) {
+        diagnostics.api.rateLimited = true;
+        diagnostics.progress.stopReason = "rate-limited";
+        addDiscoveryReasonCode(diagnostics, "rate-limited");
+        await updateLadderCursorFailure({
+          cursorId: cursor.id,
+          errorCode: "rate_limited",
+          supabase,
+        });
+        break;
+      }
+
+      await updateLadderCursorFailure({
+        cursorId: cursor.id,
+        errorCode: "ladder_fetch_failed",
+        supabase,
+      });
+      addDiscoveryReasonCode(diagnostics, "api-failure");
+      continue;
+    }
+
+    if (entries.length === 0 || task.route === "high-tier") {
+      exhaustedSourceKeys.add(task.key);
+      diagnostics.progress.exhaustedSourceKeys = Array.from(exhaustedSourceKeys);
+    }
+
+    diagnostics.entriesFetched += entries.length;
+    const discoveryResult = await persistDiscoveredLadderEntries({
+      diagnostics,
+      entries,
+      job,
+      normalizeRankEntry,
+      riot,
+      seenEncryptedSummonerIds,
+      seenPuuids,
+      supabase,
+    });
+
+    await updateLadderCursorSuccess({
+      candidatesCreated: discoveryResult.created,
+      candidatesReused: discoveryResult.reused,
+      cursorId: cursor.id,
+      entriesReturned: entries.length,
+      fetchedPage: page,
+      hasStandardPages: task.route === "tier-division",
+      supabase,
+    });
+
+    const duplicateCandidateIds = discoveryResult.candidateIds.filter((candidateId) =>
+      evaluatedCandidateIds.has(candidateId),
+    );
+    const candidateIdsForEvaluation = Array.from(new Set(discoveryResult.candidateIds)).filter(
+      (candidateId) => !evaluatedCandidateIds.has(candidateId),
+    );
+    const iterationStart = cloneDiscoveryEligibilitySnapshot(diagnostics);
+    const readySeedsBeforeIteration = selectedCandidates.length;
+    diagnostics.progress.duplicateCandidatesSkipped += duplicateCandidateIds.length;
+
+    if (candidateIdsForEvaluation.length > 0) {
+      const lifecycleDiagnostics = await loadDiscoveryLifecycleDiagnostics({
+        candidateIds: candidateIdsForEvaluation,
+        rankBracket: job.rank_bracket,
+        role: job.role,
+        supabase,
+      });
+
+      mergeDiscoveryLifecycleDiagnostics({ diagnostics, lifecycleDiagnostics });
+
+      for (const candidateId of candidateIdsForEvaluation) {
+        evaluatedCandidateIds.add(candidateId);
+      }
+
+      const selectionResult = await fetchReadyCollectionCandidatesFromIds({
+        candidateIds: candidateIdsForEvaluation,
+        focusChampionId,
+        limit: Math.max(targetReadySeeds - selectedCandidates.length, 0),
+        rankBracket: job.rank_bracket,
+        role: job.role,
+        supabase,
+        usedCandidateIds: new Set([...usedCandidateIds, ...selectedCandidateIds]),
+      });
+
+      if (selectionResult.ok) {
+        for (const candidate of selectionResult.candidates) {
+          if (selectedCandidateIds.has(candidate.id)) {
+            continue;
+          }
+
+          selectedCandidateIds.add(candidate.id);
+          selectedCandidates.push(candidate);
+        }
+      }
+    }
+
+    diagnostics.pipeline.discoveredPuuids = diagnostics.identifiers.resolved;
+    diagnostics.pipeline.selectedSeeds = selectedCandidates.length;
+    diagnostics.eligibility.candidatesSelectedAsSeeds = selectedCandidates.length;
+    diagnostics.progress.evaluatedCandidateIds = Array.from(evaluatedCandidateIds);
+    diagnostics.progress.readySeedIds = Array.from(selectedCandidateIds);
+    diagnostics.progress.readySeedsFound = selectedCandidates.length;
+    diagnostics.progress.remainingSeedsNeeded = Math.max(
+      targetReadySeeds - selectedCandidates.length,
+      0,
+    );
+    diagnostics.progress.selectedSeedIds = Array.from(selectedCandidateIds);
+    diagnostics.progress.uniqueCandidatesInspected = evaluatedCandidateIds.size;
+    noProgressIterations = candidateIdsForEvaluation.length === 0 ? noProgressIterations + 1 : 0;
+
+    diagnostics.progress.iterations.push({
+      candidatesEvaluated:
+        diagnostics.eligibility.candidatesEvaluated - iterationStart.candidatesEvaluated,
+      duplicateCandidatesSkipped: duplicateCandidateIds.length,
+      duplicatePuuidsSkipped: discoveryResult.duplicatesSkipped,
+      entriesReturned: entries.length,
+      iteration: diagnostics.progress.iterations.length + 1,
+      newCandidates: discoveryResult.created,
+      page,
+      readySeedsFound: selectedCandidates.length - readySeedsBeforeIteration,
+      rejectedRecentlyScanned:
+        (diagnostics.eligibility.hardRejections["recently-scanned"] ?? 0) -
+        (iterationStart.hardRejections["recently-scanned"] ?? 0),
+      rejectedTooFewObservations:
+        (diagnostics.eligibility.hardRejections["too-few-observations"] ?? 0) -
+        (iterationStart.hardRejections["too-few-observations"] ?? 0),
+      remainingSeedsNeeded: diagnostics.progress.remainingSeedsNeeded,
+      reusedCandidates: discoveryResult.reused,
+      source: task.label,
+      uniqueCandidatesFound: candidateIdsForEvaluation.length,
+      uniquePuuidsFound: discoveryResult.uniquePuuidsFound,
+    });
+
+    console.info("Seed discovery iteration complete", {
+      candidatesEvaluated: candidateIdsForEvaluation.length,
+      collectionJobId: job.id,
+      duplicateCandidatesSkipped: duplicateCandidateIds.length,
+      duplicatePuuidsSkipped: discoveryResult.duplicatesSkipped,
+      entriesReturned: entries.length,
+      iteration: diagnostics.progress.iterations.length,
+      page,
+      readySeedsFound: selectedCandidates.length - readySeedsBeforeIteration,
+      remainingSeedsNeeded: diagnostics.progress.remainingSeedsNeeded,
+      source: task.label,
+      targetReadySeeds,
+    });
+
+    const progressUpdate = await updateCollectionJob({
+      id: nextJob.id,
+      patch: {
+        progress: getCollectionProgressPatch(nextJob, {
+          lastMessage: `Discovery found ${selectedCandidates.length}/${targetReadySeeds} ready seeds after ${diagnostics.progress.iterations.length} iterations.`,
+        }),
+        summary: getCollectionSummaryPatch(nextJob, { discovery: diagnostics }),
+      },
+      supabase,
+    });
+
+    if (progressUpdate.ok) {
+      nextJob = progressUpdate.job;
+    }
+  }
+
+  if (!diagnostics.progress.stopReason) {
+    diagnostics.progress.stopReason =
+      selectedCandidates.length >= targetReadySeeds
+        ? "target-ready-seeds-reached"
+        : "discovery-sources-exhausted";
+  }
+
+  addDiscoveryOutcomeReasonCodes(diagnostics);
+  addDiscoveryReasonCode(diagnostics, diagnostics.progress.stopReason);
+  console.info("Seed discovery complete", {
+    candidateRowsFetchedAfterEnrichment: diagnostics.pipeline.candidateRowsFetchedAfterEnrichment,
+    candidatesCreated: diagnostics.candidates.created,
+    candidatesEnriched: diagnostics.candidates.enriched,
+    candidatesEvaluated: diagnostics.eligibility.candidatesEvaluated,
+    candidatesRejected: diagnostics.eligibility.candidatesRejected,
+    candidatesReused: diagnostics.candidates.reused,
+    collectionJobId: job.id,
+    directPuuids: diagnostics.identifiers.directPuuids,
+    discoveredPuuids: diagnostics.identifiers.resolved,
+    eligibleCandidates: diagnostics.lifecycle.eligibleSeedsProduced,
+    entriesReturned: diagnostics.entriesFetched,
+    invariantErrors: diagnostics.pipeline.invariantErrors,
+    iterations: diagnostics.progress.iterations.length,
+    qualificationInput: diagnostics.pipeline.qualificationInput,
+    rankSnapshotsStored: diagnostics.candidates.rankSnapshotsInserted,
+    readySeedsFound: selectedCandidates.length,
+    rejectionSummary: diagnostics.eligibility.hardRejections,
+    role: job.role,
+    selectedSeeds: diagnostics.pipeline.selectedSeeds,
+    stopReason: diagnostics.progress.stopReason,
+    targetReadySeeds,
+    warningSummary: diagnostics.eligibility.warnings,
   });
 
-  diagnostics.lifecycle = lifecycleDiagnostics;
-  addDiscoveryOutcomeReasonCodes(diagnostics);
-
   const updated = await updateCollectionJob({
-    id: job.id,
+    id: nextJob.id,
     patch: {
-      api_requests_used: job.api_requests_used + diagnostics.api.requestCount,
-      progress: getCollectionProgressPatch(job, {
-        lastMessage: getRiotCollectionDiscoveryStopDetail(diagnostics),
+      api_requests_used: nextJob.api_requests_used + diagnostics.api.requestCount,
+      progress: getCollectionProgressPatch(nextJob, {
+        lastMessage: diagnostics.api.rateLimited
+          ? "Ladder discovery paused because Riot rate limits were reached."
+          : `Ladder discovery found ${selectedCandidates.length}/${targetReadySeeds} ready seeds.`,
       }),
-      seeds_discovered: job.seeds_discovered + diagnostics.lifecycle.eligibleSeedsProduced,
+      seeds_discovered: nextJob.seeds_discovered + selectedCandidates.length,
       status: "selecting-seeds",
-      summary: getCollectionSummaryPatch(job, { discovery: diagnostics }),
+      summary: getCollectionSummaryPatch(nextJob, { discovery: diagnostics }),
       warning_count:
-        job.warning_count + (diagnostics.lifecycle.eligibleSeedsProduced === 0 ? 1 : 0),
+        nextJob.warning_count + (selectedCandidates.length === 0 ? 1 : 0),
     },
     supabase,
   });
 
   return {
+    candidates: selectedCandidates,
     diagnostics,
-    job: updated.ok ? updated.job : job,
+    job: updated.ok ? updated.job : nextJob,
     rateLimited: diagnostics.api.rateLimited,
   };
 }
 
-function diagnosticsCandidateIds(diagnostics: RiotCollectionDiscoveryDiagnostics) {
-  return Array.from(new Set(diagnostics.candidateIds));
+type RiotCollectionLadderDiscoveryTask = {
+  division: string;
+  key: string;
+  label: string;
+  route: RiotCollectionLadderSource["route"];
+  tier: RiotCollectionLadderSource["tier"];
+};
+
+function getRiotCollectionLadderDiscoveryTasks(
+  sources: readonly RiotCollectionLadderSource[],
+): RiotCollectionLadderDiscoveryTask[] {
+  const tasks: RiotCollectionLadderDiscoveryTask[] = [];
+
+  for (const source of sources) {
+    if (source.route === "tier-division") {
+      for (const division of source.divisions) {
+        tasks.push({
+          division,
+          key: `${source.tier}:${division}`,
+          label: `${source.tier} ${division}`,
+          route: source.route,
+          tier: source.tier,
+        });
+      }
+
+      continue;
+    }
+
+    tasks.push({
+      division: "",
+      key: source.tier,
+      label: source.tier,
+      route: source.route,
+      tier: source.tier,
+    });
+  }
+
+  return tasks;
+}
+
+function getNextDiscoveryTask({
+  exhaustedSourceKeys,
+  startIndex,
+  tasks,
+}: {
+  exhaustedSourceKeys: Set<string>;
+  startIndex: number;
+  tasks: RiotCollectionLadderDiscoveryTask[];
+}) {
+  for (let offset = 0; offset < tasks.length; offset += 1) {
+    const index = (startIndex + offset) % tasks.length;
+    const task = tasks[index];
+
+    if (!exhaustedSourceKeys.has(task.key)) {
+      return { index, task };
+    }
+  }
+
+  return null;
+}
+
+function hydrateDiscoveryProgressFromPreviousRun({
+  diagnostics,
+  previousDiagnostics,
+  targetReadySeeds,
+}: {
+  diagnostics: RiotCollectionDiscoveryDiagnostics;
+  previousDiagnostics: RiotCollectionDiscoveryDiagnostics | null;
+  targetReadySeeds: number;
+}) {
+  diagnostics.progress.targetReadySeeds = targetReadySeeds;
+  diagnostics.progress.remainingSeedsNeeded = targetReadySeeds;
+
+  if (!previousDiagnostics?.progress) {
+    return;
+  }
+
+  diagnostics.candidateIds = [...(previousDiagnostics.candidateIds ?? [])];
+  diagnostics.candidates = { ...diagnostics.candidates, ...previousDiagnostics.candidates };
+  diagnostics.entriesFetched = previousDiagnostics.entriesFetched ?? 0;
+  diagnostics.identifiers = { ...diagnostics.identifiers, ...previousDiagnostics.identifiers };
+  diagnostics.lifecycle = { ...diagnostics.lifecycle, ...previousDiagnostics.lifecycle };
+  diagnostics.eligibility = {
+    ...diagnostics.eligibility,
+    ...previousDiagnostics.eligibility,
+    hardRejections: { ...(previousDiagnostics.eligibility?.hardRejections ?? {}) },
+    rejectionSamples: [...(previousDiagnostics.eligibility?.rejectionSamples ?? [])],
+    warnings: { ...(previousDiagnostics.eligibility?.warnings ?? {}) },
+  };
+  diagnostics.pagesFetched = previousDiagnostics.pagesFetched ?? 0;
+  diagnostics.pipeline = {
+    ...diagnostics.pipeline,
+    ...previousDiagnostics.pipeline,
+    invariantErrors: [...(previousDiagnostics.pipeline?.invariantErrors ?? [])],
+  };
+  diagnostics.progress = {
+    ...diagnostics.progress,
+    ...previousDiagnostics.progress,
+    currentPage: previousDiagnostics.progress.currentPage ?? null,
+    currentSource: previousDiagnostics.progress.currentSource ?? null,
+    duplicateCandidatesSkipped: previousDiagnostics.progress.duplicateCandidatesSkipped ?? 0,
+    duplicatePuuidsSkipped: previousDiagnostics.progress.duplicatePuuidsSkipped ?? 0,
+    evaluatedCandidateIds: [...(previousDiagnostics.progress.evaluatedCandidateIds ?? [])],
+    exhaustedSourceKeys: [...(previousDiagnostics.progress.exhaustedSourceKeys ?? [])],
+    iterations: [...(previousDiagnostics.progress.iterations ?? [])],
+    readySeedIds: [...(previousDiagnostics.progress.readySeedIds ?? [])],
+    readySeedsFound: 0,
+    remainingSeedsNeeded: targetReadySeeds,
+    selectedSeedIds: [],
+    stopReason: null,
+    targetReadySeeds,
+  };
+  diagnostics.reasonCodes = [];
+  diagnostics.sourcesAttempted = previousDiagnostics.sourcesAttempted ?? 0;
+}
+
+function cloneDiscoveryEligibilitySnapshot(diagnostics: RiotCollectionDiscoveryDiagnostics) {
+  return {
+    candidatesEvaluated: diagnostics.eligibility.candidatesEvaluated,
+    hardRejections: { ...diagnostics.eligibility.hardRejections },
+  };
+}
+
+function mergeDiscoveryLifecycleDiagnostics({
+  diagnostics,
+  lifecycleDiagnostics,
+}: {
+  diagnostics: RiotCollectionDiscoveryDiagnostics;
+  lifecycleDiagnostics: Pick<
+    RiotCollectionDiscoveryDiagnostics,
+    "eligibility" | "lifecycle" | "pipeline"
+  >;
+}) {
+  for (const [state, count] of Object.entries(lifecycleDiagnostics.lifecycle)) {
+    diagnostics.lifecycle[state as keyof typeof diagnostics.lifecycle] =
+      (diagnostics.lifecycle[state as keyof typeof diagnostics.lifecycle] ?? 0) + count;
+  }
+
+  diagnostics.eligibility.candidatesEvaluated +=
+    lifecycleDiagnostics.eligibility.candidatesEvaluated;
+  diagnostics.eligibility.candidatesRejected +=
+    lifecycleDiagnostics.eligibility.candidatesRejected;
+
+  for (const [reason, count] of Object.entries(lifecycleDiagnostics.eligibility.hardRejections)) {
+    diagnostics.eligibility.hardRejections[reason] =
+      (diagnostics.eligibility.hardRejections[reason] ?? 0) + count;
+  }
+
+  for (const [warning, count] of Object.entries(lifecycleDiagnostics.eligibility.warnings)) {
+    diagnostics.eligibility.warnings[warning] =
+      (diagnostics.eligibility.warnings[warning] ?? 0) + count;
+  }
+
+  diagnostics.eligibility.rejectionSamples.push(
+    ...lifecycleDiagnostics.eligibility.rejectionSamples.slice(
+      0,
+      Math.max(8 - diagnostics.eligibility.rejectionSamples.length, 0),
+    ),
+  );
+  diagnostics.pipeline.candidateRowsFetchedAfterEnrichment +=
+    lifecycleDiagnostics.pipeline.candidateRowsFetchedAfterEnrichment;
+  diagnostics.pipeline.discoveredPuuids = diagnostics.identifiers.resolved;
+  diagnostics.pipeline.eligibilityResults += lifecycleDiagnostics.pipeline.eligibilityResults;
+  diagnostics.pipeline.eligibleCandidates = diagnostics.lifecycle.eligibleSeedsProduced;
+  diagnostics.pipeline.enrichedCandidateIds += lifecycleDiagnostics.pipeline.enrichedCandidateIds;
+  diagnostics.pipeline.persistedCandidateIds += lifecycleDiagnostics.pipeline.persistedCandidateIds;
+  diagnostics.pipeline.qualificationInput += lifecycleDiagnostics.pipeline.qualificationInput;
+  diagnostics.pipeline.rejectedCandidates = diagnostics.eligibility.candidatesRejected;
+  diagnostics.pipeline.invariantErrors = Array.from(
+    new Set([
+      ...diagnostics.pipeline.invariantErrors,
+      ...lifecycleDiagnostics.pipeline.invariantErrors,
+    ]),
+  );
 }
 
 function addDiscoveryReasonCode(
@@ -3799,37 +4248,283 @@ function addDiscoveryOutcomeReasonCodes(diagnostics: RiotCollectionDiscoveryDiag
     diagnostics.lifecycle.eligibleSeedsProduced === 0
   ) {
     addDiscoveryReasonCode(diagnostics, "no-eligible-seeds");
+
+    if (diagnostics.pipeline.candidateRowsFetchedAfterEnrichment === 0) {
+      addDiscoveryReasonCode(diagnostics, "no-candidates-after-enrichment-refetch");
+    }
+
+    if (diagnostics.pipeline.qualificationInput === 0) {
+      addDiscoveryReasonCode(diagnostics, "no-qualification-input");
+    }
+
+    if (
+      diagnostics.eligibility.candidatesEvaluated > 0 &&
+      diagnostics.eligibility.candidatesRejected === diagnostics.eligibility.candidatesEvaluated
+    ) {
+      addDiscoveryReasonCode(diagnostics, "all-candidates-rejected");
+    }
+  }
+
+  if (diagnostics.lifecycle.eligibleSeedsProduced > 0) {
+    addDiscoveryReasonCode(diagnostics, "eligible-candidates-selected");
   }
 }
 
 async function loadDiscoveryLifecycleDiagnostics({
   candidateIds,
+  rankBracket,
+  role,
+  supabase,
+}: {
+  candidateIds: string[];
+  rankBracket: RiotCollectionRankBracket;
+  role: RiotCollectionRole;
+  supabase: SupabaseClient;
+}): Promise<Pick<RiotCollectionDiscoveryDiagnostics, "eligibility" | "lifecycle" | "pipeline">> {
+  const diagnostics = createEmptyRiotCollectionDiscoveryDiagnostics();
+  const lifecycle = diagnostics.lifecycle;
+  const eligibility = diagnostics.eligibility;
+  const pipeline = diagnostics.pipeline;
+  const uniqueCandidateIds = Array.from(new Set(candidateIds));
+
+  pipeline.persistedCandidateIds = uniqueCandidateIds.length;
+  pipeline.enrichedCandidateIds = uniqueCandidateIds.length;
+
+  if (uniqueCandidateIds.length === 0) {
+    return {
+      eligibility,
+      lifecycle,
+      pipeline,
+    };
+  }
+
+  const fetchResult = await fetchSeedCandidatesByIds({
+    candidateIds: uniqueCandidateIds,
+    supabase,
+  });
+
+  if (!fetchResult.ok) {
+    pipeline.invariantErrors.push("candidate-refetch-failed");
+
+    return {
+      eligibility,
+      lifecycle,
+      pipeline,
+    };
+  }
+
+  pipeline.candidateRowsFetchedAfterEnrichment = fetchResult.candidates.length;
+  pipeline.qualificationInput = fetchResult.candidates.length;
+
+  for (const candidate of fetchResult.candidates.map(hydrateSeedCandidateLifecycle)) {
+    eligibility.candidatesEvaluated += 1;
+    lifecycle[candidate.lifecycle.state] += 1;
+    const isEligibleForCollectionJob = addCandidateEligibilityDiagnostics({
+      candidate,
+      eligibility,
+      rankBracket,
+      role,
+    });
+
+    if (isEligibleForCollectionJob) {
+      lifecycle.eligibleSeedsProduced += 1;
+    } else {
+      eligibility.candidatesRejected += 1;
+    }
+  }
+
+  pipeline.eligibilityResults = eligibility.candidatesEvaluated;
+  pipeline.eligibleCandidates = lifecycle.eligibleSeedsProduced;
+  pipeline.rejectedCandidates = eligibility.candidatesRejected;
+  validateDiscoveryPipelineInvariants({ eligibility, lifecycle, pipeline });
+
+  return {
+    eligibility,
+    lifecycle,
+    pipeline,
+  };
+}
+
+function addCandidateEligibilityDiagnostics({
+  candidate,
+  eligibility,
+  rankBracket,
+  role,
+}: {
+  candidate: RiotSeedCandidateView;
+  eligibility: RiotCollectionDiscoveryDiagnostics["eligibility"];
+  rankBracket: RiotCollectionRankBracket;
+  role: RiotCollectionRole;
+}): boolean {
+  const hardReasons = new Set<string>();
+  const warnings = new Set<string>();
+
+  for (const reasonCode of candidate.lifecycle.reasonCodes) {
+    if (reasonCode === "ready") {
+      continue;
+    }
+
+    if (reasonCode === "too-few-observations" && candidate.lifecycle.isSelectableForScan) {
+      warnings.add("missing-observation-data");
+      continue;
+    }
+
+    hardReasons.add(reasonCode);
+  }
+
+  if (candidate.lifecycle.rankBracket !== rankBracket) {
+    hardReasons.add(
+      candidate.lifecycle.rankBracket === "unknown" ? "missing-rank" : "rank-bracket-mismatch",
+    );
+  }
+
+  if (role !== "any") {
+    if (!candidate.estimated_primary_role) {
+      warnings.add("missing-role-observation-data");
+    } else if (candidate.estimated_primary_role !== role) {
+      warnings.add("primary-role-mismatch");
+    }
+  }
+
+  if (Number(candidate.observed_games ?? 0) < MIN_SEED_OBSERVATIONS) {
+    warnings.add("missing-observation-data");
+  }
+
+  for (const reason of hardReasons) {
+    eligibility.hardRejections[reason] = (eligibility.hardRejections[reason] ?? 0) + 1;
+  }
+
+  for (const warning of warnings) {
+    eligibility.warnings[warning] = (eligibility.warnings[warning] ?? 0) + 1;
+  }
+
+  const isEligibleForCollectionJob = candidate.lifecycle.isSelectableForScan && hardReasons.size === 0;
+
+  if (!isEligibleForCollectionJob && eligibility.rejectionSamples.length < 8) {
+    eligibility.rejectionSamples.push({
+      hardReasons: Array.from(hardReasons).sort(),
+      id: getSafeCandidateIdPreview(candidate.id),
+      rank: formatCandidateRankForDiagnostics(candidate),
+      role: candidate.estimated_primary_role ?? "missing",
+      warnings: Array.from(warnings).sort(),
+    });
+  }
+
+  return isEligibleForCollectionJob;
+}
+
+async function fetchSeedCandidatesByIds({
+  candidateIds,
   supabase,
 }: {
   candidateIds: string[];
   supabase: SupabaseClient;
-}): Promise<RiotCollectionDiscoveryDiagnostics["lifecycle"]> {
-  const lifecycle = createEmptyRiotCollectionDiscoveryDiagnostics().lifecycle;
-
-  if (candidateIds.length === 0) {
-    return lifecycle;
-  }
-
-  const { data } = await supabase
-    .from("riot_seed_candidates")
-    .select(riotSeedCandidateSelect)
-    .in("id", candidateIds)
-    .returns<RiotSeedCandidateView[]>();
-
-  for (const candidate of (data ?? []).map(hydrateSeedCandidateLifecycle)) {
-    lifecycle[candidate.lifecycle.state] += 1;
-
-    if (candidate.lifecycle.isSelectableForScan) {
-      lifecycle.eligibleSeedsProduced += 1;
+}): Promise<
+  | {
+      candidates: RiotCollectionSeedCandidateRow[];
+      ok: true;
     }
+  | {
+      error: string;
+      ok: false;
+    }
+> {
+  const uniqueCandidateIds = Array.from(new Set(candidateIds));
+  const candidates: RiotCollectionSeedCandidateRow[] = [];
+
+  for (let index = 0; index < uniqueCandidateIds.length; index += maxDiscoveryCandidateRefetchChunkSize) {
+    const chunk = uniqueCandidateIds.slice(index, index + maxDiscoveryCandidateRefetchChunkSize);
+    const { data, error } = await supabase
+      .from("riot_seed_candidates")
+      .select(riotSeedCandidateSelect)
+      .in("id", chunk)
+      .returns<RiotCollectionSeedCandidateRow[]>();
+
+    if (error) {
+      console.error("Seed qualification candidate refetch failed", getSafeDatabaseError(error));
+
+      return {
+        error: error.message,
+        ok: false,
+      };
+    }
+
+    candidates.push(...(data ?? []));
   }
 
-  return lifecycle;
+  return {
+    candidates,
+    ok: true,
+  };
+}
+
+function isCandidateEligibleForCollectionJob({
+  candidate,
+  rankBracket,
+}: {
+  candidate: RiotSeedCandidateView;
+  rankBracket: RiotCollectionRankBracket;
+}) {
+  return candidate.lifecycle.isSelectableForScan && candidate.lifecycle.rankBracket === rankBracket;
+}
+
+function validateDiscoveryPipelineInvariants({
+  eligibility,
+  lifecycle,
+  pipeline,
+}: Pick<RiotCollectionDiscoveryDiagnostics, "eligibility" | "lifecycle" | "pipeline">) {
+  const rejectedPlusReady = eligibility.candidatesRejected + lifecycle.eligibleSeedsProduced;
+
+  if (rejectedPlusReady !== eligibility.candidatesEvaluated) {
+    pipeline.invariantErrors.push("rejected-plus-ready-mismatch");
+  }
+
+  if (pipeline.selectedSeeds > 0 && lifecycle.eligibleSeedsProduced === 0) {
+    pipeline.invariantErrors.push("selected-seeds-with-zero-ready-seeds");
+  }
+
+  if (
+    eligibility.candidatesEvaluated === 0 &&
+    Object.values(eligibility.hardRejections).some((count) => count > 0)
+  ) {
+    pipeline.invariantErrors.push("rejections-with-zero-evaluated");
+  }
+
+  if (eligibility.candidatesRejected > eligibility.candidatesEvaluated) {
+    pipeline.invariantErrors.push("rejected-greater-than-evaluated");
+  }
+
+  if (lifecycle.eligibleSeedsProduced > eligibility.candidatesEvaluated) {
+    pipeline.invariantErrors.push("ready-greater-than-evaluated");
+  }
+
+  if (pipeline.enrichedCandidateIds > 0 && pipeline.candidateRowsFetchedAfterEnrichment === 0) {
+    pipeline.invariantErrors.push("enriched-candidates-not-refetched");
+  }
+
+  if (pipeline.invariantErrors.length > 0) {
+    console.error("Seed qualification pipeline invariant failed", {
+      candidatesEvaluated: eligibility.candidatesEvaluated,
+      candidatesRejected: eligibility.candidatesRejected,
+      candidateRowsFetchedAfterEnrichment: pipeline.candidateRowsFetchedAfterEnrichment,
+      enrichedCandidateIds: pipeline.enrichedCandidateIds,
+      errors: pipeline.invariantErrors,
+      readySeeds: lifecycle.eligibleSeedsProduced,
+      selectedSeeds: pipeline.selectedSeeds,
+    });
+  }
+}
+
+function getSafeCandidateIdPreview(candidateId: string) {
+  return candidateId ? `${candidateId.slice(0, 8)}...` : "unknown";
+}
+
+function formatCandidateRankForDiagnostics(candidate: RiotSeedCandidateView) {
+  if (candidate.rank_enrichment_status !== "ranked") {
+    return candidate.rank_enrichment_status;
+  }
+
+  return [candidate.rank_tier, candidate.rank_division].filter(Boolean).join(" ") || "missing";
 }
 
 function getLatestCollectionDiscoveryDiagnostics(
@@ -3850,6 +4545,8 @@ async function persistDiscoveredLadderEntries({
   job,
   normalizeRankEntry,
   riot,
+  seenEncryptedSummonerIds,
+  seenPuuids,
   supabase,
 }: {
   diagnostics: RiotCollectionDiscoveryDiagnostics;
@@ -3874,13 +4571,26 @@ async function persistDiscoveredLadderEntries({
       platformRegion: string;
     }) => Promise<{ puuid?: string }>;
   };
+  seenEncryptedSummonerIds: Set<string>;
+  seenPuuids: Set<string>;
   supabase: SupabaseClient;
 }) {
+  const candidateIds: string[] = [];
   let created = 0;
+  let duplicatesSkipped = 0;
   let reused = 0;
+  let uniquePuuidsFound = 0;
   const now = new Date().toISOString();
 
-  for (const entry of entries.slice(0, defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob)) {
+  for (const entry of entries) {
+    if (
+      diagnostics.candidates.created + diagnostics.candidates.reused >=
+        defaultRiotCollectionSafetyLimits.maxNewCandidatesPerJob ||
+      diagnostics.api.requestCount >= defaultRiotCollectionSafetyLimits.maxIdentifierLookupsPerJob
+    ) {
+      break;
+    }
+
     const normalizedEntry =
       entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
     const directPuuid = String(normalizedEntry.puuid ?? "").trim();
@@ -3892,6 +4602,18 @@ async function persistDiscoveredLadderEntries({
     ).trim();
 
     let puuid: string | null = directPuuid || null;
+
+    if (directPuuid && seenPuuids.has(directPuuid)) {
+      duplicatesSkipped += 1;
+      diagnostics.progress.duplicatePuuidsSkipped += 1;
+      continue;
+    }
+
+    if (!directPuuid && encryptedSummonerId && seenEncryptedSummonerIds.has(encryptedSummonerId)) {
+      duplicatesSkipped += 1;
+      diagnostics.progress.duplicatePuuidsSkipped += 1;
+      continue;
+    }
 
     if (puuid) {
       diagnostics.identifiers.directPuuids += 1;
@@ -3963,20 +4685,31 @@ async function persistDiscoveredLadderEntries({
       continue;
     }
 
+    if (seenPuuids.has(puuid)) {
+      duplicatesSkipped += 1;
+      diagnostics.progress.duplicatePuuidsSkipped += 1;
+      continue;
+    }
+
+    seenPuuids.add(puuid);
+    uniquePuuidsFound += 1;
+
+    if (encryptedSummonerId) {
+      seenEncryptedSummonerIds.add(encryptedSummonerId);
+    }
+
     const rank = normalizeRankEntry({
       ...normalizedEntry,
       queueType: job.queue_type,
     });
+    const hasRank = Boolean(rank?.tier);
     const { data: existingCandidate } = await supabase
       .from("riot_seed_candidates")
       .select("id, observed_games, source")
       .eq("platform_region", job.platform)
       .eq("puuid", puuid)
       .maybeSingle<{ id: string; observed_games: number | null; source: string | null }>();
-    const observedGames = Math.max(
-      Number(existingCandidate?.observed_games ?? 0),
-      MIN_SEED_OBSERVATIONS,
-    );
+    const observedGames = Number(existingCandidate?.observed_games ?? 0);
     const { data: savedCandidate, error } = await supabase
       .from("riot_seed_candidates")
       .upsert(
@@ -3986,22 +4719,22 @@ async function persistDiscoveredLadderEntries({
           observed_games: observedGames,
           platform_region: job.platform,
           puuid,
-          rank_division: rank?.division ?? null,
+          rank_division: hasRank ? (rank?.division ?? null) : null,
           rank_enrichment_error_code: null,
           rank_enrichment_error_message: null,
-          rank_enrichment_status: rank ? "ranked" : "unranked",
-          rank_fresh_blood: rank?.freshBlood ?? null,
-          rank_hot_streak: rank?.hotStreak ?? null,
-          rank_inactive: rank?.inactive ?? null,
-          rank_last_success_at: now,
-          rank_league_points: rank?.leaguePoints ?? null,
-          rank_losses: rank?.losses ?? null,
-          rank_queue_type: rank?.queueType ?? job.queue_type,
-          rank_tier: rank?.tier ?? null,
-          rank_veteran: rank?.veteran ?? null,
-          rank_win_rate: rank?.winRate ?? null,
-          rank_wins: rank?.wins ?? null,
-          ranked_at: rank ? now : null,
+          rank_enrichment_status: hasRank ? "ranked" : "unranked",
+          rank_fresh_blood: hasRank ? (rank?.freshBlood ?? null) : null,
+          rank_hot_streak: hasRank ? (rank?.hotStreak ?? null) : null,
+          rank_inactive: hasRank ? (rank?.inactive ?? null) : null,
+          rank_last_success_at: hasRank ? now : null,
+          rank_league_points: hasRank ? (rank?.leaguePoints ?? null) : null,
+          rank_losses: hasRank ? (rank?.losses ?? null) : null,
+          rank_queue_type: hasRank ? (rank?.queueType ?? job.queue_type) : job.queue_type,
+          rank_tier: hasRank ? (rank?.tier ?? null) : null,
+          rank_veteran: hasRank ? (rank?.veteran ?? null) : null,
+          rank_win_rate: hasRank ? (rank?.winRate ?? null) : null,
+          rank_wins: hasRank ? (rank?.wins ?? null) : null,
+          ranked_at: hasRank ? now : null,
           regional_routing: job.regional_route,
           source: existingCandidate?.source ?? "ladder_import",
           status: "candidate",
@@ -4020,27 +4753,32 @@ async function persistDiscoveredLadderEntries({
     }
 
     diagnostics.candidateIds.push(savedCandidate.id);
+    candidateIds.push(savedCandidate.id);
     diagnostics.candidates.enriched += 1;
 
-    if (rank) {
+    if (!hasRank) {
+      diagnostics.candidates.missingEnrichment += 1;
+    }
+
+    if (hasRank) {
       const { error: snapshotError } = await supabase
         .from("riot_seed_candidate_rank_snapshots")
         .insert({
           candidate_id: savedCandidate.id,
-          division: rank.division,
-          fresh_blood: rank.freshBlood,
-          hot_streak: rank.hotStreak,
-          inactive: rank.inactive,
-          league_points: rank.leaguePoints,
-          losses: rank.losses,
+          division: rank?.division ?? null,
+          fresh_blood: rank?.freshBlood ?? null,
+          hot_streak: rank?.hotStreak ?? null,
+          inactive: rank?.inactive ?? null,
+          league_points: rank?.leaguePoints ?? null,
+          losses: rank?.losses ?? null,
           platform_region: job.platform,
-          queue_type: rank.queueType,
+          queue_type: rank?.queueType ?? job.queue_type,
           snapshot_status: "ranked",
           source: "ladder_import",
-          tier: rank.tier,
-          veteran: rank.veteran,
-          win_rate: rank.winRate,
-          wins: rank.wins,
+          tier: rank?.tier ?? null,
+          veteran: rank?.veteran ?? null,
+          win_rate: rank?.winRate ?? null,
+          wins: rank?.wins ?? null,
         });
 
       if (snapshotError && snapshotError.code !== "23505") {
@@ -4061,8 +4799,11 @@ async function persistDiscoveredLadderEntries({
   }
 
   return {
+    candidateIds,
     created,
+    duplicatesSkipped,
     reused,
+    uniquePuuidsFound,
   };
 }
 
@@ -5286,6 +6027,7 @@ function applyRiotSeedCandidateLifecycleFilter<TQuery extends RiotSeedCandidateQ
     case "low-signal":
       return query
         .is("manually_rejected_at", null)
+        .not("source", "eq", "ladder_import")
         .lt("observed_games", MIN_SEED_OBSERVATIONS) as TQuery;
     case "failed":
       return query
@@ -5320,7 +6062,7 @@ function applyRiotSeedCandidateLifecycleFilter<TQuery extends RiotSeedCandidateQ
     case "ready-to-scan":
       return query
         .is("manually_rejected_at", null)
-        .gte("observed_games", MIN_SEED_OBSERVATIONS)
+        .or(`observed_games.gte.${MIN_SEED_OBSERVATIONS},source.eq.ladder_import`)
         .eq("rank_enrichment_status", "ranked")
         .in("rank_tier", supportedRankTiers)
         .lt("consecutive_scan_failures", MAX_CONSECUTIVE_SCAN_FAILURES)
