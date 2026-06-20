@@ -6,9 +6,24 @@ import {
 
 // Script-only Riot client. Do not import this from public UI code.
 export class RiotApiError extends Error {
-  constructor(message, { retryAfterMs = null, status, url }) {
+  constructor(
+    message,
+    {
+      code = "riot-api-error",
+      endpointGroup = "unknown",
+      responseSummary = null,
+      retryable = false,
+      retryAfterMs = null,
+      status,
+      url,
+    },
+  ) {
     super(message);
     this.name = "RiotApiError";
+    this.code = code;
+    this.endpointGroup = endpointGroup;
+    this.responseSummary = responseSummary;
+    this.retryable = retryable;
     this.retryAfterMs = retryAfterMs;
     this.status = status;
     this.url = url;
@@ -187,9 +202,20 @@ export class RiotApiClient {
       }
 
       if (!response.ok) {
+        const responseSummary = await readSafeRiotErrorSummary(response);
+        const classification = classifyRiotApiResponse({
+          endpointGroup,
+          responseSummary,
+          status: response.status,
+        });
+
         throw new RiotApiError(
-          `Riot API request failed (${response.status}) for ${redactUrl(url)}`,
+          `${classification.message} (${response.status}) for ${redactUrl(url)}`,
           {
+            code: classification.code,
+            endpointGroup,
+            responseSummary,
+            retryable: classification.retryable,
             retryAfterMs: rateLimitResult.retryAfterMs,
             status: response.status,
             url: redactUrl(url),
@@ -210,6 +236,103 @@ export function wait(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+export function classifyRiotApiResponse({ endpointGroup = "unknown", responseSummary = null, status }) {
+  if (status === 401) {
+    return {
+      code: "riot-authentication-failed",
+      endpointGroup,
+      message: "Riot API authentication failed. The API key may be missing, invalid, or expired.",
+      retryable: false,
+    };
+  }
+
+  if (status === 403) {
+    return {
+      code: "riot-access-denied",
+      endpointGroup,
+      message:
+        "Riot API access was denied. Check whether the API key has expired or lacks access to this endpoint.",
+      retryable: false,
+    };
+  }
+
+  if (status === 404) {
+    return {
+      code: "riot-not-found",
+      endpointGroup,
+      message: "Riot API resource was not found.",
+      retryable: false,
+    };
+  }
+
+  if (status >= 500) {
+    return {
+      code: "riot-server-error",
+      endpointGroup,
+      message: "Riot API service error.",
+      retryable: true,
+    };
+  }
+
+  return {
+    code: "riot-api-error",
+    endpointGroup,
+    message: responseSummary
+      ? `Riot API request failed: ${responseSummary}`
+      : "Riot API request failed.",
+    retryable: false,
+  };
+}
+
+export function isRiotApiAuthenticationError(error) {
+  return (
+    error instanceof RiotApiError &&
+    (error.code === "riot-authentication-failed" || error.code === "riot-access-denied")
+  );
+}
+
+async function readSafeRiotErrorSummary(response) {
+  const contentType = response.headers?.get?.("content-type") ?? "";
+
+  try {
+    if (contentType.toLowerCase().includes("application/json")) {
+      return sanitizeRiotErrorPayload(await response.json());
+    }
+
+    return sanitizeRiotErrorMessage(await response.text());
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeRiotErrorPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const status = payload.status && typeof payload.status === "object" ? payload.status : payload;
+  const message = sanitizeRiotErrorMessage(status.message);
+  const statusCode = Number(status.status_code);
+
+  return [Number.isFinite(statusCode) ? `status ${statusCode}` : null, message]
+    .filter(Boolean)
+    .join(": ");
+}
+
+function sanitizeRiotErrorMessage(value) {
+  const text = String(value ?? "")
+    .replace(/RGAPI-[A-Za-z0-9-]+/g, "RGAPI-<redacted>")
+    .replace(/api_key=[^&\s]+/gi, "api_key=<redacted>")
+    .replace(/X-Riot-Token:\s*[^\s]+/gi, "X-Riot-Token: <redacted>")
+    .trim();
+
+  if (!text) {
+    return null;
+  }
+
+  return text.length > 240 ? `${text.slice(0, 237)}...` : text;
 }
 
 function redactUrl(url) {

@@ -8,6 +8,7 @@ import {
   Play,
   RefreshCw,
   Search,
+  ShieldAlert,
   UserPlus,
   X,
 } from "lucide-react";
@@ -4570,6 +4571,7 @@ function RiotScanJobDetails({
   const result = job.results;
   const targetResult = !Array.isArray(result) ? result : null;
   const discoveryResults = Array.isArray(result) ? result : [];
+  const riotApiFailure = getRiotApiFailure(job);
   const focusChampionLabel = job.focus_champion_id
     ? (championDisplayNamesById.get(job.focus_champion_id) ??
       job.summary.focusChampionDisplayName ??
@@ -4601,11 +4603,13 @@ function RiotScanJobDetails({
                 : "border-cyan-300/20 bg-cyan-500/10 text-cyan-100",
           )}
         >
-          {getStatusLabel(job.status)}
+          {getRiotScanJobStatusLabel(job)}
         </span>
       </div>
 
-      {job.error_message ? (
+      {riotApiFailure ? <RiotApiAuthenticationFailureWarning job={job} /> : null}
+
+      {job.error_message && !riotApiFailure ? (
         <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
           {job.error_message}
         </p>
@@ -4824,6 +4828,47 @@ function RiotScanJobDetails({
       {discoveryResults.length > 0 ? (
         <DiscoveryResultTable results={discoveryResults as RiotScanDiscoveryResult[]} />
       ) : null}
+    </div>
+  );
+}
+
+function RiotApiAuthenticationFailureWarning({ job }: { job: RiotScanJobView }) {
+  const failure = getRiotApiFailure(job);
+
+  if (!failure) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-md border border-rose-300/30 bg-rose-500/10 p-4 text-sm text-rose-50">
+      <div className="flex gap-3">
+        <ShieldAlert className="mt-0.5 size-5 shrink-0 text-rose-200" aria-hidden="true" />
+        <div className="min-w-0">
+          <h4 className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-rose-100">
+            Riot API Authentication Failed
+          </h4>
+          <p className="mt-2 leading-6 text-rose-50">
+            Riot rejected the current API credentials. The developer key may be expired or
+            invalid. Update the configured Riot API key before resuming or restarting this scan.
+          </p>
+          {job.error_message ? (
+            <p className="mt-2 leading-6 text-rose-100/90">{job.error_message}</p>
+          ) : null}
+          <div className="mt-3 grid gap-2 text-xs text-rose-100/80 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label="HTTP status" value={failure.status ?? "Pending"} />
+            <Metric label="Failed stage" value={formatEnumLabel(failure.stage)} />
+            <Metric label="Endpoint" value={failure.endpointGroup} />
+            <Metric label="Detected" value={formatDateTime(failure.detectedAt)} />
+            <Metric
+              label="Aggregation"
+              value={failure.aggregationSkipped ? "Skipped" : "Pending"}
+            />
+            <Metric label="Retryable" value={failure.retryable ? "Yes" : "No"} />
+            <Metric label="Reason code" value={formatEnumLabel(failure.code)} />
+            <Metric label="Riot message" value={failure.responseSummary ?? "Hidden"} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -5215,6 +5260,21 @@ function getModeLabel(mode: RiotScanMode) {
 
 function getStatusLabel(status: RiotScanJobView["status"]) {
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getRiotScanJobStatusLabel(job: RiotScanJobView) {
+  if (job.status === "failed" && getRiotApiFailure(job)) {
+    return "Failed - Riot authentication";
+  }
+
+  return getStatusLabel(job.status);
+}
+
+function getRiotApiFailure(job: RiotScanJobView) {
+  const failure = job.progress.riotApiFailure ?? job.summary.riotApiFailure;
+  const code = failure?.code ?? job.progress.riotApiFailureCode ?? job.summary.riotApiFailureCode;
+
+  return code === "riot-authentication-failed" || code === "riot-access-denied" ? failure : null;
 }
 
 function getRoleLabel(role: LeagueRole) {

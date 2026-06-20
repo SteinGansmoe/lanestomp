@@ -28,9 +28,25 @@ type RiotPersistenceErrorGroup = {
 
 declare module "@/scripts/lib/riot-api-client.mjs" {
   export class RiotApiError extends Error {
+    code?: string;
+    endpointGroup?: string;
+    responseSummary?: string | null;
+    retryable?: boolean;
+    retryAfterMs?: number | null;
     status?: number;
     url?: string;
   }
+  export function classifyRiotApiResponse(options: {
+    endpointGroup?: string;
+    responseSummary?: string | null;
+    status: number;
+  }): {
+    code: string;
+    endpointGroup: string;
+    message: string;
+    retryable: boolean;
+  };
+  export function isRiotApiAuthenticationError(error: unknown): boolean;
 
   export class RiotApiClient {
     constructor(options: {

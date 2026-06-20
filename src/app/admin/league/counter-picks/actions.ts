@@ -1540,7 +1540,8 @@ async function runRiotScanJob({
   jobId: number;
   supabase: SupabaseClient;
 }) {
-  const { RiotApiClient } = await import("@/scripts/lib/riot-api-client.mjs");
+  const { RiotApiClient, isRiotApiAuthenticationError } =
+    await import("@/scripts/lib/riot-api-client.mjs");
   const { loadActiveChampionRegistry } =
     await import("@/scripts/lib/league-champion-normalizer.mjs");
   const {
@@ -1884,6 +1885,65 @@ async function runRiotScanJob({
       });
     }
   } catch (error) {
+    if (isRiotApiAuthenticationError(error) || isRiotApiAuthenticationFailure(error)) {
+      const failure = getRiotApiAuthenticationFailureDetails(error);
+      const failedProgress: RiotScanSummary = {
+        ...progressBase,
+        aggregationSkippedReason: "upstream-riot-authentication-failure",
+        currentStage: "riot-authentication-failed",
+        lastProgressAt: failure.detectedAt,
+        riotApiFailure: failure,
+        riotApiFailureCode: failure.code,
+        riotApiFailureDetectedAt: failure.detectedAt,
+        riotApiFailureEndpointGroup: failure.endpointGroup,
+        riotApiFailureStatus: failure.status,
+      };
+
+      console.error("Riot API authentication failure", {
+        aggregationSkipped: true,
+        childJobId: jobId,
+        collectionJobId,
+        endpoint: failure.endpointGroup,
+        retryable: failure.retryable,
+        stage: failure.stage,
+        status: failure.status,
+      });
+
+      await supabase
+        .from("riot_scan_jobs")
+        .update({
+          completed_at: failure.detectedAt,
+          error_message: failure.message,
+          progress: failedProgress,
+          status: "failed",
+          summary: failedProgress,
+        })
+        .eq("id", jobId);
+
+      await markSeedCandidatesScanFailed({
+        errorCode: failure.code,
+        scanJobId: jobId,
+        seedPuuids: input.seedPuuids,
+        supabase,
+      });
+
+      if (collectionJobId) {
+        const currentJobResult = await fetchCollectionJob(supabase, collectionJobId);
+
+        if (currentJobResult.ok && !isRiotCollectionTerminalStatus(currentJobResult.job.status)) {
+          await completeCollectionJob({
+            job: currentJobResult.job,
+            status: "failed",
+            stopDetail: `${failure.message} Aggregation skipped because Riot rejected the child scan credentials.`,
+            stopReason: "riot-api-authentication-failed",
+            supabase,
+          });
+        }
+      }
+
+      return;
+    }
+
     if (isRiotRateLimitError(error)) {
       const message = getRiotRateLimitStopDetail(error);
 
@@ -1994,6 +2054,101 @@ function isRiotRateLimitError(error: unknown): error is { retryAfterMs?: number;
     typeof error === "object" &&
     "status" in error &&
     Number((error as { status?: number }).status) === 429
+  );
+}
+
+function isRiotApiAuthenticationFailure(error: unknown) {
+  if (error === null || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { code?: unknown; status?: unknown };
+  const code = typeof candidate.code === "string" ? candidate.code : null;
+  const status = Number(candidate.status);
+
+  return (
+    code === "riot-authentication-failed" ||
+    code === "riot-access-denied" ||
+    status === 401 ||
+    status === 403
+  );
+}
+
+function getRiotApiAuthenticationFailureDetails(error: unknown): NonNullable<
+  RiotScanSummary["riotApiFailure"]
+> {
+  const candidate =
+    error !== null && typeof error === "object"
+      ? (error as {
+          code?: unknown;
+          endpointGroup?: unknown;
+          message?: unknown;
+          responseSummary?: unknown;
+          retryable?: unknown;
+          status?: unknown;
+        })
+      : {};
+  const status = Number(candidate.status);
+  const normalizedStatus = Number.isFinite(status) ? status : null;
+  const code =
+    candidate.code === "riot-access-denied"
+      ? "riot-access-denied"
+      : "riot-authentication-failed";
+  const message =
+    code === "riot-access-denied"
+      ? "Riot API access was denied. Check whether the API key has expired or lacks access to this endpoint."
+      : "Riot API authentication failed. The API key may be missing, invalid, or expired.";
+
+  return {
+    aggregationSkipped: true,
+    code,
+    detectedAt: new Date().toISOString(),
+    endpointGroup:
+      typeof candidate.endpointGroup === "string" && candidate.endpointGroup.trim()
+        ? candidate.endpointGroup
+        : "unknown",
+    message,
+    responseSummary:
+      typeof candidate.responseSummary === "string" && candidate.responseSummary.trim()
+        ? candidate.responseSummary
+        : null,
+    retryable: false,
+    stage: getRiotApiFailureStage(candidate.endpointGroup),
+    status: normalizedStatus,
+  };
+}
+
+function getRiotApiFailureStage(endpointGroup: unknown) {
+  const endpoint = String(endpointGroup ?? "");
+
+  if (endpoint.includes("match-ids")) {
+    return "match-id-fetch";
+  }
+
+  if (endpoint.includes("match-detail")) {
+    return "match-detail-fetch";
+  }
+
+  if (endpoint.includes("league-v4") || endpoint.includes("summoner-v4")) {
+    return "seed-discovery";
+  }
+
+  if (endpoint.includes("account-v1")) {
+    return "account-lookup";
+  }
+
+  return "riot-request";
+}
+
+function hasRiotApiAuthenticationFailure(scanJob: RiotScanJobRow) {
+  const failureCode = scanJob.progress?.riotApiFailureCode ?? scanJob.summary?.riotApiFailureCode;
+  const failure = scanJob.progress?.riotApiFailure ?? scanJob.summary?.riotApiFailure;
+
+  return (
+    failureCode === "riot-authentication-failed" ||
+    failureCode === "riot-access-denied" ||
+    failure?.code === "riot-authentication-failed" ||
+    failure?.code === "riot-access-denied"
   );
 }
 
@@ -3273,6 +3428,22 @@ async function reconcileCompletedCollectionScans({
     if (scanJob.status === "failed") {
       if (nextJob.status === "paused") {
         continue;
+      }
+
+      if (hasRiotApiAuthenticationFailure(scanJob)) {
+        const failure = scanJob.progress?.riotApiFailure;
+        const stopDetail =
+          failure?.message ??
+          scanJob.error_message ??
+          "Riot API authentication failed. Update the configured key before resuming.";
+
+        return completeCollectionJob({
+          job: nextJob,
+          stopDetail: `${stopDetail} Aggregation was skipped because the child scan did not complete.`,
+          stopReason: "riot-api-authentication-failed",
+          status: "failed",
+          supabase,
+        });
       }
 
       return completeCollectionJob({

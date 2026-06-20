@@ -30,6 +30,7 @@ export type RiotCollectionStopReason =
   | "no-new-data"
   | "no-ready-seeds"
   | "rate-limited"
+  | "riot-api-authentication-failed"
   | "runtime-limit-reached"
   | "target-reached";
 
@@ -365,6 +366,8 @@ export const riotCollectionStopReasonLabels = {
   "no-new-data": "The last batch did not add new target matches.",
   "no-ready-seeds": "No eligible seeds remain for this rank bracket.",
   "rate-limited": "Riot rate limit reached; resume later.",
+  "riot-api-authentication-failed":
+    "Riot authentication failed; update the API key before resuming this scan.",
   "runtime-limit-reached": "The runtime safety limit was reached.",
   "target-reached": "The target unique-match count was reached.",
 } as const satisfies Record<RiotCollectionStopReason, string>;

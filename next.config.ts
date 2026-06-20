@@ -15,22 +15,6 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "i.pinimg.com",
-      },
-      {
-        protocol: "https",
-        hostname: "staticg.sportskeeda.com",
-      },
-      {
-        protocol: "https",
-        hostname: "static.wikia.nocookie.net",
-      },
-      {
-        protocol: "https",
-        hostname: "images2.alphacoders.com",
-      },
-      {
-        protocol: "https",
         hostname: "ddragon.leagueoflegends.com",
       },
     ],

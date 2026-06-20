@@ -87,8 +87,10 @@ export type RiotScanSummary = {
     | "fetching-matches"
     | "initializing"
     | "persisting"
+    | "riot-authentication-failed"
     | "scan-complete"
     | "waiting-for-rate-limit";
+  aggregationSkippedReason?: string | null;
   lastProgressAt?: string;
   lastRiotRequestAt?: string | null;
   rateLimitLongWindowLimit?: number;
@@ -103,6 +105,21 @@ export type RiotScanSummary = {
   rateLimitWaitUntil?: string | null;
   rateLimitWaits?: number;
   riot429Responses?: number;
+  riotApiFailure?: {
+    aggregationSkipped: boolean;
+    code: "riot-authentication-failed" | "riot-access-denied" | string;
+    detectedAt: string;
+    endpointGroup: string;
+    message: string;
+    responseSummary: string | null;
+    retryable: boolean;
+    stage: string;
+    status: number | null;
+  };
+  riotApiFailureCode?: string | null;
+  riotApiFailureDetectedAt?: string | null;
+  riotApiFailureEndpointGroup?: string | null;
+  riotApiFailureStatus?: number | null;
   riotRateLimitTotalWaitMs?: number;
   matchesTotal?: number;
   matchesScanned?: number;
