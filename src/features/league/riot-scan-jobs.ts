@@ -81,8 +81,10 @@ export type RiotScanSummary = {
   currentMatchIndex?: number;
   currentSeedIndex?: number;
   currentSeedPuuidPreview?: string | null;
+  currentPatchOnly?: boolean;
   currentStage?:
     | "cancelled"
+    | "chunk-complete"
     | "fetching-match-ids"
     | "fetching-matches"
     | "initializing"
@@ -91,7 +93,16 @@ export type RiotScanSummary = {
     | "scan-complete"
     | "waiting-for-rate-limit";
   aggregationSkippedReason?: string | null;
+  isComplete?: boolean;
   lastProgressAt?: string;
+  storedMatchIds?: string[];
+  completedMatchIds?: string[];
+  workerHeartbeatAt?: string;
+  workerInvocationId?: string;
+  workerLeaseExpiresAt?: string;
+  workerState?: "idle" | "running" | "stalled";
+  workerBatchSize?: number;
+  workerRemainingMatches?: number;
   lastRiotRequestAt?: string | null;
   rateLimitLongWindowLimit?: number;
   rateLimitLongWindowUsage?: number;
@@ -124,6 +135,7 @@ export type RiotScanSummary = {
   matchesTotal?: number;
   matchesScanned?: number;
   matchupPairsDiscovered?: number;
+  maxDisplayedResults?: number;
   newCandidatesCreated?: number;
   patch?: string | null;
   patchSkipped?: number;

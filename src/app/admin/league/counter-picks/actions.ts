@@ -89,6 +89,8 @@ const maxMatchCount = 50;
 const maxDisplayedResultsLimit = 100;
 const maxSeedCandidatesPerScan = 20;
 const maxSeedCandidateRankRefreshBatch = 20;
+const defaultRiotScanMatchBatchSize = 5;
+const riotScanLeaseDurationMs = 2 * 60 * 1000;
 const maxDiscoveryCandidateRefetchChunkSize = 100;
 const recentSeedCandidateScanHours = RECENTLY_SCANNED_WINDOW_HOURS;
 const recentSeedCandidateRankRefreshHours = 24;
@@ -382,7 +384,7 @@ export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<Ri
     };
   }
 
-  void runRiotScanJob({
+  await runRiotScanJob({
     collectionJobId: input.collectionJobId ?? null,
     input: validation,
     jobId: insertedJob.id,
@@ -812,6 +814,14 @@ export async function getRiotCollectionJob({
     job: jobResult.job,
     supabase: serviceClientResult.supabase,
   });
+
+  if (!consistencyIssue && jobResult.job.status === "scanning") {
+    return advanceRiotCollectionJob({
+      accessToken,
+      job: jobResult.job,
+      supabase: serviceClientResult.supabase,
+    });
+  }
 
   if (!consistencyIssue) {
     return jobResult;
@@ -1556,18 +1566,39 @@ async function runRiotScanJob({
   const { persistSeedCandidatesFromObservations } =
     await import("@/scripts/lib/riot-seed-candidates.mjs");
   const startedAt = new Date().toISOString();
+  const invocationId = createRiotScanInvocationId(jobId);
+  const leaseExpiresAt = new Date(Date.now() + riotScanLeaseDurationMs).toISOString();
+  const matchBatchSize = collectionJobId ? defaultRiotScanMatchBatchSize : null;
   const progressBase = {
     currentPatchOnly: input.currentPatchOnly,
     discoveryFocusChampion: input.discoveryFocusChampion,
     maxDisplayedResults: input.maxDisplayedResults,
     seedCount: input.seedPuuids.length,
+    workerBatchSize: matchBatchSize ?? input.matchCount,
+    workerHeartbeatAt: startedAt,
+    workerInvocationId: invocationId,
+    workerLeaseExpiresAt: leaseExpiresAt,
+    workerState: "running" as const,
   };
+  const { data: existingJob } = await supabase
+    .from("riot_scan_jobs")
+    .select("progress, summary")
+    .eq("id", jobId)
+    .maybeSingle<{ progress: RiotScanSummary | null; summary: RiotScanSummary | null }>();
+  const existingProgress = existingJob?.progress ?? {};
+  const existingSummary = existingJob?.summary ?? {};
 
   try {
     await supabase
       .from("riot_scan_jobs")
       .update({
         started_at: startedAt,
+        progress: {
+          ...existingProgress,
+          ...progressBase,
+          currentStage: existingProgress.currentStage ?? "initializing",
+          lastProgressAt: startedAt,
+        },
         status: "running",
       })
       .eq("id", jobId);
@@ -1627,6 +1658,10 @@ async function runRiotScanJob({
         ...progressBase,
         ...progress,
         lastProgressAt: new Date().toISOString(),
+        workerHeartbeatAt: new Date().toISOString(),
+        workerInvocationId: invocationId,
+        workerLeaseExpiresAt: new Date(Date.now() + riotScanLeaseDurationMs).toISOString(),
+        workerState: "running",
       };
 
       await supabase
@@ -1649,10 +1684,14 @@ async function runRiotScanJob({
       championRegistry,
       discover: input.mode === "discovery",
       focusChampionId: input.discoveryFocusChampion,
+      matchIds: existingProgress.storedMatchIds ?? existingSummary.storedMatchIds ?? null,
       matchCount: input.matchCount,
+      maxMatchesToScan: matchBatchSize,
       onProgress: updateProgress,
       patch,
       platformRegion,
+      processedMatchIds:
+        existingProgress.completedMatchIds ?? existingSummary.completedMatchIds ?? [],
       queue: rankedSoloDuoQueueId,
       regionalRouting,
       riot,
@@ -1704,7 +1743,7 @@ async function runRiotScanJob({
       focusObservationKeys,
       persistenceResult.duplicateObservationKeys ?? [],
     );
-    const persistedSummary = {
+    const persistedSummary: RiotScanSummary = {
       ...summary,
       candidateIdLookupChunkFailures: candidatePersistenceResult.candidateIdLookupChunkFailures,
       candidateIdLookupChunks: candidatePersistenceResult.candidateIdLookupChunks,
@@ -1800,7 +1839,58 @@ async function runRiotScanJob({
       participantPuuidsObserved: candidatePersistenceResult.participantPuuidsObserved,
       statsRowsUpdated: persistenceResult.statsRowsUpdated,
       uniqueCandidatesEncountered: candidatePersistenceResult.uniqueCandidatesEncountered,
+      workerHeartbeatAt: new Date().toISOString(),
+      workerInvocationId: invocationId,
+      workerLeaseExpiresAt: new Date(Date.now() + riotScanLeaseDurationMs).toISOString(),
+      workerState: scanResult.summary.isComplete ? ("idle" as const) : ("idle" as const),
     };
+
+    if (!scanResult.summary.isComplete) {
+      await supabase
+        .from("riot_scan_jobs")
+        .update({
+          progress: {
+            ...persistedSummary,
+            aggregationSkippedReason: "child-scan-incomplete",
+            currentStage: "chunk-complete",
+            workerState: "idle",
+          },
+          status: "queued",
+          summary: {
+            ...persistedSummary,
+            aggregationSkippedReason: "child-scan-incomplete",
+            currentStage: "chunk-complete",
+            workerState: "idle",
+          },
+        })
+        .eq("id", jobId);
+
+      if (collectionJobId) {
+        await mirrorScanProgressToCollectionJob({
+          collectionJobId,
+          progress: {
+            ...persistedSummary,
+            aggregationSkippedReason: "child-scan-incomplete",
+            currentStage: "chunk-complete",
+            workerState: "idle",
+          },
+          scanJobId: jobId,
+          supabase,
+        });
+      }
+
+      console.info("Riot counter pick scan chunk completed", {
+        childJobId: jobId,
+        collectionJobId,
+        completedMatches: persistedSummary.completedMatchIds?.length ?? 0,
+        invocationId,
+        matchesTotal: persistedSummary.matchesTotal,
+        remainingMatches: persistedSummary.workerRemainingMatches,
+      });
+
+      return;
+    }
+
     const discoveryResults = scanResult.discoveryResults as RiotScanDiscoveryResult[];
     const results =
       input.mode === "discovery"
@@ -2048,6 +2138,27 @@ function isRiotScanControlError(error: unknown): error is RiotScanControlError {
   return error instanceof RiotScanControlError;
 }
 
+function createRiotScanInvocationId(jobId: number) {
+  return `scan-${jobId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getValidatedInputFromScanJob(scanJob: RiotScanJobRow): ValidatedStartInput {
+  return {
+    counterChampion: scanJob.counter_champion ?? "",
+    currentPatchOnly: Boolean(scanJob.progress?.currentPatchOnly ?? scanJob.summary?.currentPatchOnly),
+    discoveryFocusChampion: scanJob.focus_champion_id,
+    enemyChampion: scanJob.enemy_champion ?? "",
+    matchCount: scanJob.match_count,
+    maxDisplayedResults: Number(
+      scanJob.progress?.maxDisplayedResults ?? scanJob.summary?.maxDisplayedResults ?? 20,
+    ),
+    minimumGames: scanJob.minimum_games,
+    mode: scanJob.mode,
+    role: scanJob.role,
+    seedPuuids: scanJob.seed_puuids ?? [],
+  };
+}
+
 function isRiotRateLimitError(error: unknown): error is { retryAfterMs?: number; status?: number } {
   return (
     error !== null &&
@@ -2256,6 +2367,10 @@ function getLiveScanProgressMessage(progress: RiotScanSummary) {
 
   if (progress.currentStage === "fetching-matches") {
     return `Scanning match ${progress.currentMatchIndex ?? progress.matchesScanned ?? 0}/${progress.matchesTotal ?? progress.uniqueMatchIds ?? "?"}.`;
+  }
+
+  if (progress.currentStage === "chunk-complete") {
+    return `Child scan chunk complete. ${progress.workerRemainingMatches ?? 0} matches remaining.`;
   }
 
   if (progress.currentStage === "persisting") {
@@ -3237,6 +3352,53 @@ async function advanceRiotCollectionJob({
   const activeScanResult = await getActiveCollectionScan(supabase, nextJob.id);
 
   if (activeScanResult) {
+    if (activeScanResult.status === "queued") {
+      const activeScanRow = await fetchRiotScanJobRow(supabase, activeScanResult.id);
+
+      if (!activeScanRow) {
+        return failCollectionJob({
+          errorMessage: `Child scan ${activeScanResult.id} could not be loaded for continuation.`,
+          job: nextJob,
+          supabase,
+        });
+      }
+
+      await runRiotScanJob({
+        collectionJobId: nextJob.id,
+        input: getValidatedInputFromScanJob(activeScanRow),
+        jobId: activeScanResult.id,
+        supabase,
+      });
+
+      const refreshedJobResult = await fetchCollectionJob(supabase, nextJob.id);
+
+      if (!refreshedJobResult.ok) {
+        return refreshedJobResult;
+      }
+
+      const refreshedActiveScan = await getActiveCollectionScan(supabase, nextJob.id);
+
+      if (!refreshedActiveScan) {
+        return advanceRiotCollectionJob({
+          accessToken,
+          job: refreshedJobResult.job,
+          supabase,
+        });
+      }
+
+      return updateCollectionJob({
+        patch: {
+          progress: getCollectionProgressPatch(refreshedJobResult.job, {
+            activeScanJobId: refreshedActiveScan.id,
+            lastMessage: `Processed a bounded child scan chunk for ${refreshedActiveScan.id}.`,
+          }),
+          status: "scanning",
+        },
+        supabase,
+        id: refreshedJobResult.job.id,
+      });
+    }
+
     return updateCollectionJob({
       patch: {
         progress: getCollectionProgressPatch(nextJob, {
@@ -5129,6 +5291,16 @@ async function getActiveCollectionScan(supabase: SupabaseClient, collectionJobId
     .maybeSingle<RiotScanJobRow>();
 
   return data ? sanitizeJobRow(data) : null;
+}
+
+async function fetchRiotScanJobRow(supabase: SupabaseClient, scanJobId: number) {
+  const { data } = await supabase
+    .from("riot_scan_jobs")
+    .select(riotScanJobSelect)
+    .eq("id", scanJobId)
+    .maybeSingle<RiotScanJobRow>();
+
+  return data ?? null;
 }
 
 async function getRiotCollectionConsistencyIssue({
