@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const aatroxCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   abilities: {
     Q: "The Darkin Blade",
     W: "Infernal Chains",
@@ -10,7 +10,7 @@ export const aatroxCombatProfile = {
   },
   archetype: ["juggernaut", "drain tank", "lane bully", "teamfight"],
   primaryWinCondition: [
-    "Control spacing with repeated (Q) sweet spots, sustain through extended fights, and turn level 6 or item spikes into side-lane pressure.",
+    "Control spacing with repeated (Q) sweet spots, sustain through extended fights, use your advantage into sidelane pressure.",
   ],
   dangerAbilities: ["(Q) sweet spots", "(W) pull", "(R) reset and healing amp"],
   dangerProfile: {
@@ -60,6 +60,7 @@ export const aatroxCombatProfile = {
       "Measured top-lane spacing around (Q) cooldowns.",
       "Extended skirmishes where sustain and resets matter.",
       "Side-lane pressure that pulls enemies into his spell ranges.",
+      "Split-push threat that forces multiple enemies to respond or miss objectives.",
     ],
     scalingPriority: "medium",
     winLaneBy: [
@@ -81,6 +82,26 @@ export const aatroxCombatProfile = {
       "Champions that punish him hard after (Q) and (E) are down.",
     ],
   },
+  counters: [
+    {
+      champion: "Sion",
+      reasons: [
+        "Aatrox can punish Sion's slow (Q) windup with repeated (Q) sweet spots.",
+        "(W) makes it hard for Sion to walk out after missing a charged (Q).",
+        "(R) healing lets Aatrox keep fighting through Sion's extended health bar.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Fiora",
+      reasons: [
+        "Fiora can use (Q) movement to dodge Aatrox sweet spots and keep hitting vitals.",
+        "(W) can parry Aatrox's key crowd control from (W) pull timing or third (Q).",
+        "Fiora's true damage and side-lane scaling make Aatrox's drain-tank pattern harder to rely on.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Aatrox",
   offMetaRoles: ["jungle"],

@@ -81,6 +81,54 @@ export const veigarCombatProfile = {
       "Champions that can make themselves untargetable or dodge his skillshots easily.",
     ],
   },
+  counters: [
+    {
+      champion: "Akali",
+      reasons: ["Veigar can punish Akali's dash paths by holding (E) until she commits."],
+    },
+    {
+      champion: "Katarina",
+      reasons: [
+        "Veigar's cage can interrupt Katarina's jump and reset pattern if held for her commit.",
+      ],
+    },
+    {
+      champion: "Yone",
+      reasons: [
+        "Veigar can punish Yone's return path with cage and scale past his early trade pressure.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Veigar can outscale Twisted Fate and punish predictable card-walk patterns with cage.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Xerath",
+      reasons: ["Xerath outranges Veigar and can poke without entering cage range."],
+    },
+    {
+      champion: "Zed",
+      reasons: [
+        "Zed can pressure Veigar before he scales and use shadow mobility to play around cage.",
+      ],
+    },
+    {
+      champion: "Fizz",
+      reasons: [
+        "Fizz can dodge cage or burst with (E) and force all-ins onto Veigar's low mobility.",
+      ],
+    },
+    {
+      champion: "Kassadin",
+      reasons: [
+        "Kassadin can absorb Veigar's magic lane and later dodge cage angles with repeated (R).",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Veigar",
   offMetaRoles: ["adc", "support"],

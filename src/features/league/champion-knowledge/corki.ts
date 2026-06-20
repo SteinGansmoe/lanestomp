@@ -89,6 +89,26 @@ export const corkiCombatProfile = {
       "Long-range mages who can outpoke him before items.",
     ],
   },
+  counters: [
+    {
+      champion: "Galio",
+      reasons: [
+        "Corki can farm from range and avoid giving Galio easy taunt angles.",
+        "Sustained mixed damage and rockets make it hard for Galio to only itemize against one damage type.",
+        "Package can punish Galio's predictable objective roams and force him away from choke points.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can jump onto Corki before he has enough items to control the lane with rockets.",
+        "Explosive Charge creates early tower and all-in pressure that Corki struggles to match.",
+        "If Corki uses (W) defensively, Tristana can reset or keep pushing the wave advantage.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Corki",
   offMetaRoles: ["adc"],

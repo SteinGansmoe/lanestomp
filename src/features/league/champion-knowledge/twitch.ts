@@ -73,7 +73,11 @@ export const twitchCombatProfile = {
       "Scaling into itemized ambush fights.",
     ],
   },
-  majorPowerSpikes: ["Level 6 (R)", "First completed marksman item", "Two-item stealth carry spike"],
+  majorPowerSpikes: [
+    "Level 6 (R)",
+    "First completed marksman item",
+    "Two-item stealth carry spike",
+  ],
   matchupPreferences: {
     strongInto: [
       "Passive lanes that let him scale.",
@@ -86,6 +90,26 @@ export const twitchCombatProfile = {
       "Vision control that removes ambush angles.",
     ],
   },
+  counters: [
+    {
+      champion: "Jinx",
+      reasons: [
+        "Twitch can use stealth angles to attack Jinx before she has trap control set up.",
+        "Spray and Pray lets Twitch outrange Jinx in surprise fights and punish grouped targets.",
+        "If Twitch starts fights first, Jinx may die before she can trigger reset movement.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can punish Twitch's weak early lane with range and wave control.",
+        "Trap lines make it harder for Twitch to exit stealth into clean auto range.",
+        "If Twitch falls behind, he struggles to reach the item timing needed for flank fights.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Twitch",
   offMetaRoles: [],
@@ -98,18 +122,14 @@ export const twitchCombatProfile = {
           "Twitch can punish enemies standing near minions, support, or objective choke lines.",
         playerAction:
           "Open from stealth or fog where (R) hits multiple targets before they can spread.",
-        enemyResponse:
-          "Do not line up with the wave or support when Twitch is missing.",
+        enemyResponse: "Do not line up with the wave or support when Twitch is missing.",
       },
       {
         timing: "Two items",
         reason: "Stealth openings become real teamfight carry threats",
-        changesGameplay:
-          "If Twitch finds a flank, one opening can decide the entire fight.",
-        playerAction:
-          "Use vision denial and support cover to create unseen (R) angles.",
-        enemyResponse:
-          "Control wards and sweepers must track his flank before objectives.",
+        changesGameplay: "If Twitch finds a flank, one opening can decide the entire fight.",
+        playerAction: "Use vision denial and support cover to create unseen (R) angles.",
+        enemyResponse: "Control wards and sweepers must track his flank before objectives.",
       },
     ],
   },
@@ -169,4 +189,3 @@ export const twitchCombatProfile = {
     "Control vision around stealth paths before objectives.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

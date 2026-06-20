@@ -5,6 +5,9 @@ import { LegalPageShell } from "@/src/components/legal-page-shell";
 const lastUpdated = "June 4, 2026";
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: "/legal",
+  },
   title: "Legal & Disclaimer",
   description:
     "Legal notices, Riot Games disclaimer, trademark acknowledgements, Data Dragon asset notice, and third-party content notices for LaneStomp.",

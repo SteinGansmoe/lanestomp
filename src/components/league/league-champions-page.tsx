@@ -4,9 +4,10 @@ import { Database, ShieldAlert, Swords } from "lucide-react";
 import { connection } from "next/server";
 
 import { BackButton } from "@/src/components/back-button";
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { SiteHeader } from "@/src/components/site-header";
 import { Card, CardTitle } from "@/src/components/ui/card";
-import { getLeagueChampions } from "@/src/features/league/champions";
+import { getChampionIconPath, getLeagueChampions } from "@/src/features/league/champions";
 
 export async function LeagueChampionsPage() {
   await connection();
@@ -15,14 +16,13 @@ export async function LeagueChampionsPage() {
   const dataVersion = champions[0]?.version ?? null;
 
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
-      <section className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <LaneStompPageShell>
         <SiteHeader />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="grid gap-3 sm:flex sm:items-center sm:justify-between">
           <BackButton href="/league/matchups" label="Back to matchup selector" />
           <Link
-            className="inline-flex items-center gap-2 rounded-md border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-sm font-medium text-emerald-100 transition hover:bg-emerald-400/15"
+            className="inline-flex w-fit max-w-full items-center gap-2 rounded border border-cyan-300/20 bg-cyan-400/[0.07] px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/10"
             href="/league/matchups"
           >
             Open matchup selector
@@ -30,14 +30,14 @@ export async function LeagueChampionsPage() {
           </Link>
         </div>
 
-        <section className="overflow-hidden rounded-lg border border-white/10 bg-[#10182b] shadow-2xl shadow-black/25">
-          <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.18),transparent_32rem),linear-gradient(135deg,rgba(88,28,135,0.22),transparent_38rem)] p-6 sm:p-8">
+        <section className="overflow-hidden border border-cyan-100/15 bg-[#06111f]/88">
+          <div className="border-b border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_32rem),linear-gradient(135deg,rgba(8,24,40,0.94),rgba(3,9,20,0.82))] p-5 sm:p-7">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="mb-5 flex size-12 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-400/10 text-emerald-100">
+                <div className="mb-5 flex size-12 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
                   <Swords className="size-6" aria-hidden="true" />
                 </div>
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-emerald-200/80">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200">
                   League of Legends tool data
                 </p>
                 <h1 className="mt-3 font-mono text-3xl font-semibold tracking-normal text-white sm:text-4xl">
@@ -49,7 +49,7 @@ export async function LeagueChampionsPage() {
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:min-w-80">
+              <div className="grid overflow-hidden border border-cyan-100/15 bg-black/18 sm:grid-cols-2 lg:min-w-80">
                 <StatBadge label="Champions" value={String(champions.length)} />
                 <StatBadge label="Data Dragon" value={dataVersion ?? "Not imported"} />
               </div>
@@ -75,18 +75,18 @@ export async function LeagueChampionsPage() {
                 </div>
               </Card>
             ) : champions.length > 0 ? (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 {champions.map((champion) => (
                   <article
-                    className="group flex min-w-0 gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 transition hover:border-emerald-300/25 hover:bg-white/[0.06]"
+                    className="group flex min-w-0 gap-3 border border-cyan-100/12 bg-[#071321]/70 p-3 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.055]"
                     key={champion.id}
                   >
                     <Image
                       alt=""
                       aria-hidden="true"
-                      className="size-16 rounded-md border border-white/10 bg-[#0b1220] object-cover"
+                      className="size-16 rounded border border-cyan-100/15 bg-[#0b1220] object-cover"
                       height={64}
-                      src={champion.image_url}
+                      src={getChampionIconPath(champion)}
                       unoptimized
                       width={64}
                     />
@@ -98,7 +98,7 @@ export async function LeagueChampionsPage() {
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {champion.tags.map((tag) => (
                           <span
-                            className="rounded-md border border-emerald-300/15 bg-emerald-400/10 px-2 py-0.5 text-xs text-emerald-100/90"
+                            className="rounded border border-cyan-300/15 bg-cyan-400/[0.06] px-2 py-0.5 text-xs text-cyan-100/90"
                             key={`${champion.id}-${tag}`}
                           >
                             {tag}
@@ -110,7 +110,7 @@ export async function LeagueChampionsPage() {
                 ))}
               </div>
             ) : (
-              <Card className="border-white/10 bg-white/[0.035] p-8 text-center text-zinc-300">
+              <Card className="border-cyan-100/15 bg-white/[0.035] p-8 text-center text-zinc-300">
                 <Database className="mx-auto mb-4 size-8 text-zinc-500" aria-hidden="true" />
                 <CardTitle className="font-mono text-xl">No champions imported yet</CardTitle>
                 <p className="mt-3 text-sm leading-6 text-zinc-400">
@@ -120,14 +120,13 @@ export async function LeagueChampionsPage() {
             )}
           </div>
         </section>
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }
 
 function StatBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-black/20 p-4">
+    <div className="border-cyan-100/10 px-4 py-3 sm:border-l">
       <p className="font-mono text-xs uppercase text-zinc-500">{label}</p>
       <p className="mt-2 truncate text-lg font-semibold text-white">{value}</p>
     </div>

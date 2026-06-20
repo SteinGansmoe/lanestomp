@@ -87,6 +87,58 @@ export const ahriCombatProfile = {
       "Champions with lots of mobility who can dodge her skillshots",
     ],
   },
+  counters: [
+    {
+      champion: "Akali",
+      reasons: [
+        "Ahri can hold (E) for Akali's recast or ultimate commit and kite the follow-up with (R).",
+      ],
+    },
+    {
+      champion: "Katarina",
+      reasons: [
+        "Ahri can interrupt Katarina's dagger commits with (E) and push waves before Katarina can roam freely.",
+      ],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Ahri can pressure Twisted Fate before his side-lane roams and threaten charm when he walks up to card the wave.",
+      ],
+    },
+    {
+      champion: "Veigar",
+      reasons: [
+        "Ahri can dodge around Veigar's cage with (R) and punish him before his scaling damage stabilizes.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Yasuo",
+      reasons: [
+        "Yasuo can block Ahri's (E) with Wind Wall and use minion dashes to make her skillshots unreliable.",
+      ],
+    },
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can lock Ahri down through her mobility and punish charm misses with reliable crowd control.",
+      ],
+    },
+    {
+      champion: "Malzahar",
+      reasons: [
+        "Malzahar can neutralize Ahri's lane pressure with waveclear and suppress her before she can reposition with (R).",
+      ],
+    },
+    {
+      champion: "Syndra",
+      reasons: [
+        "Syndra outranges Ahri in trades and can punish her forward charm angles with stronger burst windows.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Ahri",
   offMetaRoles: [],

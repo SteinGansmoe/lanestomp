@@ -1,35 +1,66 @@
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
+import {
+  SkeletonButton,
+  SkeletonField,
+  SkeletonHeading,
+  SkeletonIconSquare,
+  SkeletonLine,
+  SkeletonPanel,
+} from "@/src/components/lane-stomp-skeleton";
 import { SiteHeader } from "@/src/components/site-header";
 
 export default function AccountSettingsLoading() {
   return (
-    <main
-      className="min-h-screen bg-[#050b18] text-white"
-      role="status"
-      aria-label="Loading account settings"
-    >
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
-        <SiteHeader />
+    <LaneStompPageShell role="status" aria-label="Loading account settings">
+      <SiteHeader />
 
-        <div className="mx-auto w-full max-w-2xl rounded-lg border border-white/10 bg-[#10182b]/90 p-6 shadow-xl shadow-black/25">
-          <div className="size-12 rounded-lg bg-violet-500/20 ring-1 ring-violet-300/20" />
-          <div className="mt-5 h-8 w-56 rounded bg-white/10" />
-          <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
+      <SkeletonPanel className="overflow-hidden">
+        <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.2),transparent_28rem),radial-gradient(circle_at_85%_0%,rgba(201,170,90,0.12),transparent_26rem),linear-gradient(135deg,rgba(8,17,32,0.98),rgba(11,18,32,0.92))] p-5 sm:p-7">
+          <SkeletonIconSquare className="size-12" />
+          <SkeletonHeading className="mt-5 h-9 w-72 max-w-full" />
+          <SkeletonLine className="mt-3 h-4 w-full max-w-2xl" />
+          <SkeletonLine className="mt-2 h-4 w-10/12 max-w-xl" />
+        </div>
+      </SkeletonPanel>
 
-          <div className="mt-8 space-y-5">
-            <div className="space-y-2">
-              <div className="h-4 w-20 rounded bg-white/10" />
-              <div className="h-11 rounded-lg border border-white/10 bg-white/[0.04]" />
-              <div className="h-3 w-52 rounded bg-white/5" />
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 w-14 rounded bg-white/10" />
-              <div className="h-11 rounded-lg border border-white/10 bg-white/[0.03]" />
-            </div>
-            <div className="h-28 rounded-lg border border-white/10 bg-white/[0.03]" />
-            <div className="h-11 w-40 rounded-lg bg-violet-500/20" />
+      <SkeletonPanel className="mx-auto w-full max-w-4xl p-6">
+        <div className="flex items-start gap-4">
+          <SkeletonIconSquare className="size-12" />
+          <div className="min-w-0 flex-1">
+            <SkeletonHeading className="h-8 w-56 max-w-full" />
+            <SkeletonLine className="mt-3 h-4 w-full max-w-lg" />
           </div>
         </div>
-      </section>
-    </main>
+
+        <div className="mt-8 grid gap-8">
+          <AccountFormSectionSkeleton withHelper />
+          <AccountFormSectionSkeleton />
+
+          <div className="border border-cyan-100/15 bg-white/[0.03] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <SkeletonLine className="h-4 w-48" tone="cyan" />
+                <SkeletonLine className="mt-3 h-3 w-full max-w-lg" />
+                <SkeletonLine className="mt-2 h-3 w-8/12 max-w-md" />
+              </div>
+              <SkeletonButton className="h-10 w-36" />
+            </div>
+          </div>
+
+          <AccountFormSectionSkeleton />
+        </div>
+      </SkeletonPanel>
+    </LaneStompPageShell>
+  );
+}
+
+function AccountFormSectionSkeleton({ withHelper = false }: { withHelper?: boolean }) {
+  return (
+    <div className="grid gap-3">
+      <SkeletonLine className="h-4 w-28" tone="raised" />
+      <SkeletonField className="h-11" />
+      {withHelper ? <SkeletonLine className="h-3 w-52" /> : null}
+      <SkeletonButton className="h-11 w-40" />
+    </div>
   );
 }

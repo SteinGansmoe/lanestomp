@@ -1,16 +1,21 @@
+import type { Metadata } from "next";
+
 import { ResetPasswordForm } from "@/src/components/reset-password-form";
-import { SiteHeader } from "@/src/components/site-header";
+import { AuthPageShell } from "@/src/components/auth-page-shell";
+
+export const metadata: Metadata = {
+  description: "Set a new password for your LaneStomp account.",
+  title: "Set New Password",
+};
 
 export default function ResetPasswordPage() {
   return (
-    <main className="min-h-screen bg-[#050b18] text-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8 lg:py-6">
-        <SiteHeader />
-
-        <div className="flex min-h-[calc(100vh-24rem)] items-center justify-center py-8">
-          <ResetPasswordForm />
-        </div>
-      </section>
-    </main>
+    <AuthPageShell
+      description="Choose a new account password after opening a valid recovery link."
+      eyebrow="Password recovery"
+      title="Set your new password"
+    >
+      <ResetPasswordForm />
+    </AuthPageShell>
   );
 }

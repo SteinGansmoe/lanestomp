@@ -86,6 +86,26 @@ export const smolderCombatProfile = {
       "Wave control that freezes him away from safe (Q) last hits.",
     ],
   },
+  counters: [
+    {
+      champion: "Vayne",
+      reasons: [
+        "Smolder can farm with abilities and avoid matching Vayne's short-range tumble trades early.",
+        "His range and wave tools improve as stacks rise, making direct duels less necessary.",
+        "Late-game burn damage can threaten Vayne even when she tries to kite extended fights.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can force fights before Smolder has meaningful stacks.",
+        "Axe trades punish Smolder whenever (E) is unavailable.",
+        "Early deaths or lost waves delay the stacking and item thresholds Smolder needs.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Smolder",
   offMetaRoles: [],
@@ -96,20 +116,16 @@ export const smolderCombatProfile = {
         reason: "Each threshold improves Smolder's poke and scaling threat",
         changesGameplay:
           "A quiet lane becomes increasingly favorable for Smolder even without early kills.",
-        playerAction:
-          "Prioritize safe (Q) last hits and avoid trades that cost stack access.",
-        enemyResponse:
-          "Pressure him before thresholds instead of letting him farm calmly.",
+        playerAction: "Prioritize safe (Q) last hits and avoid trades that cost stack access.",
+        enemyResponse: "Pressure him before thresholds instead of letting him farm calmly.",
       },
       {
         timing: "Level 6",
         reason: "(R) can swing low-health lane fights and punish dives",
         changesGameplay:
           "Enemies must account for a long-range damage and healing swing before committing.",
-        playerAction:
-          "Use (R) when the enemy commits or when it protects a stack and wave state.",
-        enemyResponse:
-          "Do not dive or all-in low health without tracking (R).",
+        playerAction: "Use (R) when the enemy commits or when it protects a stack and wave state.",
+        enemyResponse: "Do not dive or all-in low health without tracking (R).",
       },
     ],
   },
@@ -169,4 +185,3 @@ export const smolderCombatProfile = {
     "Freezes that deny (Q) last hits slow his win condition.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

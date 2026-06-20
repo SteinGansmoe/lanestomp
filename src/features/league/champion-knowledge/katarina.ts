@@ -85,6 +85,54 @@ export const katarinaCombatProfile = {
       "Champions who can punish her before dagger setup.",
     ],
   },
+  counters: [
+    {
+      champion: "Veigar",
+      reasons: [
+        "Katarina can punish Veigar after cage is down and snowball skirmishes before he scales.",
+      ],
+    },
+    {
+      champion: "Lux",
+      reasons: ["Katarina can jump past Lux poke and punish her hard if binding is unavailable."],
+    },
+    {
+      champion: "Xerath",
+      reasons: [
+        "Katarina can threaten Xerath's low mobility once she gets a dagger or side-angle entry.",
+      ],
+    },
+    {
+      champion: "Aurelion Sol",
+      reasons: [
+        "Katarina can punish Aurelion Sol's channel windows and weak early dueling before he scales.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Lissandra",
+      reasons: ["Lissandra can hold crowd control for Katarina's jump and stop her reset chain."],
+    },
+    {
+      champion: "Galio",
+      reasons: [
+        "Galio can interrupt Katarina's ultimate and survive her burst with magic durability.",
+      ],
+    },
+    {
+      champion: "Malzahar",
+      reasons: [
+        "Malzahar can suppress Katarina when she commits and keep lane pushed to deny roams.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: [
+        "Pantheon can stun Katarina before she finishes dagger damage or channels ultimate.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Katarina",
   offMetaRoles: [],

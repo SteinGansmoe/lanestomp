@@ -981,10 +981,7 @@ function formatSupportArchetypeThemes(archetypes: readonly SupportArchetype[]) {
     .join("; ");
 }
 
-function formatSupportChampionIdentityNotes(
-  championName: string,
-  perspective: "enemy" | "player",
-) {
+function formatSupportChampionIdentityNotes(championName: string, perspective: "enemy" | "player") {
   const normalizedName = normalizeSupportIdentityName(championName);
   const subject = perspective === "player" ? "player champion" : "enemy champion";
 
@@ -1081,6 +1078,8 @@ function formatChampionKnowledgeForPrompt(
       profile.matchupPreferences?.strongInto,
     )}`,
     `matchup_preferences.weak_into: ${formatOptionalList(profile.matchupPreferences?.weakInto)}`,
+    `counter_relationships.counters: ${formatCounterRelationships(profile.counters)}`,
+    `counter_relationships.countered_by: ${formatCounterRelationships(profile.counteredBy)}`,
     `support_synergy.excellent_with: ${formatOptionalList(profile.supportSynergy?.excellentWith)}`,
     `support_synergy.good_with: ${formatOptionalList(profile.supportSynergy?.goodWith)}`,
     `support_synergy.struggles_with: ${formatOptionalList(profile.supportSynergy?.strugglesWith)}`,
@@ -1117,6 +1116,25 @@ function formatList(values: readonly string[]) {
 
 function formatOptionalList(values?: readonly string[]) {
   return values && values.length > 0 ? formatList(values) : "not supplied";
+}
+
+function formatCounterRelationships(
+  relationships?: readonly {
+    champion: string;
+    reasons: readonly string[];
+  }[],
+) {
+  if (!relationships || relationships.length === 0) {
+    return "not supplied";
+  }
+
+  return relationships
+    .map((relationship) => {
+      const reasons = relationship.reasons.length > 0 ? formatList(relationship.reasons) : "none";
+
+      return `${relationship.champion}: ${reasons}`;
+    })
+    .join(" || ");
 }
 
 function formatExistingSections(existingSections?: Partial<MatchupDraftSections> | null) {

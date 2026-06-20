@@ -6,6 +6,9 @@ import { LegalPageShell } from "@/src/components/legal-page-shell";
 const lastUpdated = "June 4, 2026";
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: "/privacy",
+  },
   title: "Privacy Policy",
   description:
     "Privacy Policy for LaneStomp, covering accounts, analytics, cookies, feedback, third-party services, and user rights.",

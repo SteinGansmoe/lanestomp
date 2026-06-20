@@ -87,6 +87,56 @@ export const jinxCombatProfile = {
       "Dive compositions that reach her before resets.",
     ],
   },
+  counters: [
+    {
+      champion: "KogMaw",
+      reasons: [
+        "Jinx can use rocket range and wave pressure to punish Kog'Maw before he has full item uptime.",
+      ],
+    },
+    {
+      champion: "Vayne",
+      reasons: [
+        "Jinx can control early waves with rockets and punish Vayne before Vayne reaches her stronger dueling items.",
+      ],
+    },
+    {
+      champion: "Aphelios",
+      reasons: [
+        "Jinx can outrange Aphelios in many lane states and punish him hard if he lacks the right weapon setup.",
+      ],
+    },
+    {
+      champion: "Sivir",
+      reasons: [
+        "Jinx can match Sivir's waveclear after items and threaten stronger reset cleanup in front-to-back fights.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: ["Draven can punish Jinx before she has attack speed and rocket range items."],
+    },
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can outrange Jinx early and turn wave control into plate pressure before Jinx scales.",
+      ],
+    },
+    {
+      champion: "Lucian",
+      reasons: [
+        "Lucian can force short burst trades before Jinx has the items or peel to answer extended fights.",
+      ],
+    },
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can jump onto Jinx's low mobility lane phase and snowball before reset fights become safe.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Jinx",
   offMetaRoles: [],

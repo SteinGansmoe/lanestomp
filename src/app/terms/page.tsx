@@ -6,6 +6,9 @@ import { LegalPageShell } from "@/src/components/legal-page-shell";
 const lastUpdated = "June 4, 2026";
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: "/terms",
+  },
   title: "Terms of Use",
   description:
     "Terms of Use for LaneStomp, covering service usage, accounts, content accuracy, availability, intellectual property, and liability limits.",

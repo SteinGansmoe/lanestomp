@@ -88,6 +88,26 @@ export const kaisaCombatProfile = {
       "Bot lanes that punish her before item thresholds.",
     ],
   },
+  counters: [
+    {
+      champion: "Ezreal",
+      reasons: [
+        "Kaisa can punish Ezreal when (E) is down by using (R) to follow marked targets.",
+        "Her burst trades become threatening once isolated (Q) and evolved damage are online.",
+        "Ezreal's poke pattern is weaker if Kaisa can dodge skillshots and force short all-ins.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can punish Kaisa's short range before Kaisa evolves her key abilities.",
+        "Trap setups make it difficult for Kaisa to use (R) aggressively without getting chained.",
+        "Early wave and plate pressure can delay Kaisa's first item and evolution timings.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Kai'Sa",
   offMetaRoles: [],

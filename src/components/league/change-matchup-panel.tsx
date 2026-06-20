@@ -1,20 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import {
-  type KeyboardEvent,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeftRight, ChevronDown, Search, Swords } from "lucide-react";
 
 import { navigationPillClassName } from "@/src/components/back-button";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
-import type { LeagueChampion } from "@/src/features/league/champions";
+import { getChampionIconPath, type LeagueChampion } from "@/src/features/league/champions";
 import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
 import { getLeagueRoleLabel, leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
@@ -30,10 +23,11 @@ type ChangeMatchupPanelProps = {
     championBId: string;
     role: LeagueRole;
   }) => void;
+  triggerClassName?: string;
 };
 
 const selectClassName =
-  "h-11 w-full rounded-md border border-white/10 bg-[#081120] px-3 text-sm text-zinc-100 shadow-inner shadow-black/15 transition focus:border-cyan-300/60 focus:outline-none focus:ring-2 focus:ring-cyan-300/20";
+  "h-11 w-full border border-cyan-100/15 bg-[#020814]/80 px-3 text-sm text-zinc-100 transition focus:border-cyan-300/60 focus:outline-none focus:ring-2 focus:ring-cyan-300/20";
 const optionClassName = "bg-[#10182b] text-zinc-100";
 type OpenPicker = "champion" | "opponent" | null;
 type ChampionFilter = LeagueRole;
@@ -77,6 +71,7 @@ export function ChangeMatchupPanel({
   currentRole,
   mode = "collapsible",
   onSelectionChange,
+  triggerClassName,
 }: ChangeMatchupPanelProps) {
   const panelId = useId();
   const isInline = mode === "inline";
@@ -131,7 +126,7 @@ export function ChangeMatchupPanel({
         <button
           aria-controls={panelId}
           aria-expanded={isExpanded}
-          className={cn(navigationPillClassName, "justify-center")}
+          className={cn(navigationPillClassName, "justify-center", triggerClassName)}
           onClick={() => setIsExpanded((current) => !current)}
           type="button"
         >
@@ -155,12 +150,7 @@ export function ChangeMatchupPanel({
         id={panelId}
       >
         <div className={cn("min-h-0", isExpanded ? "overflow-visible" : "overflow-hidden")}>
-          <div
-            className={cn(
-              "rounded-xl border border-white/10 bg-[#10182b]/90 p-4 shadow-xl shadow-black/20 ring-1 ring-white/5",
-              !isInline && "mt-3",
-            )}
-          >
+          <div className={cn("border border-cyan-100/15 bg-[#020814]/58 p-4", !isInline && "mt-3")}>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_12rem_auto] lg:items-end">
               <MatchupChampionPicker
                 disabledChampionId={championBId}
@@ -178,7 +168,7 @@ export function ChangeMatchupPanel({
 
               <button
                 aria-label="Swap selected champions"
-                className="hidden size-11 items-center justify-center rounded-md border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 lg:flex"
+                className="hidden size-11 items-center justify-center border border-cyan-300/15 bg-cyan-400/10 text-cyan-100/80 shadow-lg shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 lg:flex"
                 disabled={!championAId && !championBId}
                 onClick={handleSwapChampions}
                 type="button"
@@ -220,7 +210,7 @@ export function ChangeMatchupPanel({
 
               {matchupHref ? (
                 <Link
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-violet-300/20 bg-violet-500/80 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-950/20 transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/50"
+                  className="inline-flex h-11 items-center justify-center gap-2 border border-cyan-300/35 bg-[#084957] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-cyan-50 shadow-[inset_0_0_18px_rgba(103,232,249,0.07)] transition hover:border-cyan-200/60 hover:bg-[#0B6374] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
                   href={matchupHref}
                   onClick={() => setIsExpanded(false)}
                   scroll={false}
@@ -230,7 +220,7 @@ export function ChangeMatchupPanel({
                 </Link>
               ) : (
                 <button
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/10 px-4 text-sm font-semibold text-zinc-500"
+                  className="inline-flex h-11 items-center justify-center gap-2 border border-white/10 bg-white/10 px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500"
                   disabled
                   type="button"
                 >
@@ -241,7 +231,7 @@ export function ChangeMatchupPanel({
             </div>
 
             <button
-              className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-md border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 lg:hidden"
+              className="mt-3 inline-flex h-10 items-center justify-center gap-2 border border-cyan-300/15 bg-cyan-400/10 px-3 text-sm font-medium text-cyan-100/80 transition hover:border-cyan-300/45 hover:bg-cyan-400/20 hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45 disabled:cursor-not-allowed disabled:opacity-35 lg:hidden"
               disabled={!championAId && !championBId}
               onClick={handleSwapChampions}
               type="button"
@@ -374,7 +364,7 @@ function MatchupChampionPicker({
         aria-controls={`${id}-menu`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        className="flex h-11 w-full items-center justify-between gap-3 rounded-md border border-white/10 bg-[#081120] px-3 text-left text-sm text-zinc-100 shadow-inner shadow-black/15 transition hover:border-cyan-300/35 hover:bg-white/[0.04] focus-visible:border-cyan-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/20"
+        className="flex h-11 w-full items-center justify-between gap-3 border border-white/10 bg-[#020814]/80 px-3 text-left text-sm text-zinc-100 shadow-inner shadow-black/15 transition hover:border-cyan-300/35 hover:bg-white/[0.04] focus-visible:border-cyan-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/20"
         id={id}
         onClick={onOpenChange}
         type="button"
@@ -384,14 +374,14 @@ function MatchupChampionPicker({
             <Image
               alt=""
               aria-hidden="true"
-              className="size-7 shrink-0 rounded-md border border-white/10 bg-[#0b1220] object-cover"
+              className="size-7 shrink-0 border border-white/10 bg-[#0b1220] object-cover"
               height={28}
-              src={selectedChampion.image_url}
+              src={getChampionIconPath(selectedChampion)}
               unoptimized
               width={28}
             />
           ) : (
-            <span className="size-7 shrink-0 rounded-md border border-white/10 bg-white/5" />
+            <span className="size-7 shrink-0 border border-white/10 bg-white/5" />
           )}
           <span className="truncate">
             {selectedChampion ? selectedChampion.name : "Select champion"}
@@ -405,7 +395,7 @@ function MatchupChampionPicker({
 
       {isOpen ? (
         <div
-          className="absolute left-0 top-full z-30 mt-2 w-[18rem] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-[#081120] p-3 shadow-2xl shadow-black/40 ring-1 ring-white/5"
+          className="absolute left-0 top-full z-30 mt-2 w-[18rem] max-w-[calc(100vw-2rem)] border border-cyan-100/15 bg-[#081120] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.42)]"
           id={`${id}-menu`}
         >
           <label className="relative block">
@@ -422,7 +412,7 @@ function MatchupChampionPicker({
               aria-expanded={isOpen}
               aria-haspopup="listbox"
               autoComplete="off"
-              className="h-10 w-full rounded-md border border-white/10 bg-black/25 pl-10 pr-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/20"
+              className="h-10 w-full border border-white/10 bg-black/25 pl-10 pr-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-cyan-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/20"
               onChange={(event) => {
                 setQuery(event.target.value);
                 setHighlightedChampionId(null);
@@ -440,7 +430,7 @@ function MatchupChampionPicker({
 
           <div
             aria-label={`${label} champion options`}
-            className="mt-3 grid max-h-64 grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2 overflow-y-auto pr-1"
+            className="mt-3 grid max-h-64 grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2 overflow-y-auto pr-1 [scrollbar-color:rgba(34,211,238,0.35)_rgba(7,19,33,0.8)] [scrollbar-width:thin]"
             id={`${id}-options`}
             role="listbox"
           >
@@ -454,7 +444,7 @@ function MatchupChampionPicker({
                   aria-label={`Select ${champion.name}`}
                   aria-selected={isSelected}
                   className={cn(
-                    "relative aspect-square overflow-hidden rounded-md border border-white/10 bg-white/[0.035] transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
+                    "relative aspect-square overflow-hidden border border-white/10 bg-white/[0.035] transition hover:-translate-y-0.5 hover:border-cyan-300/45 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
                     isSelected && "border-cyan-300/80 ring-2 ring-cyan-300/30",
                     isHighlighted &&
                       "border-cyan-300/70 shadow-[0_0_18px_rgba(34,211,238,0.2)] ring-2 ring-cyan-300/35",
@@ -479,14 +469,14 @@ function MatchupChampionPicker({
                     className="bg-[#0b1220] object-cover"
                     fill
                     sizes="48px"
-                    src={champion.image_url}
+                    src={getChampionIconPath(champion)}
                     unoptimized
                   />
                 </button>
               );
             })}
             {filteredChampions.length === 0 ? (
-              <p className="col-span-full rounded-md border border-white/10 bg-white/[0.035] p-4 text-center text-sm text-zinc-400">
+              <p className="col-span-full border border-white/10 bg-white/[0.035] p-4 text-center text-sm text-zinc-400">
                 No champions found.
               </p>
             ) : null}
@@ -518,9 +508,9 @@ function CompactRoleFilter({
             aria-checked={isActive}
             aria-label={`${option.label} champion filter`}
             className={cn(
-              "group flex h-8 min-w-0 items-center justify-center rounded-md border border-white/10 bg-black/20 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+              "group flex h-8 min-w-0 items-center justify-center border border-white/10 bg-black/20 text-[#C9AA5A]/55 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.07] hover:text-[#F4D88A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
               isActive &&
-                "border-cyan-300/55 bg-cyan-400/15 text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,0.14)] ring-1 ring-cyan-300/25",
+                "border-cyan-300/55 bg-cyan-400/15 text-[#F4D88A] shadow-[0_0_16px_rgba(34,211,238,0.14)] ring-1 ring-cyan-300/25",
             )}
             key={option.value}
             onClick={() => onChange(option.value)}
@@ -533,7 +523,7 @@ function CompactRoleFilter({
               className={cn(
                 "size-5 object-contain transition",
                 isActive
-                  ? "opacity-100 drop-shadow-[0_0_7px_rgba(125,211,252,0.55)]"
+                  ? "opacity-100 brightness-125 sepia drop-shadow-[0_0_7px_rgba(201,170,90,0.42)]"
                   : "opacity-45 group-hover:opacity-80",
               )}
               height={20}

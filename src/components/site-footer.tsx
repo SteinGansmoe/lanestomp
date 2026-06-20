@@ -1,28 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  BookOpen,
-  ChevronRight,
-  ExternalLink,
-  GitBranch,
-  MessageCircle,
-  Radio,
-  Send,
-} from "lucide-react";
+import { BookOpen, ChevronRight, ExternalLink, GitBranch } from "lucide-react";
 
-const navigationLinks = [
+const platformLinks = [
   { href: "/", label: "Home" },
   { href: "/league/matchups", label: "Matchups" },
+  { href: "/league/counters", label: "Counter Picks" },
   { href: "/champions", label: "Champions" },
-  { href: "#", isComingSoon: true, label: "Counter Picks" },
-  { href: "#", isComingSoon: true, label: "Patch Notes" },
 ];
 
 const resourceLinks = [
-  { href: "#", label: "Matchup Requests" },
-  { href: "#", label: "Contact" },
-  { href: "#", label: "Discord" },
-  { href: "#", label: "Reddit" },
+  { href: "/league/counters", label: "Counter Pick" },
+  { href: "/league/matchups", label: "Matchup Guides" },
+  { href: "/champions", label: "Champion Index" },
+  { href: "/legal", label: "Riot Disclaimer" },
 ];
 
 const legalLinks = [
@@ -32,11 +23,8 @@ const legalLinks = [
 ];
 
 const socialLinks = [
-  { href: "#", icon: MessageCircle, label: "Discord" },
-  { href: "#", icon: Radio, label: "Reddit" },
-  { href: "#", icon: Send, label: "X" },
   {
-    href: "#",
+    href: "https://github.com/SteinGansmoe/lanestomp",
     icon: GitBranch,
     label: "GitHub",
   },
@@ -47,16 +35,19 @@ const riotDisclaimer =
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#07101f] text-zinc-300 shadow-[0_-20px_60px_rgba(0,0,0,0.25)]">
-      <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-2 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:grid-cols-[1.35fr_1fr_1fr_1fr] lg:gap-12 lg:px-8 lg:py-12">
+    <footer
+      className="border-t border-cyan-100/10 bg-[linear-gradient(180deg,#06111f_0%,#030914_100%)] text-zinc-300"
+      id="site-footer"
+    >
+      <div className="mx-auto grid w-full max-w-[96rem] gap-7 px-4 py-7 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] lg:gap-9 lg:px-8">
         <section className="min-w-0">
           <Link
-            className="inline-flex items-center gap-4 rounded-md transition hover:opacity-90"
+            className="inline-flex items-center gap-3 rounded transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
             href="/"
           >
             <Image
               alt="LaneStomp"
-              className="h-auto w-32 object-contain"
+              className="h-auto w-28 object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.12)]"
               height={96}
               src="/images/lanestomp-logo.png"
               width={144}
@@ -65,19 +56,21 @@ export function SiteFooter() {
               LaneStomp
             </span>
           </Link>
-          <p className="mt-5 max-w-72 text-sm leading-6 text-zinc-400">
-            Learn matchups. Improve champion pools. Climb smarter.
+          <p className="mt-3 max-w-72 text-sm leading-6 text-zinc-400">
+            Learn matchups. Find counters. Improve faster.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3" aria-label="LaneStomp social links">
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="LaneStomp social links">
             {socialLinks.map((item) => {
               const Icon = item.icon;
 
               return (
                 <Link
                   aria-label={item.label}
-                  className="flex size-9 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-zinc-500 transition hover:border-violet-300/30 hover:bg-white/10 hover:text-violet-200"
+                  className="flex size-9 items-center justify-center rounded border border-cyan-100/15 bg-[#071321]/75 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.08] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
                   href={item.href}
                   key={item.label}
+                  rel="noreferrer"
+                  target="_blank"
                 >
                   <Icon className="size-4" aria-hidden="true" />
                 </Link>
@@ -86,24 +79,24 @@ export function SiteFooter() {
           </div>
         </section>
 
-        <FooterLinkColumn title="Navigation" links={navigationLinks} />
-        <FooterLinkColumn external title="Resources" links={resourceLinks} />
+        <FooterLinkColumn title="Platform" links={platformLinks} />
+        <FooterLinkColumn title="Resources" links={resourceLinks} />
         <FooterLinkColumn title="Legal" links={legalLinks} />
       </div>
 
-      <div className="border-t border-white/10 bg-black/10">
-        <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
-          <div className="flex items-start gap-3 text-sm leading-6 text-zinc-500">
-            <BookOpen className="mt-0.5 size-4 shrink-0 text-violet-300/70" aria-hidden="true" />
+      <div className="border-t border-cyan-100/10 bg-black/15">
+        <div className="mx-auto w-full max-w-[96rem] px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-start gap-3 border border-cyan-100/10 bg-[#06111f]/55 px-3 py-3 text-xs leading-5 text-zinc-500">
+            <BookOpen className="mt-0.5 size-4 shrink-0 text-amber-200/70" aria-hidden="true" />
             <p className="max-w-5xl">{riotDisclaimer}</p>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-white/10">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-4 text-sm text-zinc-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:ml-72 lg:max-w-[calc(100%-18rem)] lg:px-8">
+      <div className="border-t border-cyan-100/10">
+        <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 px-4 py-3 text-sm text-zinc-400 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
           <p>&copy; 2026 LaneStomp. All rights reserved.</p>
-          <p className="text-zinc-500">Built by Stein for League players.</p>
+          <p className="text-cyan-100/55">Built by Stein for League players.</p>
         </div>
       </div>
     </footer>
@@ -116,35 +109,32 @@ function FooterLinkColumn({
   title,
 }: {
   external?: boolean;
-  links: { href: string; isComingSoon?: boolean; label: string }[];
+  links: { href: string; label: string }[];
   title: string;
 }) {
   return (
     <section className="min-w-0">
-      <h2 className="font-mono text-sm font-bold uppercase text-violet-300">{title}</h2>
-      <nav className="mt-5 space-y-3" aria-label={title}>
+      <h2 className="font-mono text-sm font-bold uppercase tracking-[0.12em] text-cyan-200/90">
+        {title}
+      </h2>
+      <nav className="mt-3 space-y-2" aria-label={title}>
         {links.map((item) => (
           <Link
-            className="group flex items-center justify-between gap-4 text-sm text-zinc-400 transition hover:text-violet-200"
+            className="group flex items-center justify-between gap-4 py-0.5 text-sm text-zinc-400 transition hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
             href={item.href}
             key={item.label}
           >
             <span className="flex min-w-0 items-center gap-2">
               <span>{item.label}</span>
-              {item.isComingSoon ? (
-                <span className="rounded border border-violet-300/20 bg-violet-400/10 px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-normal text-violet-200">
-                  Soon
-                </span>
-              ) : null}
             </span>
-            {external || item.href === "#" ? (
+            {external ? (
               <ExternalLink
-                className="size-3.5 text-zinc-500 transition group-hover:text-violet-300"
+                className="size-3.5 text-zinc-500 transition group-hover:text-cyan-200"
                 aria-hidden="true"
               />
             ) : (
               <ChevronRight
-                className="size-3.5 text-zinc-500 transition group-hover:text-violet-300"
+                className="size-3.5 text-zinc-500 transition group-hover:text-amber-200"
                 aria-hidden="true"
               />
             )}

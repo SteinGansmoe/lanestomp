@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const akaliCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   abilities: {
     Q: "Five Point Strike",
     W: "Twilight Shroud",
@@ -9,7 +9,9 @@ export const akaliCombatProfile = {
     R: "Perfect Execution",
   },
   archetype: ["assassin", "skirmisher", "burst"],
-  primaryWinCondition: ["Use (W) to create safe windows for extended trades and all-ins."],
+  primaryWinCondition: [
+    "Correct use of (W) with (Q) hit and passive will make Akali a formidable threat.",
+  ],
   dangerAbilities: ["(W), (E)"],
   dangerProfile: {
     dangerousWhen: ["(W), (E)"],
@@ -51,12 +53,60 @@ export const akaliCombatProfile = {
   majorPowerSpikes: [
     "Level 3 unlocks (Q)-(W)-(E) trading with (W) safety and (E) follow-up.",
     "Level 6 (R).",
-    "First completed AP assassin item.",
+    "Becomes incredibly strong after Hextech Gunblade is purchased.",
   ],
   matchupPreferences: {
-    strongInto: [],
-    weakInto: [],
+    strongInto: ["Melee champions"],
+    weakInto: ["Long distance champions with strong poke or waveclear"],
   },
+  counters: [
+    {
+      champion: "Veigar",
+      reasons: ["Akali can use shroud and mobility to force onto Veigar after cage is down."],
+    },
+    {
+      champion: "Syndra",
+      reasons: [
+        "Akali can dodge around Syndra's sphere setup and punish her immobility once (E) is unavailable.",
+      ],
+    },
+    {
+      champion: "Lux",
+      reasons: [
+        "Akali can survive Lux poke with careful spacing and punish her hard after binding is missed.",
+      ],
+    },
+    {
+      champion: "Kassadin",
+      reasons: [
+        "Akali can pressure Kassadin before he has repeated (R) mobility and punish his weak early wave control.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Lissandra",
+      reasons: [
+        "Lissandra can lock Akali down through shroud timing and deny her burst with ultimate.",
+      ],
+    },
+    {
+      champion: "Galio",
+      reasons: [
+        "Galio can survive Akali's burst with magic resistance and punish her dashes with taunt.",
+      ],
+    },
+    {
+      champion: "Pantheon",
+      reasons: ["Pantheon can point-and-click stun Akali before shroud buys enough time."],
+    },
+    {
+      champion: "Twisted Fate",
+      reasons: [
+        "Twisted Fate can reveal and lock Akali with gold card when she tries to enter fights.",
+      ],
+    },
+  ],
   mobilityLevel: "very_high",
   name: "Akali",
   offMetaRoles: [],
@@ -117,14 +167,10 @@ export const akaliCombatProfile = {
   stealthOrInvisibility: "(W) obscures Akali and enables trades.",
   sustain: [],
   trading: {
-    badTradeConditions: [
-      "When Akali uses (W), if the opponent can step out of the shroud or wait it out, she can be punished hard.",
-    ],
+    badTradeConditions: ["Bad use of (W) can lead to enemy laner winning trades."],
     goodTradeConditions: [],
     primaryPattern:
       "Look for (Q) poke into passive autos, then commit harder with (W) or (E) when the opponent is exposed.",
   },
-  punishWindows: [
-    "When Akali uses (W), if the opponent can step out of the shroud or wait it out, she can be punished hard.",
-  ],
+  punishWindows: ["Akali can be punished when (W) is down."],
 } satisfies LeagueChampionKnowledgeProfile;

@@ -87,6 +87,26 @@ export const varusCombatProfile = {
       "Sustain lanes that absorb poke without losing priority.",
     ],
   },
+  counters: [
+    {
+      champion: "Kaisa",
+      reasons: [
+        "Varus can poke Kaisa before she reaches evolved all-in thresholds.",
+        "(R) can stop Kaisa when she tries to commit with ultimate follow-up.",
+        "Lane control from Varus can delay Kaisa's first item and evolution timing.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Samira",
+      reasons: [
+        "Samira can block Varus poke or ultimate setup with (W) when timed well.",
+        "Varus has no dash, so Samira can punish him once support CC creates an entry.",
+        "If Varus misses (R), Samira has a large window to force the all-in.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Varus",
   offMetaRoles: [],

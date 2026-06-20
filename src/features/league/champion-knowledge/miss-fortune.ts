@@ -87,6 +87,26 @@ export const missFortuneCombatProfile = {
       "Long fights where sustained DPS outpaces her burst.",
     ],
   },
+  counters: [
+    {
+      champion: "Samira",
+      reasons: [
+        "Miss Fortune can punish Samira before Samira reaches all-in range with (Q) and (E) poke.",
+        "(E) slow makes it harder for Samira to find a clean dash angle.",
+        "Bullet Time can punish Samira after her (W) is down or when she is locked by support CC.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can jump past Miss Fortune's poke pattern and force an all-in.",
+        "Explosive Charge punishes Miss Fortune's lack of mobility after she uses (E).",
+        "If Miss Fortune channels (R) without peel, Tristana can interrupt or reposition out of it.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Miss Fortune",
   offMetaRoles: [],

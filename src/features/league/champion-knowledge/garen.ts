@@ -81,6 +81,58 @@ export const garenCombatProfile = {
       "Disengage that prevents (Q) contact.",
     ],
   },
+  counters: [
+    {
+      champion: "Yasuo",
+      reasons: [
+        "Garen can silence Yasuo before he dashes out and win short trades before Yasuo's item spikes.",
+      ],
+    },
+    {
+      champion: "Riven",
+      reasons: [
+        "Garen can use silence to interrupt Riven's combo timing and disengage before extended trades get messy.",
+      ],
+    },
+    {
+      champion: "Irelia",
+      reasons: [
+        "Garen can punish Irelia when her stun or reset setup is down and convert chip damage into execute pressure.",
+      ],
+    },
+    {
+      champion: "Akali",
+      reasons: [
+        "Garen can survive Akali's short burst windows and threaten silence if she commits too close.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Darius",
+      reasons: [
+        "Darius can extend trades past Garen's short-trade pattern and punish him before passive recovery matters.",
+      ],
+    },
+    {
+      champion: "Vayne",
+      reasons: [
+        "Vayne can kite Garen's predictable approach and punish him every time (Q) fails to connect.",
+      ],
+    },
+    {
+      champion: "Quinn",
+      reasons: [
+        "Quinn can keep Garen out of silence range and disengage his only reliable engage pattern.",
+      ],
+    },
+    {
+      champion: "Kayle",
+      reasons: [
+        "Kayle can survive early pressure with spacing and later outrange Garen's short-trade execute plan.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Garen",
   offMetaRoles: [],

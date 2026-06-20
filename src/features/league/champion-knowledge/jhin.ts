@@ -92,6 +92,26 @@ export const jhinCombatProfile = {
       "Long-range poke lanes that deny his fourth-shot spacing.",
     ],
   },
+  counters: [
+    {
+      champion: "Aphelios",
+      reasons: [
+        "Jhin can use (W) follow-up to punish Aphelios before Aphelios has a safe weapon setup.",
+        "Fourth shot trades can pressure Aphelios when he walks up without mobility.",
+        "(R) can finish Aphelios from outside the range of most weapon responses.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can jump onto Jhin after he spends (W) or reloads.",
+        "Explosive Charge punishes Jhin's low sustained DPS in extended all-ins.",
+        "Jhin has no dash, so he relies heavily on support peel once Tristana commits.",
+      ],
+    },
+  ],
   mobilityLevel: "low",
   name: "Jhin",
   offMetaRoles: [],

@@ -86,6 +86,26 @@ export const kogMawCombatProfile = {
       "Dive comps that ignore his frontline.",
     ],
   },
+  counters: [
+    {
+      champion: "Nilah",
+      reasons: [
+        "Kog'Maw can punish Nilah before she reaches melee range with (W) range uptime.",
+        "Bio-Arcane Barrage lets Kog'Maw hit through Nilah's short-range scaling plan.",
+        "If Kog'Maw has peel, Nilah has to spend key mobility just to enter his damage zone.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can punish Kog'Maw before Kog'Maw has attack speed and peel.",
+        "Kog'Maw has no dash, so axe trades can force summoners early.",
+        "If Draven controls the wave, Kog'Maw cannot safely walk up to use (W) for farm.",
+      ],
+    },
+  ],
   mobilityLevel: "none",
   name: "Kog'Maw",
   offMetaRoles: [],
@@ -98,16 +118,13 @@ export const kogMawCombatProfile = {
           "Kog'Maw can contest CS and trades during (W), but becomes much easier to pressure after it ends.",
         playerAction:
           "Trade and contest last hits while (W) is active, then reset spacing when it is down.",
-        enemyResponse:
-          "Wait out (W) or force engage before he can free-hit with peel.",
+        enemyResponse: "Wait out (W) or force engage before he can free-hit with peel.",
       },
       {
         timing: "Two on-hit items",
         reason: "On-hit scaling turns protected fights into tank-shred windows",
-        changesGameplay:
-          "If he is protected, front-to-back fights become heavily Kog'Maw favored.",
-        playerAction:
-          "Group with peel and force objectives where enemies must walk into (W).",
+        changesGameplay: "If he is protected, front-to-back fights become heavily Kog'Maw favored.",
+        playerAction: "Group with peel and force objectives where enemies must walk into (W).",
         enemyResponse:
           "Reach him directly or force his support cooldowns before starting front-to-back.",
       },
@@ -169,4 +186,3 @@ export const kogMawCombatProfile = {
     "Early forced fights delay his item-scaling plan.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

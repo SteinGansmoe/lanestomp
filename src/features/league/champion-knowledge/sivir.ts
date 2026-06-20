@@ -73,7 +73,11 @@ export const sivirCombatProfile = {
       "Reaching item spikes without falling behind in health or turret.",
     ],
   },
-  majorPowerSpikes: ["Spell Shield trade windows", "First completed marksman item", "Level 6 (R) team movement"],
+  majorPowerSpikes: [
+    "Spell Shield trade windows",
+    "First completed marksman item",
+    "Level 6 (R) team movement",
+  ],
   matchupPreferences: {
     strongInto: [
       "Single-spell engage lanes she can block.",
@@ -96,20 +100,16 @@ export const sivirCombatProfile = {
         reason: "(E) can deny the lane's key engage or poke spell",
         changesGameplay:
           "The enemy support must bait Spell Shield before committing their most important cooldown.",
-        playerAction:
-          "Hold (E) for the matchup-defining spell instead of blocking low-value poke.",
-        enemyResponse:
-          "Bait (E) first, then force the real trade while it is down.",
+        playerAction: "Hold (E) for the matchup-defining spell instead of blocking low-value poke.",
+        enemyResponse: "Bait (E) first, then force the real trade while it is down.",
       },
       {
         timing: "Level 6",
         reason: "(R) gives teamwide movement for engage or disengage",
-        changesGameplay:
-          "Sivir can turn a neutral wave state into a coordinated all-in or escape.",
+        changesGameplay: "Sivir can turn a neutral wave state into a coordinated all-in or escape.",
         playerAction:
           "Use (R) with support or jungle movement, not as a panic button after the fight is lost.",
-        enemyResponse:
-          "Track (R) before overextending into her team's engage range.",
+        enemyResponse: "Track (R) before overextending into her team's engage range.",
       },
     ],
   },
@@ -169,4 +169,3 @@ export const sivirCombatProfile = {
     "Before items, she may clear well but lacks full teamfight DPS.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

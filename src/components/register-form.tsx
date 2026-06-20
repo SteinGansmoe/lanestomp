@@ -85,9 +85,9 @@ export function RegisterForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25">
+    <Card className="mx-auto w-full max-w-md border-cyan-100/15 bg-[#06111f]/92 text-white">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-100 ring-1 ring-emerald-300/20">
+        <div className="mb-3 flex size-12 items-center justify-center rounded border border-[#C9AA5A]/25 bg-[#C9AA5A]/10 text-[#F4D88A]">
           <UserPlus className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Create account</CardTitle>
@@ -101,7 +101,7 @@ export function RegisterForm() {
             <span className="text-sm text-zinc-300">Username</span>
             <Input
               autoComplete="username"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11"
               disabled={isSubmitting}
               maxLength={24}
               minLength={3}
@@ -120,7 +120,7 @@ export function RegisterForm() {
             <span className="text-sm text-zinc-300">Email</span>
             <Input
               autoComplete="email"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11"
               disabled={isSubmitting}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
@@ -134,7 +134,7 @@ export function RegisterForm() {
             <span className="text-sm text-zinc-300">Password</span>
             <Input
               autoComplete="new-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11"
               disabled={isSubmitting}
               minLength={6}
               onChange={(event) => setPassword(event.target.value)}
@@ -146,19 +146,25 @@ export function RegisterForm() {
           </label>
 
           {error ? (
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p
+              className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+              role="alert"
+            >
               {error}
             </p>
           ) : null}
 
           {success ? (
-            <p className="rounded-md border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+            <p
+              className="rounded border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm text-emerald-100"
+              aria-live="polite"
+            >
               {success}
             </p>
           ) : null}
 
           <Button
-            className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500"
+            className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200"
             disabled={isSubmitting}
             type="submit"
           >
@@ -168,7 +174,7 @@ export function RegisterForm() {
 
         <p className="mt-5 text-center text-sm text-zinc-400">
           Already have an account?{" "}
-          <Link className="font-medium text-violet-200 transition hover:text-white" href="/login">
+          <Link className="font-medium text-cyan-200 transition hover:text-white" href="/login">
             Sign in
           </Link>
         </p>

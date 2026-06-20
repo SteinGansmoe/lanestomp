@@ -73,7 +73,11 @@ export const kalistaCombatProfile = {
       "Converting lane pressure into early dragons.",
     ],
   },
-  majorPowerSpikes: ["Level 2-3 support all-in", "Level 6 (R)", "First completed attack-speed item"],
+  majorPowerSpikes: [
+    "Level 2-3 support all-in",
+    "Level 6 (R)",
+    "First completed attack-speed item",
+  ],
   matchupPreferences: {
     strongInto: [
       "Short-range ADCs that must trade inside her hop range.",
@@ -86,6 +90,26 @@ export const kalistaCombatProfile = {
       "Disengage supports that deny extended spear stacks.",
     ],
   },
+  counters: [
+    {
+      champion: "Ezreal",
+      reasons: [
+        "Kalista can force extended fights when Ezreal's (E) is down.",
+        "Rend threatens objective and minion-wave control that Ezreal cannot easily contest early.",
+        "Her support ultimate can start fights before Ezreal has enough poke damage.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Ashe",
+      reasons: [
+        "Ashe slows reduce Kalista's passive hop value and make trades harder to reset.",
+        "(R) can start fights from outside Kalista's preferred engage range.",
+        "Repeated (W) poke can force Kalista low before she finds a clean all-in.",
+      ],
+    },
+  ],
   mobilityLevel: "high",
   name: "Kalista",
   offMetaRoles: [],
@@ -106,10 +130,8 @@ export const kalistaCombatProfile = {
         reason: "More autos mean faster Rend threat and stronger objective control",
         changesGameplay:
           "Extended fights and dragon contests become much more dangerous if she can keep autoing.",
-        playerAction:
-          "Force longer trades and objective control while Rend stacks are reliable.",
-        enemyResponse:
-          "Disengage before stacks build or slow her movement before she can chase.",
+        playerAction: "Force longer trades and objective control while Rend stacks are reliable.",
+        enemyResponse: "Disengage before stacks build or slow her movement before she can chase.",
       },
     ],
   },
@@ -169,4 +191,3 @@ export const kalistaCombatProfile = {
     "If early lane control fails, her short range becomes harder to play.",
   ],
 } satisfies LeagueChampionKnowledgeProfile;
-

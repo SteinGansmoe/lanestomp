@@ -138,7 +138,7 @@ export const neekoCombatProfile = {
       "ADC follow-up with roots, slows, or burst makes Neeko's (E) and (R) easier to convert.",
       "AoE ADCs can punish enemies trapped in Pop Blossom.",
       "Low-commit scaling ADCs may not capitalize on Neeko's short-range all-in windows.",
-  ],
+    ],
   },
   sustain: [],
   trading: {

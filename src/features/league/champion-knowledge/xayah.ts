@@ -86,6 +86,26 @@ export const xayahCombatProfile = {
       "Fights where (R) is forced before the real engage.",
     ],
   },
+  counters: [
+    {
+      champion: "Nilah",
+      reasons: [
+        "Xayah can punish Nilah when Nilah walks into feather recall paths.",
+        "(R) lets Xayah dodge Nilah's key all-in timing and reset spacing.",
+        "Feather setup around waves makes it risky for Nilah to commit straight through minions.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Caitlyn",
+      reasons: [
+        "Caitlyn can pressure Xayah before Xayah has enough feathers set up.",
+        "Trap zones punish Xayah after she uses (R) or when support CC lands.",
+        "Long-range wave pressure can deny Xayah clean feather-control positions.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Xayah",
   offMetaRoles: [],

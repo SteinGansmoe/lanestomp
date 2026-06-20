@@ -71,6 +71,17 @@ export function isMissingLeagueMatchupsTableError(
   );
 }
 
+export function isMissingLeagueCounterPicksTableError(
+  error: { code?: string; message?: string } | null,
+) {
+  return (
+    error?.code === "PGRST205" ||
+    Boolean(
+      error?.message?.includes("league_counter_picks") && error.message.includes("schema cache"),
+    )
+  );
+}
+
 export function isMissingLeagueFeedbackTableError(
   error: { code?: string; message?: string } | null,
 ) {

@@ -79,9 +79,9 @@ export function AdminLoginForm() {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/25">
+    <Card className="mx-auto w-full max-w-md border-cyan-100/15 bg-[#06111f]/92 text-white">
       <CardHeader>
-        <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-violet-500/20 text-violet-100 ring-1 ring-violet-300/20">
+        <div className="mb-3 flex size-12 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
           <LockKeyhole className="size-6" aria-hidden="true" />
         </div>
         <CardTitle className="font-mono text-2xl">Login</CardTitle>
@@ -93,10 +93,10 @@ export function AdminLoginForm() {
             <span className="text-sm text-zinc-300">Email</span>
             <Input
               autoComplete="email"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11"
               disabled={isCheckingSession || isSubmitting}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@example.com"
+              placeholder="you@example.com"
               required
               type="email"
               value={email}
@@ -107,7 +107,7 @@ export function AdminLoginForm() {
             <span className="text-sm text-zinc-300">Password</span>
             <Input
               autoComplete="current-password"
-              className="h-11 border-white/10 bg-white/5 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+              className="h-11"
               disabled={isCheckingSession || isSubmitting}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Password"
@@ -119,7 +119,7 @@ export function AdminLoginForm() {
 
           <div className="-mt-2 text-right">
             <Link
-              className="text-sm font-medium text-violet-200 transition hover:text-white"
+              className="text-sm font-medium text-cyan-200 transition hover:text-white"
               href="/auth/forgot-password"
             >
               Forgot your password?
@@ -127,13 +127,16 @@ export function AdminLoginForm() {
           </div>
 
           {error ? (
-            <p className="rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p
+              className="rounded border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+              role="alert"
+            >
               {error}
             </p>
           ) : null}
 
           <Button
-            className="h-11 w-full bg-violet-500/80 text-white hover:bg-violet-500"
+            className="h-11 w-full bg-cyan-300 text-[#05111d] hover:bg-cyan-200"
             disabled={isCheckingSession || isSubmitting}
             type="submit"
           >
@@ -144,7 +147,7 @@ export function AdminLoginForm() {
         <p className="mt-5 text-center text-sm text-zinc-400">
           New to LaneStomp?{" "}
           <Link
-            className="font-medium text-violet-200 transition hover:text-white"
+            className="font-medium text-cyan-200 transition hover:text-white"
             href="/register"
           >
             Create account

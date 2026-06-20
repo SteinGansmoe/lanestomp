@@ -123,7 +123,7 @@ export const tahmKenchCombatProfile = {
       "Immobile carries value Devour protection and his ability to stand between them and engage.",
       "Senna lanes can use Tahm Kench as the durable farming partner or protective support.",
       "Early snowball ADCs can feel under-enabled because Tahm Kench creates less instant kill setup.",
-  ],
+    ],
   },
   sustain: ["(E) gray health healing"],
   trading: {

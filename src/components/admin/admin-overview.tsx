@@ -62,6 +62,7 @@ export function AdminOverview({
   communityContentCount,
   gamesCount,
   leagueChampionsCount,
+  leagueCounterPicksCount,
   leagueDraftMatchupsCount,
   leagueMatchupsCount,
   leagueReviewedMatchupsCount,
@@ -72,6 +73,7 @@ export function AdminOverview({
   communityContentCount: number;
   gamesCount: number;
   leagueChampionsCount: number;
+  leagueCounterPicksCount: number;
   leagueDraftMatchupsCount: number;
   leagueMatchupsCount: number;
   leagueReviewedMatchupsCount: number;
@@ -100,6 +102,15 @@ export function AdminOverview({
             href="/admin/league/matchups"
             label="Matchups"
             summary="Create, generate, review, and publish champion matchup guidance."
+            tag="records"
+          />
+          <AdminSectionCard
+            actionLabel="Open counters"
+            count={leagueCounterPicksCount}
+            eyebrow="Active"
+            href="/admin/league/counter-picks"
+            label="Counter Picks"
+            summary="Create, edit, review, and publish counter pick recommendations."
             tag="records"
           />
           <AdminSectionCard

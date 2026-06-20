@@ -463,9 +463,7 @@ async function generateDraftSectionWithOpenAIProvider({
   }
 
   const supportFarmingLanguage =
-    role === "support"
-      ? findSupportFarmingLanguageInSection(sectionKey, normalizedSection)
-      : null;
+    role === "support" ? findSupportFarmingLanguageInSection(sectionKey, normalizedSection) : null;
 
   if (supportFarmingLanguage) {
     logSupportFarmingLanguageRejection({
@@ -1141,8 +1139,9 @@ function formatPromptLeakageError(rejectedSections: PromptLeakageSectionRejectio
 
 function formatSupportFarmingLanguageError(rejectedSections: PromptLeakageSectionRejection[]) {
   const sectionList = rejectedSections
-    .map(({ phrases, sample, sectionKey }) =>
-      `${sectionKey} (${phrases.join(", ")}; rejected bullet: ${sample})`,
+    .map(
+      ({ phrases, sample, sectionKey }) =>
+        `${sectionKey} (${phrases.join(", ")}; rejected bullet: ${sample})`,
     )
     .join("; ");
 
@@ -1154,10 +1153,7 @@ function buildSupportFarmingRewriteAdminNotes(
   rejectedSections: PromptLeakageSectionRejection[],
 ) {
   const rejectedBullets = rejectedSections
-    .map(
-      ({ phrases, sample, sectionKey }) =>
-        `- ${sectionKey} (${phrases.join(", ")}): ${sample}`,
-    )
+    .map(({ phrases, sample, sectionKey }) => `- ${sectionKey} (${phrases.join(", ")}): ${sample}`)
     .join("\n");
 
   return [

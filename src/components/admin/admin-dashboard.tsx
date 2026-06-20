@@ -14,6 +14,7 @@ import {
   emptyResourceForm,
   emptySeasonForm,
   emptyTimelineEventForm,
+  missingLeagueCounterPicksTableMessage,
   missingLeagueMatchupsTableMessage,
   missingLeagueFeedbackTableMessage,
   missingResourcesTableMessage,
@@ -21,6 +22,7 @@ import {
   sessionCheckTimeoutMs,
 } from "./constants";
 import {
+  isMissingLeagueCounterPicksTableError,
   isMissingLeagueMatchupsTableError,
   isMissingLeagueFeedbackTableError,
   isMissingGameResourcesTableError,
@@ -30,6 +32,7 @@ import {
   toSlug,
 } from "./helpers";
 import { AdminGamesSection } from "./games/game-section";
+import { AdminLeagueCounterPicksSection } from "./league/league-counter-pick-section";
 import { AdminLeagueMatchupsSection } from "./league/league-matchup-section";
 import { AdminResourcesSection } from "./resources/resource-section";
 import { AdminSeasonsSection } from "./seasons/season-section";
@@ -38,6 +41,7 @@ import type {
   AdminData,
   AdminGame,
   AdminLeagueChampion,
+  LeagueCounterPick,
   AdminLeagueMatchupFeedback,
   AdminLeagueMatchup,
   AdminResource,
@@ -57,6 +61,13 @@ import {
   generateLeagueMatchupDraft,
 } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
+import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
+import {
+  SkeletonButton,
+  SkeletonLine,
+  SkeletonPanel,
+  SkeletonStatCell,
+} from "@/src/components/lane-stomp-skeleton";
 import { Card } from "@/src/components/ui/card";
 import { isChampionInRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
@@ -96,6 +107,25 @@ const leagueMatchupDetailSelect = [
   "win_conditions",
 ].join(", ");
 const leagueMatchupRoleConflictTarget = "champion_a_id,champion_b_id,role";
+const leagueCounterPickSelect = [
+  "behind_build_path",
+  "champion_id",
+  "common_build_vs",
+  "counter_champion_id",
+  "counter_strength",
+  "counter_type",
+  "created_at",
+  "games",
+  "generation_status",
+  "id",
+  "patch",
+  "rank_filter",
+  "region",
+  "reason",
+  "role",
+  "updated_at",
+  "win_rate",
+].join(", ");
 const leagueFeedbackSelect = [
   "id",
   "matchup_id",
@@ -115,47 +145,51 @@ const leagueFeedbackSelect = [
 function AdminDashboardSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="flex gap-2 overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/90 p-2">
+      <SkeletonPanel className="flex gap-2 overflow-hidden p-2">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div className="h-10 min-w-28 rounded-md bg-white/[0.04]" key={index} />
+          <SkeletonButton className="h-10 min-w-28" key={index} />
         ))}
-      </div>
+      </SkeletonPanel>
 
       <div className="grid gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card
-            className="h-28 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
-            key={index}
-          />
+          <SkeletonPanel className="h-28 p-4" key={index}>
+            <SkeletonStatCell className="border-l-0 px-0 py-0" />
+          </SkeletonPanel>
         ))}
       </div>
 
       <section className="space-y-5">
         <div className="space-y-3">
-          <div className="h-8 w-32 rounded bg-white/10" />
-          <div className="h-4 w-full max-w-2xl rounded bg-white/5" />
+          <SkeletonLine className="h-8 w-32" tone="raised" />
+          <SkeletonLine className="h-4 w-full max-w-2xl" />
         </div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Card
-              className="h-40 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
-              key={index}
-            />
+            <SkeletonPanel className="h-40 p-4" key={index}>
+              <SkeletonLine className="h-4 w-32" tone="cyan" />
+              <div className="mt-5 grid gap-3">
+                {Array.from({ length: 4 }).map((_, rowIndex) => (
+                  <SkeletonLine className="h-3 w-full" key={rowIndex} />
+                ))}
+              </div>
+            </SkeletonPanel>
           ))}
         </div>
       </section>
 
       <section className="space-y-5">
         <div className="space-y-3">
-          <div className="h-8 w-28 rounded bg-white/10" />
-          <div className="h-4 w-full max-w-xl rounded bg-white/5" />
+          <SkeletonLine className="h-8 w-28" tone="raised" />
+          <SkeletonLine className="h-4 w-full max-w-xl" />
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {Array.from({ length: 2 }).map((_, index) => (
-            <Card
-              className="h-36 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
-              key={index}
-            />
+            <SkeletonPanel className="h-36 p-4" key={index}>
+              <SkeletonLine className="h-4 w-40" tone="cyan" />
+              <SkeletonLine className="mt-5 h-3 w-full" />
+              <SkeletonLine className="mt-3 h-3 w-8/12" />
+            </SkeletonPanel>
           ))}
         </div>
       </section>
@@ -259,6 +293,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [resourcesSetupMessage, setResourcesSetupMessage] = useState<string | null>(null);
   const [timelineSetupMessage, setTimelineSetupMessage] = useState<string | null>(null);
   const [leagueMatchupsSetupMessage, setLeagueMatchupsSetupMessage] = useState<string | null>(null);
+  const [leagueCounterPicksSetupMessage, setLeagueCounterPicksSetupMessage] = useState<
+    string | null
+  >(null);
   const [leagueFeedbackSetupMessage, setLeagueFeedbackSetupMessage] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
   const pageTitle =
@@ -268,13 +305,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         ? "Community management"
         : section === "league-matchups"
           ? "League matchup management"
-          : section === "resources"
-            ? "Resource management"
-            : section === "seasons"
-              ? "Season management"
-              : section === "timeline"
-                ? "Timeline management"
-                : "Admin dashboard";
+          : section === "league-counter-picks"
+            ? "Counter Pick management"
+            : section === "resources"
+              ? "Resource management"
+              : section === "seasons"
+                ? "Season management"
+                : section === "timeline"
+                  ? "Timeline management"
+                  : "Admin dashboard";
   const editableLinkSection = section === "community" ? "community" : "resources";
 
   useEffect(() => {
@@ -341,6 +380,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         seasonsResult,
         timelineResult,
         leagueChampionsResult,
+        leagueCounterPicksResult,
         leagueMatchupsResult,
         leagueFeedbackResult,
       ] = await Promise.all([
@@ -370,7 +410,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         supabase
           .from("league_champions")
           .select("id, name, title, image_url")
+          .eq("is_active", true)
           .order("name", { ascending: true }),
+        fetchAllLeagueCounterPicks(),
         fetchAllLeagueMatchups(),
         fetchAllLeagueFeedback(),
       ]);
@@ -384,6 +426,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
         leagueMatchupsResult.error,
       );
+      const isMissingLeagueCounterPicksTable = isMissingLeagueCounterPicksTableError(
+        leagueCounterPicksResult.error,
+      );
       const isMissingLeagueFeedbackTable = isMissingLeagueFeedbackTableError(
         leagueFeedbackResult.error,
       );
@@ -394,6 +439,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         seasonsResult.error ||
         (resourcesResult.error && !isMissingResourcesTable) ||
         (timelineResult.error && !isMissingTimelineTable) ||
+        (leagueCounterPicksResult.error && !isMissingLeagueCounterPicksTable) ||
         (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable) ||
         (leagueFeedbackResult.error && !isMissingLeagueFeedbackTable)
       ) {
@@ -403,6 +449,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
             seasonsResult.error?.message ??
             (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
             (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
+            (!isMissingLeagueCounterPicksTable ? leagueCounterPicksResult.error?.message : null) ??
             (!isMissingLeagueMatchupsTable ? leagueMatchupsResult.error?.message : null) ??
             (!isMissingLeagueFeedbackTable ? leagueFeedbackResult.error?.message : null) ??
             "Could not load admin data.",
@@ -416,6 +463,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setLeagueMatchupsSetupMessage(
         isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null,
       );
+      setLeagueCounterPicksSetupMessage(
+        isMissingLeagueCounterPicksTable ? missingLeagueCounterPicksTableMessage : null,
+      );
       setLeagueFeedbackSetupMessage(
         isMissingLeagueFeedbackTable ? missingLeagueFeedbackTableMessage : null,
       );
@@ -423,6 +473,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       const nextAdminData = {
         games: (gamesResult.data ?? []) as AdminGame[],
         leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
+        leagueCounterPicks: isMissingLeagueCounterPicksTable
+          ? []
+          : ((leagueCounterPicksResult.data ?? []) as LeagueCounterPick[]),
         leagueFeedback: isMissingLeagueFeedbackTable
           ? []
           : ((leagueFeedbackResult.data ?? []) as unknown as AdminLeagueMatchupFeedback[]),
@@ -490,6 +543,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       seasonsResult,
       timelineResult,
       leagueChampionsResult,
+      leagueCounterPicksResult,
       leagueMatchupsResult,
       leagueFeedbackResult,
     ] = await Promise.all([
@@ -517,7 +571,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       supabase
         .from("league_champions")
         .select("id, name, title, image_url")
+        .eq("is_active", true)
         .order("name", { ascending: true }),
+      fetchAllLeagueCounterPicks(),
       fetchAllLeagueMatchups(),
       fetchAllLeagueFeedback(),
     ]);
@@ -526,6 +582,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     const isMissingTimelineTable = isMissingTimelineEventsTableError(timelineResult.error);
     const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
       leagueMatchupsResult.error,
+    );
+    const isMissingLeagueCounterPicksTable = isMissingLeagueCounterPicksTableError(
+      leagueCounterPicksResult.error,
     );
     const isMissingLeagueFeedbackTable = isMissingLeagueFeedbackTableError(
       leagueFeedbackResult.error,
@@ -537,6 +596,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       seasonsResult.error ||
       (resourcesResult.error && !isMissingResourcesTable) ||
       (timelineResult.error && !isMissingTimelineTable) ||
+      (leagueCounterPicksResult.error && !isMissingLeagueCounterPicksTable) ||
       (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable) ||
       (leagueFeedbackResult.error && !isMissingLeagueFeedbackTable)
     ) {
@@ -546,6 +606,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
           seasonsResult.error?.message ??
           (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
           (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
+          (!isMissingLeagueCounterPicksTable ? leagueCounterPicksResult.error?.message : null) ??
           (!isMissingLeagueMatchupsTable ? leagueMatchupsResult.error?.message : null) ??
           (!isMissingLeagueFeedbackTable ? leagueFeedbackResult.error?.message : null) ??
           "Could not load admin data.",
@@ -558,6 +619,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     setLeagueMatchupsSetupMessage(
       isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null,
     );
+    setLeagueCounterPicksSetupMessage(
+      isMissingLeagueCounterPicksTable ? missingLeagueCounterPicksTableMessage : null,
+    );
     setLeagueFeedbackSetupMessage(
       isMissingLeagueFeedbackTable ? missingLeagueFeedbackTableMessage : null,
     );
@@ -565,6 +629,9 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     const nextAdminData = {
       games: (gamesResult.data ?? []) as AdminGame[],
       leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
+      leagueCounterPicks: isMissingLeagueCounterPicksTable
+        ? []
+        : ((leagueCounterPicksResult.data ?? []) as LeagueCounterPick[]),
       leagueFeedback: isMissingLeagueFeedbackTable
         ? []
         : ((leagueFeedbackResult.data ?? []) as unknown as AdminLeagueMatchupFeedback[]),
@@ -2173,8 +2240,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#050b18] px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-6">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
+    <LaneStompPageShell>
         <SiteHeader />
 
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -2225,6 +2291,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               </Card>
             ) : null}
 
+            {leagueCounterPicksSetupMessage ? (
+              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
+                {leagueCounterPicksSetupMessage}
+              </Card>
+            ) : null}
+
             {leagueFeedbackSetupMessage ? (
               <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
                 {leagueFeedbackSetupMessage}
@@ -2250,6 +2322,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     communityContentCount={communityRows.length}
                     gamesCount={adminData.games.length}
                     leagueChampionsCount={adminData.leagueChampions.length}
+                    leagueCounterPicksCount={adminData.leagueCounterPicks.length}
                     leagueDraftMatchupsCount={draftLeagueMatchupsCount}
                     leagueMatchupsCount={adminData.leagueMatchups.length}
                     leagueReviewedMatchupsCount={reviewedLeagueMatchupsCount}
@@ -2368,12 +2441,19 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     generatingMatchupId={generatingLeagueMatchupId}
                   />
                 ) : null}
+
+                {section === "league-counter-picks" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                  />
+                ) : null}
               </div>
             </ViewTransition>
           </>
         ) : null}
-      </section>
-    </main>
+    </LaneStompPageShell>
   );
 }
 
@@ -2403,6 +2483,42 @@ async function fetchAllLeagueMatchups() {
     }
 
     const pageRows = (data ?? []) as unknown as AdminLeagueMatchup[];
+
+    rows.push(...pageRows);
+
+    if (pageRows.length < adminDataPageSize) {
+      return { data: rows, error: null };
+    }
+  }
+}
+
+async function fetchAllLeagueCounterPicks() {
+  if (!supabase) {
+    return {
+      data: null,
+      error: { message: "Supabase is not configured." },
+    };
+  }
+
+  const rows: LeagueCounterPick[] = [];
+
+  for (let page = 0; ; page += 1) {
+    const from = page * adminDataPageSize;
+    const to = from + adminDataPageSize - 1;
+    const { data, error } = await supabase
+      .from("league_counter_picks")
+      .select(leagueCounterPickSelect)
+      .order("champion_id", { ascending: true })
+      .order("role", { ascending: true })
+      .order("counter_type", { ascending: true })
+      .order("win_rate", { ascending: false, nullsFirst: false })
+      .range(from, to);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const pageRows = (data ?? []) as unknown as LeagueCounterPick[];
 
     rows.push(...pageRows);
 

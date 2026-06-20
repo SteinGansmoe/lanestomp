@@ -14,9 +14,9 @@ export const akshanCombatProfile = {
   dangerProfile: {
     dangerousWhen: ["(E) mobility", "(R)"],
     mustRespect: [
-      "(W) is camouflage and roaming utility, not a direct combat spell.",
+      "When Akshan is no longer showing in lane, you need to be ready to ping your allies to back.",
       "(E) is his main mobility and commit tool.",
-      "He should not be described as a crowd-control champion.",
+      "Try to position yourself so Akshan cannot (Q) you and the wave at the same time, make him choose between pushing wave or poking you.",
     ],
   },
   commonWeaknesses: [
@@ -103,12 +103,12 @@ export const akshanCombatProfile = {
   },
   primaryRoles: ["mid"],
   secondaryRoles: [],
-  primaryTradingPattern: "Use autos and (Q) for short ranged pressure, then reposition with (E).",
+  primaryTradingPattern: "Use autos and (Q) for short ranged pressure, then chase after with (E).",
   punishProfile: {
     canPunish: [],
     strugglesToPunish: [
       "Short range for a marksman makes positioning risky.",
-      "(E) can be interrupted or punished if used forward.",
+      "(E) can be interrupted by other champions in the path of travel.",
       "Falls behind if early pressure does not convert.",
     ],
   },
@@ -121,7 +121,7 @@ export const akshanCombatProfile = {
       "After Akshan uses (E) to engage, if he misses or is interrupted he can be punished hard.",
     ],
     goodTradeConditions: [],
-    primaryPattern: "Use autos and (Q) for short ranged pressure, then reposition with (E).",
+    primaryPattern: "Use autos and (Q) for short ranged pressure, then chase after with (E).",
   },
   punishWindows: [
     "After Akshan uses (E) to engage, if he misses or is interrupted he can be punished hard.",

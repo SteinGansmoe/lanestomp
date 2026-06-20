@@ -32,7 +32,7 @@ export const caitlynCombatProfile = {
     "Can struggle when forced into extended all-ins.",
     "Needs lane control to make range pressure matter.",
     "Vulnerable if (E) is down and support cannot peel.",
-    "After first back, other ADCs catch up to her in stats."
+    "After first back, other ADCs catch up to her in stats.",
   ],
   damageType: "physical",
   hardCrowdControl: ["(W) root"],
@@ -94,6 +94,58 @@ export const caitlynCombatProfile = {
       "Waveclear lanes that neutralize her plate pressure.",
     ],
   },
+  counters: [
+    {
+      champion: "Vayne",
+      reasons: [
+        "Caitlyn's range lets her punish Vayne before Vayne has enough items to fight back.",
+      ],
+    },
+    {
+      champion: "Jinx",
+      reasons: [
+        "Caitlyn can win early wave control and plate pressure before Jinx reaches her reset-focused item spikes.",
+      ],
+    },
+    {
+      champion: "Kaisa",
+      reasons: [
+        "Caitlyn can punish Kai'Sa's shorter range and force her to farm under trap pressure.",
+      ],
+    },
+    {
+      champion: "Samira",
+      reasons: [
+        "Caitlyn can chip Samira before all-in range and hold (E) to deny direct engage attempts.",
+      ],
+    },
+  ],
+  counteredBy: [
+    {
+      champion: "Sivir",
+      reasons: [
+        "Sivir's spell shield and waveclear can neutralize Caitlyn's trap follow-up and plate pressure.",
+      ],
+    },
+    {
+      champion: "Draven",
+      reasons: [
+        "Draven can punish Caitlyn if he gets into axe trade range before she builds a wave advantage.",
+      ],
+    },
+    {
+      champion: "Tristana",
+      reasons: [
+        "Tristana can force explosive all-ins that bypass Caitlyn's preferred short-range poke pattern.",
+      ],
+    },
+    {
+      champion: "Ashe",
+      reasons: [
+        "Ashe can match lane range well enough to slow Caitlyn's push and punish her with repeated slows.",
+      ],
+    },
+  ],
   mobilityLevel: "medium",
   name: "Caitlyn",
   offMetaRoles: [],
@@ -150,11 +202,11 @@ export const caitlynCombatProfile = {
     goodWith: ["Thresh", "Milio", "Janna", "Nautilus", "Rell", "Braum", "Alistar", "Seraphine"],
     strugglesWith: ["Yuumi", "Sona", "Passive enchanters"],
     notes: [
-  "Morgana (Q) enables guaranteed Caitlyn (W) trap follow-up.",
-  "Lux bindings create similar trap-chain kill pressure while adding poke.",
-  "Karma helps Caitlyn maintain lane priority and siege pressure.",
-  "Leona provides reliable engage that lets Caitlyn convert range advantage into kills.",
-  "Low-pressure enchanters can leave Caitlyn with push but few punish windows.",
+      "Morgana (Q) enables guaranteed Caitlyn (W) trap follow-up.",
+      "Lux bindings create similar trap-chain kill pressure while adding poke.",
+      "Karma helps Caitlyn maintain lane priority and siege pressure.",
+      "Leona provides reliable engage that lets Caitlyn convert range advantage into kills.",
+      "Low-pressure enchanters can leave Caitlyn with push but few punish windows.",
     ],
   },
   sustain: [],

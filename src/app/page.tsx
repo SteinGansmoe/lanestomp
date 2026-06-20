@@ -1,403 +1,255 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   BarChart3,
-  Brain,
   CheckCircle2,
-  Clock3,
   Crosshair,
-  Layers3,
   LineChart,
+  Search,
   ShieldAlert,
-  Sparkles,
+  ShieldCheck,
   Swords,
   Target,
-  Trophy,
 } from "lucide-react";
-import { connection } from "next/server";
 
-import { MatchupSelector } from "@/src/components/league/matchup-selector";
+import {
+  LaneStompPageBackground,
+  laneStompContentClassName,
+  laneStompPageClassName,
+} from "@/src/components/lane-stomp-page";
+import { CounterPickStartForm } from "@/src/components/league/counter-pick-start-form";
+import { HextechFrame } from "@/src/components/league/hextech-frame";
 import { SiteHeader } from "@/src/components/site-header";
-import { Card, CardTitle } from "@/src/components/ui/card";
 import {
   getChampionSplashUrl,
   getLeagueChampions,
   type LeagueChampion,
 } from "@/src/features/league/champions";
+import { getPopularCounterPickChampions } from "@/src/features/league/counter-pick-popular-champions";
 import {
   getLeagueMatchupCoverageSummary,
   type LeagueMatchupCoverageSummary,
 } from "@/src/features/league/matchups";
 import { leagueRoles } from "@/src/features/league/roles";
+import { cn } from "@/src/lib/utils";
 
 export const metadata: Metadata = {
-  title: "League of Legends Matchup Guides and Learning Tools",
+  title: "League of Legends Counter Picks & Matchup Guides | LaneStomp",
   description:
-    "LaneStomp is a League of Legends improvement platform for matchup guides, counter-pick preparation, champion strengths, and role-specific learning tools.",
+    "Find League of Legends counter picks, champion matchup guides, and role-specific preparation with LaneStomp.",
 };
 
-export default async function Home() {
-  await connection();
+export const dynamic = "force-dynamic";
 
+export default async function Home() {
   const { champions, error } = await getLeagueChampions();
+  const popularChampions =
+    champions.length > 0 ? await getPopularCounterPickChampions(champions) : [];
   const { coverage } =
     champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
-  const progressStats = getProgressStats(champions.length, coverage);
-  const featuredChampion = getHomeAtmosphereChampion(champions);
+  const stats = getHomepageStats(champions.length, coverage);
   const heroChampion = getHeroSplashChampion(champions);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050b18] text-[#AAB7C8]">
-      <HomeAtmosphere champion={featuredChampion} />
-      <section className="relative z-10 px-4 py-6 sm:px-6 lg:px-8 lg:py-6">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:ml-72 lg:max-w-[calc(100%-18rem)]">
-          <SiteHeader />
+    <main className={laneStompPageClassName}>
+      <LaneStompPageBackground />
+      <div className={laneStompContentClassName}>
+        <SiteHeader />
 
-          <HeroSection champion={heroChampion} matchupCount={progressStats.matchupCount} />
-
-          <PlatformStatusSection
-            champions={champions}
-            matchupCount={progressStats.matchupCount}
-          />
-
-          <WhyLaneStompSection />
-
-          <ProgressSection stats={progressStats.items} />
-
-          <CtaSection />
-
-          <section className="space-y-4" id="matchup-tool">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-                  Available now
-                </p>
-                <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF5] sm:text-3xl">
-                  Open the Matchup Tool
-                </h2>
-              </div>
-              <Link
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-cyan-300/20 bg-cyan-400/10 px-4 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/45 hover:bg-cyan-400/20"
-                href="/league/matchups"
-              >
-                Full matchup page
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
+        <HomepageHero champion={heroChampion}>
+          {error ? (
+            <ChampionDataError message={error} />
+          ) : champions.length > 0 ? (
+            <CounterPickStartForm champions={champions} popularChampions={popularChampions} />
+          ) : (
+            <div className="max-w-xl border border-cyan-100/15 bg-[#07101f]/90 p-4 text-zinc-300">
+              <h2 className="font-mono text-lg font-semibold text-white">
+                Champion data is not ready yet
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Import League champion data to enable the Counter Pick search.
+              </p>
             </div>
+          )}
+        </HomepageHero>
 
-            {error ? (
-              <ChampionDataError message={error} />
-            ) : champions.length > 0 ? (
-              <MatchupSelector champions={champions} matchupCoverage={coverage} />
-            ) : (
-              <Card className="border-white/10 bg-[#10182b]/90 p-8 text-center text-[#AAB7C8]">
-                <CardTitle className="font-mono text-xl">
-                  Champion data is not imported yet
-                </CardTitle>
-                <p className="mt-3 text-sm leading-6 text-[#9FB0C4]">
-                  Import League champion data to enable the matchup picker.
-                </p>
-              </Card>
-            )}
-          </section>
-        </div>
-      </section>
+        <ConfidenceGuide />
+        <MatchupFeatureLinks />
+        <PlatformStats stats={stats} />
+      </div>
     </main>
   );
 }
 
-function HomeAtmosphere({ champion }: { champion: LeagueChampion | null }) {
-  if (!champion) {
-    return (
-      <div
-        className="pointer-events-none absolute inset-x-0 top-32 z-0 h-[34rem] bg-[radial-gradient(circle_at_18%_22%,rgba(14,165,233,0.1),transparent_22rem),radial-gradient(circle_at_82%_18%,rgba(250,204,21,0.06),transparent_20rem)]"
-        aria-hidden="true"
-      />
-    );
-  }
-
-  return (
-    <div
-      className="pointer-events-none absolute inset-x-0 top-36 z-0 h-[42rem] overflow-hidden opacity-30"
-      aria-hidden="true"
-    >
-      <div
-        className="absolute inset-0 bg-cover bg-[position:70%_18%] opacity-20 blur-2xl saturate-110"
-        style={{
-          backgroundImage: `url("${getChampionSplashUrl(champion)}")`,
-        }}
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.99)_0%,rgba(5,11,24,0.88)_34%,rgba(5,11,24,0.8)_100%),linear-gradient(0deg,rgba(5,11,24,1)_0%,rgba(5,11,24,0.28)_42%,rgba(5,11,24,0.96)_100%)]" />
-    </div>
-  );
-}
-
-function HeroSection({
+function HomepageHero({
   champion,
-  matchupCount,
+  children,
 }: {
   champion: LeagueChampion | null;
-  matchupCount: number;
+  children: ReactNode;
 }) {
   return (
-    <section className="relative isolate min-h-[34rem] overflow-hidden rounded-lg border border-cyan-100/10 bg-[#07101f] shadow-2xl shadow-black/30">
-      <HeroBackground champion={champion} />
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[#050b18] to-transparent" />
-
-      <div className="grid min-h-[34rem] gap-8 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end lg:p-10">
-        <div className="flex max-w-3xl flex-col justify-end self-end">
-          <div className="mb-6 flex size-12 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-400/10 text-cyan-100 shadow-lg shadow-cyan-950/20">
-            <Swords className="size-6" aria-hidden="true" />
-          </div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-            LaneStomp League learning platform
+    <HextechFrame className="relative isolate z-30 min-h-[35rem] w-[calc(100vw-2rem)] max-w-full overflow-visible bg-[#06111f]/88 sm:w-full">
+      <HomepageHeroBackground champion={champion} />
+      <div className="relative z-40 w-full max-w-[21rem] px-3 py-12 sm:max-w-3xl sm:px-8 sm:py-14 lg:px-12 lg:py-20">
+        <div className="flex items-center gap-4">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
+            Counter Pick
           </p>
-          <h1 className="mt-4 max-w-4xl text-4xl font-medium leading-tight tracking-[-0.03em] text-[#C4D0DE] sm:text-5xl 2xl:text-6xl">
-            Be prepared in champion select. Win more games.
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-[#AAB7C8] sm:text-lg">
-            LaneStomp helps you understand matchups, counter picks, power
-            spikes, and champion strengths before the game begins.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              className="inline-flex h-11 items-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-cyan-950 transition hover:bg-cyan-200"
-              href="#matchup-tool"
-            >
-              Open Matchup Tool
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-            <Link
-              className="inline-flex h-11 items-center gap-2 rounded-md border border-cyan-100/15 bg-white/[0.07] px-4 text-sm font-medium text-[#E6EDF5] transition hover:border-cyan-100/30 hover:bg-white/[0.12]"
-              href="/champions"
-            >
-              Browse Champions
-            </Link>
-          </div>
+          <span
+            className="hidden h-px w-28 bg-[linear-gradient(90deg,rgba(103,232,249,0.85),rgba(103,232,249,0.08))] sm:block"
+            aria-hidden="true"
+          />
+          <span
+            className="hidden size-1.5 rotate-45 border border-cyan-300/70 bg-cyan-300/20 sm:block"
+            aria-hidden="true"
+          />
         </div>
-
-        <div className="self-end rounded-lg border border-cyan-100/10 bg-black/35 p-4 shadow-xl shadow-black/20 backdrop-blur">
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-[#9FB0C4]">
-            Current coverage
-          </p>
-          <p className="mt-3 text-4xl font-semibold text-[#E6EDF5]">
-            {formatNumber(matchupCount)}
-          </p>
-          <p className="mt-1 text-sm text-cyan-100">reviewed matchup guides available now</p>
-          <div className="mt-5 grid gap-3 text-sm text-[#AAB7C8]">
-            {["Role-specific guidance", "Champion-specific advice", "Admin-reviewed drafts"].map(
-              (item) => (
-                <p className="flex items-center gap-2" key={item}>
-                  <CheckCircle2 className="size-4 text-cyan-200" aria-hidden="true" />
-                  {item}
-                </p>
-              ),
-            )}
-          </div>
-        </div>
+        <h1 className="mt-6 font-mono text-4xl font-bold uppercase leading-[1.04] tracking-normal text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)] sm:text-5xl lg:text-6xl xl:text-7xl">
+          <span className="block">Find the right</span>
+          <span className="block">counter before</span>
+          <span className="block">champion select</span>
+        </h1>
+        <span
+          className="mt-6 block h-0.5 w-12 bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.85)]"
+          aria-hidden="true"
+        />
+        <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-100 sm:text-lg">
+          Search any champion to get smart counter picks, matchup insights, and practical prep
+          before you lock in.
+        </p>
+        <div className="mt-8">{children}</div>
       </div>
-    </section>
+    </HextechFrame>
   );
 }
 
-function HeroBackground({ champion }: { champion: LeagueChampion | null }) {
-  if (!champion) {
-    return (
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(5,11,24,0.98)_0%,rgba(5,11,24,0.9)_42%,rgba(5,11,24,0.56)_100%),linear-gradient(0deg,rgba(5,11,24,0.98),rgba(5,11,24,0.18)_42%,rgba(5,11,24,0.8)),url('/images/summoners-rift.jpeg')] bg-cover bg-center" />
-    );
-  }
+function HomepageHeroBackground({ champion }: { champion: LeagueChampion | null }) {
+  const backgroundImage = champion
+    ? `url("${getChampionSplashUrl(champion)}")`
+    : "url('/images/summoners-rift.jpeg')";
 
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden bg-[#07101f]" aria-hidden="true">
+    <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
       <div
-        className="absolute inset-0 bg-cover bg-[position:68%_24%] opacity-56 blur-[0.2px] saturate-120"
+        className="absolute inset-0 bg-cover bg-[position:74%_18%] opacity-90 saturate-125"
+        style={{ backgroundImage }}
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,9,20,0.98)_0%,rgba(3,9,20,0.9)_32%,rgba(3,9,20,0.28)_66%,rgba(3,9,20,0.58)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,9,20,0.24)_0%,rgba(3,9,20,0.06)_55%,rgba(3,9,20,0.94)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_34%,rgba(34,211,238,0.12),transparent_26rem),radial-gradient(circle_at_74%_20%,rgba(34,211,238,0.12),transparent_28rem),radial-gradient(circle_at_86%_58%,rgba(201,170,90,0.08),transparent_28rem)]" />
+      <div
+        className="absolute inset-0 opacity-[0.06] mix-blend-screen"
         style={{
-          backgroundImage: `url("${getChampionSplashUrl(champion)}")`,
+          backgroundImage:
+            "linear-gradient(rgba(103,232,249,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,0.12) 1px, transparent 1px)",
+          backgroundSize: "88px 88px",
         }}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,11,24,0.99)_0%,rgba(5,11,24,0.9)_30%,rgba(5,11,24,0.52)_64%,rgba(5,11,24,0.34)_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,11,24,0.96)_0%,rgba(5,11,24,0.18)_46%,rgba(5,11,24,0.68)_100%)]" />
     </div>
   );
 }
 
-function PlatformStatusSection({
-  champions,
-  matchupCount,
-}: {
-  champions: LeagueChampion[];
-  matchupCount: number;
-}) {
-  const matchupGuideChampion = getMatchupGuidesCardChampion(champions);
-  const cards = [
-    {
-      backgroundChampion: matchupGuideChampion,
-      badge: "Available Now",
-      description: "Role-specific matchup guidance built for champ select and loading screen prep.",
-      features: [
-        `${formatNumber(matchupCount)} matchup guides`,
-        "Role-specific guidance",
-        "AI-assisted drafts reviewed by admins",
-        "Champion-specific advice",
-      ],
-      href: "/league/matchups",
-      icon: Target,
-      title: "Matchup Guides",
-      tone: "cyan",
-    },
-    {
-      backgroundChampion: null,
-      badge: "Coming Soon",
-      description: "Counter recommendations with practical reasons, tradeoffs, and pool context.",
-      features: [
-        "Counter recommendations",
-        "Why the matchup works",
-        "Strengths and weaknesses",
-        "Champion pool planning",
-      ],
-      href: null,
-      icon: Crosshair,
-      title: "Counter Pick Tool",
-      tone: "violet",
-    },
-    {
-      backgroundChampion: null,
-      badge: "Planned",
-      description: "More ways to turn champion data and match history into better decisions.",
-      features: ["Champion data", "Champion pools", "Climb tools", "Performance analysis"],
-      href: null,
-      icon: Layers3,
-      title: "More Tools Planned",
-      tone: "emerald",
-    },
-  ] as const;
+function ConfidenceGuide() {
+  const confidenceLevels = [
+    { label: "Very high", range: "1000+ stored games", style: "bg-cyan-300" },
+    { label: "High", range: "500–999 games", style: "bg-lime-300 rotate-45" },
+    { label: "Medium", range: "200–499 games", style: "bg-amber-400 rotate-45" },
+    { label: "Low", range: "50–199 games", style: "bg-rose-500" },
+    { label: "Very low", range: "Under 50 / preliminary", style: "bg-slate-500 rotate-45" },
+  ];
 
   return (
-    <section className="space-y-5">
-      <SectionHeading
-        eyebrow="Platform status"
-        title="LaneStomp is growing from matchup guides into a League improvement platform."
-      />
-      <div className="grid gap-4 lg:grid-cols-3">
-        {cards.map((card) => {
-          const Icon = card.icon;
+    <section className="border border-cyan-100/20 bg-[#06111f]/92 px-5 py-5 sm:px-7">
+      <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.7fr)] xl:items-center">
+        <div className="flex gap-4">
+          <div className="flex size-11 shrink-0 items-center justify-center border border-cyan-300/35 bg-cyan-400/10 text-cyan-100">
+            <LineChart className="size-5" aria-hidden="true" />
+          </div>
+          <div>
+            <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">
+              Confidence Guide
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
+              Confidence is based on stored Riot game count for a given patch. More games provide
+              more reliable insights. Real matchup win rates are usually close - 52-54% is already
+              strong at scale.
+            </p>
+          </div>
+        </div>
 
-          return (
-            <article
-              className="relative isolate overflow-hidden rounded-lg border border-cyan-100/10 bg-[#10182b]/90 p-5 shadow-xl shadow-black/15"
-              key={card.title}
-            >
-              {card.backgroundChampion ? (
-                <div
-                  className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[82%] overflow-hidden"
-                  aria-hidden="true"
-                >
-                  <div
-                    className="absolute inset-0 bg-cover bg-[position:72%_35%] opacity-48 blur-[0.2px] saturate-125"
-                    style={{
-                      backgroundImage: `url("${getChampionSplashUrl(card.backgroundChampion)}")`,
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,24,43,1)_0%,rgba(16,24,43,0.9)_22%,rgba(16,24,43,0.5)_52%,rgba(16,24,43,0.34)_76%,rgba(16,24,43,0.58)_100%)]" />
-                </div>
-              ) : null}
-
-              <div className="relative z-10 flex items-start justify-between gap-4">
-                <div
-                  className={`flex size-11 items-center justify-center rounded-lg border ${getToneClass(
-                    card.tone,
-                    "icon",
-                  )}`}
-                >
-                  <Icon className="size-5" aria-hidden="true" />
-                </div>
-                <span
-                  className={`rounded-md border px-2 py-1 text-xs font-medium ${getToneClass(
-                    card.tone,
-                    "badge",
-                  )}`}
-                >
-                  {card.badge}
-                </span>
-              </div>
-              <h3 className="relative z-10 mt-5 font-mono text-xl font-semibold text-[#E6EDF5]">
-                {card.href ? (
-                  <Link
-                    className="inline-flex items-center gap-2 rounded-sm transition hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-                    href={card.href}
-                  >
-                    {card.title}
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </Link>
-                ) : (
-                  card.title
-                )}
-              </h3>
-              <p className="relative z-10 mt-3 text-sm leading-6 text-[#9FB0C4]">
-                {card.description}
-              </p>
-              <ul className="relative z-10 mt-5 grid gap-2 text-sm text-[#AAB7C8]">
-                {card.features.map((feature) => (
-                  <li className="flex gap-2" key={feature}>
-                    <Sparkles
-                      className="mt-0.5 size-3.5 shrink-0 text-cyan-200"
-                      aria-hidden="true"
-                    />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          );
-        })}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {confidenceLevels.map((level) => (
+            <div className="flex items-start gap-3" key={level.label}>
+              <span
+                className={cn("mt-1 size-4 shrink-0 shadow-[0_0_12px_rgba(34,211,238,0.2)]", level.style)}
+                aria-hidden="true"
+              />
+              <span>
+                <span className="block font-semibold text-zinc-50">{level.label}</span>
+                <span className="mt-1 block text-sm leading-5 text-zinc-400">{level.range}</span>
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-function WhyLaneStompSection() {
-  const pillars = [
+function MatchupFeatureLinks() {
+  const features = [
     {
-      description:
-        "Get the matchup context you need before lock-in, loading screen, or first wave.",
-      icon: Brain,
-      title: "Learn Faster",
+      description: "See win rates, lane stats, and key insights for any champion matchup.",
+      href: "/league/matchups",
+      icon: Search,
+      title: "Understand the matchup",
     },
     {
-      description:
-        "See the trades, danger windows, spikes, and win conditions that actually matter.",
+      description: "Explore strengths, tradeoffs, and difficulty so you lock in with confidence.",
+      href: "/league/counters",
       icon: Swords,
-      title: "Understand Matchups",
+      title: "Prepare your counter pick",
     },
     {
-      description: "Build better habits through focused preparation instead of generic advice.",
-      icon: Trophy,
-      title: "Improve Consistently",
+      description: "Turn short matchup notes into a practical lane and teamfight plan.",
+      href: "/league/matchups",
+      icon: ShieldCheck,
+      title: "Play with a plan",
     },
   ];
 
   return (
-    <section className="space-y-5">
-      <SectionHeading
-        eyebrow="Why LaneStomp"
-        title="Built for players who want clear decisions, not vague coaching noise."
-      />
-      <div className="grid gap-4 md:grid-cols-3">
-        {pillars.map((pillar) => {
-          const Icon = pillar.icon;
+    <section className="mt-4 border border-cyan-100/20 bg-[#06111f]/82 p-4 sm:p-5">
+      <h2 className="px-3 font-mono text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">
+        Matchup Guides
+      </h2>
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        {features.map((feature) => {
+          const Icon = feature.icon;
 
           return (
-            <article
-              className="rounded-lg border border-cyan-100/10 bg-white/[0.035] p-5"
-              key={pillar.title}
+            <Link
+              className="group grid min-h-28 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 border border-cyan-100/15 bg-[#071321]/80 px-5 py-4 transition hover:border-cyan-300/50 hover:bg-cyan-400/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
+              href={feature.href}
+              key={feature.title}
             >
-              <Icon className="size-6 text-cyan-200" aria-hidden="true" />
-              <h3 className="mt-4 font-mono text-lg font-semibold text-[#E6EDF5]">
-                {pillar.title}
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-[#9FB0C4]">{pillar.description}</p>
-            </article>
+              <span className="flex size-16 items-center justify-center border border-cyan-300/15 bg-cyan-400/[0.06] text-cyan-200">
+                <Icon className="size-8" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-lg font-semibold text-white">{feature.title}</span>
+                <span className="mt-2 block text-sm leading-6 text-zinc-400">
+                  {feature.description}
+                </span>
+              </span>
+              <ArrowRight
+                className="size-5 text-cyan-200 transition group-hover:translate-x-1"
+                aria-hidden="true"
+              />
+            </Link>
           );
         })}
       </div>
@@ -405,37 +257,39 @@ function WhyLaneStompSection() {
   );
 }
 
-function ProgressSection({
+function PlatformStats({
   stats,
 }: {
   stats: { icon: typeof BarChart3; label: string; value: string }[];
 }) {
   return (
-    <section className="rounded-lg border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.14),transparent_26rem),linear-gradient(135deg,rgba(16,24,43,0.96),rgba(7,16,31,0.92))] p-5 shadow-xl shadow-black/15 sm:p-6">
-      <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-            Current progress
-          </p>
-          <h2 className="mt-3 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF5] sm:text-3xl">
-            The platform is already live and expanding.
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-[#9FB0C4]">
-            Matchup coverage, champion support, and role guidance are updated as the platform grows.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {stats.map((stat) => {
+    <section className="mt-4 border border-cyan-100/20 bg-[#06111f]/88 px-5 py-5 sm:px-7">
+      <div className="grid gap-5 md:grid-cols-[minmax(12rem,0.7fr)_minmax(0,2fr)] md:items-center">
+        <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">
+          LaneStomp in Numbers
+        </h2>
+        <div className="grid gap-0 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, index) => {
             const Icon = stat.icon;
 
             return (
               <div
-                className="rounded-lg border border-cyan-100/10 bg-black/20 p-4 shadow-lg shadow-black/10"
+                className={cn(
+                  "flex items-center gap-4 border-cyan-100/15 py-3 sm:px-6",
+                  index > 0 && "lg:border-l",
+                  index % 2 === 1 && "sm:border-l lg:border-l",
+                )}
                 key={stat.label}
               >
-                <Icon className="size-5 text-cyan-200" aria-hidden="true" />
-                <p className="mt-4 text-3xl font-semibold text-[#E6EDF5]">{stat.value}</p>
-                <p className="mt-1 text-sm text-[#9FB0C4]">{stat.label}</p>
+                <span className="flex size-11 shrink-0 items-center justify-center border border-cyan-100/15 bg-[#071321] text-cyan-200">
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-2xl font-semibold leading-none text-white">
+                    {stat.value}
+                  </span>
+                  <span className="mt-1 block text-sm text-zinc-400">{stat.label}</span>
+                </span>
               </div>
             );
           })}
@@ -445,123 +299,63 @@ function ProgressSection({
   );
 }
 
-function CtaSection() {
+function ChampionDataError({ message }: { message: string }) {
   return (
-    <section className="rounded-lg border border-cyan-300/15 bg-cyan-400/[0.06] p-5 sm:p-6">
-      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+    <div className="max-w-xl border border-amber-300/25 bg-amber-300/10 p-4 text-amber-100">
+      <div className="flex items-start gap-3">
+        <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">
-            Ready before queue
-          </p>
-          <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF5]">
-            Start with the matchup you are about to play.
+          <h2 className="font-mono text-lg font-semibold text-white">
+            Champion data is not ready yet
           </h2>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            className="inline-flex h-11 items-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-cyan-950 transition hover:bg-cyan-200"
-            href="#matchup-tool"
-          >
-            Open Matchup Tool
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-          <Link
-            className="inline-flex h-11 items-center rounded-md border border-cyan-100/15 bg-white/[0.07] px-4 text-sm font-medium text-[#E6EDF5] transition hover:border-cyan-100/30 hover:bg-white/[0.12]"
-            href="/champions"
-          >
-            Browse Champions
-          </Link>
+          <p className="mt-2 text-sm leading-6 text-amber-100/80">
+            Apply the latest champion migration and run the Data Dragon import before using Counter
+            Pick from the homepage.
+          </p>
+          <p className="mt-4 border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
+            {message}
+          </p>
         </div>
       </div>
-    </section>
-  );
-}
-
-function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return (
-    <div className="max-w-3xl">
-      <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/80">{eyebrow}</p>
-      <h2 className="mt-2 font-mono text-2xl font-semibold tracking-normal text-[#E6EDF5] sm:text-3xl">
-        {title}
-      </h2>
     </div>
   );
 }
 
-function ChampionDataError({ message }: { message: string }) {
-  return (
-    <Card className="border-amber-300/20 bg-amber-300/10 p-5 text-amber-100">
-      <div className="flex items-start gap-3">
-        <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-        <div>
-          <CardTitle className="font-mono text-lg">Champion data is not ready yet</CardTitle>
-          <p className="mt-2 text-sm leading-6 text-amber-100/80">
-            Apply the latest champion migration and run the Data Dragon import before building
-            matchups.
-          </p>
-          <p className="mt-4 rounded-md border border-white/10 bg-black/20 p-3 font-mono text-xs text-amber-50">
-            {message}
-          </p>
-          <Link
-            className="mt-4 inline-flex rounded-md border border-amber-200/20 bg-amber-200/10 px-3 py-2 text-sm font-medium text-amber-50 transition hover:bg-amber-200/15"
-            href="/champions"
-          >
-            View champion data
-          </Link>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function getProgressStats(championCount: number, coverage: LeagueMatchupCoverageSummary | null) {
+function getHomepageStats(
+  championCount: number,
+  coverage: LeagueMatchupCoverageSummary | null,
+) {
   const matchupCount = coverage?.all.generatedCount ?? 0;
   const rolesCovered = coverage
     ? leagueRoles.filter((role) => coverage[role].generatedCount > 0).length
     : leagueRoles.length;
 
-  return {
-    items: [
-      {
-        icon: BarChart3,
-        label: "Matchups",
-        value: formatNumber(matchupCount),
-      },
-      {
-        icon: Target,
-        label: "Champions",
-        value: `${formatNumber(championCount)}+`,
-      },
-      {
-        icon: LineChart,
-        label: "Roles Covered",
-        value: String(rolesCovered || leagueRoles.length),
-      },
-      {
-        icon: Clock3,
-        label: "Growing Daily",
-        value: "Live",
-      },
-    ],
-    matchupCount,
-  };
-}
-
-function getHomeAtmosphereChampion(champions: LeagueChampion[]) {
-  const preferredChampionIds = ["Aurora", "Akali", "Yasuo", "Ahri", "Lux"];
-
-  return (
-    preferredChampionIds
-      .map((championId) => champions.find((champion) => champion.id === championId))
-      .find(Boolean) ??
-    champions.find((champion) => champion.tags.includes("Mage")) ??
-    champions[0] ??
-    null
-  );
+  return [
+    {
+      icon: BarChart3,
+      label: "Matchup guides",
+      value: formatNumber(matchupCount),
+    },
+    {
+      icon: Target,
+      label: "Champions",
+      value: `${formatNumber(championCount)}+`,
+    },
+    {
+      icon: Crosshair,
+      label: "Roles covered",
+      value: String(rolesCovered || leagueRoles.length),
+    },
+    {
+      icon: CheckCircle2,
+      label: "Counter Pick",
+      value: "LIVE",
+    },
+  ];
 }
 
 function getHeroSplashChampion(champions: LeagueChampion[]) {
-  const curatedChampionIds = [
+  return getFirstAvailableChampion(champions, [
     "Ahri",
     "Yasuo",
     "Jinx",
@@ -570,55 +364,17 @@ function getHeroSplashChampion(champions: LeagueChampion[]) {
     "Ekko",
     "Lucian",
     "Vayne",
-    "Riven",
-    "Sylas",
-    "Teemo",
-    "Diana",
-    "Aurora",
-    "Nasus",
-  ];
-  const curatedChampions = curatedChampionIds
-    .map((championId) => champions.find((champion) => champion.id === championId))
-    .filter((champion): champion is LeagueChampion => Boolean(champion));
-
-  if (curatedChampions.length === 0) {
-    return null;
-  }
-
-  return curatedChampions[Math.floor(Math.random() * curatedChampions.length)];
+  ]);
 }
 
-function getMatchupGuidesCardChampion(champions: LeagueChampion[]) {
-  const curatedChampionIds = ["Ahri", "Lux", "Ashe", "Lucian", "Jhin", "Vayne", "Yasuo", "LeeSin"];
-  const curatedChampions = curatedChampionIds
-    .map((championId) => champions.find((champion) => champion.id === championId))
-    .filter((champion): champion is LeagueChampion => Boolean(champion));
-
-  if (curatedChampions.length === 0) {
-    return null;
-  }
-
-  const daysSinceEpoch = Math.floor(Date.now() / 86_400_000);
-
-  return curatedChampions[daysSinceEpoch % curatedChampions.length];
-}
-
-function getToneClass(tone: "cyan" | "emerald" | "violet", element: "badge" | "icon") {
-  if (tone === "violet") {
-    return element === "icon"
-      ? "border-violet-300/20 bg-violet-500/10 text-violet-100"
-      : "border-violet-300/20 bg-violet-500/10 text-violet-100";
-  }
-
-  if (tone === "emerald") {
-    return element === "icon"
-      ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
-      : "border-emerald-300/20 bg-emerald-500/10 text-emerald-100";
-  }
-
-  return element === "icon"
-    ? "border-cyan-300/20 bg-cyan-400/10 text-cyan-100"
-    : "border-cyan-300/20 bg-cyan-400/10 text-cyan-100";
+function getFirstAvailableChampion(champions: LeagueChampion[], championIds: string[]) {
+  return (
+    championIds
+      .map((championId) => champions.find((champion) => champion.id === championId))
+      .find((champion): champion is LeagueChampion => Boolean(champion)) ??
+    champions[0] ??
+    null
+  );
 }
 
 function formatNumber(value: number) {
