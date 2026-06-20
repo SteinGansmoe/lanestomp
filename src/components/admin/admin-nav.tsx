@@ -76,7 +76,6 @@ const adminNavGroups: Array<{
     label: "Platform",
     items: [
       { href: "/admin", label: "Overview", section: "overview" },
-      { href: "/admin/games", label: "Games", section: "games" },
       { href: "/admin/seasons", label: "Seasons", section: "seasons" },
       { href: "/admin/timeline", label: "Timeline", section: "timeline" },
     ],

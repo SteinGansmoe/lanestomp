@@ -148,7 +148,6 @@ export type AdminData = {
 
 export type AdminSection =
   | "community"
-  | "games"
   | "league-counter-picks"
   | "league-matchups"
   | "overview"
@@ -167,14 +166,6 @@ export type ResourceFormState = {
   sort_order: string;
   title: string;
   url: string;
-};
-
-export type GameFormState = {
-  description: string;
-  icon_url: string;
-  id: string;
-  name: string;
-  slug: string;
 };
 
 export type SeasonFormState = {

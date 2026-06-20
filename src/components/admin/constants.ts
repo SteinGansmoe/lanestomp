@@ -1,6 +1,5 @@
 import type {
   AdminData,
-  GameFormState,
   LeagueMatchupFormState,
   ResourceFormState,
   SeasonFormState,
@@ -8,14 +7,6 @@ import type {
 } from "./types";
 
 export const sessionCheckTimeoutMs = 2_000;
-
-export const emptyGameForm: GameFormState = {
-  description: "",
-  icon_url: "",
-  id: "",
-  name: "",
-  slug: "",
-};
 
 export const emptySeasonForm: SeasonFormState = {
   description: "",

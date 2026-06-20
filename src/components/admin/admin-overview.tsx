@@ -60,26 +60,20 @@ function AdminProductArea({
 
 export function AdminOverview({
   communityContentCount,
-  gamesCount,
   leagueChampionsCount,
   leagueCounterPicksCount,
   leagueDraftMatchupsCount,
   leagueMatchupsCount,
   leagueReviewedMatchupsCount,
   resourcesCount,
-  seasonsCount,
-  timelineEventsCount,
 }: {
   communityContentCount: number;
-  gamesCount: number;
   leagueChampionsCount: number;
   leagueCounterPicksCount: number;
   leagueDraftMatchupsCount: number;
   leagueMatchupsCount: number;
   leagueReviewedMatchupsCount: number;
   resourcesCount: number;
-  seasonsCount: number;
-  timelineEventsCount: number;
 }) {
   return (
     <div className="space-y-10">
@@ -185,35 +179,6 @@ export function AdminOverview({
             muted
             summary="Maintain community links without making them the dashboard focus."
             tag="active"
-          />
-        </div>
-      </AdminProductArea>
-
-      <AdminProductArea
-        title="Platform"
-        description="Foundational LaneStomp CMS tools remain available, but they are lower-priority than the current League feature work."
-      >
-        <div className="grid gap-6 md:grid-cols-3">
-          <AdminSectionCard
-            count={gamesCount}
-            href="/admin/games"
-            label="Games"
-            muted
-            summary="Create and edit game names, slugs, descriptions, and icons."
-          />
-          <AdminSectionCard
-            count={seasonsCount}
-            href="/admin/seasons"
-            label="Seasons"
-            muted
-            summary="Create and edit season schedules, slugs, and descriptions."
-          />
-          <AdminSectionCard
-            count={timelineEventsCount}
-            href="/admin/timeline"
-            label="Timeline"
-            muted
-            summary="Create and edit compact game timeline events."
           />
         </div>
       </AdminProductArea>

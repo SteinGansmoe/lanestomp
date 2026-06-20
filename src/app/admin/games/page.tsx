@@ -1,5 +1,5 @@
-import { AdminDashboard } from "@/src/components/admin/admin-dashboard";
+import { redirect } from "next/navigation";
 
 export default function AdminGamesPage() {
-  return <AdminDashboard section="games" />;
+  redirect("/admin");
 }
