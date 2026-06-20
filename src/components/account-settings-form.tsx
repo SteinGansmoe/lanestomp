@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Mail, Save, UserCircle, X } from "lucide-react";
 
+import { counterPickPrimaryCtaClassName } from "@/src/components/league/counter-pick-cta-styles";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
@@ -20,6 +21,7 @@ import { supabase } from "@/src/lib/supabase";
 const pendingEmailStorageKey = "lanestomp.account.pendingEmailChange";
 const pendingEmailNoticeDismissedStorageKey = "lanestomp.account.pendingEmailNoticeDismissed";
 const emailResendCooldownSeconds = 60;
+const accountSettingsActionButtonClassName = `h-11 rounded-none px-4 font-semibold ${counterPickPrimaryCtaClassName}`;
 
 function AccountSettingsFormSkeleton() {
   return (
@@ -451,7 +453,7 @@ export function AccountSettingsForm() {
           ) : null}
 
           <Button
-            className="h-11 bg-cyan-300 px-4 text-[#05111d] hover:bg-cyan-200"
+            className={accountSettingsActionButtonClassName}
             disabled={isSaving}
             type="submit"
           >
@@ -579,7 +581,7 @@ export function AccountSettingsForm() {
           ) : null}
 
           <Button
-            className="h-11 bg-cyan-400/80 px-4 text-[#05111d] hover:bg-cyan-300"
+            className={accountSettingsActionButtonClassName}
             disabled={isEmailSaving}
             type="submit"
           >
@@ -664,7 +666,7 @@ export function AccountSettingsForm() {
           ) : null}
 
           <Button
-            className="h-11 bg-cyan-300 px-4 text-[#05111d] hover:bg-cyan-200"
+            className={accountSettingsActionButtonClassName}
             disabled={isPasswordSaving}
             type="submit"
           >

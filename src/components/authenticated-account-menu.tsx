@@ -331,7 +331,7 @@ function AccountMenuContent({
   return (
     <div
       className={cn(
-        "z-[100] overflow-hidden rounded border border-cyan-100/15 bg-[linear-gradient(180deg,#081524,#050d19)] p-1 text-sm text-zinc-100 shadow-[0_18px_42px_rgba(0,0,0,0.42),0_0_0_1px_rgba(103,232,249,0.05)]",
+        "z-[170] overflow-hidden rounded border border-cyan-100/15 bg-[linear-gradient(180deg,#081524,#050d19)] p-1 text-sm text-zinc-100 shadow-[0_18px_42px_rgba(0,0,0,0.42),0_0_0_1px_rgba(103,232,249,0.05)]",
         variant === "inline" && "w-full",
         variant === "inline" && menuPlacement === "inline" && "mt-2",
         variant === "inline" && menuPlacement === "dropdown-up" && "absolute bottom-14 left-0 right-0",

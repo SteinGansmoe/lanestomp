@@ -2234,7 +2234,8 @@ function FullMatchupGuideCallout({ href }: { href: string | null }) {
   return (
     <Button
       asChild
-      className="h-12 w-fit bg-cyan-200 px-5 font-semibold text-[#04111f] shadow-lg shadow-cyan-950/30 hover:bg-cyan-100"
+      variant="secondary"
+      className={cn("h-12 w-fit rounded-none px-5 font-semibold", counterPickPrimaryCtaClassName)}
     >
       <Link href={href}>
         Open Full Matchup Guide

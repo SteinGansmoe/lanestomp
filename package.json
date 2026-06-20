@@ -31,6 +31,8 @@
     "test:counter-pick-admin-panel-cleanup": "node scripts/test-counter-pick-admin-panel-cleanup.mjs",
     "test:counter-pick-entry-hero": "node scripts/test-counter-pick-entry-hero.mjs",
     "test:homepage-counter-pick-entry": "node scripts/test-homepage-counter-pick-entry.mjs",
+    "test:mobile-navigation-stacking": "node scripts/test-mobile-navigation-stacking.mjs",
+    "test:muted-primary-button-actions": "node scripts/test-muted-primary-button-actions.mjs",
     "test:matchup-guides-redesign": "node scripts/test-matchup-guides-redesign.mjs",
     "test:matchup-guide-detail-redesign": "node scripts/test-matchup-guide-detail-redesign.mjs",
     "test:matchup-guide-artwork-layering": "node scripts/test-matchup-guide-artwork-layering.mjs",

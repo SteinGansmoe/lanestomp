@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useId, useRef, useState } from "react";
 import { Menu, Search, X } from "lucide-react";
 
 import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
@@ -27,9 +28,84 @@ type SiteHeaderProps = {
 export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
+  const menuId = useId();
+  const mobileMenuPanelRef = useRef<HTMLDivElement>(null);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname();
   const currentSearch = searchValue ?? localSearch;
   const shouldShowSearch = Boolean(onSearchChange || searchValue !== undefined);
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+
+    previouslyFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    window.setTimeout(() => {
+      const firstFocusable = getFocusableElements(mobileMenuPanelRef.current)[0];
+      firstFocusable?.focus();
+    }, 0);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileMenu();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableElements = getFocusableElements(mobileMenuPanelRef.current);
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        mobileMenuPanelRef.current?.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  function closeMobileMenu({ restoreFocus = true } = {}) {
+    setIsMenuOpen(false);
+
+    if (restoreFocus) {
+      window.setTimeout(() => {
+        const returnTarget = previouslyFocusedElementRef.current ?? mobileMenuTriggerRef.current;
+        returnTarget?.focus();
+      }, 0);
+    }
+  }
 
   function handleSearchChange(value: string) {
     if (onSearchChange) {
@@ -74,9 +150,11 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
 
         <Button
           aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+          aria-controls={menuId}
           aria-expanded={isMenuOpen}
           className="ml-auto size-10 border-cyan-100/15 bg-[#06111f]/92 p-0 text-cyan-100 hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] sm:hidden"
           onClick={() => setIsMenuOpen((current) => !current)}
+          ref={mobileMenuTriggerRef}
           variant="ghost"
         >
           {isMenuOpen ? (
@@ -95,20 +173,49 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
         />
       ) : null}
 
-      {isMenuOpen ? (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 border border-cyan-100/15 bg-[linear-gradient(180deg,#081524,#050d19)] p-3 shadow-[0_18px_42px_rgba(0,0,0,0.42)] sm:hidden">
-          <NavigationLinks
-            className="grid gap-1.5"
-            onNavigate={() => setIsMenuOpen(false)}
-            pathname={pathname}
-          />
-          <AuthenticatedAccountMenu
-            className="mt-4 border-t border-cyan-100/10 pt-4"
-            menuPlacement="inline"
-            variant="topbar"
-          />
-        </div>
-      ) : null}
+      {isMenuOpen && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              <button
+                aria-label="Close navigation"
+                className="fixed inset-0 z-[140] cursor-default bg-[#01050d]/78 backdrop-blur-[2px] sm:hidden"
+                onClick={() => closeMobileMenu()}
+                type="button"
+              />
+              <div
+                aria-label="Mobile navigation"
+                className="fixed inset-x-3 top-3 z-[150] max-h-[calc(100dvh-1.5rem)] overflow-y-auto border border-cyan-300/25 bg-[linear-gradient(180deg,#081524,#050d19)] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.58),0_0_0_1px_rgba(103,232,249,0.08)] sm:hidden"
+                id={menuId}
+                ref={mobileMenuPanelRef}
+                role="dialog"
+                tabIndex={-1}
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-cyan-100/10 pb-3">
+                  <BrandLink />
+                  <button
+                    aria-label="Close navigation"
+                    className="flex size-10 shrink-0 items-center justify-center rounded border border-cyan-100/15 bg-[#06111f]/92 text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
+                    onClick={() => closeMobileMenu()}
+                    type="button"
+                  >
+                    <X className="size-5" aria-hidden="true" />
+                  </button>
+                </div>
+                <NavigationLinks
+                  className="mt-3 grid gap-1.5"
+                  onNavigate={() => closeMobileMenu({ restoreFocus: false })}
+                  pathname={pathname}
+                />
+                <AuthenticatedAccountMenu
+                  className="mt-4 border-t border-cyan-100/10 pt-4"
+                  menuPlacement="inline"
+                  variant="topbar"
+                />
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </header>
   );
 }
@@ -130,6 +237,18 @@ function BrandLink() {
       />
     </Link>
   );
+}
+
+function getFocusableElements(container: HTMLElement | null) {
+  if (!container) {
+    return [];
+  }
+
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hasAttribute("disabled") && !element.getAttribute("aria-hidden"));
 }
 
 function SearchInput({
