@@ -154,12 +154,14 @@ export function MatchupFeedbackControls({
   }
 
   return (
-    <div className="mt-3 border-t border-white/10 pt-2.5">
+    <div className="mt-4 border-t border-white/10 pt-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           aria-pressed={selectedFeedbackType === "helpful"}
-          className={`h-8 border-emerald-300/20 bg-emerald-500/10 px-2 text-xs text-emerald-100 hover:bg-emerald-500/20 ${
-            selectedFeedbackType === "helpful" ? "ring-1 ring-emerald-300/45" : ""
+          className={`h-8 rounded-none border-emerald-300/20 bg-emerald-500/[0.07] px-2 text-xs text-emerald-100 hover:border-emerald-300/40 hover:bg-emerald-500/15 ${
+            selectedFeedbackType === "helpful"
+              ? "border-emerald-300/45 bg-emerald-500/20 ring-1 ring-emerald-300/35"
+              : ""
           }`}
           disabled={status.isLoading}
           onClick={() => submitFeedback("helpful")}
@@ -171,8 +173,10 @@ export function MatchupFeedbackControls({
         </Button>
         <Button
           aria-pressed={selectedFeedbackType === "not_helpful"}
-          className={`h-8 border-amber-300/20 bg-amber-400/10 px-2 text-xs text-amber-100 hover:bg-amber-400/20 ${
-            selectedFeedbackType === "not_helpful" ? "ring-1 ring-amber-300/45" : ""
+          className={`h-8 rounded-none border-amber-300/20 bg-amber-400/[0.07] px-2 text-xs text-amber-100 hover:border-amber-300/40 hover:bg-amber-400/15 ${
+            selectedFeedbackType === "not_helpful"
+              ? "border-amber-300/45 bg-amber-400/20 ring-1 ring-amber-300/35"
+              : ""
           }`}
           disabled={status.isLoading}
           onClick={() => submitFeedback("not_helpful")}
@@ -184,8 +188,8 @@ export function MatchupFeedbackControls({
         </Button>
         <Button
           aria-expanded={isReporting}
-          className={`h-8 border-rose-300/20 bg-rose-500/10 px-2 text-xs text-rose-100 hover:bg-rose-500/20 ${
-            isReporting ? "ring-1 ring-rose-300/45" : ""
+          className={`h-8 rounded-none border-rose-300/20 bg-rose-500/[0.07] px-2 text-xs text-rose-100 hover:border-rose-300/40 hover:bg-rose-500/15 ${
+            isReporting ? "border-rose-300/45 bg-rose-500/20 ring-1 ring-rose-300/35" : ""
           }`}
           disabled={status.isLoading}
           onClick={() => setIsReporting((current) => !current)}
@@ -198,11 +202,11 @@ export function MatchupFeedbackControls({
       </div>
 
       {isReporting ? (
-        <div className="mt-3 grid gap-2 rounded-md border border-white/10 bg-black/15 p-3">
+        <div className="mt-3 grid gap-2 border border-white/10 bg-black/15 p-3">
           <label className="grid gap-1 text-xs text-zinc-400">
             Reason
             <select
-              className="h-9 rounded-md border border-white/10 bg-[#081120] px-2 text-sm text-zinc-100 outline-none focus-visible:border-violet-400/70"
+              className="h-9 border border-white/10 bg-[#081120] px-2 text-sm text-zinc-100 outline-none focus-visible:border-violet-400/70"
               onChange={(event) => setReason(event.target.value as FeedbackReason)}
               value={reason}
             >
@@ -216,14 +220,14 @@ export function MatchupFeedbackControls({
           <label className="grid gap-1 text-xs text-zinc-400">
             Details
             <textarea
-              className="min-h-20 resize-y rounded-md border border-white/10 bg-[#081120] px-2 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus-visible:border-violet-400/70"
+              className="min-h-20 resize-y border border-white/10 bg-[#081120] px-2 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus-visible:border-violet-400/70"
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Optional context for the admin reviewing this card"
               value={message}
             />
           </label>
           <Button
-            className="h-9 justify-self-start bg-rose-500/80 px-3 text-white hover:bg-rose-500"
+            className="h-9 justify-self-start rounded-none border-rose-300/25 bg-rose-500/20 px-3 text-white hover:border-rose-300/45 hover:bg-rose-500/30"
             disabled={status.isLoading}
             onClick={() => submitFeedback("report_issue")}
             type="button"

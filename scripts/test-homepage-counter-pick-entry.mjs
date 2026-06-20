@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 const homepage = readFileSync("src/app/page.tsx", "utf8");
 const pageShell = readFileSync("src/components/lane-stomp-page.tsx", "utf8");
 const startForm = readFileSync("src/components/league/counter-pick-start-form.tsx", "utf8");
+const siteHeader = readFileSync("src/components/site-header.tsx", "utf8");
 const countersPage = readFileSync("src/app/league/counters/page.tsx", "utf8");
 const changedHomepageFiles = `${homepage}\n${pageShell}\n${startForm}`;
 
@@ -25,6 +26,16 @@ assert.match(
   homepage,
   /<LaneStompPageBackground \/>/,
   "Homepage should use the shared layered atmosphere background component.",
+);
+assert.match(
+  homepage,
+  /<HextechFrame/,
+  "Homepage hero should use the shared Hextech frame treatment.",
+);
+assert.match(
+  homepage,
+  /radial-gradient\(circle_at_24%_34%/,
+  "Homepage hero should include the cinematic Counter Pick frame atmosphere.",
 );
 assert.match(
   pageShell,
@@ -111,8 +122,28 @@ assert.match(
 );
 assert.match(
   startForm,
+  /counterPickPrimaryCtaClassName/,
+  "Homepage Counter Pick CTA should use the shared muted Counter Pick primary CTA style.",
+);
+assert.match(
+  startForm,
+  /counterPickConfirmedInputClassName/,
+  "Homepage selected champion input should use the restrained confirmed input surface.",
+);
+assert.doesNotMatch(
+  startForm,
+  /bg-cyan-300 text-\[#04111d\] hover:bg-cyan-200/,
+  "Homepage selected CTA should not use the old bright cyan fill.",
+);
+assert.match(
+  startForm,
   /onKeyDown=\{handleKeyDown\}/,
   "Counter Pick hero search should expose keyboard navigation.",
+);
+assert.match(
+  siteHeader,
+  /counterPickPrimaryCtaClassName/,
+  "Navbar Counter Pick CTA should use the shared muted Counter Pick primary CTA style.",
 );
 assert.match(
   countersPage,

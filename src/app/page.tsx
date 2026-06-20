@@ -20,6 +20,7 @@ import {
   laneStompPageClassName,
 } from "@/src/components/lane-stomp-page";
 import { CounterPickStartForm } from "@/src/components/league/counter-pick-start-form";
+import { HextechFrame } from "@/src/components/league/hextech-frame";
 import { SiteHeader } from "@/src/components/site-header";
 import {
   getChampionSplashUrl,
@@ -90,24 +91,38 @@ function HomepageHero({
   children: ReactNode;
 }) {
   return (
-    <section className="relative isolate min-h-[35rem] overflow-visible border-x border-cyan-100/10">
+    <HextechFrame className="relative isolate z-30 min-h-[35rem] w-[calc(100vw-2rem)] max-w-full overflow-visible bg-[#06111f]/88 sm:w-full">
       <HomepageHeroBackground champion={champion} />
-      <div className="relative z-10 w-full max-w-[21rem] px-3 py-10 sm:max-w-3xl sm:px-8 sm:py-12 lg:px-12 lg:py-16">
-        <p className="font-mono text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
-          Counter Pick
-        </p>
-        <h1 className="mt-4 font-mono text-4xl font-bold uppercase leading-[1.04] tracking-normal text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+      <div className="relative z-40 w-full max-w-[21rem] px-3 py-12 sm:max-w-3xl sm:px-8 sm:py-14 lg:px-12 lg:py-20">
+        <div className="flex items-center gap-4">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
+            Counter Pick
+          </p>
+          <span
+            className="hidden h-px w-28 bg-[linear-gradient(90deg,rgba(103,232,249,0.85),rgba(103,232,249,0.08))] sm:block"
+            aria-hidden="true"
+          />
+          <span
+            className="hidden size-1.5 rotate-45 border border-cyan-300/70 bg-cyan-300/20 sm:block"
+            aria-hidden="true"
+          />
+        </div>
+        <h1 className="mt-6 font-mono text-4xl font-bold uppercase leading-[1.04] tracking-normal text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)] sm:text-5xl lg:text-6xl xl:text-7xl">
           <span className="block">Find the right</span>
           <span className="block">counter before</span>
           <span className="block">champion select</span>
         </h1>
+        <span
+          className="mt-6 block h-0.5 w-12 bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.85)]"
+          aria-hidden="true"
+        />
         <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-100 sm:text-lg">
           Search any champion to get smart counter picks, matchup insights, and practical prep
           before you lock in.
         </p>
         <div className="mt-8">{children}</div>
       </div>
-    </section>
+    </HextechFrame>
   );
 }
 
@@ -122,8 +137,17 @@ function HomepageHeroBackground({ champion }: { champion: LeagueChampion | null 
         className="absolute inset-0 bg-cover bg-[position:74%_18%] opacity-90 saturate-125"
         style={{ backgroundImage }}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,9,20,0.98)_0%,rgba(3,9,20,0.92)_34%,rgba(3,9,20,0.36)_66%,rgba(3,9,20,0.58)_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,9,20,0.18)_0%,rgba(3,9,20,0.08)_55%,rgba(3,9,20,0.92)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,9,20,0.98)_0%,rgba(3,9,20,0.9)_32%,rgba(3,9,20,0.28)_66%,rgba(3,9,20,0.58)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,9,20,0.24)_0%,rgba(3,9,20,0.06)_55%,rgba(3,9,20,0.94)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_34%,rgba(34,211,238,0.12),transparent_26rem),radial-gradient(circle_at_74%_20%,rgba(34,211,238,0.12),transparent_28rem),radial-gradient(circle_at_86%_58%,rgba(201,170,90,0.08),transparent_28rem)]" />
+      <div
+        className="absolute inset-0 opacity-[0.06] mix-blend-screen"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(103,232,249,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,0.12) 1px, transparent 1px)",
+          backgroundSize: "88px 88px",
+        }}
+      />
     </div>
   );
 }

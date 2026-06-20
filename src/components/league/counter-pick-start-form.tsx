@@ -16,6 +16,10 @@ import {
   normalizePublicCounterPickSearchValue,
 } from "@/src/features/league/public-counter-pick-options";
 import { buildCounterPickUrl } from "@/src/features/league/counter-pick-routes";
+import {
+  counterPickConfirmedInputClassName,
+  counterPickPrimaryCtaClassName,
+} from "@/src/components/league/counter-pick-cta-styles";
 import { getLeagueRoleLabel, type LeagueRole } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 
@@ -188,7 +192,12 @@ export function CounterPickStartForm({ champions, popularChampions }: CounterPic
   return (
     <div className="w-full max-w-[48rem]" ref={formRef}>
       <div className="relative z-20">
-        <div className="flex flex-col border border-cyan-300/70 bg-[#020a14]/90 shadow-[0_0_24px_rgba(34,211,238,0.12)] sm:flex-row">
+        <div
+          className={cn(
+            "flex flex-col border border-cyan-300/45 bg-[#020a14]/90 shadow-[0_0_18px_rgba(34,211,238,0.08)] sm:flex-row",
+            selectedChampion && counterPickConfirmedInputClassName,
+          )}
+        >
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Search any champion</span>
             {selectedChampion ? (
@@ -252,9 +261,9 @@ export function CounterPickStartForm({ champions, popularChampions }: CounterPic
           </label>
           <button
             className={cn(
-              "inline-flex h-16 items-center justify-center gap-3 border-t px-6 font-mono text-sm font-bold uppercase tracking-[0.08em] transition focus-visible:outline-none focus-visible:ring-2 sm:min-w-52 sm:border-l sm:border-t-0",
+              "inline-flex h-16 items-center justify-center gap-3 border-t px-6 font-mono text-sm font-bold uppercase tracking-[0.08em] sm:min-w-52 sm:border-l sm:border-t-0",
               selectedChampion
-                ? "border-cyan-300/40 bg-cyan-300 text-[#04111d] hover:bg-cyan-200 focus-visible:ring-cyan-100"
+                ? counterPickPrimaryCtaClassName
                 : "border-cyan-100/15 bg-[#06111f]/90 text-cyan-100 hover:border-cyan-300/50 hover:bg-cyan-400/[0.08] focus-visible:ring-cyan-300/55",
             )}
             onClick={handleSubmit}
@@ -275,7 +284,7 @@ export function CounterPickStartForm({ champions, popularChampions }: CounterPic
 
         {isResultsOpen ? (
           <div
-            className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 max-h-80 overflow-y-auto border border-cyan-300/35 bg-[#06111f]/98 p-1 shadow-[0_18px_44px_rgba(0,0,0,0.38)]"
+            className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-80 overflow-y-auto border border-cyan-300/35 bg-[#06111f] p-1 shadow-[0_18px_44px_rgba(0,0,0,0.5)] [scrollbar-color:rgba(34,211,238,0.38)_rgba(7,19,33,0.9)] [scrollbar-width:thin]"
             id="home-counter-champion-results"
             role="listbox"
           >

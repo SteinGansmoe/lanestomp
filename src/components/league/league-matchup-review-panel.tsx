@@ -424,14 +424,16 @@ export function LeagueMatchupReviewPanel({
   return (
     <>
       {isAdmin ? (
-        <section className="rounded-lg border border-violet-300/20 bg-[#10182b]/82 p-3 shadow-lg shadow-black/10 backdrop-blur-md">
+        <section className="border border-violet-300/20 bg-[#06111f]/86 p-4 shadow-[inset_3px_0_0_rgba(167,139,250,0.35)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="flex size-9 items-center justify-center rounded-md border border-violet-300/20 bg-violet-500/20 text-violet-100">
+              <span className="flex size-9 items-center justify-center border border-violet-300/25 bg-violet-500/15 text-violet-100">
                 <ShieldCheck className="size-4" aria-hidden="true" />
               </span>
               <div>
-                <p className="font-mono text-sm font-semibold text-white">Admin review</p>
+                <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-violet-100">
+                  Admin review
+                </p>
                 <p className="text-xs text-zinc-400">
                   {adminMatchup
                     ? `${getStatusLabel(adminMatchup.generation_status)} guidance shown in the public layout.`
@@ -444,7 +446,7 @@ export function LeagueMatchupReviewPanel({
               {isEditing ? (
                 <>
                   <Button
-                    className="h-9 bg-violet-500/80 px-3 text-white hover:bg-violet-500"
+                    className="h-9 rounded-none border-violet-300/25 bg-violet-500/25 px-3 text-white hover:border-violet-300/45 hover:bg-violet-500/35"
                     disabled={status.isLoading || isRegeneratingSection}
                     onClick={saveEdits}
                     type="button"
@@ -453,7 +455,7 @@ export function LeagueMatchupReviewPanel({
                     {status.isLoading ? "Saving..." : "Save"}
                   </Button>
                   <Button
-                    className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
+                    className="h-9 rounded-none border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
                     disabled={status.isLoading || isRegeneratingSection}
                     onClick={cancelEditing}
                     type="button"
@@ -466,7 +468,7 @@ export function LeagueMatchupReviewPanel({
               ) : (
                 <>
                   <Button
-                    className="h-9 border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
+                    className="h-9 rounded-none border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10"
                     disabled={!adminMatchup || status.isLoading || isRegeneratingSection}
                     onClick={startEditing}
                     type="button"
@@ -476,7 +478,7 @@ export function LeagueMatchupReviewPanel({
                     Edit guidance
                   </Button>
                   <Button
-                    className="h-9 border-emerald-300/20 bg-emerald-500/10 px-3 text-emerald-100 hover:bg-emerald-500/20"
+                    className="h-9 rounded-none border-emerald-300/20 bg-emerald-500/10 px-3 text-emerald-100 hover:bg-emerald-500/20"
                     disabled={
                       !adminMatchup ||
                       status.isLoading ||
@@ -496,13 +498,13 @@ export function LeagueMatchupReviewPanel({
           </div>
 
           {status.error ? (
-            <p className="mt-3 rounded-md border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <p className="mt-3 border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
               {status.error}
             </p>
           ) : null}
 
           {status.success ? (
-            <p className="mt-3 rounded-md border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+            <p className="mt-3 border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
               {status.success}
             </p>
           ) : null}
@@ -575,17 +577,25 @@ function MatchupGuideCard({
   const bullets = getGuideBullets(section.body);
 
   return (
-    <article className="group flex h-full flex-col rounded-lg border border-white/12 bg-[#10182b]/82 p-3 shadow-lg shadow-black/20 ring-1 ring-white/10 backdrop-blur-md transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121d33]/88 sm:p-3.5">
+    <article
+      className={`group flex h-full flex-col border border-cyan-100/15 bg-[#06111f]/86 p-4 transition hover:border-cyan-100/25 hover:bg-[#071321]/90 ${getSectionPanelAccentClass(
+        section.accent,
+      )}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span
-            className={`flex size-8 shrink-0 items-center justify-center rounded-md border ${getSectionIconClass(
+            className={`flex size-8 shrink-0 items-center justify-center border ${getSectionIconClass(
               section.accent,
             )}`}
           >
             <Icon className="size-4" aria-hidden="true" />
           </span>
-          <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.08em] text-white">
+          <h2
+            className={`font-mono text-sm font-semibold uppercase tracking-[0.1em] ${getSectionTitleClass(
+              section.accent,
+            )}`}
+          >
             {section.title}
           </h2>
         </div>
@@ -593,7 +603,7 @@ function MatchupGuideCard({
         {canRegenerate ? (
           <Button
             aria-label={`Regenerate ${section.title}`}
-            className="h-8 border-white/10 bg-white/5 px-2 text-xs text-zinc-100 hover:bg-white/10"
+            className="h-8 rounded-none border-white/10 bg-white/5 px-2 text-xs text-zinc-100 hover:border-cyan-300/35 hover:bg-cyan-400/[0.08] hover:text-cyan-100"
             disabled={isRegenerating}
             onClick={onRegenerate}
             type="button"
@@ -609,19 +619,19 @@ function MatchupGuideCard({
       </div>
 
       {regenerateError ? (
-        <p className="mt-3 rounded-md border border-rose-400/20 bg-rose-500/10 p-2 text-xs leading-5 text-rose-100">
+        <p className="mt-3 border border-rose-400/20 bg-rose-500/10 p-2 text-xs leading-5 text-rose-100">
           {regenerateError}
         </p>
       ) : null}
 
       {isEditing ? (
         <textarea
-          className="mt-3 min-h-36 w-full resize-y rounded-md border border-white/10 bg-[#081120] px-3 py-2 text-sm leading-5 text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20"
+          className="mt-3 min-h-36 w-full resize-y border border-white/10 bg-[#020814]/85 px-3 py-2 text-sm leading-5 text-zinc-100 outline-none transition placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-3 focus-visible:ring-violet-400/20"
           onChange={(event) => onChange(event.target.value)}
           value={formValue}
         />
       ) : (
-        <ul className="mt-3 grow space-y-1.5 text-sm leading-5 text-zinc-400">
+        <ul className="mt-4 grow space-y-2.5 text-sm leading-6 text-zinc-300">
           {bullets.map((line, index) => (
             <li className="flex gap-2" key={`${line}-${index}`}>
               <span
@@ -723,6 +733,40 @@ function getSectionDotClass(accent: (typeof matchupSectionDefinitions)[number]["
       return "bg-teal-300/80";
     case "violet":
       return "bg-violet-300/80";
+  }
+}
+
+function getSectionPanelAccentClass(accent: (typeof matchupSectionDefinitions)[number]["accent"]) {
+  switch (accent) {
+    case "amber":
+      return "shadow-[inset_3px_0_0_rgba(252,211,77,0.28)]";
+    case "cyan":
+      return "shadow-[inset_3px_0_0_rgba(103,232,249,0.28)]";
+    case "emerald":
+      return "shadow-[inset_3px_0_0_rgba(110,231,183,0.24)]";
+    case "rose":
+      return "shadow-[inset_3px_0_0_rgba(253,164,175,0.24)]";
+    case "teal":
+      return "shadow-[inset_3px_0_0_rgba(45,212,191,0.24)]";
+    case "violet":
+      return "shadow-[inset_3px_0_0_rgba(167,139,250,0.24)]";
+  }
+}
+
+function getSectionTitleClass(accent: (typeof matchupSectionDefinitions)[number]["accent"]) {
+  switch (accent) {
+    case "amber":
+      return "text-amber-100";
+    case "cyan":
+      return "text-cyan-100";
+    case "emerald":
+      return "text-emerald-100";
+    case "rose":
+      return "text-rose-100";
+    case "teal":
+      return "text-teal-100";
+    case "violet":
+      return "text-violet-100";
   }
 }
 

@@ -2,13 +2,18 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const selectorSource = readFileSync("src/components/league/counter-pick-selector.tsx", "utf8");
+const frameSource = readFileSync("src/components/league/hextech-frame.tsx", "utf8");
 const selectionSource = readFileSync(
   "src/features/league/counter-pick-champion-selection.ts",
   "utf8",
 );
 const entryHeroSource = selectorSource.slice(
   selectorSource.indexOf("function CounterPickEntryHero"),
-  selectorSource.indexOf("function HextechFrame"),
+  selectorSource.indexOf("function ChampionSearchCombobox"),
+);
+const championHeroSource = selectorSource.slice(
+  selectorSource.indexOf("function ChampionHero"),
+  selectorSource.indexOf("function CounterPickConfidenceSummary"),
 );
 
 assert.match(
@@ -58,11 +63,21 @@ assert.match(
 );
 assert.match(
   selectorSource,
-  /function HextechFrame/,
-  "Entry hero should use the custom Hextech frame component.",
+  /counterPickPrimaryCtaClassName/,
+  "Counter Pick entry CTA should use the shared muted primary CTA style.",
+);
+assert.doesNotMatch(
+  entryHeroSource,
+  /hover:bg-cyan-300 hover:text-\[#04111d\]/,
+  "Counter Pick entry CTA should not use the old bright cyan hover fill.",
 );
 assert.match(
   selectorSource,
+  /<HextechFrame/,
+  "Entry hero should use the shared custom Hextech frame component.",
+);
+assert.match(
+  frameSource,
   /corner|top-0 size-4|bottom-0 left-1\/2|top-1\/2 z-30 hidden h-48/,
   "Hextech frame should include corner accents, center notches, and side ticks.",
 );
@@ -70,6 +85,21 @@ assert.doesNotMatch(
   entryHeroSource,
   /rounded-(?:xl|2xl)/,
   "Entry hero should avoid rounded card styling.",
+);
+assert.match(
+  championHeroSource,
+  /<HextechFrame/,
+  "Selected champion result hero should use the shared Hextech frame component.",
+);
+assert.match(
+  championHeroSource,
+  /z-40/,
+  "Selected champion result hero content should sit above Hextech frame accents.",
+);
+assert.match(
+  championHeroSource,
+  /z-\[70\][\s\S]*BackButton/,
+  "Selected champion result hero back button should sit above the full-height content layer.",
 );
 
 assert.match(

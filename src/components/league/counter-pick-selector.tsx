@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { BackButton } from "@/src/components/back-button";
+import { counterPickPrimaryCtaClassName } from "@/src/components/league/counter-pick-cta-styles";
 import { LeagueItemTooltip } from "@/src/components/league/league-data-tooltip";
 import {
   fetchReviewedCounterPicksByChampionAndRole,
@@ -55,6 +56,7 @@ import {
   isChampionInRole,
   sortChampionsForRole,
 } from "@/src/features/league/champion-roles";
+import { HextechFrame } from "@/src/components/league/hextech-frame";
 import {
   getCounterPickChampionOptionsForRole,
   isCounterPickChampionSupportedInRole,
@@ -727,7 +729,7 @@ function CounterPickEntryHero({
         }}
       />
 
-      <div className="relative z-10 flex min-h-[38rem] min-w-0 flex-col justify-between gap-10 px-3 py-8 sm:px-8 sm:py-10 lg:min-h-[44rem] lg:px-14 lg:py-14">
+      <div className="relative z-40 flex min-h-[38rem] min-w-0 flex-col justify-between gap-10 px-3 py-8 sm:px-8 sm:py-10 lg:min-h-[44rem] lg:px-14 lg:py-14">
         <div className="max-w-3xl pt-8 sm:pt-12 lg:pt-20">
           <div className="flex items-center gap-4">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
@@ -791,7 +793,10 @@ function CounterPickEntryHero({
 
             <div className="flex min-w-0 items-end p-4 lg:p-7">
               <button
-                className="inline-flex h-16 w-full items-center justify-center gap-4 border border-cyan-300/70 bg-cyan-300/10 px-5 font-mono text-sm font-bold uppercase tracking-[0.16em] text-cyan-100 shadow-[inset_0_0_22px_rgba(34,211,238,0.08),0_0_24px_rgba(34,211,238,0.08)] transition hover:border-cyan-200 hover:bg-cyan-300 hover:text-[#04111d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 disabled:cursor-not-allowed disabled:border-cyan-100/15 disabled:bg-[#071321]/80 disabled:text-zinc-500 disabled:shadow-none"
+                className={cn(
+                  "inline-flex h-16 w-full items-center justify-center gap-4 px-5 font-mono text-sm font-bold uppercase tracking-[0.16em]",
+                  counterPickPrimaryCtaClassName,
+                )}
                 disabled={!canSubmit}
                 type="submit"
               >
@@ -803,115 +808,6 @@ function CounterPickEntryHero({
         </form>
       </div>
     </HextechFrame>
-  );
-}
-
-function HextechFrame({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={cn(
-        "relative border border-cyan-300/35 shadow-[inset_0_0_34px_rgba(34,211,238,0.08),0_0_36px_rgba(34,211,238,0.1)]",
-        className,
-      )}
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-20 border border-cyan-100/10"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-8 top-0 z-20 h-px bg-[linear-gradient(90deg,transparent,rgba(103,232,249,0.86),transparent)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-8 bottom-0 z-20 h-px bg-[linear-gradient(90deg,transparent,rgba(103,232,249,0.72),transparent)]"
-      />
-
-      {["left-0 top-0", "right-0 top-0", "bottom-0 left-0", "bottom-0 right-0"].map(
-        (position) => {
-          const isRight = position.includes("right");
-          const isBottom = position.includes("bottom");
-
-          return (
-            <div
-              aria-hidden="true"
-              className={cn("pointer-events-none absolute z-30 size-16", position)}
-              key={position}
-            >
-              <span
-                className={cn(
-                  "absolute h-px w-16 bg-cyan-200 shadow-[0_0_16px_rgba(34,211,238,0.72)]",
-                  isBottom ? "bottom-0" : "top-0",
-                  isRight ? "right-0" : "left-0",
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute h-16 w-px bg-cyan-200 shadow-[0_0_16px_rgba(34,211,238,0.72)]",
-                  isBottom ? "bottom-0" : "top-0",
-                  isRight ? "right-0" : "left-0",
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute h-px w-8 bg-[#C9AA5A]/80",
-                  isBottom ? "bottom-3" : "top-3",
-                  isRight ? "right-3" : "left-3",
-                )}
-              />
-            </div>
-          );
-        },
-      )}
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-0 z-30 h-7 w-36 -translate-x-1/2"
-      >
-        <span className="absolute left-0 top-0 h-px w-12 bg-cyan-200/80" />
-        <span className="absolute right-0 top-0 h-px w-12 bg-cyan-200/80" />
-        <span className="absolute left-1/2 top-0 size-4 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-cyan-200/80 bg-[#06111f] shadow-[0_0_18px_rgba(34,211,238,0.58)]" />
-        <span className="absolute left-1/2 top-3 h-px w-20 -translate-x-1/2 bg-[#C9AA5A]/55" />
-      </div>
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/2 z-30 h-7 w-36 -translate-x-1/2"
-      >
-        <span className="absolute bottom-0 left-0 h-px w-12 bg-cyan-200/70" />
-        <span className="absolute bottom-0 right-0 h-px w-12 bg-cyan-200/70" />
-        <span className="absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-1/2 rotate-45 border border-cyan-200/75 bg-[#06111f] shadow-[0_0_18px_rgba(34,211,238,0.5)]" />
-        <span className="absolute bottom-3 left-1/2 h-px w-20 -translate-x-1/2 bg-[#C9AA5A]/45" />
-      </div>
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-1/2 z-30 hidden h-48 w-5 -translate-y-1/2 lg:block"
-      >
-        <span className="absolute left-0 top-0 h-16 w-px bg-[linear-gradient(180deg,transparent,rgba(103,232,249,0.82))]" />
-        <span className="absolute left-0 bottom-0 h-16 w-px bg-[linear-gradient(0deg,transparent,rgba(103,232,249,0.82))]" />
-        <span className="absolute left-0 top-1/2 h-10 w-px -translate-y-1/2 bg-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.7)]" />
-        <span className="absolute left-0 top-1/2 h-px w-5 -translate-y-1/2 bg-[#C9AA5A]/70" />
-      </div>
-
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-1/2 z-30 hidden h-48 w-5 -translate-y-1/2 lg:block"
-      >
-        <span className="absolute right-0 top-0 h-16 w-px bg-[linear-gradient(180deg,transparent,rgba(103,232,249,0.82))]" />
-        <span className="absolute bottom-0 right-0 h-16 w-px bg-[linear-gradient(0deg,transparent,rgba(103,232,249,0.82))]" />
-        <span className="absolute right-0 top-1/2 h-10 w-px -translate-y-1/2 bg-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.7)]" />
-        <span className="absolute right-0 top-1/2 h-px w-5 -translate-y-1/2 bg-[#C9AA5A]/70" />
-      </div>
-
-      {children}
-    </section>
   );
 }
 
@@ -1073,7 +969,7 @@ function ChampionSearchCombobox({
 
       {selectedRole && isOpen ? (
         <div
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-80 overflow-y-auto border border-cyan-300/30 bg-[#06111f]/98 p-1 shadow-[0_18px_44px_rgba(0,0,0,0.38)] [scrollbar-color:rgba(34,211,238,0.38)_rgba(7,19,33,0.9)] [scrollbar-width:thin]"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[120] max-h-80 overflow-y-auto border border-cyan-300/30 bg-[#06111f]/98 p-1 shadow-[0_18px_44px_rgba(0,0,0,0.38)] [scrollbar-color:rgba(34,211,238,0.38)_rgba(7,19,33,0.9)] [scrollbar-width:thin]"
           id={`${idPrefix}-results`}
           role="listbox"
         >
@@ -1205,11 +1101,11 @@ function ChampionHero({
   const championClassLabel = getChampionClassLabel(selectedProfile, champion);
 
   return (
-    <section className="relative min-h-[420px] overflow-hidden border-b border-white/10 bg-[#07101f] sm:min-h-[480px]">
+    <HextechFrame className="relative min-h-[420px] w-[calc(100vw-2rem)] max-w-full overflow-hidden bg-[#07101f]/88 sm:w-full sm:min-h-[480px]">
       {champion ? (
         <Image
           alt=""
-          className="object-cover opacity-[0.86]"
+          className="object-cover opacity-[0.94] saturate-125"
           fill
           priority
           sizes="(min-width: 1024px) 80vw, 100vw"
@@ -1218,18 +1114,27 @@ function ChampionHero({
           unoptimized
         />
       ) : null}
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#050b18_0%,rgba(5,11,24,0.78)_28%,rgba(5,11,24,0.28)_66%,rgba(5,11,24,0.66)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_34%_45%,rgba(34,211,238,0.12),transparent_22rem),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.1),transparent_30rem)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#050b18_0%,rgba(5,11,24,0.82)_28%,rgba(5,11,24,0.16)_66%,rgba(5,11,24,0.42)_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(3,9,20,0.9)_0%,rgba(3,9,20,0.36)_34%,transparent_68%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_34%_45%,rgba(34,211,238,0.1),transparent_22rem),radial-gradient(circle_at_82%_18%,rgba(59,130,246,0.08),transparent_30rem)]" />
+      <div
+        className="absolute inset-0 opacity-[0.055] mix-blend-screen"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(103,232,249,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,0.12) 1px, transparent 1px)",
+          backgroundSize: "88px 88px",
+        }}
+      />
 
-      <div className="absolute left-4 top-5 z-20 sm:left-6 lg:left-8">
+      <div className="absolute left-4 top-5 z-[70] sm:left-6 lg:left-8">
         <BackButton
-          className="rounded-none border-white/10 bg-[#10182b]/70 shadow-black/20 backdrop-blur"
+          className="relative z-[70] rounded-none border-white/10 bg-[#10182b]/70 shadow-black/20 backdrop-blur"
           href="/league/counters"
           label="Back to Counter Pick"
         />
       </div>
 
-      <div className="relative z-10 flex min-h-[420px] flex-col justify-end gap-7 px-4 py-8 sm:min-h-[480px] sm:px-6 lg:px-8">
+      <div className="relative z-40 flex min-h-[420px] flex-col justify-end gap-7 px-4 py-8 sm:min-h-[480px] sm:px-8 lg:px-12">
         <div className="flex max-w-4xl flex-col gap-5 sm:flex-row sm:items-end sm:gap-7">
           <div className="relative size-28 shrink-0 overflow-hidden border border-amber-300/65 bg-black/35 shadow-2xl shadow-black/40 ring-1 ring-white/15 sm:size-32">
             {champion ? (
@@ -1309,7 +1214,7 @@ function ChampionHero({
           </div>
         </div>
       </div>
-    </section>
+    </HextechFrame>
   );
 }
 
@@ -1529,18 +1434,18 @@ function getCounterMatchupRankStyle(direction: CounterDirection, rank: number) {
 
   if (direction === "best-counter") {
     return {
-      1: "border-emerald-300/35 bg-[linear-gradient(90deg,rgba(16,185,129,0.16),rgba(34,211,238,0.055)_42%,rgba(255,255,255,0.025))] shadow-[inset_3px_0_0_rgba(45,212,191,0.72)]",
-      2: "border-teal-300/25 bg-[linear-gradient(90deg,rgba(20,184,166,0.11),rgba(34,211,238,0.04)_42%,rgba(255,255,255,0.022))] shadow-[inset_3px_0_0_rgba(45,212,191,0.5)]",
-      3: "border-cyan-300/20 bg-[linear-gradient(90deg,rgba(34,211,238,0.075),rgba(255,255,255,0.025)_46%,rgba(255,255,255,0.018))] shadow-[inset_3px_0_0_rgba(34,211,238,0.32)]",
-      4: "border-white/10 bg-white/[0.025] shadow-[inset_3px_0_0_rgba(34,211,238,0.16)]",
+      1: "border-emerald-300/45 bg-[linear-gradient(90deg,rgba(16,185,129,0.22),rgba(34,211,238,0.08)_42%,rgba(255,255,255,0.025))] shadow-[inset_3px_0_0_rgba(45,212,191,0.82)]",
+      2: "border-teal-300/33 bg-[linear-gradient(90deg,rgba(20,184,166,0.155),rgba(34,211,238,0.058)_42%,rgba(255,255,255,0.022))] shadow-[inset_3px_0_0_rgba(45,212,191,0.6)]",
+      3: "border-cyan-300/26 bg-[linear-gradient(90deg,rgba(34,211,238,0.105),rgba(255,255,255,0.035)_46%,rgba(255,255,255,0.018))] shadow-[inset_3px_0_0_rgba(34,211,238,0.4)]",
+      4: "border-cyan-300/14 bg-[linear-gradient(90deg,rgba(34,211,238,0.048),rgba(255,255,255,0.022)_46%,rgba(255,255,255,0.014))] shadow-[inset_3px_0_0_rgba(34,211,238,0.22)]",
     }[rankIndex];
   }
 
   return {
-    1: "border-rose-300/30 bg-[linear-gradient(90deg,rgba(190,18,60,0.16),rgba(127,29,29,0.06)_42%,rgba(255,255,255,0.025))] shadow-[inset_3px_0_0_rgba(244,63,94,0.66)]",
-    2: "border-rose-300/23 bg-[linear-gradient(90deg,rgba(190,18,60,0.11),rgba(127,29,29,0.045)_42%,rgba(255,255,255,0.022))] shadow-[inset_3px_0_0_rgba(244,63,94,0.42)]",
-    3: "border-rose-300/16 bg-[linear-gradient(90deg,rgba(190,18,60,0.075),rgba(255,255,255,0.025)_46%,rgba(255,255,255,0.018))] shadow-[inset_3px_0_0_rgba(244,63,94,0.26)]",
-    4: "border-white/10 bg-white/[0.025] shadow-[inset_3px_0_0_rgba(244,63,94,0.14)]",
+    1: "border-rose-300/40 bg-[linear-gradient(90deg,rgba(190,18,60,0.22),rgba(127,29,29,0.085)_42%,rgba(255,255,255,0.025))] shadow-[inset_3px_0_0_rgba(244,63,94,0.78)]",
+    2: "border-rose-300/31 bg-[linear-gradient(90deg,rgba(190,18,60,0.155),rgba(127,29,29,0.065)_42%,rgba(255,255,255,0.022))] shadow-[inset_3px_0_0_rgba(244,63,94,0.52)]",
+    3: "border-rose-300/22 bg-[linear-gradient(90deg,rgba(190,18,60,0.105),rgba(255,255,255,0.035)_46%,rgba(255,255,255,0.018))] shadow-[inset_3px_0_0_rgba(244,63,94,0.34)]",
+    4: "border-rose-300/13 bg-[linear-gradient(90deg,rgba(190,18,60,0.048),rgba(255,255,255,0.022)_46%,rgba(255,255,255,0.014))] shadow-[inset_3px_0_0_rgba(244,63,94,0.2)]",
   }[rankIndex];
 }
 

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Menu, Search, X } from "lucide-react";
 
 import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
+import { counterPickPrimaryCtaClassName } from "@/src/components/league/counter-pick-cta-styles";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { cn } from "@/src/lib/utils";
@@ -61,7 +62,10 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
         <div className="ml-auto mr-1 hidden shrink-0 items-center gap-3 sm:flex lg:mr-3 xl:ml-0 xl:mr-5">
           <AuthenticatedAccountMenu menuPlacement="inline" variant="topbar" />
           <Link
-            className="hidden h-10 items-center justify-center bg-cyan-300 px-5 font-mono text-xs font-bold uppercase tracking-[0.08em] text-[#04111d] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-100 lg:inline-flex"
+            className={cn(
+              "hidden h-10 items-center justify-center px-5 font-mono text-xs font-bold uppercase tracking-[0.08em] lg:inline-flex",
+              counterPickPrimaryCtaClassName,
+            )}
             href="/league/counters"
           >
             Counter Pick
