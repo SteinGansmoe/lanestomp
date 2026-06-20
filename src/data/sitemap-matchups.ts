@@ -1,14 +1,48 @@
 import { MetadataRoute } from "next";
+import {
+  getLeagueChampions,
+  type LeagueChampion,
+} from "@/src/features/league/champions";
+import { getLeagueMatchupHref } from "@/src/features/league/matchup-routes";
+import type { LeagueRole } from "@/src/features/league/roles";
 import { supabase } from "@/src/lib/supabase";
-import { slugifyChampionName } from "@/src/features/league/champions";
 
 const baseUrl = "https://lanestomp.com";
 const PAGE_SIZE = 1000;
 
+type SitemapMatchupRow = {
+  champion_a_id: string;
+  champion_b_id: string;
+  role: LeagueRole;
+  updated_at: string | null;
+};
+
+export function getSitemapMatchupUrl({
+  championA,
+  championB,
+  role,
+}: {
+  championA: Pick<LeagueChampion, "id" | "name">;
+  championB: Pick<LeagueChampion, "id" | "name">;
+  role: LeagueRole;
+}) {
+  return `${baseUrl}${getLeagueMatchupHref({ championA, championB, role })}`;
+}
+
 export async function getMatchupsForSitemap(): Promise<MetadataRoute.Sitemap> {
   if (!supabase) return [];
 
-  const allMatchups = [];
+  const { champions, error: championError } = await getLeagueChampions();
+
+  if (championError) {
+    console.error("Failed to fetch sitemap champions:", championError);
+    return [];
+  }
+
+  const championsById = new Map(
+    champions.map((champion) => [champion.id, champion]),
+  );
+  const allMatchups: SitemapMatchupRow[] = [];
   let from = 0;
   let to = PAGE_SIZE - 1;
   let hasMore = true;
@@ -25,7 +59,7 @@ export async function getMatchupsForSitemap(): Promise<MetadataRoute.Sitemap> {
       break;
     }
 
-    allMatchups.push(...(data ?? []));
+    allMatchups.push(...((data ?? []) as SitemapMatchupRow[]));
 
     if (!data || data.length < PAGE_SIZE) {
       hasMore = false;
@@ -35,13 +69,27 @@ export async function getMatchupsForSitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return allMatchups.map((matchup) => {
-    const championASlug = slugifyChampionName(matchup.champion_a_id);
-    const championBSlug = slugifyChampionName(matchup.champion_b_id);
+  return allMatchups.flatMap((matchup) => {
+    const championA = championsById.get(matchup.champion_a_id);
+    const championB = championsById.get(matchup.champion_b_id);
+
+    if (!championA || !championB) {
+      console.error("Skipping sitemap matchup with missing champion:", {
+        championAId: matchup.champion_a_id,
+        championBId: matchup.champion_b_id,
+      });
+      return [];
+    }
 
     return {
-      url: `${baseUrl}/league/matchups/${championASlug}-vs-${championBSlug}?role=${matchup.role}`,
-      lastModified: matchup.updated_at ? new Date(matchup.updated_at) : new Date(),
+      url: getSitemapMatchupUrl({
+        championA,
+        championB,
+        role: matchup.role,
+      }),
+      lastModified: matchup.updated_at
+        ? new Date(matchup.updated_at)
+        : new Date(),
     };
   });
 }

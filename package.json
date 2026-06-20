@@ -15,6 +15,7 @@
     "enrich:missing-matchup-participant-ranks": "node scripts/enrich-missing-matchup-participant-ranks.mjs",
     "riot:get-puuid": "node scripts/riot-get-puuid.mjs",
     "scan:league-fallbacks": "node scripts/scan-league-matchup-fallbacks.mjs",
+    "test:sitemap-slugs": "node --experimental-strip-types scripts/validate-sitemap-matchup-slugs.mjs",
     "start": "next start",
     "sync:league-champions": "node scripts/import-lol-champions.mjs",
     "audit:stored-champion-identifiers": "node scripts/audit-stored-champion-identifiers.mjs",
