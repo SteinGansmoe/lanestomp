@@ -62,6 +62,12 @@ import {
 } from "@/src/app/admin/league/matchups/actions";
 import { SiteHeader } from "@/src/components/site-header";
 import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
+import {
+  SkeletonButton,
+  SkeletonLine,
+  SkeletonPanel,
+  SkeletonStatCell,
+} from "@/src/components/lane-stomp-skeleton";
 import { Card } from "@/src/components/ui/card";
 import { isChampionInRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
@@ -139,47 +145,51 @@ const leagueFeedbackSelect = [
 function AdminDashboardSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="flex gap-2 overflow-hidden rounded-lg border border-white/10 bg-[#10182b]/90 p-2">
+      <SkeletonPanel className="flex gap-2 overflow-hidden p-2">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div className="h-10 min-w-28 rounded-md bg-white/[0.04]" key={index} />
+          <SkeletonButton className="h-10 min-w-28" key={index} />
         ))}
-      </div>
+      </SkeletonPanel>
 
       <div className="grid gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card
-            className="h-28 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
-            key={index}
-          />
+          <SkeletonPanel className="h-28 p-4" key={index}>
+            <SkeletonStatCell className="border-l-0 px-0 py-0" />
+          </SkeletonPanel>
         ))}
       </div>
 
       <section className="space-y-5">
         <div className="space-y-3">
-          <div className="h-8 w-32 rounded bg-white/10" />
-          <div className="h-4 w-full max-w-2xl rounded bg-white/5" />
+          <SkeletonLine className="h-8 w-32" tone="raised" />
+          <SkeletonLine className="h-4 w-full max-w-2xl" />
         </div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Card
-              className="h-40 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
-              key={index}
-            />
+            <SkeletonPanel className="h-40 p-4" key={index}>
+              <SkeletonLine className="h-4 w-32" tone="cyan" />
+              <div className="mt-5 grid gap-3">
+                {Array.from({ length: 4 }).map((_, rowIndex) => (
+                  <SkeletonLine className="h-3 w-full" key={rowIndex} />
+                ))}
+              </div>
+            </SkeletonPanel>
           ))}
         </div>
       </section>
 
       <section className="space-y-5">
         <div className="space-y-3">
-          <div className="h-8 w-28 rounded bg-white/10" />
-          <div className="h-4 w-full max-w-xl rounded bg-white/5" />
+          <SkeletonLine className="h-8 w-28" tone="raised" />
+          <SkeletonLine className="h-4 w-full max-w-xl" />
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {Array.from({ length: 2 }).map((_, index) => (
-            <Card
-              className="h-36 border-white/10 bg-[#10182b]/90 shadow-xl shadow-black/15"
-              key={index}
-            />
+            <SkeletonPanel className="h-36 p-4" key={index}>
+              <SkeletonLine className="h-4 w-40" tone="cyan" />
+              <SkeletonLine className="mt-5 h-3 w-full" />
+              <SkeletonLine className="mt-3 h-3 w-8/12" />
+            </SkeletonPanel>
           ))}
         </div>
       </section>

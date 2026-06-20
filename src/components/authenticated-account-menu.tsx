@@ -189,7 +189,10 @@ export function AuthenticatedAccountMenu({
 
     return (
       <div className={cn(variant === "topbar" ? "w-24 sm:w-32" : "w-full", className)}>
-        <div className="h-10 w-full border border-cyan-100/15 bg-[#06111f]/80" />
+        <div
+          aria-hidden="true"
+          className="h-10 w-full border border-cyan-100/15 bg-[#06111f]/88 shadow-[inset_0_0_18px_rgba(34,211,238,0.025)] motion-safe:animate-pulse motion-reduce:animate-none"
+        />
       </div>
     );
   }

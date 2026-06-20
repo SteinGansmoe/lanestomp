@@ -1,149 +1,106 @@
-import { ArrowLeft, Search, Swords } from "lucide-react";
-
+import { HextechFrame } from "@/src/components/league/hextech-frame";
 import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
+import {
+  SkeletonBlock,
+  SkeletonButton,
+  SkeletonField,
+  SkeletonHeading,
+  SkeletonIconSquare,
+  SkeletonLine,
+  SkeletonPanel,
+  SkeletonSectionLabel,
+} from "@/src/components/lane-stomp-skeleton";
 import { SiteHeader } from "@/src/components/site-header";
-
-const roleSkeletons = ["All", "Top", "Jungle", "Mid", "Bot", "Support"];
 
 export default function Loading() {
   return (
     <LaneStompPageShell role="status" aria-label="Loading League matchup selector">
-        <SiteHeader />
+      <SiteHeader />
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="inline-flex h-10 w-44 animate-pulse items-center gap-2 rounded border border-cyan-100/15 bg-[#06111f]/85 px-4">
-            <ArrowLeft className="size-4 text-zinc-500" aria-hidden="true" />
-            <div className="h-3 w-28 rounded bg-zinc-200/12" />
-          </div>
-          <div className="h-4 w-28 animate-pulse rounded bg-cyan-300/15" />
+      <HextechFrame className="relative isolate min-h-[34rem] overflow-hidden bg-[#06111f]/92 lg:min-h-[39rem]">
+        <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(103,232,249,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(103,232,249,0.035)_1px,transparent_1px)] bg-[size:56px_56px]" />
+          <div className="absolute inset-y-0 left-0 w-[64%] bg-[radial-gradient(circle_at_24%_34%,rgba(34,211,238,0.14),transparent_22rem),linear-gradient(115deg,rgba(12,32,52,0.74),transparent_64%)] opacity-80" />
+          <div className="absolute inset-y-0 right-0 w-[68%] bg-[radial-gradient(circle_at_62%_28%,rgba(201,170,90,0.12),transparent_22rem),linear-gradient(245deg,rgba(14,116,144,0.22),transparent_68%)] opacity-75" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_30%,rgba(34,211,238,0.18),transparent_23rem),linear-gradient(90deg,rgba(3,9,20,0.96)_0%,rgba(3,9,20,0.82)_34%,rgba(3,9,20,0.34)_62%,rgba(3,9,20,0.9)_100%),linear-gradient(180deg,rgba(3,9,20,0.22),rgba(3,9,20,0.88))]" />
         </div>
 
-        <SelectorHeroSkeleton />
-
-        <SelectorPanelSkeleton />
-    </LaneStompPageShell>
-  );
-}
-
-function SelectorHeroSkeleton() {
-  return (
-    <section className="overflow-hidden rounded border border-cyan-100/15 bg-[#06111f]/88">
-      <div className="bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_30rem),linear-gradient(135deg,rgba(88,28,135,0.18),transparent_38rem)] p-5 sm:p-6">
-        <div className="flex animate-pulse flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded border border-cyan-300/20 bg-cyan-400/10 text-cyan-100">
-            <Swords className="size-6 opacity-45" aria-hidden="true" />
+        <div className="relative z-40 flex min-h-[34rem] max-w-4xl flex-col justify-center px-8 py-20 sm:px-12 lg:min-h-[39rem] lg:px-14">
+          <SkeletonSectionLabel />
+          <div className="mt-8 grid gap-3">
+            <SkeletonHeading className="h-14 w-72 max-w-full sm:h-16 sm:w-[33rem] lg:h-20" />
+            <SkeletonHeading className="h-14 w-64 max-w-full sm:h-16 sm:w-[25rem] lg:h-20" />
           </div>
-          <div className="grid gap-3">
-            <div className="h-3 w-28 rounded bg-cyan-200/20" />
-            <div className="h-8 w-64 max-w-[68vw] rounded bg-white/14" />
-            <div className="h-4 w-[min(34rem,78vw)] rounded bg-zinc-200/12" />
-          </div>
+          <SkeletonLine className="mt-7 h-0.5 w-20" tone="cyan" />
+          <SkeletonLine className="mt-6 h-4 w-full max-w-2xl" />
+          <SkeletonLine className="mt-3 h-4 w-10/12 max-w-xl" />
         </div>
-      </div>
-    </section>
-  );
-}
+      </HextechFrame>
 
-function SelectorPanelSkeleton() {
-  return (
-    <section className="overflow-hidden rounded border border-cyan-100/15 bg-[#07101f]">
-      <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_28rem),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_26rem)] p-4 sm:p-5">
-        <div className="grid animate-pulse gap-3">
-          <div className="h-3 w-32 rounded bg-cyan-200/20" />
-          <div className="mt-1 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+      <SkeletonPanel className="relative z-10 overflow-hidden shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+        <div className="border-b border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.13),transparent_28rem),linear-gradient(135deg,rgba(8,24,40,0.9),rgba(3,9,20,0.82))] p-4 sm:p-5 lg:p-6">
+          <SkeletonLine className="h-3 w-36" tone="cyan" />
+          <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
               <SelectionSlotSkeleton tone="cyan" />
-              <div className="hidden size-11 rounded-md border border-cyan-300/15 bg-cyan-400/10 md:block" />
+              <SkeletonIconSquare className="hidden size-11 md:block" />
               <SelectionSlotSkeleton tone="gold" />
             </div>
-            <div className="h-11 w-44 rounded-md border border-white/10 bg-white/10" />
+            <SkeletonButton className="h-11 w-full xl:w-44" />
+          </div>
+          <div className="mt-5 grid max-w-3xl grid-cols-3 gap-2 sm:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonIconSquare className="h-12 w-full" key={index} tone={index === 0 ? "cyan" : "base"} />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:p-6">
+          <div className="min-w-0">
+            <div className="flex flex-col gap-3 border-b border-cyan-100/10 pb-4 xl:flex-row xl:items-center xl:justify-between">
+              <SkeletonField className="w-full xl:max-w-md" />
+              <SkeletonButton className="h-11 w-full md:hidden" />
+            </div>
+
+            <div className="mt-4 grid max-h-[36rem] grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2 overflow-hidden border border-cyan-100/10 bg-[#020814]/45 p-3 sm:grid-cols-[repeat(auto-fill,minmax(4rem,1fr))]">
+              {Array.from({ length: 84 }).map((_, index) => (
+                <SkeletonBlock className="aspect-square" key={index} tone="raised" />
+              ))}
+            </div>
+
+            <SkeletonLine className="mt-3 h-9 w-full" tone="cyan" />
           </div>
 
-          <div className="mt-3">
-            <div className="mb-2 h-3 w-12 rounded bg-zinc-200/12" />
-            <div className="grid max-w-3xl grid-cols-6 gap-2">
-              {roleSkeletons.map((role) => (
-                <div
-                  className="flex h-12 items-center justify-center rounded-md border border-white/10 bg-black/20"
-                  key={role}
-                >
-                  <div className="size-7 rounded-full bg-zinc-200/12" />
+          <aside className="grid gap-3 border border-cyan-100/20 bg-[#071321]/72 p-5 lg:content-start">
+            <SkeletonLine className="h-4 w-28" tone="cyan" />
+            <div className="grid gap-3">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div className="flex items-center gap-3" key={index}>
+                  <SkeletonBlock className="size-6" tone="cyan" />
+                  <SkeletonLine className="h-4 w-40" />
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="min-w-0">
-          <div className="flex flex-col gap-3 border-b border-white/10 pb-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:items-center">
-              <div className="relative h-11 w-full animate-pulse rounded-md border border-white/10 bg-black/25 xl:max-w-md">
-                <Search
-                  className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500"
-                  aria-hidden="true"
-                />
-                <div className="ml-10 mt-4 h-3 w-36 rounded bg-zinc-200/12" />
-              </div>
-              <div className="h-11 w-full animate-pulse rounded-md border border-cyan-300/15 bg-cyan-400/[0.06] xl:w-72" />
+            <div className="border-t border-cyan-100/10 pt-4">
+              <SkeletonLine className="h-4 w-32" tone="raised" />
+              <SkeletonLine className="mt-3 h-3 w-full" />
+              <SkeletonLine className="mt-2 h-3 w-10/12" />
             </div>
-          </div>
-
-          <div className="grid max-h-[36rem] grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-2 overflow-hidden border-b border-white/10 py-4 sm:grid-cols-[repeat(auto-fill,minmax(4rem,1fr))]">
-            {Array.from({ length: 72 }).map((_, index) => (
-              <div
-                className="aspect-square animate-pulse rounded-md border border-white/10 bg-white/[0.045] shadow-lg shadow-black/20"
-                key={index}
-              />
-            ))}
-          </div>
-
-          <div className="mt-3 h-9 animate-pulse rounded-md border border-cyan-300/10 bg-cyan-400/[0.04]" />
+          </aside>
         </div>
-
-        <aside className="grid gap-3 lg:content-start">
-          <InfoPanelSkeleton />
-          <div className="h-24 animate-pulse rounded-lg border border-white/10 bg-white/[0.025]" />
-          <div className="h-32 animate-pulse rounded-lg border border-white/10 bg-white/[0.025]" />
-        </aside>
-      </div>
-    </section>
+      </SkeletonPanel>
+    </LaneStompPageShell>
   );
 }
 
 function SelectionSlotSkeleton({ tone }: { tone: "cyan" | "gold" }) {
   return (
-    <div className="flex min-h-16 items-center gap-3 rounded-lg border border-white/10 bg-black/20 p-2.5">
-      <div
-        className={`size-12 shrink-0 rounded-md border ${
-          tone === "cyan"
-            ? "border-cyan-300/30 bg-cyan-400/10"
-            : "border-[#C9AA5A]/35 bg-[#C9AA5A]/10"
-        }`}
-      />
+    <div className="flex min-h-16 items-center gap-3 border border-cyan-100/10 bg-black/20 p-2.5">
+      <SkeletonIconSquare className="size-12" tone={tone} />
       <div className="grid min-w-0 flex-1 gap-2">
-        <div
-          className={`h-3 w-24 rounded ${tone === "cyan" ? "bg-cyan-200/18" : "bg-[#C9AA5A]/18"}`}
-        />
-        <div className="h-4 w-36 max-w-full rounded bg-zinc-200/12" />
+        <SkeletonLine className="h-3 w-24" tone={tone} />
+        <SkeletonLine className="h-4 w-36 max-w-full" />
       </div>
-    </div>
-  );
-}
-
-function InfoPanelSkeleton() {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
-      <div className="h-3 w-14 animate-pulse rounded bg-zinc-200/12" />
-      <ol className="mt-3 space-y-3">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <li className="flex animate-pulse items-center gap-3" key={index}>
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-cyan-300/15 bg-cyan-400/10" />
-            <span className="h-4 w-36 rounded bg-zinc-200/12" />
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }

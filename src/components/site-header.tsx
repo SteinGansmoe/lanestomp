@@ -122,7 +122,7 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
         className="pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-[min(100vw,104rem)] -translate-x-1/2 border-b border-cyan-100/12 bg-[linear-gradient(90deg,rgba(3,9,20,0)_0%,rgba(3,9,20,0.72)_10%,rgba(3,9,20,0.9)_24%,rgba(3,9,20,0.9)_76%,rgba(3,9,20,0.72)_90%,rgba(3,9,20,0)_100%)] backdrop-blur [mask-image:linear-gradient(90deg,transparent_0%,black_10%,black_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(90deg,transparent_0%,black_10%,black_90%,transparent_100%)]"
         aria-hidden="true"
       />
-      <div className="relative z-10 flex min-h-16 items-center gap-4 py-3">
+      <div className="relative z-10 flex min-h-16 items-center gap-4 py-2 sm:py-1.5">
         <BrandLink />
 
         <NavigationLinks className="ml-8 hidden min-w-0 flex-1 gap-6 md:flex" pathname={pathname} />
@@ -224,7 +224,7 @@ function BrandLink() {
   return (
     <Link
       aria-label="LaneStomp home"
-      className="relative h-12 w-36 shrink-0 drop-shadow-[0_0_12px_rgba(34,211,238,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55 sm:h-14 sm:w-52"
+      className="relative flex h-14 w-40 shrink-0 items-center overflow-visible drop-shadow-[0_0_12px_rgba(34,211,238,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55 sm:h-[4.25rem] sm:w-48"
       href="/"
     >
       <Image
@@ -232,7 +232,7 @@ function BrandLink() {
         className="object-contain object-left"
         fill
         priority
-        sizes="176px"
+        sizes="(min-width: 640px) 192px, 160px"
         src="/images/lanestomp-logo.png"
       />
     </Link>

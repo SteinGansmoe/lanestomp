@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Mail, Save, UserCircle, X } from "lucide-react";
 
 import { counterPickPrimaryCtaClassName } from "@/src/components/league/counter-pick-cta-styles";
+import {
+  SkeletonButton,
+  SkeletonField,
+  SkeletonIconSquare,
+  SkeletonLine,
+} from "@/src/components/lane-stomp-skeleton";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
@@ -27,38 +33,38 @@ function AccountSettingsFormSkeleton() {
   return (
     <div className="grid w-full gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
       <aside className="border border-cyan-100/15 bg-[#06111f]/78 p-4">
-        <div className="h-3 w-24 rounded bg-cyan-400/15" />
+        <SkeletonLine className="h-3 w-24" tone="cyan" />
         <div className="mt-5 grid gap-2">
-          <div className="h-8 rounded bg-white/[0.05]" />
-          <div className="h-8 rounded bg-white/[0.04]" />
-          <div className="h-8 rounded bg-white/[0.04]" />
+          <SkeletonButton className="h-8 w-full" />
+          <SkeletonButton className="h-8 w-full" />
+          <SkeletonButton className="h-8 w-full" />
         </div>
         <div className="mt-5 border-t border-cyan-100/10 pt-4">
-          <div className="h-3 w-full rounded bg-white/[0.04]" />
-          <div className="mt-2 h-3 w-3/4 rounded bg-white/[0.04]" />
+          <SkeletonLine className="h-3 w-full" />
+          <SkeletonLine className="mt-2 h-3 w-3/4" />
         </div>
       </aside>
 
       <Card className="w-full max-w-none border-cyan-100/15 bg-[#06111f]/90 p-6 text-white">
-        <div className="size-12 rounded bg-cyan-400/10" />
-        <div className="mt-5 h-8 w-56 rounded bg-white/10" />
-        <div className="mt-3 h-4 w-full max-w-lg rounded bg-white/5" />
+        <SkeletonIconSquare className="size-12" />
+        <SkeletonLine className="mt-5 h-8 w-56" tone="raised" />
+        <SkeletonLine className="mt-3 h-4 w-full max-w-lg" />
 
         <div className="mt-8 space-y-5">
           <div className="space-y-2">
-            <div className="h-4 w-20 rounded bg-white/10" />
-            <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.04]" />
-            <div className="h-3 w-52 rounded bg-white/5" />
+            <SkeletonLine className="h-4 w-20" tone="raised" />
+            <SkeletonField className="h-11" />
+            <SkeletonLine className="h-3 w-52" />
           </div>
           <div className="space-y-2 border-t border-cyan-100/10 pt-5">
-            <div className="h-4 w-28 rounded bg-white/10" />
-            <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.03]" />
+            <SkeletonLine className="h-4 w-28" tone="raised" />
+            <SkeletonField className="h-11" />
           </div>
           <div className="space-y-2 border-t border-cyan-100/10 pt-5">
-            <div className="h-4 w-32 rounded bg-white/10" />
-            <div className="h-11 rounded border border-cyan-100/15 bg-white/[0.03]" />
+            <SkeletonLine className="h-4 w-32" tone="raised" />
+            <SkeletonField className="h-11" />
           </div>
-          <div className="h-11 w-40 rounded bg-cyan-400/15" />
+          <SkeletonButton className="h-11 w-40" />
         </div>
       </Card>
       </div>

@@ -22,6 +22,13 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { BackButton } from "@/src/components/back-button";
+import {
+  SkeletonBlock,
+  SkeletonButton,
+  SkeletonLine,
+  SkeletonPanel,
+  SkeletonResultRow,
+} from "@/src/components/lane-stomp-skeleton";
 import { counterPickPrimaryCtaClassName } from "@/src/components/league/counter-pick-cta-styles";
 import { LeagueItemTooltip } from "@/src/components/league/league-data-tooltip";
 import {
@@ -2881,24 +2888,108 @@ function CounterPickLoadingState({
   selectedRole: LeagueRole;
 }) {
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      {[0, 1].map((index) => (
-        <section className="min-w-0 border-y border-white/10 py-4" key={index}>
-          <div className="mb-3 h-6 w-44 bg-white/10" />
-          <div className="grid gap-2">
-            {[0, 1, 2].map((rowIndex) => (
-              <div
-                className="h-[4.625rem] animate-pulse border border-white/10 bg-white/[0.035]"
-                key={rowIndex}
-              />
+    <div className="grid min-w-0 gap-8" aria-busy="true">
+      <SkeletonPanel className="grid gap-4 p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
+        <div className="flex items-center gap-3">
+          <SkeletonBlock className="size-5" tone="cyan" />
+          <div>
+            <SkeletonLine className="h-4 w-48" tone="raised" />
+            <SkeletonLine className="mt-2 h-3 w-72 max-w-[70vw]" />
+          </div>
+        </div>
+        <SkeletonLine className="hidden h-px w-full sm:block" />
+        <SkeletonButton className="h-9 w-40" />
+      </SkeletonPanel>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <CounterPickListSkeleton titleWidth="w-40" tone="cyan" />
+        <CounterPickListSkeleton titleWidth="w-52" tone="danger" />
+      </div>
+
+      <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid min-w-0 gap-8">
+          <SkeletonPanel className="border-y border-x-0 bg-transparent py-6">
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div>
+                <SkeletonLine className="h-3 w-44" tone="cyan" />
+                <SkeletonLine className="mt-4 h-7 w-72 max-w-full" tone="raised" />
+              </div>
+              <SkeletonLine className="h-4 w-64 max-w-full" />
+            </div>
+            <div className="mt-6 divide-y divide-cyan-100/10">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div className="py-4" key={index}>
+                  <div className="flex items-center justify-between gap-4">
+                    <SkeletonLine className="h-4 w-72 max-w-[70vw]" tone="cyan" />
+                    <SkeletonBlock className="size-4" tone="cyan" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SkeletonPanel>
+          <SkeletonPanel className="p-5">
+            <div className="flex items-start gap-4">
+              <SkeletonBlock className="size-11 rounded-full" tone="gold" />
+              <div className="min-w-0 flex-1">
+                <SkeletonLine className="h-4 w-40" tone="gold" />
+                <SkeletonLine className="mt-4 h-4 w-full max-w-2xl" />
+                <SkeletonLine className="mt-2 h-4 w-10/12 max-w-xl" />
+              </div>
+            </div>
+          </SkeletonPanel>
+        </div>
+
+        <SkeletonPanel className="p-5 xl:sticky xl:top-4 xl:self-start">
+          <SkeletonLine className="h-3 w-36" tone="cyan" />
+          <SkeletonLine className="mt-4 h-7 w-56 max-w-full" tone="raised" />
+          <div className="mt-5 divide-y divide-cyan-100/10">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div className="flex items-center justify-between gap-4 py-3" key={index}>
+                <SkeletonLine className="h-3 w-28" />
+                <SkeletonLine className="h-4 w-20" tone="raised" />
+              </div>
             ))}
           </div>
-        </section>
-      ))}
-      <p className="lg:col-span-2 text-center text-sm text-zinc-500">
+          <div className="mt-5 grid grid-cols-3 gap-3 border-t border-cyan-100/10 pt-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div className="grid gap-2" key={index}>
+                <SkeletonLine className="h-4 w-14" tone="raised" />
+                <SkeletonLine className="h-2 w-12" />
+              </div>
+            ))}
+          </div>
+        </SkeletonPanel>
+      </div>
+
+      <p className="sr-only">
         Loading stored matchup data for {selectedChampion.name} {getLeagueRoleLabel(selectedRole)}.
       </p>
     </div>
+  );
+}
+
+function CounterPickListSkeleton({
+  titleWidth,
+  tone,
+}: {
+  titleWidth: string;
+  tone: "cyan" | "danger";
+}) {
+  return (
+    <section className="min-w-0 border-y border-white/10 py-5">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <SkeletonLine className={`h-6 ${titleWidth}`} tone="raised" />
+          <SkeletonLine className="mt-3 h-3 w-56 max-w-full" />
+        </div>
+        <SkeletonLine className="h-4 w-5" tone="cyan" />
+      </div>
+      <div className="grid gap-2">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <SkeletonResultRow key={index} tone={tone} />
+        ))}
+      </div>
+    </section>
   );
 }
 
