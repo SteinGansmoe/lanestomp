@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, ChevronRight, ExternalLink, GitBranch } from "lucide-react";
+import { BookOpen, ChevronRight, ExternalLink } from "lucide-react";
 
 const platformLinks = [
   { href: "/", label: "Home" },
@@ -20,14 +20,6 @@ const legalLinks = [
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms of Use" },
   { href: "/legal", label: "Legal & Disclaimer" },
-];
-
-const socialLinks = [
-  {
-    href: "https://github.com/SteinGansmoe/lanestomp",
-    icon: GitBranch,
-    label: "GitHub",
-  },
 ];
 
 const riotDisclaimer =
@@ -59,24 +51,6 @@ export function SiteFooter() {
           <p className="mt-3 max-w-72 text-sm leading-6 text-zinc-400">
             Learn matchups. Find counters. Improve faster.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2" aria-label="LaneStomp social links">
-            {socialLinks.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  aria-label={item.label}
-                  className="flex size-9 items-center justify-center rounded border border-cyan-100/15 bg-[#071321]/75 text-zinc-500 transition hover:border-cyan-300/30 hover:bg-cyan-400/[0.08] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
-                  href={item.href}
-                  key={item.label}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  <Icon className="size-4" aria-hidden="true" />
-                </Link>
-              );
-            })}
-          </div>
         </section>
 
         <FooterLinkColumn title="Platform" links={platformLinks} />
