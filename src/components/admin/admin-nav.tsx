@@ -22,34 +22,43 @@ const adminNavGroups: Array<{
   label: string;
 }> = [
   {
-    label: "League",
+    label: "Matchups",
     items: [
       {
         href: "/admin/league/matchups",
-        label: "Matchups",
+        label: "Matchups overview",
         section: "league-matchups",
       },
       {
-        href: "/admin/league/counter-picks",
-        label: "Counter Picks",
-        section: "league-counter-picks",
-      },
-      {
-        href: "/admin/league/matchups",
+        href: "/admin/league/matchups#generation-queue",
         label: "Generation queue",
         status: "inside",
       },
       {
-        href: "/admin/league/matchups",
+        href: "/admin/league/matchups#coverage-review",
         label: "Coverage / Review",
         status: "inside",
       },
     ],
   },
   {
-    label: "Platform",
+    label: "Counter Pick",
     items: [
-      { href: "/admin", label: "Overview", section: "overview" },
+      {
+        href: "/admin/counter-picks",
+        label: "Counter Pick overview",
+        section: "counter-picks-overview",
+      },
+      {
+        href: "/admin/counter-picks/collect",
+        label: "Collect data",
+        section: "counter-picks-collect",
+      },
+      {
+        href: "/admin/counter-picks/shadow-ranking",
+        label: "Shadow ranking",
+        section: "counter-picks-shadow-ranking",
+      },
     ],
   },
 ];
@@ -67,6 +76,8 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
             {group.items.map((item) => {
               const isActive =
                 item.section === activeSection ||
+                (item.section === "counter-picks-overview" &&
+                  activeSection === "league-counter-picks") ||
                 (item.status === "inside" && activeSection === "league-matchups");
 
               return (

@@ -98,9 +98,9 @@ export function AdminOverview({
             actionLabel="Open counters"
             count={leagueCounterPicksCount}
             eyebrow="Active"
-            href="/admin/league/counter-picks"
+            href="/admin/counter-picks"
             label="Counter Picks"
-            summary="Create, edit, review, and publish counter pick recommendations."
+            summary="Review Counter Pick data coverage and open focused collection or shadow ranking tools."
             tag="records"
           />
           <AdminSectionCard

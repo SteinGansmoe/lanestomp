@@ -245,6 +245,16 @@ type RiotScanJobMetricsRow = {
   summary: RiotScanSummary | null;
 };
 
+type RiotCollectionMetricRow = {
+  id: number;
+  platform: string | null;
+  rank_bracket: string | null;
+  resolved_patch: string | null;
+  role: string | null;
+  status: string;
+  updated_at: string | null;
+};
+
 type RiotSeedCandidateQueryBuilder = {
   eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
@@ -262,6 +272,7 @@ type CountQueryBuilder = PromiseLike<{
   error: { message?: string } | null;
 }> & {
   eq: (column: string, value: unknown) => CountQueryBuilder;
+  not: (column: string, operator: string, value: unknown) => CountQueryBuilder;
 };
 
 export type LeagueChampionRegistryAdminStatusResult =
@@ -573,7 +584,25 @@ export async function getCounterPickManagementMetrics({
         metrics.pipeline.uniqueMatchupGroups = metric;
       },
     }),
+    loadCountMetric({
+      label: "Riot seed candidates",
+      loader: () => countRows(supabase, "riot_seed_candidates"),
+      onLoaded: (metric) => {
+        metrics.operations.seedCandidates = metric;
+      },
+    }),
+    loadCountMetric({
+      label: "Active Riot collection jobs",
+      loader: () =>
+        countRows(supabase, "riot_collection_jobs", (query) =>
+          query.not("status", "in", "(cancelled,completed,completed-partial,failed)"),
+        ),
+      onLoaded: (metric) => {
+        metrics.operations.activeCollectionJobs = metric;
+      },
+    }),
     loadLatestSuccessfulScanMetric(supabase, metrics),
+    loadLatestCollectionMetric(supabase, metrics),
   ]);
 
   return {
@@ -3203,6 +3232,46 @@ async function loadLatestSuccessfulScanMetric(
   metrics.latestSuccessfulScan = {
     error: null,
     value: data ? normalizeRiotScanJobMetrics(data) : null,
+  };
+}
+
+async function loadLatestCollectionMetric(
+  supabase: SupabaseClient,
+  metrics: ReturnType<typeof createEmptyCounterPickManagementMetrics>,
+) {
+  const { data, error } = await supabase
+    .from("riot_collection_jobs")
+    .select("id, platform, rank_bracket, resolved_patch, role, status, updated_at")
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle<RiotCollectionMetricRow>();
+
+  if (error) {
+    const message = error.message ?? "Latest collection job could not be loaded.";
+
+    console.error("Counter Pick management latest collection unavailable", {
+      error: message,
+    });
+    metrics.operations.latestCollection = {
+      error: message,
+      value: null,
+    };
+    return;
+  }
+
+  metrics.operations.latestCollection = {
+    error: null,
+    value: data
+      ? {
+          id: data.id,
+          platform: data.platform,
+          rankBracket: data.rank_bracket,
+          resolvedPatch: data.resolved_patch,
+          role: data.role,
+          status: data.status,
+          updatedAt: data.updated_at,
+        }
+      : null,
   };
 }
 

@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  ArrowRight,
   CheckCircle2,
   CheckSquare,
   Pencil,
@@ -20,6 +22,24 @@ import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import type { CounterPickManagementMetrics } from "@/src/features/league/counter-pick-management-metrics";
+import { fetchCounterPickStatsByEnemyAndRole } from "@/src/features/league/counter-pick-stats";
+import {
+  compareCounterPickStatistics,
+  toPublicCounterPickResult,
+} from "@/src/features/league/counter-pick-statistics";
+import {
+  counterRankingV2SupportedChampionIds,
+  counterRankingV2TraitDefinitionsById,
+  createObservedCounterRankingV2Snapshot,
+  getCounterRankingV2ChampionProfile,
+  getCounterRankingV2ComparisonRows,
+  isCounterRankingV2SupportedChampion,
+  type CounterRankingV2ComparisonRow,
+  type CounterRankingV2FitStatus,
+  type CounterRankingV2ObservedRankSnapshot,
+  type CounterRankingV2ProfileStatus,
+  type CounterRankingV2TraitId,
+} from "@/src/features/league/counter-ranking-v2";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
 import { getChampionIconPath } from "@/src/features/league/champions";
@@ -37,6 +57,7 @@ import { RiotMatchScannerPanel } from "./riot-match-scanner-panel";
 
 type CounterPickStatusFilter = LeagueCounterPick["generation_status"] | "all";
 type CounterPickTypeFilter = LeagueCounterPickType | "all";
+type CounterPickAdminView = "collect" | "editorial" | "overview" | "shadow-ranking";
 type CounterPickEditForm = {
   counter_strength: string;
   counter_type: LeagueCounterPickType;
@@ -57,10 +78,12 @@ export function AdminLeagueCounterPicksSection({
   champions,
   counterPicks,
   onRefresh,
+  view = "editorial",
 }: {
   champions: AdminLeagueChampion[];
   counterPicks: LeagueCounterPick[];
   onRefresh: () => Promise<boolean>;
+  view?: CounterPickAdminView;
 }) {
   const [championSearch, setChampionSearch] = useState("");
   const [counterSearch, setCounterSearch] = useState("");
@@ -99,9 +122,27 @@ export function AdminLeagueCounterPicksSection({
     isLoading: true,
     success: null,
   });
+  const [counterRankingV2ObservedByChampionId, setCounterRankingV2ObservedByChampionId] = useState<
+    Map<string, CounterRankingV2ObservedRankSnapshot>
+  >(() => new Map());
+  const [counterRankingV2Status, setCounterRankingV2Status] = useState<FormStatus>({
+    error: null,
+    isLoading: false,
+    success: null,
+  });
 
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
+    [champions],
+  );
+  const counterRankingV2ChampionsById = useMemo(
+    () =>
+      new Map(
+        champions.map((champion) => [
+          normalizeCounterRankingV2ChampionId(champion.id),
+          champion,
+        ] as const),
+      ),
     [champions],
   );
   const roleSortedChampions = useMemo(
@@ -187,11 +228,40 @@ export function AdminLeagueCounterPicksSection({
   const reviewedVisibleCount = visibleCounterPicks.filter(
     (counterPick) => counterPick.generation_status === "reviewed",
   ).length;
+  const counterRankingV2CandidateChampionIds = useMemo(
+    () =>
+      counterRankingV2SupportedChampionIds.filter((championId) =>
+        counterRankingV2ChampionsById.has(championId),
+      ),
+    [counterRankingV2ChampionsById],
+  );
+  const counterRankingV2Rows = useMemo(
+    () =>
+      effectiveSelectedChampionId
+        ? getCounterRankingV2ComparisonRows({
+            candidateChampionIds: counterRankingV2CandidateChampionIds,
+            enemyChampionId: effectiveSelectedChampionId,
+            observedByChampionId: counterRankingV2ObservedByChampionId,
+            role: selectedRole,
+          })
+        : [],
+    [
+      counterRankingV2CandidateChampionIds,
+      counterRankingV2ObservedByChampionId,
+      effectiveSelectedChampionId,
+      selectedRole,
+    ],
+  );
 
   useEffect(() => {
     void loadManagementMetrics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    void loadCounterRankingV2ObservedStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveSelectedChampionId, selectedRole]);
 
   async function getAccessToken() {
     if (!supabase) {
@@ -242,6 +312,50 @@ export function AdminLeagueCounterPicksSection({
 
     setManagementMetrics(result.metrics);
     setMetricsStatus({ error: null, isLoading: false, success: "Metrics refreshed." });
+  }
+
+  async function loadCounterRankingV2ObservedStats() {
+    if (!effectiveSelectedChampionId) {
+      setCounterRankingV2ObservedByChampionId(new Map());
+      setCounterRankingV2Status({ error: null, isLoading: false, success: null });
+      return;
+    }
+
+    setCounterRankingV2Status({ error: null, isLoading: true, success: null });
+
+    const result = await fetchCounterPickStatsByEnemyAndRole({
+      enemyChampionId: effectiveSelectedChampionId,
+      rankBracket: "all",
+      role: selectedRole,
+    });
+
+    if (result.error) {
+      setCounterRankingV2ObservedByChampionId(new Map());
+      setCounterRankingV2Status({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    const publicResults = result.stats
+      .map((stat) => toPublicCounterPickResult(stat, effectiveSelectedChampionId))
+      .filter((row) => row !== null)
+      .sort((left, right) => compareCounterPickStatistics(left.statistics, right.statistics, "desc"));
+    const observedByChampionId = new Map(
+      publicResults.map((resultRow, index) => [
+        normalizeCounterRankingV2ChampionId(resultRow.listedChampionId),
+        createObservedCounterRankingV2Snapshot({
+          games: resultRow.statistics.games,
+          rank: index + 1,
+          winRate: resultRow.statistics.winRate,
+        }),
+      ]),
+    );
+
+    setCounterRankingV2ObservedByChampionId(observedByChampionId);
+    setCounterRankingV2Status({
+      error: null,
+      isLoading: false,
+      success: `${publicResults.length} observed rows loaded.`,
+    });
   }
 
   function startEditingCounterPick(counterPick: LeagueCounterPick) {
@@ -459,6 +573,116 @@ export function AdminLeagueCounterPicksSection({
     await refreshAfterMutation(label, setBulkStatus);
   }
 
+  if (view === "overview") {
+    return (
+      <div className="space-y-6">
+        <CounterPickManagementMetricsPanel
+          error={metricsStatus.error}
+          isLoading={metricsStatus.isLoading}
+          metrics={managementMetrics}
+          onRefresh={() => void loadManagementMetrics()}
+        />
+        <CounterPickOverviewOperationsPanel
+          guideCount={counterPicks.length}
+          isLoading={metricsStatus.isLoading}
+          metrics={managementMetrics}
+        />
+        <CounterPickAdminLinks />
+      </div>
+    );
+  }
+
+  if (view === "collect") {
+    return (
+      <div className="space-y-6">
+        <CounterPickManagementMetricsPanel
+          error={metricsStatus.error}
+          isLoading={metricsStatus.isLoading}
+          metrics={managementMetrics}
+          onRefresh={() => void loadManagementMetrics()}
+        />
+        <RiotMatchScannerPanel champions={champions} onScanTerminal={loadManagementMetrics} />
+      </div>
+    );
+  }
+
+  if (view === "shadow-ranking") {
+    return (
+      <div className="space-y-6">
+        <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+          <CardHeader>
+            <div>
+              <CardTitle className="font-mono text-xl">Shadow ranking target</CardTitle>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+                Select the enemy champion and role to compare observed public rank against Counter
+                Ranking V2 mechanical fit.
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
+              <label className="block space-y-2">
+                <span className="text-sm text-zinc-300">Search champions</span>
+                <div className="relative">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500"
+                    aria-hidden="true"
+                  />
+                  <Input
+                    className="h-10 border-white/10 bg-white/5 pl-9 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-violet-400/70 focus-visible:ring-violet-400/20"
+                    onChange={(event) => setChampionSearch(event.target.value)}
+                    placeholder="Vex, Yone, Yasuo..."
+                    type="search"
+                    value={championSearch}
+                  />
+                </div>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm text-zinc-300">Champion</span>
+                <select
+                  className={`${fieldClassName} h-10`}
+                  onChange={(event) => setSelectedChampionId(event.target.value)}
+                  value={effectiveSelectedChampionId}
+                >
+                  {championOptions.map((champion) => (
+                    <option className={selectOptionClassName} key={champion.id} value={champion.id}>
+                      {champion.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm text-zinc-300">Role</span>
+                <select
+                  className={`${fieldClassName} h-10`}
+                  onChange={(event) => setSelectedRole(event.target.value as LeagueRole)}
+                  value={selectedRole}
+                >
+                  {leagueRoles.map((role) => (
+                    <option className={selectOptionClassName} key={role} value={role}>
+                      {getRoleLabel(role)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+
+        <CounterRankingV2ShadowPanel
+          championsById={counterRankingV2ChampionsById}
+          enemyChampionId={effectiveSelectedChampionId}
+          isLoading={counterRankingV2Status.isLoading}
+          rows={counterRankingV2Rows}
+          selectedRole={selectedRole}
+          statusError={counterRankingV2Status.error}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <CounterPickManagementMetricsPanel
@@ -565,8 +789,6 @@ export function AdminLeagueCounterPicksSection({
           )}
         </CardContent>
       </Card>
-
-      <RiotMatchScannerPanel champions={champions} onScanTerminal={loadManagementMetrics} />
 
       {selectedChampionCombatProfile ? (
         <CombatProfileCounterRelationships
@@ -948,6 +1170,218 @@ function CombatProfileRelationshipList({
   );
 }
 
+function CounterRankingV2ShadowPanel({
+  championsById,
+  enemyChampionId,
+  isLoading,
+  rows,
+  selectedRole,
+  statusError,
+}: {
+  championsById: Map<string, AdminLeagueChampion>;
+  enemyChampionId: string;
+  isLoading: boolean;
+  rows: CounterRankingV2ComparisonRow[];
+  selectedRole: LeagueRole;
+  statusError: string | null;
+}) {
+  const enemyChampion = championsById.get(normalizeCounterRankingV2ChampionId(enemyChampionId));
+  const enemyProfile = enemyChampionId ? getCounterRankingV2ChampionProfile(enemyChampionId) : null;
+  const hasSupportedEnemy = enemyChampionId
+    ? isCounterRankingV2SupportedChampion(enemyChampionId)
+    : false;
+
+  return (
+    <Card className="border-cyan-300/15 bg-[#071321]/95 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="font-mono text-xl">Counter Ranking V2 shadow comparison</CardTitle>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+              Internal-only comparison between current observed win-rate rank and deterministic
+              mechanical matchup fit. Public Counter Pick ordering is unchanged.
+            </p>
+          </div>
+          <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">Shadow mode</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-3">
+          <CounterRankingV2MetaCell
+            label="Enemy"
+            value={enemyChampion ? `${enemyChampion.name} ${getRoleLabel(selectedRole)}` : "None"}
+          />
+          <CounterRankingV2MetaCell
+            label="Enemy profile"
+            value={
+              enemyProfile
+                ? `${formatProfileStatus(enemyProfile.reviewStatus)} v${enemyProfile.version}`
+                : "Missing"
+            }
+          />
+          <CounterRankingV2MetaCell
+            label="Observed data"
+            value={
+              isLoading ? "Loading" : statusError ? "Unavailable" : "Loaded from current stats"
+            }
+          />
+        </div>
+
+        {statusError ? (
+          <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {statusError}
+          </p>
+        ) : null}
+
+        {!hasSupportedEnemy ? (
+          <EmptyState
+            tone="warning"
+            text="This enemy champion does not have a Counter Ranking V2 profile yet. Select one of the initial shadow champions to compare mechanical fit."
+          />
+        ) : rows.length === 0 ? (
+          <EmptyState text="No Counter Ranking V2 candidate rows are available for this selection." />
+        ) : (
+          <div className="space-y-3">
+            {rows.map((row) => (
+              <CounterRankingV2ShadowRow
+                candidate={championsById.get(row.candidateChampionId) ?? null}
+                isLoadingObserved={isLoading}
+                key={row.candidateChampionId}
+                row={row}
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CounterRankingV2MetaCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+      <p className="text-xs uppercase text-zinc-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-zinc-100">{value}</p>
+    </div>
+  );
+}
+
+function CounterRankingV2ShadowRow({
+  candidate,
+  isLoadingObserved,
+  row,
+}: {
+  candidate: AdminLeagueChampion | null;
+  isLoadingObserved: boolean;
+  row: CounterRankingV2ComparisonRow;
+}) {
+  const result = row.mechanicalResult;
+  const profile = getCounterRankingV2ChampionProfile(row.candidateChampionId);
+  const topFactors = result.factors.slice(0, 3);
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {candidate ? (
+            <Image
+              alt=""
+              className="size-11 rounded-md bg-white/10 object-cover"
+              height={44}
+              src={getChampionIconPath(candidate)}
+              width={44}
+            />
+          ) : (
+            <div className="size-11 rounded-md bg-white/10" />
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">
+              {candidate?.name ?? row.candidateChampionId}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              {profile
+                ? `${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}`
+                : "No profile"}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid min-w-[18rem] flex-1 gap-3 text-sm md:grid-cols-4">
+          <CounterRankingV2Metric
+            label="Observed rank"
+            value={
+              isLoadingObserved
+                ? "Loading"
+                : row.observed?.rank
+                  ? `#${row.observed.rank}`
+                  : "None"
+            }
+          />
+          <CounterRankingV2Metric
+            label="Games"
+            value={formatNullableNumber(row.observed?.games)}
+          />
+          <CounterRankingV2Metric
+            label="Confidence"
+            value={row.observed?.confidence.shortLabel ?? "No data"}
+          />
+          <CounterRankingV2Metric
+            label="Mechanical"
+            value={
+              result.status === "calculated" ? `#${row.mechanicalRank} / ${result.score}` : "Missing"
+            }
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Badge className="border-white/10 bg-white/5 text-zinc-300">
+          {formatCounterRankingV2Status(result.status)}
+        </Badge>
+        <Badge className="border-violet-300/20 bg-violet-500/10 text-violet-100">
+          {formatRankDelta(row.rankDelta)}
+        </Badge>
+        {row.observed?.winRate !== null && row.observed?.winRate !== undefined ? (
+          <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">
+            {row.observed.winRate.toFixed(1)}% observed WR
+          </Badge>
+        ) : null}
+      </div>
+
+      {topFactors.length > 0 ? (
+        <ul className="mt-4 space-y-2">
+          {topFactors.map((factor) => (
+            <li
+              className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300"
+              key={`${factor.candidateStrength}-${factor.enemyVulnerability}`}
+            >
+              <span className="font-semibold text-zinc-100">
+                {getTraitLabel(factor.candidateStrength)} into{" "}
+                {getTraitLabel(factor.enemyVulnerability)}
+              </span>
+              <span className="text-zinc-500"> +{factor.contribution.toFixed(1)}</span>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">{factor.reason}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-500">
+          No contributing mechanical factors are available for this candidate and enemy profile.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function CounterRankingV2Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-black/15 p-3">
+      <p className="text-xs uppercase text-zinc-500">{label}</p>
+      <p className="mt-1 font-semibold text-zinc-100">{value}</p>
+    </div>
+  );
+}
+
 function CounterPickRow({
   championsById,
   counterPick,
@@ -1217,6 +1651,135 @@ function CounterPickManagementMetricsPanel({
   );
 }
 
+function CounterPickOverviewOperationsPanel({
+  guideCount,
+  isLoading,
+  metrics,
+}: {
+  guideCount: number;
+  isLoading: boolean;
+  metrics: CounterPickManagementMetrics | null;
+}) {
+  const latestCollection = metrics?.operations.latestCollection.value;
+  const latestCollectionError = metrics?.operations.latestCollection.error;
+
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 text-white shadow-xl shadow-black/15">
+      <CardHeader>
+        <CardTitle className="font-mono text-xl">Counter Pick overview</CardTitle>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+          Snapshot of stored data, collection activity, and the latest patch/rank coverage signal.
+        </p>
+      </CardHeader>
+      <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CounterPickMetricCard
+          description="Stored Riot seed candidates available to collection jobs"
+          isLoading={isLoading && !metrics}
+          label="Seed candidates"
+          metric={metrics?.operations.seedCandidates ?? null}
+        />
+        <CounterPickMetricCard
+          description="Collection jobs currently queued, scanning, paused, or aggregating"
+          isLoading={isLoading && !metrics}
+          label="Active/recent scan status"
+          metric={metrics?.operations.activeCollectionJobs ?? null}
+        />
+        <CounterPickStaticOverviewCard
+          description="Loaded editorial Counter Pick records in this admin session"
+          isLoading={false}
+          label="Guide records"
+          value={guideCount.toLocaleString()}
+        />
+        <CounterPickStaticOverviewCard
+          description={
+            latestCollectionError ??
+            (latestCollection
+              ? `${formatCollectionCoverage(latestCollection)} updated ${formatDateTime(
+                  latestCollection.updatedAt,
+                )}`
+              : "No persisted collection job is available yet.")
+          }
+          isLoading={isLoading && !metrics}
+          label="Patch / rank coverage"
+          value={
+            latestCollectionError
+              ? "Unavailable"
+              : latestCollection
+                ? (latestCollection.resolvedPatch ?? latestCollection.rankBracket ?? "Recorded")
+                : "Pending"
+          }
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function CounterPickAdminLinks() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <CounterPickAdminLinkCard
+        description="Open Riot ID lookup, seed candidate selection, scan configuration, active progress, controls, and recent jobs."
+        href="/admin/counter-picks/collect"
+        label="Collect data"
+      />
+      <CounterPickAdminLinkCard
+        description="Compare current observed win-rate ranks with Counter Ranking V2 mechanical fit in shadow mode."
+        href="/admin/counter-picks/shadow-ranking"
+        label="Shadow ranking"
+      />
+    </div>
+  );
+}
+
+function CounterPickAdminLinkCard({
+  description,
+  href,
+  label,
+}: {
+  description: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Card className="border-cyan-300/15 bg-[#071321]/95 p-5 text-white shadow-xl shadow-black/15">
+      <div className="flex h-full flex-col items-start gap-4">
+        <div>
+          <h2 className="font-mono text-lg font-semibold text-white">{label}</h2>
+          <p className="mt-2 text-sm leading-6 text-zinc-400">{description}</p>
+        </div>
+        <Button asChild className="mt-auto" size="sm" variant="outline">
+          <Link href={href} transitionTypes={["admin-section"]}>
+            Open
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function CounterPickStaticOverviewCard({
+  description,
+  isLoading,
+  label,
+  value,
+}: {
+  description: string;
+  isLoading: boolean;
+  label: string;
+  value: string;
+}) {
+  return (
+    <Card className="border-white/10 bg-[#10182b]/90 p-5 text-white shadow-xl shadow-black/15">
+      <p className="font-mono text-3xl font-semibold text-violet-100">
+        {isLoading ? "Loading" : value}
+      </p>
+      <p className="mt-1 text-sm font-medium text-zinc-200">{label}</p>
+      <p className="mt-2 text-xs leading-5 text-zinc-500">{description}</p>
+    </Card>
+  );
+}
+
 function CounterPickMetricCard({
   description,
   isLoading,
@@ -1400,6 +1963,67 @@ function nullableTrim(value: string) {
 
 function getRoleLabel(role: LeagueRole) {
   return role === "adc" ? "ADC" : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function normalizeCounterRankingV2ChampionId(championId: string) {
+  return championId.trim().toLowerCase();
+}
+
+function getTraitLabel(traitId: string) {
+  return (
+    counterRankingV2TraitDefinitionsById.get(traitId as CounterRankingV2TraitId)?.label ?? traitId
+  );
+}
+
+function formatProfileStatus(status: CounterRankingV2ProfileStatus) {
+  switch (status) {
+    case "reviewed":
+      return "Reviewed";
+    case "needs_review":
+      return "Needs review";
+    case "draft":
+      return "Draft";
+  }
+}
+
+function formatCounterRankingV2Status(status: CounterRankingV2FitStatus) {
+  switch (status) {
+    case "calculated":
+      return "Mechanical fit calculated";
+    case "incomplete_profile":
+      return "Incomplete profile";
+    case "missing_candidate_profile":
+      return "Missing candidate profile";
+    case "missing_enemy_profile":
+      return "Missing enemy profile";
+  }
+}
+
+function formatCollectionCoverage(
+  collection: NonNullable<CounterPickManagementMetrics["operations"]["latestCollection"]["value"]>,
+) {
+  const parts = [
+    collection.platform,
+    collection.role ? getRoleLabel(collection.role as LeagueRole) : null,
+    collection.rankBracket,
+    collection.status,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" / ") : `Collection #${collection.id}`;
+}
+
+function formatRankDelta(rankDelta: number | null) {
+  if (rankDelta === null) {
+    return "No observed rank";
+  }
+
+  if (rankDelta === 0) {
+    return "Ranks aligned";
+  }
+
+  return rankDelta > 0
+    ? `Mechanical ${rankDelta} higher`
+    : `Observed ${Math.abs(rankDelta)} higher`;
 }
 
 function formatDateTime(value: string | null | undefined) {

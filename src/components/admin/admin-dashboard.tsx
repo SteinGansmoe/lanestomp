@@ -221,7 +221,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const pageTitle =
     section === "league-matchups"
       ? "League matchup management"
-      : section === "league-counter-picks"
+      : section === "counter-picks-collect"
+        ? "Collect Counter Pick data"
+        : section === "counter-picks-shadow-ranking"
+          ? "Counter Pick shadow ranking"
+          : section === "league-counter-picks" || section === "counter-picks-overview"
         ? "Counter Pick management"
         : "Admin dashboard";
 
@@ -1475,6 +1479,34 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     champions={adminData.leagueChampions}
                     counterPicks={adminData.leagueCounterPicks}
                     onRefresh={reloadAdminData}
+                    view="editorial"
+                  />
+                ) : null}
+
+                {section === "counter-picks-overview" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="overview"
+                  />
+                ) : null}
+
+                {section === "counter-picks-collect" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="collect"
+                  />
+                ) : null}
+
+                {section === "counter-picks-shadow-ranking" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="shadow-ranking"
                   />
                 ) : null}
               </div>

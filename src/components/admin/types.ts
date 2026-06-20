@@ -100,6 +100,9 @@ export type AdminData = {
 };
 
 export type AdminSection =
+  | "counter-picks-collect"
+  | "counter-picks-overview"
+  | "counter-picks-shadow-ranking"
   | "league-counter-picks"
   | "league-matchups"
   | "overview";

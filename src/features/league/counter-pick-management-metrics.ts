@@ -14,6 +14,16 @@ export type CounterPickLatestSuccessfulScan = {
   uniqueMatches: number | null;
 };
 
+export type CounterPickLatestCollection = {
+  id: number;
+  platform: string | null;
+  rankBracket: string | null;
+  resolvedPatch: string | null;
+  role: string | null;
+  status: string;
+  updatedAt: string | null;
+};
+
 export type CounterPickManagementMetrics = {
   editorial: {
     reviewedGuides: CounterPickManagementMetric;
@@ -28,6 +38,14 @@ export type CounterPickManagementMetrics = {
     counterPickStatRows: CounterPickManagementMetric;
     matchupObservations: CounterPickManagementMetric;
     uniqueMatchupGroups: CounterPickManagementMetric;
+  };
+  operations: {
+    activeCollectionJobs: CounterPickManagementMetric;
+    latestCollection: {
+      error: string | null;
+      value: CounterPickLatestCollection | null;
+    };
+    seedCandidates: CounterPickManagementMetric;
   };
 };
 
@@ -61,6 +79,12 @@ export const counterPickManagementMetricSources = {
     source: "table",
     tableOrRpc: "riot_scan_jobs",
   },
+  activeCollectionJobs: {
+    description: "Riot collection jobs that are not terminal.",
+    filters: ["status not in terminal states"],
+    source: "table",
+    tableOrRpc: "riot_collection_jobs",
+  },
   matchupObservations: {
     description: "Validated Riot match-role observations.",
     filters: [],
@@ -72,6 +96,12 @@ export const counterPickManagementMetricSources = {
     filters: ["generation_status = reviewed"],
     source: "table",
     tableOrRpc: "league_counter_picks",
+  },
+  seedCandidates: {
+    description: "Stored Riot seed candidate rows.",
+    filters: [],
+    source: "table",
+    tableOrRpc: "riot_seed_candidates",
   },
   totalGuides: {
     description: "Editorial Counter Pick guide records.",
@@ -135,6 +165,14 @@ export function createEmptyCounterPickManagementMetrics(): CounterPickManagement
       counterPickStatRows: createMetricValue(null),
       matchupObservations: createMetricValue(null),
       uniqueMatchupGroups: createMetricValue(null),
+    },
+    operations: {
+      activeCollectionJobs: createMetricValue(null),
+      latestCollection: {
+        error: null,
+        value: null,
+      },
+      seedCandidates: createMetricValue(null),
     },
   };
 }

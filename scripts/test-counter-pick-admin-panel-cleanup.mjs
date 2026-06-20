@@ -9,11 +9,32 @@ const actionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
 );
+const adminNavSource = readFileSync(
+  new URL("../src/components/admin/admin-nav.tsx", import.meta.url),
+  "utf8",
+);
+const counterPickSectionSource = readFileSync(
+  new URL("../src/components/admin/league/league-counter-pick-section.tsx", import.meta.url),
+  "utf8",
+);
+const counterPickOverviewPageSource = readFileSync(
+  new URL("../src/app/admin/counter-picks/page.tsx", import.meta.url),
+  "utf8",
+);
+const counterPickCollectPageSource = readFileSync(
+  new URL("../src/app/admin/counter-picks/collect/page.tsx", import.meta.url),
+  "utf8",
+);
+const counterPickShadowPageSource = readFileSync(
+  new URL("../src/app/admin/counter-picks/shadow-ranking/page.tsx", import.meta.url),
+  "utf8",
+);
 
 testResolverPanelRemoved();
 testCoverageQueueLazyLoaded();
 testSeedCandidateAccordionControlled();
 testCollectionPollingIsPassive();
+testCounterPickDomainRoutes();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -70,4 +91,22 @@ function testCollectionPollingIsPassive() {
   );
   assert.equal(panelSource.includes('label="Child stage"'), true);
   assert.equal(panelSource.includes('label="Matches scanned"'), true);
+}
+
+function testCounterPickDomainRoutes() {
+  assert.equal(adminNavSource.includes('label: "Platform"'), false);
+  assert.equal(adminNavSource.includes('label: "Counter Pick"'), true);
+  assert.equal(adminNavSource.includes('href: "/admin/counter-picks"'), true);
+  assert.equal(adminNavSource.includes('href: "/admin/counter-picks/collect"'), true);
+  assert.equal(adminNavSource.includes('href: "/admin/counter-picks/shadow-ranking"'), true);
+  assert.equal(counterPickOverviewPageSource.includes('section="counter-picks-overview"'), true);
+  assert.equal(counterPickCollectPageSource.includes('section="counter-picks-collect"'), true);
+  assert.equal(
+    counterPickShadowPageSource.includes('section="counter-picks-shadow-ranking"'),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes('view === "collect"'), true);
+  assert.equal(counterPickSectionSource.includes('view === "shadow-ranking"'), true);
+  assert.equal(counterPickSectionSource.includes("<RiotMatchScannerPanel"), true);
+  assert.equal(counterPickSectionSource.includes("<CounterRankingV2ShadowPanel"), true);
 }
