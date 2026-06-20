@@ -42,7 +42,7 @@ src/app
 
 src/components
   Shared UI and feature components, including admin tooling, League matchup
-  components, game detail components, and reusable UI primitives.
+  components, counter pick controls, and reusable UI primitives.
 
 src/features/league
   League-specific domain code, including champion data access, matchup routes,

@@ -11,12 +11,6 @@ type AdminNavItem =
       status?: never;
     }
   | {
-      href?: never;
-      label: string;
-      section?: never;
-      status: "planned";
-    }
-  | {
       href: string;
       label: string;
       section?: never;
@@ -40,7 +34,6 @@ const adminNavGroups: Array<{
         label: "Counter Picks",
         section: "league-counter-picks",
       },
-      { label: "Champions", status: "planned" },
       {
         href: "/admin/league/matchups",
         label: "Generation queue",
@@ -54,31 +47,9 @@ const adminNavGroups: Array<{
     ],
   },
   {
-    label: "Users",
-    items: [
-      { label: "Accounts", status: "planned" },
-      { label: "Riot connections", status: "planned" },
-    ],
-  },
-  {
-    label: "Content",
-    items: [
-      { href: "/admin/resources", label: "Resources", section: "resources" },
-      { label: "Guides", status: "planned" },
-      {
-        href: "/admin/community",
-        label: "Community",
-        section: "community",
-      },
-    ],
-  },
-  {
     label: "Platform",
     items: [
       { href: "/admin", label: "Overview", section: "overview" },
-      { href: "/admin/games", label: "Games", section: "games" },
-      { href: "/admin/seasons", label: "Seasons", section: "seasons" },
-      { href: "/admin/timeline", label: "Timeline", section: "timeline" },
     ],
   },
 ];
@@ -94,19 +65,6 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
           <p className="px-1 text-xs font-semibold uppercase text-zinc-500">{group.label}</p>
           <div className="flex flex-wrap gap-2">
             {group.items.map((item) => {
-              if (item.status === "planned") {
-                return (
-                  <span
-                    aria-disabled="true"
-                    className="inline-flex items-center gap-2 rounded border border-cyan-100/10 bg-white/[0.025] px-3 py-2 text-sm text-zinc-600"
-                    key={`${group.label}-${item.label}`}
-                  >
-                    {item.label}
-                    <span className="text-[0.65rem] uppercase text-zinc-700">Future</span>
-                  </span>
-                );
-              }
-
               const isActive =
                 item.section === activeSection ||
                 (item.status === "inside" && activeSection === "league-matchups");
