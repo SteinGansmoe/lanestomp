@@ -2280,6 +2280,19 @@ function RiotCollectionJobCard({
           value={activeScanProgress?.rateLimitRequestsDelayed ?? 0}
         />
         <Metric label="Riot 429s" value={activeScanProgress?.riot429Responses ?? 0} />
+        <Metric
+          label="Matches remaining"
+          value={activeScanProgress?.workerRemainingMatches ?? "Pending"}
+        />
+        <Metric label="Worker state" value={activeScanProgress?.workerState ?? "Pending"} />
+        <Metric
+          label="Worker heartbeat"
+          value={formatDateTime(activeScanProgress?.workerHeartbeatAt)}
+        />
+        <Metric
+          label="Lease expires"
+          value={formatDateTime(activeScanProgress?.workerLeaseExpiresAt)}
+        />
       </div>
       {job.stop_reason ? (
         <div className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-300">

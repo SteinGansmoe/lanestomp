@@ -253,10 +253,13 @@ declare module "@/scripts/lib/riot-counter-pick-scanner.mjs" {
     discover?: boolean;
     focusChampionId?: string | null;
     logger?: { log: (message: string) => void } | null;
+    matchIds?: string[] | null;
     matchCount?: number;
+    maxMatchesToScan?: number | null;
     onProgress?: ((progress: Record<string, unknown>) => Promise<void> | void) | null;
     patch?: string | null;
     platformRegion?: string;
+    processedMatchIds?: string[];
     queue?: number;
     regionalRouting?: string;
     riot: unknown;

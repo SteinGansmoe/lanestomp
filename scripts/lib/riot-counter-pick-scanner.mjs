@@ -28,10 +28,13 @@ export async function scanRiotCounterPickMatchups({
   championRegistry,
   discover = false,
   logger = null,
+  matchIds: storedMatchIds = null,
   matchCount = 20,
+  maxMatchesToScan = null,
   onProgress = null,
   patch = null,
   platformRegion = "EUW1",
+  processedMatchIds = [],
   queue = rankedSoloDuoQueueId,
   regionalRouting = "EUROPE",
   riot,
@@ -94,16 +97,31 @@ export async function scanRiotCounterPickMatchups({
     seedCount: uniqueSeedPuuids.length,
   });
 
-  const matchIdResult = await fetchUniqueMatchIds({
-    count: matchCount,
-    logger,
-    onProgress,
-    puuids: uniqueSeedPuuids,
-    queue,
-    riot,
-    shouldContinue,
-  });
+  const persistedMatchIds = Array.isArray(storedMatchIds) ? uniqueValues(storedMatchIds) : [];
+  const matchIdResult =
+    persistedMatchIds.length > 0
+      ? {
+          totalFetched: persistedMatchIds.length,
+          uniqueMatchIds: persistedMatchIds,
+        }
+      : await fetchUniqueMatchIds({
+          count: matchCount,
+          logger,
+          onProgress,
+          puuids: uniqueSeedPuuids,
+          queue,
+          riot,
+          shouldContinue,
+        });
   const matchIds = matchIdResult.uniqueMatchIds;
+  const completedMatchIds = new Set(uniqueValues(processedMatchIds ?? []));
+  const unfinishedMatchIds = matchIds.filter((matchId) => !completedMatchIds.has(matchId));
+  const boundedMatchLimit =
+    Number.isInteger(maxMatchesToScan) && Number(maxMatchesToScan) > 0
+      ? Number(maxMatchesToScan)
+      : null;
+  const matchIdsForThisInvocation =
+    boundedMatchLimit === null ? unfinishedMatchIds : unfinishedMatchIds.slice(0, boundedMatchLimit);
   const candidateObservations = [];
   const aggregate = {
     candidateDiscoverySkipped: 0,
@@ -123,7 +141,7 @@ export async function scanRiotCounterPickMatchups({
     focusMatchupPairsDiscovered: 0,
     games: 0,
     losses: 0,
-    matchesScanned: 0,
+    matchesScanned: completedMatchIds.size,
     patch,
     patchSkipped: 0,
     queueSkipped: 0,
@@ -141,19 +159,29 @@ export async function scanRiotCounterPickMatchups({
     currentStage: "fetching-matches",
     lastProgressAt: new Date().toISOString(),
     matchesTotal: matchIds.length,
+    storedMatchIds: matchIds,
+    completedMatchIds: Array.from(completedMatchIds),
+    workerBatchSize: boundedMatchLimit ?? matchIds.length,
+    workerRemainingMatches: unfinishedMatchIds.length,
   });
 
-  for (const [matchIndex, matchId] of matchIds.entries()) {
+  for (const matchId of matchIdsForThisInvocation) {
+    const matchIndex = matchIds.indexOf(matchId);
     await assertScanShouldContinue(shouldContinue);
     await emitProgress(onProgress, {
       ...getSummary(aggregate),
+      completedMatchIds: Array.from(completedMatchIds),
       currentMatchIdPreview: getSafeIdentifierPreview(matchId),
       currentMatchIndex: matchIndex + 1,
       currentStage: "fetching-matches",
       lastProgressAt: new Date().toISOString(),
       matchesTotal: matchIds.length,
+      storedMatchIds: matchIds,
+      workerBatchSize: boundedMatchLimit ?? matchIds.length,
+      workerRemainingMatches: Math.max(matchIds.length - completedMatchIds.size, 0),
     });
     const match = await riot.fetchMatch(matchId);
+    completedMatchIds.add(matchId);
     aggregate.matchesScanned += 1;
 
     if (patch && getPatchFromMatch(match) !== patch) {
@@ -274,10 +302,15 @@ export async function scanRiotCounterPickMatchups({
   });
   const summary = {
     ...getSummary(aggregate),
+    completedMatchIds: Array.from(completedMatchIds),
     currentMatchIdPreview: null,
-    currentStage: "scan-complete",
+    currentStage: completedMatchIds.size >= matchIds.length ? "scan-complete" : "chunk-complete",
+    isComplete: completedMatchIds.size >= matchIds.length,
     lastProgressAt: new Date().toISOString(),
     matchesTotal: matchIds.length,
+    storedMatchIds: matchIds,
+    workerBatchSize: boundedMatchLimit ?? matchIds.length,
+    workerRemainingMatches: Math.max(matchIds.length - completedMatchIds.size, 0),
   };
   const targetResult = discover
     ? null

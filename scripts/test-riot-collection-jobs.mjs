@@ -6,6 +6,10 @@ const collectionActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
 );
+const scannerSource = readFileSync(
+  new URL("../scripts/lib/riot-counter-pick-scanner.mjs", import.meta.url),
+  "utf8",
+);
 
 const {
   createEmptyRiotCollectionDiscoveryDiagnostics,
@@ -79,6 +83,16 @@ function testDiscoverySourceCodeGuards() {
   assert.equal(collectionActionsSource.includes("Array.isArray(tierDivisionEntries)"), true);
   assert.equal(collectionActionsSource.includes("assertScanControlAllowsProgress"), true);
   assert.equal(collectionActionsSource.includes("mirrorScanProgressToCollectionJob"), true);
+  assert.equal(collectionActionsSource.includes("defaultRiotScanMatchBatchSize = 5"), true);
+  assert.equal(collectionActionsSource.includes("await runRiotScanJob({"), true);
+  assert.equal(collectionActionsSource.includes("void runRiotScanJob"), false);
+  assert.equal(collectionActionsSource.includes("child-scan-incomplete"), true);
+  assert.equal(collectionActionsSource.includes("workerHeartbeatAt"), true);
+  assert.equal(collectionActionsSource.includes("workerLeaseExpiresAt"), true);
+  assert.equal(scannerSource.includes("maxMatchesToScan"), true);
+  assert.equal(scannerSource.includes("processedMatchIds"), true);
+  assert.equal(scannerSource.includes("storedMatchIds"), true);
+  assert.equal(scannerSource.includes('"chunk-complete"'), true);
   assert.equal(collectionActionsSource.includes("getAdaptiveRiotCollectionSeedBatchSize"), true);
   assert.equal(collectionActionsSource.includes("reconcileCompletedCollectionChild"), true);
   assert.equal(collectionActionsSource.includes("claimCollectionChildConsumption"), true);
