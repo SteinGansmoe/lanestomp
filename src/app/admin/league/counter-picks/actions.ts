@@ -9,19 +9,25 @@ import {
 } from "@/src/features/league/counter-pick-management-metrics";
 import {
   calculateMechanicalMatchupFit,
+  counterRankingV2TraitDefinitionsById,
   createCounterRankingV2MechanicalReview,
   getCounterRankingV2ChampionProfile,
+  isCounterRankingV2ProfileValueInBounds,
   isCounterRankingV2AdjustmentReason,
   isCounterRankingV2ManualAdjustmentInBounds,
   normalizeCounterRankingV2PublicEligible,
   normalizeCounterRankingV2ProfileStatus,
   isCounterRankingV2ReviewStatus,
+  type CounterRankingV2ChampionProfile,
   type CounterRankingV2AdjustmentReason,
   type CounterRankingV2MechanicalReview,
   type CounterRankingV2ProfileReview,
   type CounterRankingV2ProfileStatus,
+  type CounterRankingV2ProfileTrait,
+  type CounterRankingV2TraitId,
   type CounterRankingV2ReviewStatus,
 } from "@/src/features/league/counter-ranking-v2";
+import type { ChampionMasteryRequirementLevel } from "@/src/features/league/champion-mastery-requirements";
 import {
   createEmptyRiotCollectionDiscoveryDiagnostics,
   defaultRiotCollectionSafetyLimits,
@@ -209,6 +215,28 @@ const counterRankingV2ProfileReviewSelect = [
   "created_at",
   "updated_at",
 ].join(", ");
+const counterRankingV2TraitProfileSelect = [
+  "champion_id",
+  "profile_version",
+  "strengths",
+  "notes",
+  "mastery_requirement",
+  "identity_summary",
+  "known_strengths",
+  "created_at",
+  "updated_at",
+  "updated_by",
+].join(", ");
+const counterRankingV2VulnerabilityProfileSelect = [
+  "champion_id",
+  "profile_version",
+  "vulnerabilities",
+  "notes",
+  "known_weaknesses",
+  "created_at",
+  "updated_at",
+  "updated_by",
+].join(", ");
 
 type AuthorizedClientResult =
   | {
@@ -330,6 +358,30 @@ type CounterRankingV2ProfileReviewRow = {
   vulnerability_profile_version: number;
 };
 
+type CounterRankingV2TraitProfileRow = {
+  champion_id: string;
+  created_at: string;
+  identity_summary: string | null;
+  known_strengths: unknown;
+  mastery_requirement: string | null;
+  notes: string | null;
+  profile_version: number;
+  strengths: unknown;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+type CounterRankingV2VulnerabilityProfileRow = {
+  champion_id: string;
+  created_at: string;
+  known_weaknesses: unknown;
+  notes: string | null;
+  profile_version: number;
+  updated_at: string;
+  updated_by: string | null;
+  vulnerabilities: unknown;
+};
+
 type RiotSeedCandidateQueryBuilder = {
   eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
@@ -399,6 +451,16 @@ export type CounterRankingV2ProfileReviewsResult =
       ok: false;
     };
 
+export type CounterRankingV2EditableProfilesResult =
+  | {
+      ok: true;
+      profiles: CounterRankingV2ChampionProfile[];
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
 export type SaveCounterRankingV2MechanicalReviewInput = {
   accessToken: string;
   adjustmentReason: CounterRankingV2AdjustmentReason;
@@ -416,6 +478,15 @@ export type SaveCounterRankingV2ProfileReviewInput = {
   championId: string;
   reviewNote: string | null;
   status: CounterRankingV2ProfileStatus;
+};
+
+export type SaveCounterRankingV2ProfileManagementInput = SaveCounterRankingV2ProfileReviewInput & {
+  identitySummary: string | null;
+  knownStrengths: string[];
+  knownWeaknesses: string[];
+  masteryRequirement: ChampionMasteryRequirementLevel | null;
+  strengths: CounterRankingV2ProfileTrait[];
+  vulnerabilities: CounterRankingV2ProfileTrait[];
 };
 
 export type BatchCounterRankingV2MechanicalReviewAction =
@@ -445,6 +516,17 @@ export type SaveCounterRankingV2MechanicalReviewResult =
 export type SaveCounterRankingV2ProfileReviewResult =
   | {
       ok: true;
+      review: CounterRankingV2ProfileReview;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type SaveCounterRankingV2ProfileManagementResult =
+  | {
+      ok: true;
+      profile: CounterRankingV2ChampionProfile;
       review: CounterRankingV2ProfileReview;
     }
   | {
@@ -813,6 +895,60 @@ export async function getCounterRankingV2ProfileReviews({
   };
 }
 
+export async function getCounterRankingV2EditableProfiles({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<CounterRankingV2EditableProfilesResult> {
+  const authResult = await getAuthorizedAdmin(
+    accessToken,
+    "view Counter Ranking V2 editable profiles",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const [traitResult, vulnerabilityResult] = await Promise.all([
+    serviceClientResult.supabase
+      .from("counter_ranking_v2_champion_trait_profiles")
+      .select(counterRankingV2TraitProfileSelect)
+      .returns<CounterRankingV2TraitProfileRow[]>(),
+    serviceClientResult.supabase
+      .from("counter_ranking_v2_champion_vulnerability_profiles")
+      .select(counterRankingV2VulnerabilityProfileSelect)
+      .returns<CounterRankingV2VulnerabilityProfileRow[]>(),
+  ]);
+
+  if (traitResult.error || vulnerabilityResult.error) {
+    console.error("Counter Ranking V2 editable profiles load failed", {
+      traitError: traitResult.error ? getSafeDatabaseError(traitResult.error) : null,
+      vulnerabilityError: vulnerabilityResult.error
+        ? getSafeDatabaseError(vulnerabilityResult.error)
+        : null,
+    });
+
+    return {
+      error: "Counter Ranking V2 editable profiles could not be loaded.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    profiles: mergeCounterRankingV2EditableProfileRows({
+      traitRows: traitResult.data ?? [],
+      vulnerabilityRows: vulnerabilityResult.data ?? [],
+    }),
+  };
+}
+
 export async function getCounterRankingV2MechanicalReviews({
   accessToken,
   enemyChampionId,
@@ -1000,6 +1136,149 @@ export async function saveCounterRankingV2ProfileReview(
   return {
     ok: true,
     review: toCounterRankingV2ProfileReview(data),
+  };
+}
+
+export async function saveCounterRankingV2ProfileManagement(
+  input: SaveCounterRankingV2ProfileManagementInput,
+): Promise<SaveCounterRankingV2ProfileManagementResult> {
+  const authResult = await getAuthorizedAdmin(
+    input.accessToken,
+    "save Counter Ranking V2 profile management",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const validation = validateCounterRankingV2ProfileManagementInput(input);
+
+  if (!validation.ok) {
+    return validation;
+  }
+
+  const registryResult = await loadChampionRegistry(serviceClientResult.supabase);
+
+  if (!registryResult.ok) {
+    return registryResult;
+  }
+
+  const resolvedChampion = registryResult.normalizeChampionIdentifier(
+    validation.championId,
+    registryResult.registry,
+  );
+
+  if (!resolvedChampion) {
+    return {
+      error: "Select a valid champion profile before saving profile edits.",
+      ok: false,
+    };
+  }
+
+  const baseProfile = getCounterRankingV2ChampionProfile(resolvedChampion.canonicalKey);
+
+  if (!baseProfile) {
+    return {
+      error: "This champion does not have a Counter Ranking V2 mechanical profile yet.",
+      ok: false,
+    };
+  }
+
+  const nextVersion = baseProfile.version;
+  const now = new Date().toISOString();
+  const isReviewed = validation.status === "reviewed";
+  const [traitResult, vulnerabilityResult, reviewResult] = await Promise.all([
+    serviceClientResult.supabase
+      .from("counter_ranking_v2_champion_trait_profiles")
+      .upsert(
+        {
+          champion_id: resolvedChampion.canonicalKey,
+          identity_summary: validation.identitySummary,
+          known_strengths: validation.knownStrengths,
+          mastery_requirement: validation.masteryRequirement,
+          notes: validation.identitySummary,
+          profile_version: nextVersion,
+          strengths: validation.strengths,
+          updated_at: now,
+          updated_by: authResult.userId,
+        },
+        { onConflict: "champion_id" },
+      )
+      .select(counterRankingV2TraitProfileSelect)
+      .single<CounterRankingV2TraitProfileRow>(),
+    serviceClientResult.supabase
+      .from("counter_ranking_v2_champion_vulnerability_profiles")
+      .upsert(
+        {
+          champion_id: resolvedChampion.canonicalKey,
+          known_weaknesses: validation.knownWeaknesses,
+          notes: validation.knownWeaknesses.join("\n"),
+          profile_version: nextVersion,
+          updated_at: now,
+          updated_by: authResult.userId,
+          vulnerabilities: validation.vulnerabilities,
+        },
+        { onConflict: "champion_id" },
+      )
+      .select(counterRankingV2VulnerabilityProfileSelect)
+      .single<CounterRankingV2VulnerabilityProfileRow>(),
+    serviceClientResult.supabase
+      .from("counter_ranking_v2_profile_reviews")
+      .upsert(
+        {
+          champion_id: resolvedChampion.canonicalKey,
+          notes: validation.reviewNote,
+          reviewed_at: isReviewed ? now : null,
+          reviewed_by: isReviewed ? authResult.userId : null,
+          status: validation.status,
+          trait_profile_version: nextVersion,
+          updated_at: now,
+          vulnerability_profile_version: nextVersion,
+        },
+        { onConflict: "champion_id" },
+      )
+      .select(counterRankingV2ProfileReviewSelect)
+      .single<CounterRankingV2ProfileReviewRow>(),
+  ]);
+
+  if (
+    traitResult.error ||
+    vulnerabilityResult.error ||
+    reviewResult.error ||
+    !traitResult.data ||
+    !vulnerabilityResult.data ||
+    !reviewResult.data
+  ) {
+    console.error("Counter Ranking V2 profile management save failed", {
+      championId: resolvedChampion.canonicalKey,
+      reviewError: reviewResult.error ? getSafeDatabaseError(reviewResult.error) : null,
+      traitError: traitResult.error ? getSafeDatabaseError(traitResult.error) : null,
+      vulnerabilityError: vulnerabilityResult.error
+        ? getSafeDatabaseError(vulnerabilityResult.error)
+        : null,
+    });
+
+    return {
+      error: "Counter Ranking V2 profile edits could not be saved.",
+      ok: false,
+    };
+  }
+
+  const profile = mergeCounterRankingV2EditableProfileRows({
+    traitRows: [traitResult.data],
+    vulnerabilityRows: [vulnerabilityResult.data],
+  })[0];
+
+  return {
+    ok: true,
+    profile,
+    review: toCounterRankingV2ProfileReview(reviewResult.data),
   };
 }
 
@@ -7524,6 +7803,229 @@ function toCounterRankingV2ProfileReview(
     updatedAt: row.updated_at,
     vulnerabilityProfileVersion: row.vulnerability_profile_version,
   };
+}
+
+function mergeCounterRankingV2EditableProfileRows({
+  traitRows,
+  vulnerabilityRows,
+}: {
+  traitRows: CounterRankingV2TraitProfileRow[];
+  vulnerabilityRows: CounterRankingV2VulnerabilityProfileRow[];
+}): CounterRankingV2ChampionProfile[] {
+  const traitRowsByChampionId = new Map(traitRows.map((row) => [row.champion_id, row] as const));
+  const vulnerabilityRowsByChampionId = new Map(
+    vulnerabilityRows.map((row) => [row.champion_id, row] as const),
+  );
+  const championIds = Array.from(
+    new Set([...traitRowsByChampionId.keys(), ...vulnerabilityRowsByChampionId.keys()]),
+  );
+
+  const profiles: CounterRankingV2ChampionProfile[] = [];
+
+  for (const championId of championIds) {
+      const baseProfile = getCounterRankingV2ChampionProfile(championId);
+
+      if (!baseProfile) {
+        continue;
+      }
+
+      const traitRow = traitRowsByChampionId.get(championId);
+      const vulnerabilityRow = vulnerabilityRowsByChampionId.get(championId);
+      const profile: CounterRankingV2ChampionProfile = {
+        ...baseProfile,
+        notes: traitRow?.identity_summary ?? traitRow?.notes ?? baseProfile.notes,
+        strengths:
+          normalizeCounterRankingV2ProfileTraits(traitRow?.strengths) ?? baseProfile.strengths,
+        vulnerabilities:
+          normalizeCounterRankingV2ProfileTraits(vulnerabilityRow?.vulnerabilities) ??
+          baseProfile.vulnerabilities,
+        version: Math.max(
+          baseProfile.version,
+          traitRow?.profile_version ?? 0,
+          vulnerabilityRow?.profile_version ?? 0,
+        ),
+      };
+      const identitySummary = traitRow?.identity_summary ?? baseProfile.identitySummary;
+      const knownStrengths = normalizeTextList(traitRow?.known_strengths) ?? baseProfile.knownStrengths;
+      const knownWeaknesses =
+        normalizeTextList(vulnerabilityRow?.known_weaknesses) ?? baseProfile.knownWeaknesses;
+      const masteryRequirement =
+        normalizeMasteryRequirement(traitRow?.mastery_requirement) ??
+        baseProfile.masteryRequirement;
+
+      if (identitySummary) {
+        profile.identitySummary = identitySummary;
+      }
+
+      if (knownStrengths) {
+        profile.knownStrengths = knownStrengths;
+      }
+
+      if (knownWeaknesses) {
+        profile.knownWeaknesses = knownWeaknesses;
+      }
+
+      if (masteryRequirement) {
+        profile.masteryRequirement = masteryRequirement;
+      }
+
+      profiles.push(profile);
+  }
+
+  return profiles;
+}
+
+function validateCounterRankingV2ProfileManagementInput(
+  input: SaveCounterRankingV2ProfileManagementInput,
+):
+  | {
+      championId: string;
+      identitySummary: string | null;
+      knownStrengths: string[];
+      knownWeaknesses: string[];
+      masteryRequirement: ChampionMasteryRequirementLevel | null;
+      ok: true;
+      reviewNote: string | null;
+      status: CounterRankingV2ProfileStatus;
+      strengths: CounterRankingV2ProfileTrait[];
+      vulnerabilities: CounterRankingV2ProfileTrait[];
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  const championId = normalizeChampionIdForReview(input.championId);
+  const status = normalizeCounterRankingV2ProfileStatus(input.status);
+  const strengths = validateCounterRankingV2ProfileTraits(input.strengths, "trait");
+  const vulnerabilities = validateCounterRankingV2ProfileTraits(
+    input.vulnerabilities,
+    "vulnerability",
+  );
+
+  if (!championId) {
+    return {
+      error: "Select a champion profile before saving profile edits.",
+      ok: false,
+    };
+  }
+
+  if (!status) {
+    return {
+      error: "Select a valid profile status.",
+      ok: false,
+    };
+  }
+
+  if (!strengths.ok) {
+    return strengths;
+  }
+
+  if (!vulnerabilities.ok) {
+    return vulnerabilities;
+  }
+
+  return {
+    championId,
+    identitySummary: nullableTrim(input.identitySummary),
+    knownStrengths: normalizeStringList(input.knownStrengths),
+    knownWeaknesses: normalizeStringList(input.knownWeaknesses),
+    masteryRequirement: normalizeMasteryRequirement(input.masteryRequirement),
+    ok: true,
+    reviewNote: nullableTrim(input.reviewNote),
+    status,
+    strengths: strengths.traits,
+    vulnerabilities: vulnerabilities.traits,
+  };
+}
+
+function validateCounterRankingV2ProfileTraits(
+  inputTraits: CounterRankingV2ProfileTrait[],
+  label: string,
+):
+  | {
+      ok: true;
+      traits: CounterRankingV2ProfileTrait[];
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  const seenTraitIds = new Set<string>();
+  const traits: CounterRankingV2ProfileTrait[] = [];
+
+  for (const trait of inputTraits) {
+    const traitId = String(trait.traitId).trim() as CounterRankingV2TraitId;
+    const weight = Number(trait.weight);
+
+    if (!counterRankingV2TraitDefinitionsById.has(traitId)) {
+      return {
+        error: `Select a valid ${label}.`,
+        ok: false,
+      };
+    }
+
+    if (seenTraitIds.has(traitId)) {
+      return {
+        error: `Remove duplicate ${label} entries before saving.`,
+        ok: false,
+      };
+    }
+
+    if (!isCounterRankingV2ProfileValueInBounds(weight)) {
+      return {
+        error: `${getTraitLabelForAction(traitId)} must be between 0 and 10.`,
+        ok: false,
+      };
+    }
+
+    seenTraitIds.add(traitId);
+    traits.push({ traitId, weight });
+  }
+
+  return {
+    ok: true,
+    traits,
+  };
+}
+
+function normalizeCounterRankingV2ProfileTraits(
+  value: unknown,
+): CounterRankingV2ProfileTrait[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  return value
+    .map((item) => {
+      const record = item as { traitId?: unknown; trait_id?: unknown; weight?: unknown };
+      const traitId = String(record.traitId ?? record.trait_id ?? "").trim() as CounterRankingV2TraitId;
+      const weight = Number(record.weight);
+
+      return counterRankingV2TraitDefinitionsById.has(traitId) && Number.isFinite(weight)
+        ? { traitId, weight }
+        : null;
+    })
+    .filter((trait): trait is CounterRankingV2ProfileTrait => trait !== null);
+}
+
+function normalizeTextList(value: unknown) {
+  return Array.isArray(value) ? normalizeStringList(value.map(String)) : null;
+}
+
+function normalizeStringList(values: string[]) {
+  return Array.from(
+    new Set(values.map((value) => value.trim()).filter(Boolean).map((value) => value.slice(0, 160))),
+  );
+}
+
+function normalizeMasteryRequirement(value: unknown): ChampionMasteryRequirementLevel | null {
+  return value === "low" || value === "moderate" || value === "high" || value === "very_high"
+    ? value
+    : null;
+}
+
+function getTraitLabelForAction(traitId: CounterRankingV2TraitId) {
+  return counterRankingV2TraitDefinitionsById.get(traitId)?.label ?? traitId;
 }
 
 function isCounterRankingV2BatchAction(

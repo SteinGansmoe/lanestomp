@@ -224,7 +224,7 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       : section === "counter-picks-collect"
         ? "Collect Counter Pick data"
         : section === "counter-picks-profile-review"
-          ? "Counter profile review"
+          ? "Counter Profile Review"
         : section === "counter-picks-shadow-ranking"
           ? "Counter Pick shadow ranking"
           : section === "league-counter-picks" || section === "counter-picks-overview"

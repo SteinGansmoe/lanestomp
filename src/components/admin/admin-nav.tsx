@@ -61,7 +61,7 @@ const adminNavGroups: Array<{
       },
       {
         href: "/admin/counter-picks/profile-review",
-        label: "Counter profile review",
+        label: "Counter Profile Review",
         section: "counter-picks-profile-review",
       },
     ],

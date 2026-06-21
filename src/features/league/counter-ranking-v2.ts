@@ -1,6 +1,9 @@
 import { calculateCounterPickConfidence } from "./counter-pick-confidence.ts";
 import type { CounterPickStatistics } from "./counter-pick-statistics.ts";
-import { getChampionMasteryRequirementLevel } from "./champion-mastery-requirements.ts";
+import {
+  getChampionMasteryRequirementLevel,
+  type ChampionMasteryRequirementLevel,
+} from "./champion-mastery-requirements.ts";
 import type { LeagueRole } from "./roles.ts";
 
 export type CounterRankingV2TraitCategory =
@@ -49,6 +52,10 @@ export type CounterRankingV2ProfileTrait = {
 
 export type CounterRankingV2ChampionProfile = {
   championId: string;
+  identitySummary?: string;
+  knownStrengths?: string[];
+  knownWeaknesses?: string[];
+  masteryRequirement?: ChampionMasteryRequirementLevel;
   notes?: string;
   reviewStatus: CounterRankingV2ProfileStatus;
   strengths: CounterRankingV2ProfileTrait[];
@@ -73,6 +80,7 @@ export type CounterRankingV2ProfileStatusByChampionId = Map<
   string,
   CounterRankingV2ProfileStatus
 >;
+export type CounterRankingV2ProfileByChampionId = Map<string, CounterRankingV2ChampionProfile>;
 
 export type CounterRankingV2Factor = {
   candidateStrength: CounterRankingV2TraitId;
@@ -243,6 +251,8 @@ type CounterRankingV2TraitInteraction = {
 };
 
 const maxTraitWeight = 5;
+export const counterRankingV2ProfileValueMin = 0;
+export const counterRankingV2ProfileValueMax = 10;
 export const counterRankingV2ManualAdjustmentMin = -30;
 export const counterRankingV2ManualAdjustmentMax = 30;
 export const counterRankingV2DefaultAdjustmentReason = "manual_review";
@@ -350,7 +360,7 @@ export const counterRankingV2TraitVocabulary = [
     category: "vulnerability",
     description: "Has meaningful downtime after key spells are used.",
     id: "cooldown_reliant",
-    label: "Cooldown-reliant",
+    label: "CDR-reliant",
   },
   {
     category: "vulnerability",
@@ -860,6 +870,7 @@ export const counterRankingV2ChampionProfilesById = new Map(
 export function getCounterRankingV2ChampionProfile(
   championId: string,
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
+  profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId,
 ) {
   const profile = counterRankingV2ChampionProfilesById.get(normalizeChampionId(championId)) ?? null;
 
@@ -867,9 +878,18 @@ export function getCounterRankingV2ChampionProfile(
     return null;
   }
 
+  const profileOverride = profileOverridesByChampionId?.get(profile.championId);
   const reviewedStatus = profileStatusesByChampionId?.get(profile.championId);
+  const mergedProfile = profileOverride
+    ? {
+        ...profile,
+        ...profileOverride,
+        championId: profile.championId,
+        supportedRoles: profileOverride.supportedRoles.length > 0 ? profileOverride.supportedRoles : profile.supportedRoles,
+      }
+    : profile;
 
-  return reviewedStatus ? { ...profile, reviewStatus: reviewedStatus } : profile;
+  return reviewedStatus ? { ...mergedProfile, reviewStatus: reviewedStatus } : mergedProfile;
 }
 
 export function isCounterRankingV2SupportedChampion(championId: string) {
@@ -879,11 +899,13 @@ export function isCounterRankingV2SupportedChampion(championId: string) {
 export function calculateMechanicalMatchupFit({
   candidateChampionId,
   enemyChampionId,
+  profileOverridesByChampionId,
   profileStatusesByChampionId,
   role = null,
 }: {
   candidateChampionId: string;
   enemyChampionId: string;
+  profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId;
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   role?: LeagueRole | null;
 }): CounterRankingV2MechanicalFitResult {
@@ -892,10 +914,12 @@ export function calculateMechanicalMatchupFit({
   const candidateProfile = getCounterRankingV2ChampionProfile(
     normalizedCandidateId,
     profileStatusesByChampionId,
+    profileOverridesByChampionId,
   );
   const enemyProfile = getCounterRankingV2ChampionProfile(
     normalizedEnemyId,
     profileStatusesByChampionId,
+    profileOverridesByChampionId,
   );
 
   if (!candidateProfile) {
@@ -956,6 +980,7 @@ export function getCounterRankingV2ComparisonRows({
   candidateChampionIds,
   enemyChampionId,
   observedByChampionId,
+  profileOverridesByChampionId,
   profileStatusesByChampionId,
   reviewsByCandidateId = new Map(),
   role,
@@ -963,6 +988,7 @@ export function getCounterRankingV2ComparisonRows({
   candidateChampionIds: string[];
   enemyChampionId: string;
   observedByChampionId: Map<string, CounterRankingV2ObservedRankSnapshot>;
+  profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId;
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
   role: LeagueRole;
@@ -973,6 +999,7 @@ export function getCounterRankingV2ComparisonRows({
       mechanicalResult: calculateMechanicalMatchupFit({
         candidateChampionId,
         enemyChampionId,
+        profileOverridesByChampionId,
         profileStatusesByChampionId,
         role,
       }),
@@ -1003,6 +1030,7 @@ export function getCounterRankingV2ComparisonRows({
         automationSuggestion: generateCounterRankingV2MechanicalSuggestion({
           mechanicalResult: row.mechanicalResult,
           observed,
+          profileOverridesByChampionId,
           profileStatusesByChampionId,
           review,
         }),
@@ -1029,12 +1057,14 @@ export function getCounterRankingV2ComparisonRows({
 export function generateCounterRankingV2MechanicalSuggestionsForRole({
   enemyChampionId,
   observedByChampionId,
+  profileOverridesByChampionId,
   profileStatusesByChampionId,
   reviewsByCandidateId = new Map(),
   role,
 }: {
   enemyChampionId: string;
   observedByChampionId: Map<string, CounterRankingV2ObservedRankSnapshot>;
+  profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId;
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
   role: LeagueRole;
@@ -1049,6 +1079,7 @@ export function generateCounterRankingV2MechanicalSuggestionsForRole({
     candidateChampionIds,
     enemyChampionId,
     observedByChampionId,
+    profileOverridesByChampionId,
     profileStatusesByChampionId,
     reviewsByCandidateId,
     role,
@@ -1241,8 +1272,10 @@ function isCounterRankingV2AutoApprovalBlockedByReview(
   );
 }
 
-function isCounterRankingV2HighMasteryCandidate(candidateChampionId: string) {
-  const masteryLevel = getChampionMasteryRequirementLevel(candidateChampionId);
+function isCounterRankingV2HighMasteryCandidate(candidateProfile: CounterRankingV2ChampionProfile) {
+  const masteryLevel =
+    candidateProfile.masteryRequirement ??
+    getChampionMasteryRequirementLevel(candidateProfile.championId);
 
   return masteryLevel === "high" || masteryLevel === "very_high";
 }
@@ -1361,11 +1394,13 @@ function getCounterRankingV2TraitLabel(traitId: CounterRankingV2TraitId) {
 export function generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult,
   observed,
+  profileOverridesByChampionId,
   profileStatusesByChampionId,
   review,
 }: {
   mechanicalResult: CounterRankingV2MechanicalFitResult;
   observed: CounterRankingV2ObservedRankSnapshot | null;
+  profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId;
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   review?: CounterRankingV2MechanicalReview | null;
 }): CounterRankingV2MechanicalSuggestion | null {
@@ -1376,10 +1411,12 @@ export function generateCounterRankingV2MechanicalSuggestion({
   const candidateProfile = getCounterRankingV2ChampionProfile(
     mechanicalResult.candidateChampionId,
     profileStatusesByChampionId,
+    profileOverridesByChampionId,
   );
   const enemyProfile = getCounterRankingV2ChampionProfile(
     mechanicalResult.enemyChampionId,
     profileStatusesByChampionId,
+    profileOverridesByChampionId,
   );
 
   if (!candidateProfile || !enemyProfile) {
@@ -1388,9 +1425,7 @@ export function generateCounterRankingV2MechanicalSuggestion({
 
   const suggestedStrength = getCounterRankingV2SuggestedStrength(mechanicalResult.score);
   const manualAutomationStatus = getCounterRankingV2ManualAutomationStatus(review);
-  const hasHighMasteryBlocker = isCounterRankingV2HighMasteryCandidate(
-    mechanicalResult.candidateChampionId,
-  );
+  const hasHighMasteryBlocker = isCounterRankingV2HighMasteryCandidate(candidateProfile);
   const hasObservedContradiction = isCounterRankingV2ObservedContradiction({
     mechanicalResult,
     observed,
@@ -1689,6 +1724,34 @@ export function isCounterRankingV2ProfileStatus(
   value: string,
 ): value is CounterRankingV2ProfileStatus {
   return normalizeCounterRankingV2ProfileStatus(value) === value;
+}
+
+export function isCounterRankingV2ProfileValueInBounds(value: number) {
+  return (
+    Number.isFinite(value) &&
+    value >= counterRankingV2ProfileValueMin &&
+    value <= counterRankingV2ProfileValueMax
+  );
+}
+
+export function getCounterRankingV2ProfileImpactLabel(value: number) {
+  if (value <= 0) {
+    return "None";
+  }
+
+  if (value <= 3) {
+    return "Low";
+  }
+
+  if (value <= 6) {
+    return "Medium";
+  }
+
+  if (value <= 8) {
+    return "High";
+  }
+
+  return "Defining";
 }
 
 export function isCounterRankingV2ReviewStatusPublicEligible(

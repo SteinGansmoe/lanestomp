@@ -25,6 +25,7 @@ const {
   getCounterRankingV2FactorImpactLevel,
   getCounterRankingV2MechanicalReasons,
   getCounterRankingV2PublicPreviewRows,
+  getCounterRankingV2ProfileImpactLabel,
   getCounterRankingV2ReviewProgressSummary,
   hasCounterRankingV2WeakMechanicalSignal,
   isCounterRankingV2ApprovedReviewPublicEligible,
@@ -33,6 +34,7 @@ const {
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2ShadowCandidateEligible,
+  isCounterRankingV2ProfileValueInBounds,
   normalizeCounterRankingV2PublicEligible,
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
@@ -607,6 +609,15 @@ assert.equal(
   "needs_review",
   "Draft profile suggestions should require review even when the score is high.",
 );
+assert.equal(isCounterRankingV2ProfileValueInBounds(-1), false);
+assert.equal(isCounterRankingV2ProfileValueInBounds(0), true);
+assert.equal(isCounterRankingV2ProfileValueInBounds(10), true);
+assert.equal(isCounterRankingV2ProfileValueInBounds(11), false);
+assert.equal(getCounterRankingV2ProfileImpactLabel(0), "None");
+assert.equal(getCounterRankingV2ProfileImpactLabel(3), "Low");
+assert.equal(getCounterRankingV2ProfileImpactLabel(6), "Medium");
+assert.equal(getCounterRankingV2ProfileImpactLabel(8), "High");
+assert.equal(getCounterRankingV2ProfileImpactLabel(10), "Defining");
 
 const savedDraftProfileSuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
@@ -1242,6 +1253,13 @@ const mechanicalReviewServiceRoleGrantMigration = readFileSync(
   ),
   "utf8",
 );
+const profileManagementServiceRoleGrantMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260622013000_grant_counter_ranking_v2_profile_management_service_role.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const publicMechanicalReviewPolicyMigration = readFileSync(
   new URL(
     "../supabase/migrations/20260621115000_add_public_counter_ranking_v2_review_read_policy.sql",
@@ -1288,6 +1306,11 @@ assert.match(
   mechanicalReviewServiceRoleGrantMigration,
   /grant select, insert, update\s+on table public\.counter_ranking_v2_mechanical_reviews\s+to service_role;/,
   "The service-role admin action should be granted review table load/save privileges.",
+);
+assert.match(
+  profileManagementServiceRoleGrantMigration,
+  /grant select, insert, update\s+on table\s+public\.counter_ranking_v2_profile_reviews,\s+public\.counter_ranking_v2_champion_trait_profiles,\s+public\.counter_ranking_v2_champion_vulnerability_profiles\s+to service_role;/,
+  "The service-role profile management action should be granted profile review, trait, and vulnerability table load/save privileges.",
 );
 assert.match(
   publicMechanicalReviewPolicyMigration,
@@ -1410,6 +1433,31 @@ assert.match(
   "Profile review notes should be saved when supported by the table.",
 );
 assert.match(
+  counterPickActionsSource,
+  /saveCounterRankingV2ProfileManagement/,
+  "The admin action layer should expose profile management saves.",
+);
+assert.match(
+  counterPickActionsSource,
+  /counter_ranking_v2_champion_trait_profiles/,
+  "Trait edits should save to the Counter Ranking V2 trait profile table.",
+);
+assert.match(
+  counterPickActionsSource,
+  /counter_ranking_v2_champion_vulnerability_profiles/,
+  "Vulnerability edits should save to the Counter Ranking V2 vulnerability profile table.",
+);
+assert.match(
+  counterPickActionsSource,
+  /isCounterRankingV2ProfileValueInBounds\(weight\)/,
+  "Profile management saves should reject trait and vulnerability values outside 0-10.",
+);
+assert.match(
+  counterPickActionsSource,
+  /updated_by: authResult\.userId/,
+  "Profile management saves should store the editor when supported.",
+);
+assert.match(
   counterPickAdminSectionSource,
   /generateCounterRankingV2MechanicalSuggestionsForRole/,
   "The admin Shadow Ranking panel should generate suggestions for all supported role profiles.",
@@ -1428,6 +1476,36 @@ assert.match(
   counterPickAdminSectionSource,
   /Promote to Reviewed/,
   "The profile review panel should expose a direct promotion action.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /trait\.weight\}\/10/,
+  "Trait and vulnerability values should render with explicit /10 scale labels.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /0 = not present/,
+  "The profile management page should explain the 0-10 scale.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /CounterRankingV2ProfileTraitEditor/,
+  "The profile management page should expose editable trait and vulnerability controls.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Add/,
+  "The profile management page should allow adding traits and vulnerabilities.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /aria-label=\{`Remove \$\{getTraitLabel\(trait\.traitId\)\}`\}/,
+  "The profile management page should allow removing traits and vulnerabilities with compact icon buttons.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Confirm editing this reviewed profile/,
+  "Reviewed profile edits should have an explicit guardrail.",
 );
 assert.match(
   counterPickAdminSectionSource,

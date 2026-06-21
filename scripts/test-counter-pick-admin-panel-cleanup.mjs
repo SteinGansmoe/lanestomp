@@ -161,7 +161,7 @@ function testCounterRankingV2ShadowProfileSelection() {
     counterPickSectionSource.includes("${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}"),
     true,
   );
-  assert.equal(counterPickSectionSource.includes("Mechanical profile review"), true);
+  assert.equal(counterPickSectionSource.includes("Counter Profile Review"), true);
   assert.equal(counterPickSectionSource.includes("Promote to Reviewed"), true);
   assert.match(
     counterPickSectionSource,
