@@ -608,6 +608,51 @@ assert.equal(
   "Draft profile suggestions should require review even when the score is high.",
 );
 
+const savedDraftProfileSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({ candidateChampionId: "vex", enemyChampionId: "yone" }),
+    score: 88,
+  },
+  observed: null,
+  profileStatusesByChampionId: new Map([["vex", "draft"]]),
+});
+
+assert.equal(
+  savedDraftProfileSuggestion?.automationStatus,
+  "needs_review",
+  "Persisted draft profile reviews should force generated suggestions into manual review.",
+);
+
+const reviewedDraftProfileAutoSuggested = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({ candidateChampionId: "ahri", enemyChampionId: "yone" }),
+    score: 75,
+  },
+  observed: null,
+  profileStatusesByChampionId: new Map([["ahri", "reviewed"]]),
+});
+
+assert.equal(
+  reviewedDraftProfileAutoSuggested?.automationStatus,
+  "auto_suggested",
+  "Persisted reviewed profile reviews should allow high enough draft-profile suggestions to become auto-suggested.",
+);
+
+const reviewedDraftProfileAutoApprovalCandidate = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({ candidateChampionId: "ahri", enemyChampionId: "yone" }),
+    score: 88,
+  },
+  observed: null,
+  profileStatusesByChampionId: new Map([["ahri", "reviewed"]]),
+});
+
+assert.equal(
+  reviewedDraftProfileAutoApprovalCandidate?.automationStatus,
+  "auto_approval_candidate",
+  "Persisted reviewed profile reviews should allow safe high-score suggestions to become auto-approval candidates.",
+);
+
 const highMasterySuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
     ...calculateMechanicalMatchupFit({ candidateChampionId: "yasuo", enemyChampionId: "yone" }),
@@ -1219,6 +1264,10 @@ const counterPickAdminSectionSource = readFileSync(
   new URL("../src/components/admin/league/league-counter-pick-section.tsx", import.meta.url),
   "utf8",
 );
+const counterPickProfileReviewPageSource = readFileSync(
+  new URL("../src/app/admin/counter-picks/profile-review/page.tsx", import.meta.url),
+  "utf8",
+);
 
 assert.match(
   mechanicalReviewMigration,
@@ -1336,9 +1385,59 @@ assert.match(
   "Batch review saves should keep public eligibility default-off unless explicitly selected for approval.",
 );
 assert.match(
+  counterPickActionsSource,
+  /saveCounterRankingV2ProfileReview/,
+  "The admin action layer should expose a profile review save action.",
+);
+assert.match(
+  counterPickActionsSource,
+  /counter_ranking_v2_profile_reviews/,
+  "Profile reviews should persist to the Counter Ranking V2 profile review table.",
+);
+assert.match(
+  counterPickActionsSource,
+  /reviewed_by: isReviewed \? authResult\.userId : null/,
+  "Promoting a profile to reviewed should stamp reviewed_by metadata.",
+);
+assert.match(
+  counterPickActionsSource,
+  /reviewed_at: isReviewed \? now : null/,
+  "Promoting a profile to reviewed should stamp reviewed_at metadata.",
+);
+assert.match(
+  counterPickActionsSource,
+  /notes: nullableTrim\(input\.reviewNote\)/,
+  "Profile review notes should be saved when supported by the table.",
+);
+assert.match(
   counterPickAdminSectionSource,
   /generateCounterRankingV2MechanicalSuggestionsForRole/,
   "The admin Shadow Ranking panel should generate suggestions for all supported role profiles.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /CounterRankingV2ProfileReviewPanel/,
+  "The admin Counter Profile Review page should render profile review controls.",
+);
+assert.match(
+  counterPickProfileReviewPageSource,
+  /section="counter-picks-profile-review"/,
+  "Counter profile review should have its own admin page.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Promote to Reviewed/,
+  "The profile review panel should expose a direct promotion action.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Reviewed coverage by role/,
+  "The profile review panel should summarize reviewed coverage by role.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /profileStatusesByChampionId: counterRankingV2ProfileStatusesByChampionId/,
+  "Generated suggestions should use persisted profile review statuses.",
 );
 assert.match(
   counterPickAdminSectionSource,

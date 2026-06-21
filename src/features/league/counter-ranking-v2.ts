@@ -33,7 +33,7 @@ export type CounterRankingV2TraitId =
   | "waveclear"
   | "waveclear_weak";
 
-export type CounterRankingV2ProfileStatus = "draft" | "needs_review" | "reviewed";
+export type CounterRankingV2ProfileStatus = "draft" | "needs_revision" | "reviewed";
 
 export type CounterRankingV2TraitDefinition = {
   category: CounterRankingV2TraitCategory;
@@ -56,6 +56,23 @@ export type CounterRankingV2ChampionProfile = {
   vulnerabilities: CounterRankingV2ProfileTrait[];
   version: number;
 };
+
+export type CounterRankingV2ProfileReview = {
+  championId: string;
+  createdAt: string | null;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  status: CounterRankingV2ProfileStatus;
+  traitProfileVersion: number;
+  updatedAt: string | null;
+  vulnerabilityProfileVersion: number;
+};
+
+export type CounterRankingV2ProfileStatusByChampionId = Map<
+  string,
+  CounterRankingV2ProfileStatus
+>;
 
 export type CounterRankingV2Factor = {
   candidateStrength: CounterRankingV2TraitId;
@@ -232,6 +249,12 @@ export const counterRankingV2DefaultAdjustmentReason = "manual_review";
 export const counterRankingV2DefaultReviewStatus = "unreviewed";
 export const useReviewedMechanicalCountersPublicly =
   process.env.NEXT_PUBLIC_USE_REVIEWED_MECHANICAL_COUNTERS_PUBLICLY === "true";
+
+export const counterRankingV2ProfileStatuses = [
+  "draft",
+  "needs_revision",
+  "reviewed",
+] as const satisfies readonly CounterRankingV2ProfileStatus[];
 
 export const counterRankingV2AdjustmentReasons = [
   "auto_generated",
@@ -567,7 +590,7 @@ export const counterRankingV2ChampionProfiles = [
       trait("fragile", 2),
     ],
   }),
-  profile("akali", "needs_review", 1, {
+  profile("akali", "needs_revision", 1, {
     notes: "Mobile assassin profile with weak wave control and cooldown windows.",
     strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("anti_magic", 2)],
     vulnerabilities: [
@@ -576,22 +599,22 @@ export const counterRankingV2ChampionProfiles = [
       trait("waveclear_weak", 3),
     ],
   }),
-  profile("annie", "needs_review", 1, {
+  profile("annie", "needs_revision", 1, {
     notes: "Short-range burst mage profile with reliable targeted lockdown.",
     strengths: [trait("point_and_click_cc", 5), trait("burst_damage", 4), trait("reliable_cc", 3)],
     vulnerabilities: [trait("short_range", 4), trait("immobile", 4), trait("cooldown_reliant", 3)],
   }),
-  profile("malzahar", "needs_review", 1, {
+  profile("malzahar", "needs_revision", 1, {
     notes: "Suppression and waveclear profile for testing mobile-fragile counter pressure.",
     strengths: [trait("suppression", 5), trait("waveclear", 4), trait("reliable_cc", 3)],
     vulnerabilities: [trait("immobile", 4), trait("early_weakness", 3), trait("cooldown_reliant", 3)],
   }),
-  profile("lissandra", "needs_review", 1, {
+  profile("lissandra", "needs_revision", 1, {
     notes: "Reliable crowd-control mage profile for punishing committed melee entries.",
     strengths: [trait("reliable_cc", 5), trait("point_and_click_cc", 3), trait("burst_damage", 3)],
     vulnerabilities: [trait("short_range", 3), trait("cooldown_reliant", 4), trait("early_weakness", 2)],
   }),
-  profile("kassadin", "needs_review", 1, {
+  profile("kassadin", "needs_revision", 1, {
     notes: "Late-scaling anti-magic assassin profile with exploitable early wave states.",
     strengths: [trait("late_scaling", 5), trait("anti_magic", 4), trait("mobility", 4)],
     vulnerabilities: [
@@ -834,8 +857,19 @@ export const counterRankingV2ChampionProfilesById = new Map(
   ] as const),
 );
 
-export function getCounterRankingV2ChampionProfile(championId: string) {
-  return counterRankingV2ChampionProfilesById.get(normalizeChampionId(championId)) ?? null;
+export function getCounterRankingV2ChampionProfile(
+  championId: string,
+  profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
+) {
+  const profile = counterRankingV2ChampionProfilesById.get(normalizeChampionId(championId)) ?? null;
+
+  if (!profile) {
+    return null;
+  }
+
+  const reviewedStatus = profileStatusesByChampionId?.get(profile.championId);
+
+  return reviewedStatus ? { ...profile, reviewStatus: reviewedStatus } : profile;
 }
 
 export function isCounterRankingV2SupportedChampion(championId: string) {
@@ -845,16 +879,24 @@ export function isCounterRankingV2SupportedChampion(championId: string) {
 export function calculateMechanicalMatchupFit({
   candidateChampionId,
   enemyChampionId,
+  profileStatusesByChampionId,
   role = null,
 }: {
   candidateChampionId: string;
   enemyChampionId: string;
+  profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   role?: LeagueRole | null;
 }): CounterRankingV2MechanicalFitResult {
   const normalizedCandidateId = normalizeChampionId(candidateChampionId);
   const normalizedEnemyId = normalizeChampionId(enemyChampionId);
-  const candidateProfile = getCounterRankingV2ChampionProfile(normalizedCandidateId);
-  const enemyProfile = getCounterRankingV2ChampionProfile(normalizedEnemyId);
+  const candidateProfile = getCounterRankingV2ChampionProfile(
+    normalizedCandidateId,
+    profileStatusesByChampionId,
+  );
+  const enemyProfile = getCounterRankingV2ChampionProfile(
+    normalizedEnemyId,
+    profileStatusesByChampionId,
+  );
 
   if (!candidateProfile) {
     return emptyMechanicalFitResult({
@@ -914,12 +956,14 @@ export function getCounterRankingV2ComparisonRows({
   candidateChampionIds,
   enemyChampionId,
   observedByChampionId,
+  profileStatusesByChampionId,
   reviewsByCandidateId = new Map(),
   role,
 }: {
   candidateChampionIds: string[];
   enemyChampionId: string;
   observedByChampionId: Map<string, CounterRankingV2ObservedRankSnapshot>;
+  profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
   role: LeagueRole;
 }): CounterRankingV2ComparisonRow[] {
@@ -929,6 +973,7 @@ export function getCounterRankingV2ComparisonRows({
       mechanicalResult: calculateMechanicalMatchupFit({
         candidateChampionId,
         enemyChampionId,
+        profileStatusesByChampionId,
         role,
       }),
     }))
@@ -958,6 +1003,7 @@ export function getCounterRankingV2ComparisonRows({
         automationSuggestion: generateCounterRankingV2MechanicalSuggestion({
           mechanicalResult: row.mechanicalResult,
           observed,
+          profileStatusesByChampionId,
           review,
         }),
         candidateChampionId: row.candidateChampionId,
@@ -983,11 +1029,13 @@ export function getCounterRankingV2ComparisonRows({
 export function generateCounterRankingV2MechanicalSuggestionsForRole({
   enemyChampionId,
   observedByChampionId,
+  profileStatusesByChampionId,
   reviewsByCandidateId = new Map(),
   role,
 }: {
   enemyChampionId: string;
   observedByChampionId: Map<string, CounterRankingV2ObservedRankSnapshot>;
+  profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
   role: LeagueRole;
 }): CounterRankingV2ComparisonRow[] {
@@ -1001,6 +1049,7 @@ export function generateCounterRankingV2MechanicalSuggestionsForRole({
     candidateChampionIds,
     enemyChampionId,
     observedByChampionId,
+    profileStatusesByChampionId,
     reviewsByCandidateId,
     role,
   });
@@ -1312,18 +1361,26 @@ function getCounterRankingV2TraitLabel(traitId: CounterRankingV2TraitId) {
 export function generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult,
   observed,
+  profileStatusesByChampionId,
   review,
 }: {
   mechanicalResult: CounterRankingV2MechanicalFitResult;
   observed: CounterRankingV2ObservedRankSnapshot | null;
+  profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId;
   review?: CounterRankingV2MechanicalReview | null;
 }): CounterRankingV2MechanicalSuggestion | null {
   if (mechanicalResult.status !== "calculated") {
     return null;
   }
 
-  const candidateProfile = getCounterRankingV2ChampionProfile(mechanicalResult.candidateChampionId);
-  const enemyProfile = getCounterRankingV2ChampionProfile(mechanicalResult.enemyChampionId);
+  const candidateProfile = getCounterRankingV2ChampionProfile(
+    mechanicalResult.candidateChampionId,
+    profileStatusesByChampionId,
+  );
+  const enemyProfile = getCounterRankingV2ChampionProfile(
+    mechanicalResult.enemyChampionId,
+    profileStatusesByChampionId,
+  );
 
   if (!candidateProfile || !enemyProfile) {
     return null;
@@ -1366,7 +1423,7 @@ export function generateCounterRankingV2MechanicalSuggestion({
 
     if (candidateProfile.reviewStatus !== "reviewed" || enemyProfile.reviewStatus !== "reviewed") {
       automationStatus = "needs_review";
-      reasons.push("Draft or needs-review profile requires admin review.");
+      reasons.push("Draft or needs-revision profile requires admin review.");
     }
 
     if (hasHighMasteryBlocker) {
@@ -1614,6 +1671,24 @@ export function isCounterRankingV2AdjustmentReason(value: string): value is Coun
 
 export function isCounterRankingV2ReviewStatus(value: string): value is CounterRankingV2ReviewStatus {
   return counterRankingV2ReviewStatuses.includes(value as CounterRankingV2ReviewStatus);
+}
+
+export function normalizeCounterRankingV2ProfileStatus(
+  value: string,
+): CounterRankingV2ProfileStatus | null {
+  if (value === "needs_review") {
+    return "needs_revision";
+  }
+
+  return counterRankingV2ProfileStatuses.includes(value as CounterRankingV2ProfileStatus)
+    ? (value as CounterRankingV2ProfileStatus)
+    : null;
+}
+
+export function isCounterRankingV2ProfileStatus(
+  value: string,
+): value is CounterRankingV2ProfileStatus {
+  return normalizeCounterRankingV2ProfileStatus(value) === value;
 }
 
 export function isCounterRankingV2ReviewStatusPublicEligible(

@@ -102,6 +102,7 @@ export type AdminData = {
 export type AdminSection =
   | "counter-picks-collect"
   | "counter-picks-overview"
+  | "counter-picks-profile-review"
   | "counter-picks-shadow-ranking"
   | "league-counter-picks"
   | "league-matchups"

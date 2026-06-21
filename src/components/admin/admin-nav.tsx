@@ -59,6 +59,11 @@ const adminNavGroups: Array<{
         label: "Shadow ranking",
         section: "counter-picks-shadow-ranking",
       },
+      {
+        href: "/admin/counter-picks/profile-review",
+        label: "Counter profile review",
+        section: "counter-picks-profile-review",
+      },
     ],
   },
 ];

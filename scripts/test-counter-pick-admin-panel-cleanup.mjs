@@ -29,6 +29,10 @@ const counterPickShadowPageSource = readFileSync(
   new URL("../src/app/admin/counter-picks/shadow-ranking/page.tsx", import.meta.url),
   "utf8",
 );
+const counterPickProfileReviewPageSource = readFileSync(
+  new URL("../src/app/admin/counter-picks/profile-review/page.tsx", import.meta.url),
+  "utf8",
+);
 
 testResolverPanelRemoved();
 testCoverageQueueLazyLoaded();
@@ -106,16 +110,23 @@ function testCounterPickDomainRoutes() {
   assert.equal(adminNavSource.includes('href: "/admin/counter-picks"'), true);
   assert.equal(adminNavSource.includes('href: "/admin/counter-picks/collect"'), true);
   assert.equal(adminNavSource.includes('href: "/admin/counter-picks/shadow-ranking"'), true);
+  assert.equal(adminNavSource.includes('href: "/admin/counter-picks/profile-review"'), true);
   assert.equal(counterPickOverviewPageSource.includes('section="counter-picks-overview"'), true);
   assert.equal(counterPickCollectPageSource.includes('section="counter-picks-collect"'), true);
   assert.equal(
     counterPickShadowPageSource.includes('section="counter-picks-shadow-ranking"'),
     true,
   );
+  assert.equal(
+    counterPickProfileReviewPageSource.includes('section="counter-picks-profile-review"'),
+    true,
+  );
   assert.equal(counterPickSectionSource.includes('view === "collect"'), true);
   assert.equal(counterPickSectionSource.includes('view === "shadow-ranking"'), true);
+  assert.equal(counterPickSectionSource.includes('view === "profile-review"'), true);
   assert.equal(counterPickSectionSource.includes("<RiotMatchScannerPanel"), true);
   assert.equal(counterPickSectionSource.includes("<CounterRankingV2ShadowPanel"), true);
+  assert.equal(counterPickSectionSource.includes("<CounterRankingV2ProfileReviewPanel"), true);
 }
 
 function testCounterRankingV2ShadowProfileSelection() {
@@ -124,9 +135,7 @@ function testCounterRankingV2ShadowProfileSelection() {
     true,
   );
   assert.equal(
-    counterPickSectionSource.includes(
-      'view === "shadow-ranking"\n      ? hasResolvedInitialSelection',
-    ),
+    counterPickSectionSource.includes("const isCounterRankingV2ProfileWorkspace"),
     true,
   );
   assert.equal(
@@ -148,7 +157,17 @@ function testCounterRankingV2ShadowProfileSelection() {
   assert.equal(counterPickSectionSource.includes("formatCounterRankingV2ProfileAvailability"), true);
   assert.equal(counterPickSectionSource.includes("No V2 profile"), true);
   assert.equal(counterPickSectionSource.includes("Reviewed v${profile.version}"), true);
-  assert.equal(counterPickSectionSource.includes("Needs review profile v${profile.version}"), true);
+  assert.equal(
+    counterPickSectionSource.includes("${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}"),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes("Mechanical profile review"), true);
+  assert.equal(counterPickSectionSource.includes("Promote to Reviewed"), true);
+  assert.match(
+    counterPickSectionSource,
+    /if \(view === "profile-review"\)[\s\S]*<CounterRankingV2ProfileReviewPanel[\s\S]*<\/div>\s*\);\s*}\s*if \(view === "shadow-ranking"\)/,
+    "Counter profile review should render on its own page before the shadow-ranking view.",
+  );
   assert.equal(counterPickSectionSource.includes("No observed stats are available"), true);
   assert.equal(counterPickSectionSource.includes("No review rows have been saved"), true);
   assert.equal(

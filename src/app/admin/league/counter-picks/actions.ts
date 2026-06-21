@@ -10,12 +10,16 @@ import {
 import {
   calculateMechanicalMatchupFit,
   createCounterRankingV2MechanicalReview,
+  getCounterRankingV2ChampionProfile,
   isCounterRankingV2AdjustmentReason,
   isCounterRankingV2ManualAdjustmentInBounds,
   normalizeCounterRankingV2PublicEligible,
+  normalizeCounterRankingV2ProfileStatus,
   isCounterRankingV2ReviewStatus,
   type CounterRankingV2AdjustmentReason,
   type CounterRankingV2MechanicalReview,
+  type CounterRankingV2ProfileReview,
+  type CounterRankingV2ProfileStatus,
   type CounterRankingV2ReviewStatus,
 } from "@/src/features/league/counter-ranking-v2";
 import {
@@ -194,6 +198,17 @@ const counterRankingV2MechanicalReviewSelect = [
   "role",
   "updated_at",
 ].join(", ");
+const counterRankingV2ProfileReviewSelect = [
+  "champion_id",
+  "trait_profile_version",
+  "vulnerability_profile_version",
+  "status",
+  "reviewed_by",
+  "reviewed_at",
+  "notes",
+  "created_at",
+  "updated_at",
+].join(", ");
 
 type AuthorizedClientResult =
   | {
@@ -303,6 +318,18 @@ type CounterRankingV2MechanicalReviewRow = {
   updated_at: string;
 };
 
+type CounterRankingV2ProfileReviewRow = {
+  champion_id: string;
+  created_at: string;
+  notes: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  status: string;
+  trait_profile_version: number;
+  updated_at: string;
+  vulnerability_profile_version: number;
+};
+
 type RiotSeedCandidateQueryBuilder = {
   eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
@@ -362,6 +389,16 @@ export type CounterRankingV2MechanicalReviewsResult =
       ok: false;
     };
 
+export type CounterRankingV2ProfileReviewsResult =
+  | {
+      ok: true;
+      reviews: CounterRankingV2ProfileReview[];
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
 export type SaveCounterRankingV2MechanicalReviewInput = {
   accessToken: string;
   adjustmentReason: CounterRankingV2AdjustmentReason;
@@ -372,6 +409,13 @@ export type SaveCounterRankingV2MechanicalReviewInput = {
   publicEligible: boolean;
   reviewStatus: CounterRankingV2ReviewStatus;
   role: LeagueRole;
+};
+
+export type SaveCounterRankingV2ProfileReviewInput = {
+  accessToken: string;
+  championId: string;
+  reviewNote: string | null;
+  status: CounterRankingV2ProfileStatus;
 };
 
 export type BatchCounterRankingV2MechanicalReviewAction =
@@ -392,6 +436,16 @@ export type SaveCounterRankingV2MechanicalReviewResult =
   | {
       ok: true;
       review: CounterRankingV2MechanicalReview;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type SaveCounterRankingV2ProfileReviewResult =
+  | {
+      ok: true;
+      review: CounterRankingV2ProfileReview;
     }
   | {
       error: string;
@@ -715,6 +769,50 @@ export async function getCounterPickManagementMetrics({
   };
 }
 
+export async function getCounterRankingV2ProfileReviews({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<CounterRankingV2ProfileReviewsResult> {
+  const authResult = await getAuthorizedAdmin(
+    accessToken,
+    "view Counter Ranking V2 profile reviews",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const { data, error } = await serviceClientResult.supabase
+    .from("counter_ranking_v2_profile_reviews")
+    .select(counterRankingV2ProfileReviewSelect)
+    .order("updated_at", { ascending: false })
+    .returns<CounterRankingV2ProfileReviewRow[]>();
+
+  if (error) {
+    console.error("Counter Ranking V2 profile reviews load failed", {
+      error: getSafeDatabaseError(error),
+      table: "counter_ranking_v2_profile_reviews",
+    });
+
+    return {
+      error: "Counter Ranking V2 profile reviews could not be loaded.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    reviews: (data ?? []).map(toCounterRankingV2ProfileReview),
+  };
+}
+
 export async function getCounterRankingV2MechanicalReviews({
   accessToken,
   enemyChampionId,
@@ -791,6 +889,117 @@ export async function getCounterRankingV2MechanicalReviews({
   return {
     ok: true,
     reviews: (data ?? []).map(toCounterRankingV2MechanicalReview),
+  };
+}
+
+export async function saveCounterRankingV2ProfileReview(
+  input: SaveCounterRankingV2ProfileReviewInput,
+): Promise<SaveCounterRankingV2ProfileReviewResult> {
+  const authResult = await getAuthorizedAdmin(
+    input.accessToken,
+    "save Counter Ranking V2 profile reviews",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const normalizedStatus = normalizeCounterRankingV2ProfileStatus(input.status);
+
+  if (!normalizedStatus) {
+    return {
+      error: "Select a valid profile status.",
+      ok: false,
+    };
+  }
+
+  const normalizedChampionId = normalizeChampionIdForReview(input.championId);
+
+  if (!normalizedChampionId) {
+    return {
+      error: "Select a champion profile before saving review.",
+      ok: false,
+    };
+  }
+
+  const registryResult = await loadChampionRegistry(serviceClientResult.supabase);
+
+  if (!registryResult.ok) {
+    return registryResult;
+  }
+
+  const resolvedChampion = registryResult.normalizeChampionIdentifier(
+    normalizedChampionId,
+    registryResult.registry,
+  );
+
+  if (!resolvedChampion) {
+    console.error("Counter Ranking V2 profile review champion resolution failed", {
+      championId: input.championId,
+      normalizedChampionId,
+      table: "counter_ranking_v2_profile_reviews",
+    });
+
+    return {
+      error: "Select a valid champion profile before saving review.",
+      ok: false,
+    };
+  }
+
+  const profile = getCounterRankingV2ChampionProfile(resolvedChampion.canonicalKey);
+
+  if (!profile) {
+    return {
+      error: "This champion does not have a Counter Ranking V2 mechanical profile yet.",
+      ok: false,
+    };
+  }
+
+  const now = new Date().toISOString();
+  const isReviewed = normalizedStatus === "reviewed";
+  const { data, error } = await serviceClientResult.supabase
+    .from("counter_ranking_v2_profile_reviews")
+    .upsert(
+      {
+        champion_id: resolvedChampion.canonicalKey,
+        notes: nullableTrim(input.reviewNote),
+        reviewed_at: isReviewed ? now : null,
+        reviewed_by: isReviewed ? authResult.userId : null,
+        status: normalizedStatus,
+        trait_profile_version: profile.version,
+        updated_at: now,
+        vulnerability_profile_version: profile.version,
+      },
+      {
+        onConflict: "champion_id",
+      },
+    )
+    .select(counterRankingV2ProfileReviewSelect)
+    .single<CounterRankingV2ProfileReviewRow>();
+
+  if (error || !data) {
+    console.error("Counter Ranking V2 profile review save failed", {
+      championId: resolvedChampion.canonicalKey,
+      error: error ? getSafeDatabaseError(error) : null,
+      hasData: Boolean(data),
+      table: "counter_ranking_v2_profile_reviews",
+    });
+
+    return {
+      error: "Counter Ranking V2 profile review could not be saved.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    review: toCounterRankingV2ProfileReview(data),
   };
 }
 
@@ -7299,6 +7508,22 @@ function toCounterRankingV2MechanicalReview(
     role: row.role,
     updatedAt: row.updated_at,
   });
+}
+
+function toCounterRankingV2ProfileReview(
+  row: CounterRankingV2ProfileReviewRow,
+): CounterRankingV2ProfileReview {
+  return {
+    championId: row.champion_id,
+    createdAt: row.created_at,
+    reviewNote: row.notes,
+    reviewedAt: row.reviewed_at,
+    reviewedBy: row.reviewed_by,
+    status: normalizeCounterRankingV2ProfileStatus(row.status) ?? "draft",
+    traitProfileVersion: row.trait_profile_version,
+    updatedAt: row.updated_at,
+    vulnerabilityProfileVersion: row.vulnerability_profile_version,
+  };
 }
 
 function isCounterRankingV2BatchAction(

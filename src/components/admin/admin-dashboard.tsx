@@ -223,6 +223,8 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       ? "League matchup management"
       : section === "counter-picks-collect"
         ? "Collect Counter Pick data"
+        : section === "counter-picks-profile-review"
+          ? "Counter profile review"
         : section === "counter-picks-shadow-ranking"
           ? "Counter Pick shadow ranking"
           : section === "league-counter-picks" || section === "counter-picks-overview"
@@ -1507,6 +1509,15 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     counterPicks={adminData.leagueCounterPicks}
                     onRefresh={reloadAdminData}
                     view="shadow-ranking"
+                  />
+                ) : null}
+
+                {section === "counter-picks-profile-review" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="profile-review"
                   />
                 ) : null}
               </div>
