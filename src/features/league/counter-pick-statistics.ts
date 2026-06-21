@@ -17,7 +17,9 @@ export type CounterPickStatisticsSource =
   | "provider";
 export type PublicCounterResultLabel =
   | "design_counter"
+  | "hard_countered"
   | "low_sample"
+  | "mechanically_countered"
   | "strong_stats_design_counter"
   | "verified_counter";
 
@@ -287,6 +289,7 @@ export function getPublicCounterResultsForSelectedChampionStats(
 
       if (existingCounter) {
         existingCounter.statistics.publicLabels = getPublicReviewedMechanicalCounterLabels({
+          direction: reviewedCounterDirection,
           reviewStatus: reviewedCounter.reviewStatus,
           statistics: existingCounter.statistics,
         });
@@ -296,9 +299,11 @@ export function getPublicCounterResultsForSelectedChampionStats(
       const observedResult = allObservedResultsByChampionId.get(listedChampionKey);
       const designCounterResult = observedResult
         ? clonePublicCounterResultWithLabels(observedResult, {
+            direction: reviewedCounterDirection,
             reviewStatus: reviewedCounter.reviewStatus,
           })
         : createDesignCounterPublicResult({
+            direction: reviewedCounterDirection,
             listedChampionId,
             reviewStatus: reviewedCounter.reviewStatus,
             selectedChampionId,
@@ -310,9 +315,64 @@ export function getPublicCounterResultsForSelectedChampionStats(
   }
 
   return {
-    countersIntoSelectedChampion,
-    selectedChampionGoodInto,
+    countersIntoSelectedChampion: sortPublicCounterResults(
+      countersIntoSelectedChampion,
+      "best-counter",
+    ),
+    selectedChampionGoodInto: sortPublicCounterResults(
+      selectedChampionGoodInto,
+      "countered-by",
+    ),
   };
+}
+
+function sortPublicCounterResults(
+  results: PublicCounterResult[],
+  direction: "best-counter" | "countered-by",
+) {
+  const statisticDirection = direction === "best-counter" ? "desc" : "asc";
+
+  return [...results].sort((left, right) => {
+    const mechanicalSort =
+      getPublicMechanicalCounterSortValue(right.statistics) -
+      getPublicMechanicalCounterSortValue(left.statistics);
+
+    if (mechanicalSort !== 0) {
+      return mechanicalSort;
+    }
+
+    const statisticsSort = compareCounterPickStatistics(
+      left.statistics,
+      right.statistics,
+      statisticDirection,
+    );
+
+    if (statisticsSort !== 0) {
+      return statisticsSort;
+    }
+
+    return left.listedChampionId.localeCompare(right.listedChampionId);
+  });
+}
+
+function getPublicMechanicalCounterSortValue(
+  statistics: Pick<CounterPickStatistics, "publicLabels">,
+) {
+  if (
+    hasPublicCounterResultLabel(statistics, "hard_countered") ||
+    hasPublicCounterResultLabel(statistics, "strong_stats_design_counter")
+  ) {
+    return 2;
+  }
+
+  if (
+    hasPublicCounterResultLabel(statistics, "design_counter") ||
+    hasPublicCounterResultLabel(statistics, "mechanically_countered")
+  ) {
+    return 1;
+  }
+
+  return 0;
 }
 
 function getPublicReviewedMechanicalCounterDirection(
@@ -351,7 +411,13 @@ function isPublicReviewedMechanicalCounterEligible(
 
 function clonePublicCounterResultWithLabels(
   result: PublicCounterResult,
-  { reviewStatus }: { reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"] },
+  {
+    direction,
+    reviewStatus,
+  }: {
+    direction: "counter_into_selected" | "selected_good_into";
+    reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"];
+  },
 ): PublicCounterResult {
   return {
     ...result,
@@ -360,6 +426,7 @@ function clonePublicCounterResultWithLabels(
       winRate:
         result.statistics.winRate ?? (result.games > 0 ? result.listedChampionWinRate : null),
       publicLabels: getPublicReviewedMechanicalCounterLabels({
+        direction,
         reviewStatus,
         statistics: result.statistics,
       }),
@@ -368,10 +435,12 @@ function clonePublicCounterResultWithLabels(
 }
 
 function createDesignCounterPublicResult({
+  direction,
   listedChampionId,
   reviewStatus,
   selectedChampionId,
 }: {
+  direction: "counter_into_selected" | "selected_good_into";
   listedChampionId: string;
   reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"];
   selectedChampionId: string;
@@ -382,6 +451,7 @@ function createDesignCounterPublicResult({
     confidence,
     games: 0,
     publicLabels: getPublicReviewedMechanicalCounterLabels({
+      direction,
       reviewStatus,
       statistics: {
         ...emptyCounterPickStatistics,
@@ -406,21 +476,35 @@ function createDesignCounterPublicResult({
 }
 
 function getPublicReviewedMechanicalCounterLabels({
+  direction,
   reviewStatus,
   statistics,
 }: {
+  direction: "counter_into_selected" | "selected_good_into";
   reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"];
   statistics: Pick<CounterPickStatistics, "confidence" | "publicLabels">;
 }): PublicCounterResultLabel[] {
   const labels = new Set<PublicCounterResultLabel>(statistics.publicLabels ?? []);
 
-  if (reviewStatus === "verified_strong_counter") {
-    labels.add("strong_stats_design_counter");
-  } else {
-    labels.add("design_counter");
-  }
+  labels.delete("design_counter");
+  labels.delete("strong_stats_design_counter");
+  labels.delete("verified_counter");
+  labels.delete("hard_countered");
+  labels.delete("mechanically_countered");
 
-  labels.add("verified_counter");
+  if (direction === "selected_good_into") {
+    if (reviewStatus === "verified_strong_counter") {
+      labels.add("hard_countered");
+    } else {
+      labels.add("mechanically_countered");
+    }
+  } else {
+    if (reviewStatus === "verified_strong_counter") {
+      labels.add("strong_stats_design_counter");
+    } else {
+      labels.add("design_counter");
+    }
+  }
 
   if (!statistics.confidence.publiclyRanked) {
     labels.add("low_sample");

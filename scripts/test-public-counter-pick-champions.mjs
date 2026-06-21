@@ -424,13 +424,50 @@ async function testPublicCounterPickDirectionMapping() {
   assert.equal(
     hasPublicCounterResultLabel(
       fizzBuckets.selectedChampionGoodInto[0].statistics,
-      "strong_stats_design_counter",
+      "hard_countered",
     ),
     true,
   );
   assert.equal(
+    hasPublicCounterResultLabel(
+      fizzBuckets.selectedChampionGoodInto[0].statistics,
+      "strong_stats_design_counter",
+    ),
+    false,
+    "Bad Into reviewed rows should not use green best-counter mechanical labels.",
+  );
+  assert.equal(
+    hasPublicCounterResultLabel(fizzBuckets.selectedChampionGoodInto[0].statistics, "verified_counter"),
+    false,
+    "Reviewed mechanical rows should avoid the generic verified counter badge.",
+  );
+  assert.equal(
     hasPublicCounterResultLabel(fizzBuckets.selectedChampionGoodInto[0].statistics, "low_sample"),
     true,
+  );
+
+  const fizzBucketsWithObservedBadRows = getPublicCounterResultsForSelectedChampionStats(
+    [
+      storedStat({
+        counterChampionId: "Syndra",
+        enemyChampionId: "Fizz",
+        games: 900,
+        winRate: 65,
+      }),
+    ],
+    "Fizz",
+    {
+      reviewedMechanicalCounters: [melFizzReview],
+      useReviewedMechanicalCounters: true,
+    },
+  );
+
+  assert.deepEqual(
+    fizzBucketsWithObservedBadRows.selectedChampionGoodInto.map(
+      (result) => result.listedChampionId,
+    ),
+    ["Mel", "Syndra"],
+    "Verified strong inverse rows should be promoted above normal observed bad-into rows.",
   );
 
   const observedFizzIntoMelBuckets = getPublicCounterResultsForSelectedChampionStats(
@@ -462,7 +499,7 @@ async function testPublicCounterPickDirectionMapping() {
   assert.equal(
     hasPublicCounterResultLabel(
       observedFizzMelRows[0].statistics,
-      "strong_stats_design_counter",
+      "hard_countered",
     ),
     true,
   );
@@ -634,12 +671,26 @@ async function testReviewedMechanicalCountersBypassPublicMinimumGames() {
   assert.match(statSource, /\.in\("counter_champion_id", counterChampionIds\)/);
   assert.match(selectorSource, /getMechanicalCounterPublicSortValue/);
   assert.match(selectorSource, /hasMechanicalCounterPublicLabel\(row\.stats\)/);
+  assert.match(selectorSource, /text: "Hard countered"/);
+  assert.match(selectorSource, /text: "Strong counter"/);
+  assert.match(selectorSource, /text: "Good counter"/);
+  assert.doesNotMatch(selectorSource, /text: "Strong mechanical counter"/);
+  assert.doesNotMatch(selectorSource, /text: "Mechanical counter"/);
+  assert.match(selectorSource, /border-rose-300\/25 bg-rose-500\/10 text-rose-100/);
   assert.match(selectorSource, /finalFullBestCounterIdsBeforeSlicing/);
   assert.match(selectorSource, /finalVisibleBestCounterIdsAfterSlicing/);
   assert.match(selectorSource, /finalFullBadIntoIdsBeforeSlicing/);
   assert.match(selectorSource, /finalVisibleBadIntoIdsAfterSlicing/);
   assert.match(selectorSource, /vexPresentBeforeSlicing/);
   assert.match(selectorSource, /vexPresentAfterSlicing/);
+  assert.match(selectorSource, /const bestCounterIdsKey = useMemo/);
+  assert.match(selectorSource, /const badIntoCounterIdsKey = useMemo/);
+  assert.match(selectorSource, /const visibleBestCounterIdsKey = useMemo/);
+  assert.match(selectorSource, /const visibleBadIntoCounterIdsKey = useMemo/);
+  assert.match(
+    selectorSource,
+    /\}, \[\s*bestCounterIdsKey,\s*badIntoCounterIdsKey,\s*selectedChampion,\s*selectedRole,\s*visibleBadIntoCounterIdsKey,\s*visibleBestCounterIdsKey,\s*\]\);/,
+  );
   assert.match(rankingSource, /counterRankingV2PublicApprovedReviewStatuses/);
   assert.match(rankingSource, /isCounterRankingV2ApprovedReviewPublicEligible/);
 }
