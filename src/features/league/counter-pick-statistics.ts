@@ -6,6 +6,7 @@ import {
   minimumPublicCounterPickGames,
   type CounterPickConfidence,
 } from "./counter-pick-confidence.ts";
+import { counterRankingV2PublicApprovedReviewStatuses } from "./counter-ranking-v2.ts";
 
 export type CounterPickStatisticsTier = "A" | "B" | "C" | "D" | "S" | "S+";
 export type CounterPickSampleConfidence = "high" | "low" | "low_sample" | "medium";
@@ -268,7 +269,7 @@ export function getPublicCounterResultsForSelectedChampionStats(
 
       if (existingCounter) {
         existingCounter.statistics.publicLabels = getPublicReviewedMechanicalCounterLabels({
-          isExistingObservedCounter: true,
+          reviewStatus: reviewedCounter.reviewStatus,
           statistics: existingCounter.statistics,
         });
         continue;
@@ -277,7 +278,7 @@ export function getPublicCounterResultsForSelectedChampionStats(
       const observedResult = allObservedResultsByChampionId.get(listedChampionKey);
       const designCounterResult = observedResult
         ? clonePublicCounterResultWithLabels(observedResult, {
-            isExistingObservedCounter: false,
+            reviewStatus: reviewedCounter.reviewStatus,
           })
         : createDesignCounterPublicResult(reviewedCounter, selectedChampionId);
 
@@ -297,23 +298,27 @@ function isPublicReviewedMechanicalCounterEligible(
   selectedChampionId: string,
 ) {
   return (
-    reviewedCounter.enemyChampionId === selectedChampionId &&
+    getPublicCounterResultIdentityKey(reviewedCounter.enemyChampionId) ===
+      getPublicCounterResultIdentityKey(selectedChampionId) &&
     reviewedCounter.publicEligible &&
-    (reviewedCounter.reviewStatus === "verified_strong_counter" ||
-      reviewedCounter.reviewStatus === "verified_soft_counter")
+    counterRankingV2PublicApprovedReviewStatuses.includes(
+      reviewedCounter.reviewStatus as (typeof counterRankingV2PublicApprovedReviewStatuses)[number],
+    )
   );
 }
 
 function clonePublicCounterResultWithLabels(
   result: PublicCounterResult,
-  { isExistingObservedCounter }: { isExistingObservedCounter: boolean },
+  { reviewStatus }: { reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"] },
 ): PublicCounterResult {
   return {
     ...result,
     statistics: {
       ...result.statistics,
+      winRate:
+        result.statistics.winRate ?? (result.games > 0 ? result.listedChampionWinRate : null),
       publicLabels: getPublicReviewedMechanicalCounterLabels({
-        isExistingObservedCounter,
+        reviewStatus,
         statistics: result.statistics,
       }),
     },
@@ -330,7 +335,7 @@ function createDesignCounterPublicResult(
     confidence,
     games: 0,
     publicLabels: getPublicReviewedMechanicalCounterLabels({
-      isExistingObservedCounter: false,
+      reviewStatus: reviewedCounter.reviewStatus,
       statistics: {
         ...emptyCounterPickStatistics,
         confidence,
@@ -354,20 +359,21 @@ function createDesignCounterPublicResult(
 }
 
 function getPublicReviewedMechanicalCounterLabels({
-  isExistingObservedCounter,
+  reviewStatus,
   statistics,
 }: {
-  isExistingObservedCounter: boolean;
+  reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"];
   statistics: Pick<CounterPickStatistics, "confidence" | "publicLabels">;
 }): PublicCounterResultLabel[] {
   const labels = new Set<PublicCounterResultLabel>(statistics.publicLabels ?? []);
 
-  labels.add("design_counter");
-  labels.add("verified_counter");
-
-  if (statistics.confidence.publiclyRanked && isExistingObservedCounter) {
+  if (reviewStatus === "verified_strong_counter") {
     labels.add("strong_stats_design_counter");
+  } else {
+    labels.add("design_counter");
   }
+
+  labels.add("verified_counter");
 
   if (!statistics.confidence.publiclyRanked) {
     labels.add("low_sample");
@@ -380,7 +386,10 @@ export function toPublicCounterPickResult(
   stat: DirectedCounterPickAggregateForPublicResult,
   selectedChampionId: string,
 ): PublicCounterResult | null {
-  if (stat.enemy_champion_id !== selectedChampionId) {
+  if (
+    getPublicCounterResultIdentityKey(stat.enemy_champion_id) !==
+    getPublicCounterResultIdentityKey(selectedChampionId)
+  ) {
     return null;
   }
 

@@ -1,5 +1,6 @@
 import { calculateCounterPickConfidence } from "./counter-pick-confidence.ts";
 import type { CounterPickStatistics } from "./counter-pick-statistics.ts";
+import { getChampionMasteryRequirementLevel } from "./champion-mastery-requirements.ts";
 import type { LeagueRole } from "./roles.ts";
 
 export type CounterRankingV2TraitCategory =
@@ -51,6 +52,7 @@ export type CounterRankingV2ChampionProfile = {
   notes?: string;
   reviewStatus: CounterRankingV2ProfileStatus;
   strengths: CounterRankingV2ProfileTrait[];
+  supportedRoles: LeagueRole[];
   vulnerabilities: CounterRankingV2ProfileTrait[];
   version: number;
 };
@@ -61,6 +63,15 @@ export type CounterRankingV2Factor = {
   enemyVulnerability: CounterRankingV2TraitId;
   interactionWeight: number;
   reason: string;
+};
+
+export type CounterRankingV2FactorImpactLevel = "high" | "low" | "medium";
+
+export type CounterRankingV2MechanicalReason = {
+  explanation: string;
+  factor: CounterRankingV2Factor;
+  impactLevel: CounterRankingV2FactorImpactLevel;
+  title: string;
 };
 
 export type CounterRankingV2FitStatus =
@@ -106,13 +117,34 @@ export type CounterRankingV2ReviewStatus =
 
 export type CounterRankingV2ReviewFilter =
   | "all"
+  | "auto_approved"
+  | "auto_suggested"
   | "incorrect_suggestion"
   | "low_sample"
+  | "manual_approved"
+  | "manual_rejected"
   | "needs_more_data"
+  | "needs_review"
   | "public_eligible"
   | "unreviewed"
   | "verified_soft_counter"
   | "verified_strong_counter";
+
+export type CounterRankingV2SuggestedStrength =
+  | "hard_counter"
+  | "neutral"
+  | "poor_fit"
+  | "soft_counter"
+  | "strong_counter";
+
+export type CounterRankingV2AutomationStatus =
+  | "auto_approved"
+  | "auto_suggested"
+  | "manual_approved"
+  | "manual_rejected"
+  | "needs_review";
+
+export type CounterRankingV2AutomationConfidence = "high" | "low" | "medium";
 
 export type CounterRankingV2MechanicalReview = {
   adjustmentReason: CounterRankingV2AdjustmentReason;
@@ -132,12 +164,31 @@ export type CounterRankingV2MechanicalReview = {
 };
 
 export type CounterRankingV2ComparisonRow = {
+  automationSuggestion: CounterRankingV2MechanicalSuggestion | null;
   candidateChampionId: string;
   mechanicalRank: number | null;
   mechanicalResult: CounterRankingV2MechanicalFitResult;
   review: CounterRankingV2MechanicalReview | null;
   rankDelta: number | null;
   observed: CounterRankingV2ObservedRankSnapshot | null;
+};
+
+export type CounterRankingV2MechanicalSuggestion = {
+  automationStatus: CounterRankingV2AutomationStatus;
+  confidence: CounterRankingV2AutomationConfidence;
+  factors: CounterRankingV2Factor[];
+  reasons: string[];
+  score: number;
+  suggestedStrength: CounterRankingV2SuggestedStrength;
+};
+
+export type CounterRankingV2AutomationSummary = {
+  autoApproved: number;
+  autoSuggested: number;
+  generatedSuggestions: number;
+  manualApproved: number;
+  manualRejected: number;
+  needsReview: number;
 };
 
 export type CounterRankingV2ReviewProgressSummary = {
@@ -194,6 +245,10 @@ export const counterRankingV2ReviewStatuses = [
   "high_mastery_required",
   "needs_more_data",
 ] as const satisfies readonly CounterRankingV2ReviewStatus[];
+export const counterRankingV2PublicApprovedReviewStatuses = [
+  "verified_strong_counter",
+  "verified_soft_counter",
+] as const;
 
 export const counterRankingV2SupportedChampionIds = [
   "vex",
@@ -204,6 +259,18 @@ export const counterRankingV2SupportedChampionIds = [
   "malzahar",
   "lissandra",
   "kassadin",
+  "ahri",
+  "syndra",
+  "orianna",
+  "zed",
+  "katarina",
+  "leblanc",
+  "viktor",
+  "sylas",
+  "fizz",
+  "hwei",
+  "malphite",
+  "veigar",
 ] as const;
 
 export const counterRankingV2TraitVocabulary = [
@@ -440,6 +507,7 @@ const counterRankingV2TraitInteractions = [
 
 export const counterRankingV2ChampionProfiles = [
   profile("vex", "reviewed", 1, {
+    notes: "Anti-dash mage baseline for testing mobile melee mid counters.",
     strengths: [
       trait("anti_dash", 5),
       trait("reliable_cc", 4),
@@ -449,6 +517,7 @@ export const counterRankingV2ChampionProfiles = [
     vulnerabilities: [trait("immobile", 3), trait("cooldown_reliant", 3), trait("short_range", 2)],
   }),
   profile("yone", "reviewed", 1, {
+    notes: "Mobile melee carry profile used as the primary dash-reliant enemy fixture.",
     strengths: [trait("mobility", 5), trait("sustained_damage", 4), trait("late_scaling", 4)],
     vulnerabilities: [
       trait("dash_reliant", 5),
@@ -458,6 +527,7 @@ export const counterRankingV2ChampionProfiles = [
     ],
   }),
   profile("yasuo", "reviewed", 1, {
+    notes: "Dash-reliant melee skirmisher profile for anti-dash and lockdown tests.",
     strengths: [trait("mobility", 5), trait("sustained_damage", 4), trait("waveclear", 3)],
     vulnerabilities: [
       trait("dash_reliant", 5),
@@ -467,6 +537,7 @@ export const counterRankingV2ChampionProfiles = [
     ],
   }),
   profile("akali", "needs_review", 1, {
+    notes: "Mobile assassin profile with weak wave control and cooldown windows.",
     strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("anti_magic", 2)],
     vulnerabilities: [
       trait("mobility_reliant", 5),
@@ -475,24 +546,118 @@ export const counterRankingV2ChampionProfiles = [
     ],
   }),
   profile("annie", "needs_review", 1, {
+    notes: "Short-range burst mage profile with reliable targeted lockdown.",
     strengths: [trait("point_and_click_cc", 5), trait("burst_damage", 4), trait("reliable_cc", 3)],
     vulnerabilities: [trait("short_range", 4), trait("immobile", 4), trait("cooldown_reliant", 3)],
   }),
   profile("malzahar", "needs_review", 1, {
+    notes: "Suppression and waveclear profile for testing mobile-fragile counter pressure.",
     strengths: [trait("suppression", 5), trait("waveclear", 4), trait("reliable_cc", 3)],
     vulnerabilities: [trait("immobile", 4), trait("early_weakness", 3), trait("cooldown_reliant", 3)],
   }),
   profile("lissandra", "needs_review", 1, {
+    notes: "Reliable crowd-control mage profile for punishing committed melee entries.",
     strengths: [trait("reliable_cc", 5), trait("point_and_click_cc", 3), trait("burst_damage", 3)],
     vulnerabilities: [trait("short_range", 3), trait("cooldown_reliant", 4), trait("early_weakness", 2)],
   }),
   profile("kassadin", "needs_review", 1, {
+    notes: "Late-scaling anti-magic assassin profile with exploitable early wave states.",
     strengths: [trait("late_scaling", 5), trait("anti_magic", 4), trait("mobility", 4)],
     vulnerabilities: [
       trait("early_weakness", 5),
       trait("waveclear_weak", 4),
       trait("melee_commit", 2),
     ],
+  }),
+  profile("ahri", "draft", 1, {
+    notes: "Mobile pick mage profile with charm setup, poke, and cooldown-dependent threat.",
+    strengths: [trait("mobility", 4), trait("reliable_cc", 3), trait("poke", 3), trait("burst_damage", 3)],
+    vulnerabilities: [trait("cooldown_reliant", 4), trait("fragile", 3), trait("waveclear_weak", 2)],
+  }),
+  profile("syndra", "draft", 1, {
+    notes: "Longer-range burst control mage profile with strong punish windows but low mobility.",
+    strengths: [trait("burst_damage", 5), trait("poke", 4), trait("reliable_cc", 3), trait("waveclear", 3)],
+    vulnerabilities: [trait("immobile", 4), trait("cooldown_reliant", 3), trait("fragile", 3)],
+  }),
+  profile("orianna", "draft", 1, {
+    notes: "Control mage profile with wave control and reliable zone setup, offset by immobility.",
+    strengths: [trait("waveclear", 5), trait("poke", 3), trait("reliable_cc", 3), trait("late_scaling", 3)],
+    vulnerabilities: [trait("immobile", 4), trait("fragile", 3), trait("cooldown_reliant", 2)],
+  }),
+  profile("zed", "draft", 1, {
+    notes: "Mobile AD assassin profile that depends on shadow windows and committed burst access.",
+    strengths: [trait("mobility", 5), trait("burst_damage", 5), trait("poke", 2)],
+    vulnerabilities: [
+      trait("cooldown_reliant", 4),
+      trait("mobility_reliant", 4),
+      trait("melee_commit", 3),
+      trait("fragile", 2),
+    ],
+  }),
+  profile("katarina", "draft", 1, {
+    notes: "Reset assassin profile with high mobility but heavy dependence on entry timing.",
+    strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("sustained_damage", 3)],
+    vulnerabilities: [
+      trait("mobility_reliant", 5),
+      trait("melee_commit", 4),
+      trait("fragile", 3),
+      trait("waveclear_weak", 3),
+    ],
+  }),
+  profile("leblanc", "draft", 1, {
+    notes: "Mobile burst mage profile with distortion windows and chain follow-up pressure.",
+    strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("reliable_cc", 2), trait("poke", 2)],
+    vulnerabilities: [
+      trait("mobility_reliant", 4),
+      trait("cooldown_reliant", 4),
+      trait("waveclear_weak", 3),
+      trait("fragile", 2),
+    ],
+  }),
+  profile("viktor", "draft", 1, {
+    notes: "Scaling control mage profile with wave control and zone pressure but low repositioning.",
+    strengths: [trait("waveclear", 5), trait("poke", 4), trait("late_scaling", 4), trait("sustained_damage", 3)],
+    vulnerabilities: [trait("immobile", 4), trait("early_weakness", 3), trait("cooldown_reliant", 2)],
+  }),
+  profile("sylas", "draft", 1, {
+    notes: "Melee AP skirmisher profile with mobility and sustain-oriented extended trades.",
+    strengths: [trait("mobility", 4), trait("sustained_damage", 4), trait("burst_damage", 3)],
+    vulnerabilities: [
+      trait("melee_commit", 4),
+      trait("cooldown_reliant", 4),
+      trait("waveclear_weak", 3),
+      trait("early_weakness", 2),
+    ],
+  }),
+  profile("fizz", "draft", 1, {
+    notes: "Mobile melee burst profile with evasive cooldown windows and committed all-ins.",
+    strengths: [trait("mobility", 5), trait("burst_damage", 5), trait("anti_magic", 2)],
+    vulnerabilities: [
+      trait("melee_commit", 4),
+      trait("cooldown_reliant", 4),
+      trait("waveclear_weak", 3),
+      trait("fragile", 2),
+    ],
+  }),
+  profile("hwei", "draft", 1, {
+    notes: "Artillery control mage profile with broad poke, waveclear, and utility but low mobility.",
+    strengths: [trait("poke", 5), trait("waveclear", 4), trait("reliable_cc", 3), trait("burst_damage", 3)],
+    vulnerabilities: [trait("immobile", 5), trait("fragile", 3), trait("cooldown_reliant", 3)],
+  }),
+  profile("malphite", "draft", 1, {
+    notes: "Mid flex engage profile with reliable initiation and anti-physical trading, but low wave agency.",
+    strengths: [trait("reliable_cc", 5), trait("anti_dash", 3), trait("burst_damage", 3)],
+    vulnerabilities: [
+      trait("cooldown_reliant", 4),
+      trait("waveclear_weak", 3),
+      trait("short_range", 3),
+      trait("early_weakness", 2),
+    ],
+  }),
+  profile("veigar", "draft", 1, {
+    notes: "Scaling cage mage profile with burst and zone control but punishable early tempo.",
+    strengths: [trait("late_scaling", 5), trait("burst_damage", 4), trait("reliable_cc", 4), trait("waveclear", 3)],
+    vulnerabilities: [trait("immobile", 4), trait("early_weakness", 4), trait("cooldown_reliant", 3)],
   }),
 ] as const satisfies readonly CounterRankingV2ChampionProfile[];
 
@@ -621,13 +786,19 @@ export function getCounterRankingV2ComparisonRows({
       const observed = observedByChampionId.get(row.candidateChampionId) ?? null;
       const rankDelta =
         observed?.rank && mechanicalRank ? observed.rank - mechanicalRank : null;
+      const review = reviewsByCandidateId.get(row.candidateChampionId) ?? null;
 
       return {
+        automationSuggestion: generateCounterRankingV2MechanicalSuggestion({
+          mechanicalResult: row.mechanicalResult,
+          observed,
+          review,
+        }),
         candidateChampionId: row.candidateChampionId,
         mechanicalRank,
         mechanicalResult: row.mechanicalResult,
         observed,
-        review: reviewsByCandidateId.get(row.candidateChampionId) ?? null,
+        review,
         rankDelta,
       };
     })
@@ -641,6 +812,32 @@ export function getCounterRankingV2ComparisonRows({
 
       return left.candidateChampionId.localeCompare(right.candidateChampionId);
     });
+}
+
+export function generateCounterRankingV2MechanicalSuggestionsForRole({
+  enemyChampionId,
+  observedByChampionId,
+  reviewsByCandidateId = new Map(),
+  role,
+}: {
+  enemyChampionId: string;
+  observedByChampionId: Map<string, CounterRankingV2ObservedRankSnapshot>;
+  reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
+  role: LeagueRole;
+}): CounterRankingV2ComparisonRow[] {
+  const normalizedEnemyChampionId = normalizeChampionId(enemyChampionId);
+  const candidateChampionIds = counterRankingV2ChampionProfiles
+    .filter((profile) => profile.championId !== normalizedEnemyChampionId)
+    .filter((profile) => profile.supportedRoles.includes(role))
+    .map((profile) => profile.championId);
+
+  return getCounterRankingV2ComparisonRows({
+    candidateChampionIds,
+    enemyChampionId,
+    observedByChampionId,
+    reviewsByCandidateId,
+    role,
+  });
 }
 
 export function sortCounterRankingV2RowsByReviewPriority(
@@ -736,7 +933,296 @@ export function isCounterRankingV2RowMatchingReviewFilter({
     return observedGames > 0 && observedGames < minimumGames;
   }
 
+  if (isCounterRankingV2AutomationStatus(filter)) {
+    return row.automationSuggestion?.automationStatus === filter;
+  }
+
   return row.review?.reviewStatus === filter;
+}
+
+export function getCounterRankingV2FactorImpactLevel(
+  factor: Pick<CounterRankingV2Factor, "contribution">,
+): CounterRankingV2FactorImpactLevel {
+  if (factor.contribution >= 12) {
+    return "high";
+  }
+
+  if (factor.contribution >= 6) {
+    return "medium";
+  }
+
+  return "low";
+}
+
+export function getCounterRankingV2MechanicalReasons(
+  factors: CounterRankingV2Factor[],
+  limit = 3,
+): CounterRankingV2MechanicalReason[] {
+  return factors.slice(0, limit).map((factor) => ({
+    explanation: getCounterRankingV2FactorExplanation(factor),
+    factor,
+    impactLevel: getCounterRankingV2FactorImpactLevel(factor),
+    title: getCounterRankingV2FactorTitle(factor),
+  }));
+}
+
+export function hasCounterRankingV2WeakMechanicalSignal(
+  factors: CounterRankingV2Factor[],
+) {
+  const topReasons = getCounterRankingV2MechanicalReasons(factors);
+
+  return topReasons.length >= 3 && topReasons.every((reason) => reason.impactLevel === "low");
+}
+
+function getCounterRankingV2SuggestedStrength(
+  score: number,
+): CounterRankingV2SuggestedStrength {
+  if (score >= 90) {
+    return "hard_counter";
+  }
+
+  if (score >= 80) {
+    return "strong_counter";
+  }
+
+  if (score >= 65) {
+    return "soft_counter";
+  }
+
+  if (score >= 45) {
+    return "neutral";
+  }
+
+  return "poor_fit";
+}
+
+function getCounterRankingV2ManualAutomationStatus(
+  review: CounterRankingV2MechanicalReview | null | undefined,
+): CounterRankingV2AutomationStatus | null {
+  if (!review) {
+    return null;
+  }
+
+  if (
+    review.reviewStatus === "verified_strong_counter" ||
+    review.reviewStatus === "verified_soft_counter"
+  ) {
+    return "manual_approved";
+  }
+
+  if (review.reviewStatus === "incorrect_suggestion") {
+    return "manual_rejected";
+  }
+
+  return "needs_review";
+}
+
+function isCounterRankingV2HighMasteryCandidate(candidateChampionId: string) {
+  const masteryLevel = getChampionMasteryRequirementLevel(candidateChampionId);
+
+  return masteryLevel === "high" || masteryLevel === "very_high";
+}
+
+function isCounterRankingV2ObservedContradiction({
+  mechanicalResult,
+  observed,
+}: {
+  mechanicalResult: CounterRankingV2MechanicalFitResult;
+  observed: CounterRankingV2ObservedRankSnapshot | null;
+}) {
+  return (
+    mechanicalResult.score >= 65 &&
+    (observed?.games ?? 0) >= 20 &&
+    observed?.winRate !== null &&
+    observed?.winRate !== undefined &&
+    observed.winRate < 48
+  );
+}
+
+function getCounterRankingV2AutomationConfidence({
+  automationStatus,
+  score,
+}: {
+  automationStatus: CounterRankingV2AutomationStatus;
+  score: number;
+}): CounterRankingV2AutomationConfidence {
+  if (automationStatus === "auto_suggested" || automationStatus === "manual_approved") {
+    return "high";
+  }
+
+  if (score >= 65) {
+    return "medium";
+  }
+
+  return "low";
+}
+
+function isCounterRankingV2AutomationStatus(
+  value: CounterRankingV2ReviewFilter,
+): value is CounterRankingV2AutomationStatus {
+  return (
+    value === "auto_approved" ||
+    value === "auto_suggested" ||
+    value === "manual_approved" ||
+    value === "manual_rejected" ||
+    value === "needs_review"
+  );
+}
+
+function getCounterRankingV2FactorTitle(factor: CounterRankingV2Factor) {
+  const interactionKey = `${factor.candidateStrength}:${factor.enemyVulnerability}`;
+
+  switch (interactionKey) {
+    case "anti_dash:dash_reliant":
+      return "Punishes dash commits";
+    case "anti_dash:mobility_reliant":
+      return "Removes mobility safety";
+    case "anti_dash:melee_commit":
+      return "Interrupts committed entries";
+    case "point_and_click_cc:mobility_reliant":
+      return "Locks down slippery targets";
+    case "point_and_click_cc:dash_reliant":
+      return "Stops dash resets";
+    case "reliable_cc:melee_commit":
+      return "Controls melee engages";
+    case "reliable_cc:mobility_reliant":
+      return "Makes mobility risky";
+    case "suppression:mobility_reliant":
+      return "Denies escape windows";
+    case "suppression:fragile":
+      return "Creates focus-fire windows";
+    case "poke:short_range":
+      return "Taxes short range";
+    case "poke:waveclear_weak":
+      return "Pressures weak waveclear";
+    case "burst_damage:fragile":
+      return "Threatens fragile targets";
+    case "burst_damage:cooldown_reliant":
+      return "Punishes cooldown windows";
+    case "waveclear:waveclear_weak":
+      return "Controls lane tempo";
+    case "late_scaling:early_weakness":
+      return "Scales through weak early pressure";
+    case "sustained_damage:cooldown_reliant":
+      return "Punishes cooldown downtime";
+    case "anti_magic:burst_damage":
+      return "Reduces burst threat";
+    default:
+      return `${getCounterRankingV2TraitLabel(
+        factor.candidateStrength,
+      )} targets ${getCounterRankingV2TraitLabel(factor.enemyVulnerability).toLowerCase()}`;
+  }
+}
+
+function getCounterRankingV2FactorExplanation(factor: CounterRankingV2Factor) {
+  return factor.reason;
+}
+
+function getCounterRankingV2TraitLabel(traitId: CounterRankingV2TraitId) {
+  return counterRankingV2TraitDefinitionsById.get(traitId)?.label ?? traitId;
+}
+
+export function generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult,
+  observed,
+  review,
+}: {
+  mechanicalResult: CounterRankingV2MechanicalFitResult;
+  observed: CounterRankingV2ObservedRankSnapshot | null;
+  review?: CounterRankingV2MechanicalReview | null;
+}): CounterRankingV2MechanicalSuggestion | null {
+  if (mechanicalResult.status !== "calculated") {
+    return null;
+  }
+
+  const candidateProfile = getCounterRankingV2ChampionProfile(mechanicalResult.candidateChampionId);
+  const enemyProfile = getCounterRankingV2ChampionProfile(mechanicalResult.enemyChampionId);
+
+  if (!candidateProfile || !enemyProfile) {
+    return null;
+  }
+
+  const suggestedStrength = getCounterRankingV2SuggestedStrength(mechanicalResult.score);
+  const manualAutomationStatus = getCounterRankingV2ManualAutomationStatus(review);
+  const reasons: string[] = [];
+  let automationStatus: CounterRankingV2AutomationStatus =
+    mechanicalResult.score >= 80 ? "auto_suggested" : "needs_review";
+
+  if (manualAutomationStatus) {
+    automationStatus = manualAutomationStatus;
+    reasons.push("Existing manual review row takes priority over generated suggestions.");
+  } else {
+    if (mechanicalResult.score < 65) {
+      reasons.push("Mechanical score is below the default suggestion threshold.");
+    }
+
+    if (candidateProfile.reviewStatus !== "reviewed" || enemyProfile.reviewStatus !== "reviewed") {
+      automationStatus = "needs_review";
+      reasons.push("Draft or needs-review profile requires admin review.");
+    }
+
+    if (isCounterRankingV2HighMasteryCandidate(mechanicalResult.candidateChampionId)) {
+      automationStatus = "needs_review";
+      reasons.push("High mastery candidate requires manual review.");
+    }
+
+    if (isCounterRankingV2ObservedContradiction({ mechanicalResult, observed })) {
+      automationStatus = "needs_review";
+      reasons.push("Observed stats strongly contradict the mechanical suggestion.");
+    }
+
+    if (mechanicalResult.score >= 65 && mechanicalResult.score < 80) {
+      automationStatus = "needs_review";
+      reasons.push("Medium mechanical score requires manual review.");
+    }
+  }
+
+  if (reasons.length === 0) {
+    reasons.push("High mechanical score from reviewed profiles is auto-suggested for admin review.");
+  }
+
+  return {
+    automationStatus,
+    confidence: getCounterRankingV2AutomationConfidence({
+      automationStatus,
+      score: mechanicalResult.score,
+    }),
+    factors: mechanicalResult.factors,
+    reasons,
+    score: mechanicalResult.score,
+    suggestedStrength,
+  };
+}
+
+export function getCounterRankingV2AutomationSummary(
+  rows: CounterRankingV2ComparisonRow[],
+): CounterRankingV2AutomationSummary {
+  return rows.reduce<CounterRankingV2AutomationSummary>(
+    (summary, row) => {
+      const automationStatus = row.automationSuggestion?.automationStatus;
+
+      if (!automationStatus) {
+        return summary;
+      }
+
+      return {
+        autoApproved: summary.autoApproved + (automationStatus === "auto_approved" ? 1 : 0),
+        autoSuggested: summary.autoSuggested + (automationStatus === "auto_suggested" ? 1 : 0),
+        generatedSuggestions: summary.generatedSuggestions + 1,
+        manualApproved: summary.manualApproved + (automationStatus === "manual_approved" ? 1 : 0),
+        manualRejected: summary.manualRejected + (automationStatus === "manual_rejected" ? 1 : 0),
+        needsReview: summary.needsReview + (automationStatus === "needs_review" ? 1 : 0),
+      };
+    },
+    {
+      autoApproved: 0,
+      autoSuggested: 0,
+      generatedSuggestions: 0,
+      manualApproved: 0,
+      manualRejected: 0,
+      needsReview: 0,
+    },
+  );
 }
 
 export function getCounterRankingV2ReviewProgressSummary(
@@ -783,7 +1269,7 @@ export function getCounterRankingV2PublicPreviewRows({
   rows: CounterRankingV2ComparisonRow[];
 }): CounterRankingV2PublicPreviewRow[] {
   return rows
-    .filter((row) => isCounterRankingV2ReviewPublicEligible(row.review))
+    .filter((row) => isCounterRankingV2ApprovedReviewPublicEligible(row.review))
     .map((row) => ({
       candidateChampionId: row.candidateChampionId,
       confidenceLabel: row.observed?.confidence.shortLabel ?? "No data",
@@ -931,6 +1417,17 @@ export function isCounterRankingV2ReviewPublicEligible(
   );
 }
 
+export function isCounterRankingV2ApprovedReviewPublicEligible(
+  review: Pick<CounterRankingV2MechanicalReview, "publicEligible" | "reviewStatus"> | null,
+) {
+  return Boolean(
+    review?.publicEligible &&
+      (counterRankingV2PublicApprovedReviewStatuses as readonly CounterRankingV2ReviewStatus[]).includes(
+        review.reviewStatus,
+      ),
+  );
+}
+
 export function isCounterRankingV2ShadowCandidateEligible({
   minimumGames,
   observedGames,
@@ -956,7 +1453,7 @@ export function isCounterRankingV2PublicCandidateEligible({
 }) {
   return (
     (observedGames ?? 0) >= minimumGames ||
-    (useReviewedMechanicalCounters && isCounterRankingV2ReviewPublicEligible(review))
+    (useReviewedMechanicalCounters && isCounterRankingV2ApprovedReviewPublicEligible(review))
   );
 }
 
@@ -1068,11 +1565,12 @@ function profile(
   championId: string,
   reviewStatus: CounterRankingV2ProfileStatus,
   version: number,
-  traits: Pick<CounterRankingV2ChampionProfile, "strengths" | "vulnerabilities">,
+  traits: Pick<CounterRankingV2ChampionProfile, "notes" | "strengths" | "vulnerabilities">,
 ): CounterRankingV2ChampionProfile {
   return {
     championId,
     reviewStatus,
+    supportedRoles: ["mid"],
     version,
     ...traits,
   };

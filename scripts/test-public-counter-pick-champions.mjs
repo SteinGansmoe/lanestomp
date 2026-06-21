@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 const optionsModule = await import("../src/features/league/public-counter-pick-options.ts");
 const statisticsModule = await import("../src/features/league/counter-pick-statistics.ts");
@@ -94,6 +95,7 @@ assert.equal(isCounterPickStatisticsTrusted(bestRows[0]), true);
 assert.equal(bestRows[0].games < publicCounterPickLowSampleThreshold, true);
 
 await testPublicCounterPickDirectionMapping();
+await testReviewedMechanicalCountersBypassPublicMinimumGames();
 
 console.log("Public Counter Pick champion coverage passed.");
 
@@ -261,7 +263,16 @@ async function testPublicCounterPickDirectionMapping() {
   );
 
   const enabledDesignBuckets = getPublicCounterResultsForSelectedChampionStats(
-    [zed.stat, talon.stat],
+    [
+      zed.stat,
+      talon.stat,
+      storedStat({
+        counterChampionId: "Vex",
+        enemyChampionId: "Ahri",
+        games: 4,
+        winRate: 50,
+      }),
+    ],
     "Ahri",
     {
       reviewedMechanicalCounters: [
@@ -284,6 +295,18 @@ async function testPublicCounterPickDirectionMapping() {
           reviewStatus: "verified_strong_counter",
         }),
         reviewedMechanicalCounter({
+          counterChampionId: "Vex",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "verified_strong_counter",
+        }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Brand",
+          enemyChampionId: "Ahri",
+          publicEligible: false,
+          reviewStatus: "verified_soft_counter",
+        }),
+        reviewedMechanicalCounter({
           counterChampionId: "Lux",
           enemyChampionId: "Ahri",
           publicEligible: true,
@@ -301,6 +324,12 @@ async function testPublicCounterPickDirectionMapping() {
           publicEligible: true,
           reviewStatus: "needs_more_data",
         }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Akali",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "high_mastery_required",
+        }),
       ],
       useReviewedMechanicalCounters: true,
     },
@@ -317,14 +346,17 @@ async function testPublicCounterPickDirectionMapping() {
   const enabledTalon = enabledDesignBuckets.countersIntoSelectedChampion.find(
     (result) => result.listedChampionId === "Talon",
   );
+  const enabledVex = enabledDesignBuckets.countersIntoSelectedChampion.find(
+    (result) => result.listedChampionId === "Vex",
+  );
 
   assert.equal(enabledDesignIds.includes("Annie"), true);
+  assert.equal(enabledDesignIds.includes("Vex"), true);
   assert.equal(
     enabledZedRows.length,
     1,
     "Existing observed counters should be enhanced, not duplicated.",
   );
-  assert.equal(hasPublicCounterResultLabel(enabledZedRows[0].statistics, "design_counter"), true);
   assert.equal(
     hasPublicCounterResultLabel(enabledZedRows[0].statistics, "strong_stats_design_counter"),
     true,
@@ -332,12 +364,166 @@ async function testPublicCounterPickDirectionMapping() {
   assert.equal(hasPublicCounterResultLabel(enabledAnnie.statistics, "design_counter"), true);
   assert.equal(hasPublicCounterResultLabel(enabledAnnie.statistics, "low_sample"), true);
   assert.equal(hasPublicCounterResultLabel(enabledTalon.statistics, "low_sample"), true);
+  assert.equal(enabledVex.games, 4);
+  assert.equal(enabledVex.statistics.winRate, 50);
+  assert.equal(hasPublicCounterResultLabel(enabledVex.statistics, "low_sample"), true);
+  assert.equal(
+    hasPublicCounterResultLabel(enabledVex.statistics, "strong_stats_design_counter"),
+    true,
+  );
+  assert.equal(enabledDesignIds.includes("Brand"), false);
   assert.equal(enabledDesignIds.includes("Lux"), false);
   assert.equal(enabledDesignIds.includes("Orianna"), false);
   assert.equal(enabledDesignIds.includes("Viktor"), false);
+  assert.equal(enabledDesignIds.includes("Akali"), false);
   assert.equal("calculatedMechanicalScore" in enabledAnnie, false);
   assert.equal("manualAdjustment" in enabledAnnie, false);
   assert.equal("finalReviewedScore" in enabledAnnie, false);
+}
+
+async function testReviewedMechanicalCountersBypassPublicMinimumGames() {
+  const disabledLowSampleBuckets = getPublicCounterResultsForSelectedChampionStats(
+    [
+      storedStat({
+        counterChampionId: "Vex",
+        enemyChampionId: "Yone",
+        games: 4,
+        winRate: 50,
+      }),
+    ],
+    "Yone",
+    {
+      reviewedMechanicalCounters: [
+        reviewedMechanicalCounter({
+          counterChampionId: "Vex",
+          enemyChampionId: "Yone",
+          publicEligible: true,
+          reviewStatus: "verified_strong_counter",
+        }),
+      ],
+      useReviewedMechanicalCounters: false,
+    },
+  );
+
+  assert.equal(
+    disabledLowSampleBuckets.countersIntoSelectedChampion.some(
+      (result) => result.listedChampionId === "Vex",
+    ),
+    false,
+    "Low-sample reviewed counters should not alter public output when the flag is disabled.",
+  );
+
+  const enabledZeroGameBuckets = getPublicCounterResultsForSelectedChampionStats([], "Yone", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Vex",
+        enemyChampionId: "Yone",
+        publicEligible: true,
+        reviewStatus: "verified_strong_counter",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
+  const enabledZeroGameVex = enabledZeroGameBuckets.countersIntoSelectedChampion.find(
+    (result) => result.listedChampionId === "Vex",
+  );
+
+  assert.ok(enabledZeroGameVex);
+  assert.equal(enabledZeroGameVex.games, 0);
+  assert.equal(hasPublicCounterResultLabel(enabledZeroGameVex.statistics, "low_sample"), true);
+  assert.equal(
+    hasPublicCounterResultLabel(enabledZeroGameVex.statistics, "strong_stats_design_counter"),
+    true,
+  );
+
+  const enabledNormalizedDirectionBuckets = getPublicCounterResultsForSelectedChampionStats(
+    [
+      storedStat({
+        counterChampionId: "vex",
+        enemyChampionId: "yone",
+        games: 4,
+        winRate: 50,
+      }),
+    ],
+    "Yone",
+    {
+      reviewedMechanicalCounters: [
+        reviewedMechanicalCounter({
+          counterChampionId: "vex",
+          enemyChampionId: "yone",
+          publicEligible: true,
+          reviewStatus: "verified_strong_counter",
+        }),
+      ],
+      useReviewedMechanicalCounters: true,
+    },
+  );
+  const enabledNormalizedVex = enabledNormalizedDirectionBuckets.countersIntoSelectedChampion.find(
+    (result) => result.listedChampionId === "vex",
+  );
+
+  assert.ok(enabledNormalizedVex);
+  assert.equal(enabledNormalizedVex.games, 4);
+  assert.equal(enabledNormalizedVex.statistics.winRate, 50);
+  assert.equal(hasPublicCounterResultLabel(enabledNormalizedVex.statistics, "low_sample"), true);
+
+  const wrongDirectionBuckets = getPublicCounterResultsForSelectedChampionStats([], "Yone", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Yone",
+        enemyChampionId: "Vex",
+        publicEligible: true,
+        reviewStatus: "verified_strong_counter",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
+
+  assert.equal(
+    wrongDirectionBuckets.countersIntoSelectedChampion.some(
+      (result) => result.listedChampionId === "Yone",
+    ),
+    false,
+    "A Vex target review should not render as a Yone target public counter.",
+  );
+
+  const providerSource = await readFile(
+    new URL("../src/features/league/counter-pick-statistics-provider.ts", import.meta.url),
+    "utf8",
+  );
+  const statSource = await readFile(
+    new URL("../src/features/league/counter-pick-stats.ts", import.meta.url),
+    "utf8",
+  );
+  const selectorSource = await readFile(
+    new URL("../src/components/league/counter-pick-selector.tsx", import.meta.url),
+    "utf8",
+  );
+  const rankingSource = await readFile(
+    new URL("../src/features/league/counter-ranking-v2.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(providerSource, /fetchCounterPickStatsByEnemyRoleAndCounters/);
+  assert.match(providerSource, /import \{ supabase \} from "@\/src\/lib\/supabase"/);
+  assert.match(providerSource, /client = supabase/);
+  assert.match(providerSource, /counterChampionIds:\s*reviewedMechanicalCounters\.map/);
+  assert.match(providerSource, /mergeCounterPickStatsForPublicResults/);
+  assert.match(providerSource, /\.eq\("role", role\)/);
+  assert.doesNotMatch(providerSource, /\.eq\("enemy_champion_id", enemyChampion\)/);
+  assert.match(providerSource, /console\.info\("\[Counter Pick\] reviewed mechanical counter public flow"/);
+  assert.match(providerSource, /reviewRowsForSelectedEnemyBeforePublicFiltering/);
+  assert.match(providerSource, /fetchedReviewRowChampionIds/);
+  assert.match(providerSource, /mergedBestCounterIdsBeforeFinalSorting/);
+  assert.match(statSource, /\.in\("counter_champion_id", counterChampionIds\)/);
+  assert.match(selectorSource, /getMechanicalCounterPublicSortValue/);
+  assert.match(selectorSource, /hasMechanicalCounterPublicLabel\(row\.stats\)/);
+  assert.match(selectorSource, /finalFullBestCounterIdsBeforeSlicing/);
+  assert.match(selectorSource, /finalVisibleBestCounterIdsAfterSlicing/);
+  assert.match(selectorSource, /vexPresentBeforeSlicing/);
+  assert.match(selectorSource, /vexPresentAfterSlicing/);
+  assert.match(rankingSource, /counterRankingV2PublicApprovedReviewStatuses/);
+  assert.match(rankingSource, /isCounterRankingV2ApprovedReviewPublicEligible/);
 }
 
 function publicResultFromStoredStat(input, selectedChampionId) {

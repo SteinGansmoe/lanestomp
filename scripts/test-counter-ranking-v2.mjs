@@ -17,10 +17,17 @@ const {
   createCounterRankingV2MechanicalReview,
   createObservedCounterRankingV2Snapshot,
   filterCounterRankingV2RowsByReviewFilter,
+  generateCounterRankingV2MechanicalSuggestion,
+  generateCounterRankingV2MechanicalSuggestionsForRole,
+  getCounterRankingV2AutomationSummary,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  getCounterRankingV2FactorImpactLevel,
+  getCounterRankingV2MechanicalReasons,
   getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
+  hasCounterRankingV2WeakMechanicalSignal,
+  isCounterRankingV2ApprovedReviewPublicEligible,
   isCounterRankingV2ManualAdjustmentInBounds,
   isCounterRankingV2PublicCandidateEligible,
   isCounterRankingV2ReviewPublicEligible,
@@ -31,10 +38,35 @@ const {
   useReviewedMechanicalCountersPublicly,
 } = rankingModule;
 
+const secondBatchMidChampionIds = [
+  "ahri",
+  "syndra",
+  "orianna",
+  "zed",
+  "katarina",
+  "leblanc",
+  "viktor",
+  "sylas",
+  "fizz",
+  "hwei",
+  "malphite",
+  "veigar",
+];
+
 assert.deepEqual(
   counterRankingV2SupportedChampionIds,
-  ["vex", "yone", "yasuo", "akali", "annie", "malzahar", "lissandra", "kassadin"],
-  "The first Counter Ranking V2 shadow profile set should stay intentionally small.",
+  [
+    "vex",
+    "yone",
+    "yasuo",
+    "akali",
+    "annie",
+    "malzahar",
+    "lissandra",
+    "kassadin",
+    ...secondBatchMidChampionIds,
+  ],
+  "Counter Ranking V2 shadow profile support should include the first set and the second mid batch.",
 );
 assert.equal(
   useReviewedMechanicalCountersPublicly,
@@ -44,8 +76,26 @@ assert.equal(
 
 const traitIds = new Set(counterRankingV2TraitVocabulary.map((trait) => trait.id));
 const championRegistry = buildChampionRegistry([
+  championRegistryRow("Ahri", "103", "Ahri", "ahri"),
+  championRegistryRow("Syndra", "134", "Syndra", "syndra"),
+  championRegistryRow("Orianna", "61", "Orianna", "orianna"),
+  championRegistryRow("Zed", "238", "Zed", "zed"),
+  championRegistryRow("Katarina", "55", "Katarina", "katarina"),
+  championRegistryRow("Leblanc", "7", "LeBlanc", "leblanc"),
+  championRegistryRow("Viktor", "112", "Viktor", "viktor"),
+  championRegistryRow("Sylas", "517", "Sylas", "sylas"),
+  championRegistryRow("Fizz", "105", "Fizz", "fizz"),
+  championRegistryRow("Hwei", "910", "Hwei", "hwei"),
+  championRegistryRow("Malphite", "54", "Malphite", "malphite"),
+  championRegistryRow("Veigar", "45", "Veigar", "veigar"),
   championRegistryRow("Vex", "711", "Vex", "vex"),
   championRegistryRow("Yone", "777", "Yone", "yone"),
+  championRegistryRow("Yasuo", "157", "Yasuo", "yasuo"),
+  championRegistryRow("Akali", "84", "Akali", "akali"),
+  championRegistryRow("Annie", "1", "Annie", "annie"),
+  championRegistryRow("Malzahar", "90", "Malzahar", "malzahar"),
+  championRegistryRow("Lissandra", "127", "Lissandra", "lissandra"),
+  championRegistryRow("Kassadin", "38", "Kassadin", "kassadin"),
 ]);
 
 assert.equal(
@@ -59,6 +109,11 @@ assert.equal(
   "Lowercase V2 profile IDs should resolve to canonical league_champions IDs.",
 );
 assert.equal(
+  normalizeChampionIdentifier("leblanc", championRegistry)?.canonicalKey,
+  "Leblanc",
+  "LeBlanc should resolve to the canonical Riot data id used by league_champions.",
+);
+assert.equal(
   normalizeChampionIdentifier("definitely-not-a-champion", championRegistry),
   null,
   "Invalid review champion IDs should fail normalization before database writes.",
@@ -70,11 +125,50 @@ for (const championId of counterRankingV2SupportedChampionIds) {
   assert.ok(profile, `${championId} should have a profile.`);
   assert.ok(profile.strengths.length > 0, `${championId} should define strengths.`);
   assert.ok(profile.vulnerabilities.length > 0, `${championId} should define vulnerabilities.`);
+  assert.ok(profile.supportedRoles.includes("mid"), `${championId} should support mid.`);
+  assert.ok(profile.notes?.length > 0, `${championId} should include internal profile reasoning.`);
 
   for (const profileTrait of [...profile.strengths, ...profile.vulnerabilities]) {
     assert.ok(traitIds.has(profileTrait.traitId), `${profileTrait.traitId} should be vocabulary-backed.`);
     assert.ok(profileTrait.weight >= 0 && profileTrait.weight <= 5, "Profile weights are 0-5.");
   }
+}
+
+for (const championId of secondBatchMidChampionIds) {
+  const profile = getCounterRankingV2ChampionProfile(championId);
+  const canonicalChampionId = normalizeChampionIdentifier(championId, championRegistry)?.canonicalKey;
+
+  assert.ok(profile, `${championId} should load as a second-batch profile.`);
+  assert.equal(profile.reviewStatus, "draft", `${championId} should remain draft until reviewed.`);
+  assert.ok(canonicalChampionId, `${championId} should resolve to a canonical champion id.`);
+  assert.ok(
+    counterRankingV2SupportedChampionIds.includes(championId),
+    `${championId} should be selectable in Shadow Ranking supported options.`,
+  );
+
+  const championAsCandidate = calculateMechanicalMatchupFit({
+    candidateChampionId: championId,
+    enemyChampionId: "yone",
+    role: "mid",
+  });
+  const championAsEnemy = calculateMechanicalMatchupFit({
+    candidateChampionId: "vex",
+    enemyChampionId: championId,
+    role: "mid",
+  });
+  const canonicalMatchup = calculateMechanicalMatchupFit({
+    candidateChampionId: canonicalChampionId,
+    enemyChampionId: "Yone",
+    role: "mid",
+  });
+
+  assert.equal(championAsCandidate.status, "calculated", `${championId} should score as candidate.`);
+  assert.equal(championAsEnemy.status, "calculated", `${championId} should score as enemy.`);
+  assert.equal(
+    canonicalMatchup.status,
+    "calculated",
+    `${canonicalChampionId} should score through canonical id normalization.`,
+  );
 }
 
 const vexIntoYone = calculateMechanicalMatchupFit({
@@ -113,6 +207,70 @@ assert.ok(
       factor.candidateStrength === "anti_dash" && factor.enemyVulnerability === "dash_reliant",
   ),
   "Vex into Yone should include anti-dash into dash-reliant as a factor.",
+);
+assert.deepEqual(
+  [
+    getCounterRankingV2FactorImpactLevel({ contribution: 12 }),
+    getCounterRankingV2FactorImpactLevel({ contribution: 6 }),
+    getCounterRankingV2FactorImpactLevel({ contribution: 5.9 }),
+  ],
+  ["high", "medium", "low"],
+  "Mechanical factor impact levels should map raw contributions to readable labels.",
+);
+
+const readableFactorReasons = getCounterRankingV2MechanicalReasons(
+  [
+    testMechanicalFactor({ contribution: 14, enemyVulnerability: "dash_reliant" }),
+    testMechanicalFactor({
+      candidateStrength: "burst_damage",
+      contribution: 7,
+      enemyVulnerability: "cooldown_reliant",
+    }),
+    testMechanicalFactor({
+      candidateStrength: "poke",
+      contribution: 4,
+      enemyVulnerability: "short_range",
+    }),
+    testMechanicalFactor({
+      candidateStrength: "waveclear",
+      contribution: 3,
+      enemyVulnerability: "waveclear_weak",
+    }),
+  ],
+  3,
+);
+
+assert.deepEqual(
+  readableFactorReasons.map((reason) => reason.impactLevel),
+  ["high", "medium", "low"],
+  "Readable mechanical reasons should keep impact labels for the top factors.",
+);
+assert.deepEqual(
+  readableFactorReasons.map((reason) => reason.title),
+  ["Punishes dash commits", "Punishes cooldown windows", "Taxes short range"],
+  "Readable mechanical reasons should use review-friendly titles.",
+);
+assert.equal(
+  readableFactorReasons.length,
+  3,
+  "Readable mechanical reasons should show the top 3 factors by default.",
+);
+assert.equal(
+  hasCounterRankingV2WeakMechanicalSignal([
+    testMechanicalFactor({ contribution: 5 }),
+    testMechanicalFactor({
+      candidateStrength: "poke",
+      contribution: 4,
+      enemyVulnerability: "short_range",
+    }),
+    testMechanicalFactor({
+      candidateStrength: "waveclear",
+      contribution: 3,
+      enemyVulnerability: "waveclear_weak",
+    }),
+  ]),
+  true,
+  "Weak-signal detection should flag scores spread across small factors.",
 );
 assert.ok(
   vexIntoYone.score > kassadinIntoYone.score,
@@ -163,6 +321,12 @@ const shadowRows = getCounterRankingV2ComparisonRows({
   role: "mid",
 });
 const shadowVexRow = shadowRows.find((row) => row.candidateChampionId === "vex");
+const secondBatchUnreviewedRows = getCounterRankingV2ComparisonRows({
+  candidateChampionIds: secondBatchMidChampionIds,
+  enemyChampionId: "yone",
+  observedByChampionId: new Map(),
+  role: "mid",
+});
 
 assert.ok(shadowVexRow, "Vex should be present in shadow comparison rows.");
 assert.equal(
@@ -179,6 +343,14 @@ assert.equal(
   shadowVexRow.rankDelta,
   7,
   "Rank delta should compare observed rank and shadow mechanical rank.",
+);
+assert.deepEqual(
+  getCounterRankingV2PublicPreviewRows({
+    minimumGames: 5,
+    rows: secondBatchUnreviewedRows,
+  }),
+  [],
+  "New profiles alone should not change public output without public eligible review rows.",
 );
 
 assert.equal(clampCounterRankingV2ManualAdjustment(45), 30, "Positive manual adjustments clamp.");
@@ -281,6 +453,140 @@ assert.equal(
   reviewedRows.at(0)?.review?.manualAdjustment,
   10,
   "Comparison rows should attach an existing review row by counter champion ID.",
+);
+assert.equal(
+  reviewedRows.at(0)?.automationSuggestion?.automationStatus,
+  "manual_approved",
+  "Existing approved manual reviews should take priority over generated automation statuses.",
+);
+assert.equal(
+  reviewedRows.at(0)?.review?.publicEligible,
+  true,
+  "Existing public-eligible review rows should be preserved by generated suggestions.",
+);
+
+const highScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    score: 88,
+  },
+  observed: null,
+});
+
+assert.equal(
+  highScoreSuggestion?.automationStatus,
+  "auto_suggested",
+  "High-score reviewed-profile matchups should generate auto-suggested candidates.",
+);
+assert.equal(
+  highScoreSuggestion?.suggestedStrength,
+  "strong_counter",
+  "Scores from 80-89 should be suggested as strong counters.",
+);
+
+const mediumScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    score: 70,
+  },
+  observed: null,
+});
+
+assert.equal(
+  mediumScoreSuggestion?.automationStatus,
+  "needs_review",
+  "Medium-score suggestions should require review.",
+);
+assert.equal(
+  mediumScoreSuggestion?.suggestedStrength,
+  "soft_counter",
+  "Scores from 65-79 should be suggested as soft counters.",
+);
+
+const draftProfileSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({ candidateChampionId: "ahri", enemyChampionId: "yone" }),
+    score: 88,
+  },
+  observed: null,
+});
+
+assert.equal(
+  draftProfileSuggestion?.automationStatus,
+  "needs_review",
+  "Draft profile suggestions should require review even when the score is high.",
+);
+
+const highMasterySuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({ candidateChampionId: "yasuo", enemyChampionId: "yone" }),
+    score: 88,
+  },
+  observed: null,
+});
+
+assert.equal(
+  highMasterySuggestion?.automationStatus,
+  "needs_review",
+  "High-mastery candidate suggestions should require manual review.",
+);
+
+const contradictedSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    score: 88,
+  },
+  observed: createObservedCounterRankingV2Snapshot({
+    games: 25,
+    rank: 9,
+    winRate: 42,
+  }),
+});
+
+assert.equal(
+  contradictedSuggestion?.automationStatus,
+  "needs_review",
+  "Observed stats that strongly contradict a suggestion should require review.",
+);
+
+assert.equal(
+  generateCounterRankingV2MechanicalSuggestion({
+    mechanicalResult: calculateMechanicalMatchupFit({
+      candidateChampionId: "unknown",
+      enemyChampionId: "yone",
+    }),
+    observed: null,
+  }),
+  null,
+  "Missing candidate profiles should be skipped safely by suggestion generation.",
+);
+
+const generatedMidSuggestions = generateCounterRankingV2MechanicalSuggestionsForRole({
+  enemyChampionId: "yone",
+  observedByChampionId: new Map(),
+  role: "mid",
+});
+
+assert.equal(
+  generatedMidSuggestions.length,
+  counterRankingV2SupportedChampionIds.length - 1,
+  "Mid-lane generation should evaluate every supported candidate profile except the selected enemy.",
+);
+assert.ok(
+  generatedMidSuggestions.some((row) => row.candidateChampionId === "vex" && row.automationSuggestion),
+  "Mid-lane generation should include generated suggestions for supported candidate pairs.",
+);
+
+const missingEnemyGeneratedRows = generateCounterRankingV2MechanicalSuggestionsForRole({
+  enemyChampionId: "unknown",
+  observedByChampionId: new Map(),
+  role: "mid",
+});
+
+assert.equal(
+  getCounterRankingV2AutomationSummary(missingEnemyGeneratedRows).generatedSuggestions,
+  0,
+  "Missing enemy profiles should not produce generated automation suggestions.",
 );
 
 const unreviewedBeforeReviewedRows = sortCounterRankingV2RowsByReviewPriority(
@@ -512,6 +818,36 @@ assert.deepEqual(
   ["akali", "lissandra", "yasuo"],
   "The unreviewed filter should include missing review rows and explicit unreviewed rows.",
 );
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "manual_approved",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["vex", "kassadin"],
+  "The manual-approved automation filter should include approved manual review rows.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "manual_rejected",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["annie"],
+  "The manual-rejected automation filter should include rejected manual review rows.",
+);
+assert.deepEqual(
+  getCounterRankingV2AutomationSummary(reviewFilterRows),
+  {
+    autoApproved: 0,
+    autoSuggested: 0,
+    generatedSuggestions: 7,
+    manualApproved: 2,
+    manualRejected: 1,
+    needsReview: 4,
+  },
+  "Automation summary should count generated and manual-priority automation states.",
+);
 
 assert.deepEqual(
   getCounterRankingV2ReviewProgressSummary(reviewFilterRows),
@@ -612,6 +948,17 @@ const incorrectSuggestionReview = createCounterRankingV2MechanicalReview({
   reviewStatus: "incorrect_suggestion",
   role: "mid",
 });
+const highMasteryReview = {
+  ...createCounterRankingV2MechanicalReview({
+    calculatedMechanicalScore: 90,
+    counterChampionId: "yasuo",
+    enemyChampionId: "yone",
+    publicEligible: true,
+    reviewStatus: "high_mastery_required",
+    role: "mid",
+  }),
+  publicEligible: true,
+};
 
 assert.equal(
   isCounterRankingV2ReviewPublicEligible(incorrectSuggestionReview),
@@ -622,6 +969,21 @@ assert.equal(
   incorrectSuggestionReview.publicEligible,
   false,
   "Incorrect suggestions should be normalized away from persisted public eligibility.",
+);
+assert.equal(
+  isCounterRankingV2ApprovedReviewPublicEligible(highMasteryReview),
+  false,
+  "Only verified strong/soft mechanical reviews should be approved for public Counter Pick output.",
+);
+assert.equal(
+  isCounterRankingV2PublicCandidateEligible({
+    minimumGames: 5,
+    observedGames: 3,
+    review: highMasteryReview,
+    useReviewedMechanicalCounters: true,
+  }),
+  false,
+  "High-mastery reviews should not bypass the public minimum-games threshold.",
 );
 assert.equal(
   normalizeCounterRankingV2PublicEligible({
@@ -718,6 +1080,10 @@ const counterPickActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
 );
+const counterPickAdminSectionSource = readFileSync(
+  new URL("../src/components/admin/league/league-counter-pick-section.tsx", import.meta.url),
+  "utf8",
+);
 
 assert.match(
   mechanicalReviewMigration,
@@ -799,6 +1165,36 @@ assert.match(
   /Counter Ranking V2 review save failed/,
   "Review saving should log the exact server-side database error.",
 );
+assert.match(
+  counterPickAdminSectionSource,
+  /generateCounterRankingV2MechanicalSuggestionsForRole/,
+  "The admin Shadow Ranking panel should generate suggestions for all supported role profiles.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /CounterRankingV2AutomationSummaryPanel/,
+  "The admin Shadow Ranking panel should render automation summary counts.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /auto_suggested/,
+  "The admin Shadow Ranking filter controls should include automation statuses.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Show calculation details/,
+  "Raw mechanical contribution details should remain available behind a secondary details control.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /formatCounterRankingV2ImpactLevel/,
+  "The admin factor cards should show readable impact labels instead of raw numbers by default.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Weak signal/,
+  "The admin factor cards should flag weak mechanical signal rows.",
+);
 
 console.log("Counter Ranking V2 shadow-mode tests passed.");
 
@@ -809,5 +1205,21 @@ function championRegistryRow(id, riotKey, name, slug) {
     riot_data_key: id,
     riot_key: riotKey,
     slug,
+  };
+}
+
+function testMechanicalFactor({
+  candidateStrength = "anti_dash",
+  contribution,
+  enemyVulnerability = "dash_reliant",
+  interactionWeight = 1,
+  reason = "Readable mechanical reason.",
+}) {
+  return {
+    candidateStrength,
+    contribution,
+    enemyVulnerability,
+    interactionWeight,
+    reason,
   };
 }

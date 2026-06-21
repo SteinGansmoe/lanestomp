@@ -45,18 +45,25 @@ import {
   counterRankingV2DefaultReviewStatus,
   clampCounterRankingV2ManualAdjustment,
   filterCounterRankingV2RowsByReviewFilter,
+  generateCounterRankingV2MechanicalSuggestionsForRole,
+  getCounterRankingV2MechanicalReasons,
   getCounterRankingV2ChampionProfile,
-  getCounterRankingV2ComparisonRows,
+  getCounterRankingV2AutomationSummary,
   getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
+  hasCounterRankingV2WeakMechanicalSignal,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2SupportedChampion,
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
   type CounterRankingV2AdjustmentReason,
+  type CounterRankingV2AutomationConfidence,
+  type CounterRankingV2AutomationStatus,
+  type CounterRankingV2AutomationSummary,
   type CounterRankingV2ComparisonRow,
   type CounterRankingV2FitStatus,
+  type CounterRankingV2FactorImpactLevel,
   type CounterRankingV2MechanicalReview,
   type CounterRankingV2ObservedRankSnapshot,
   type CounterRankingV2ProfileStatus,
@@ -64,6 +71,7 @@ import {
   type CounterRankingV2ReviewFilter,
   type CounterRankingV2ReviewProgressSummary,
   type CounterRankingV2ReviewStatus,
+  type CounterRankingV2SuggestedStrength,
   type CounterRankingV2TraitId,
 } from "@/src/features/league/counter-ranking-v2";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
@@ -112,6 +120,11 @@ const emptyCreateForm: CounterPickCreateForm = {
 };
 const counterRankingV2ShadowReviewFilterOptions = [
   { filter: "all", label: "All" },
+  { filter: "auto_suggested", label: "Auto suggested" },
+  { filter: "auto_approved", label: "Auto approved" },
+  { filter: "needs_review", label: "Needs review automation" },
+  { filter: "manual_approved", label: "Manual approved" },
+  { filter: "manual_rejected", label: "Manual rejected" },
   { filter: "unreviewed", label: "Unreviewed" },
   { filter: "verified_strong_counter", label: "Verified strong counter" },
   { filter: "verified_soft_counter", label: "Verified soft counter" },
@@ -309,19 +322,11 @@ export function AdminLeagueCounterPicksSection({
   const reviewedVisibleCount = visibleCounterPicks.filter(
     (counterPick) => counterPick.generation_status === "reviewed",
   ).length;
-  const counterRankingV2CandidateChampionIds = useMemo(
-    () =>
-      counterRankingV2SupportedChampionIds
-        .map((championId) => counterRankingV2ChampionsById.get(championId)?.id ?? null)
-        .filter((championId) => championId !== null),
-    [counterRankingV2ChampionsById],
-  );
   const counterRankingV2Rows = useMemo(
     () =>
       effectiveSelectedChampionId && hasSelectedCounterRankingV2Profile
         ? sortCounterRankingV2RowsByReviewPriority(
-            getCounterRankingV2ComparisonRows({
-              candidateChampionIds: counterRankingV2CandidateChampionIds,
+            generateCounterRankingV2MechanicalSuggestionsForRole({
               enemyChampionId: effectiveSelectedChampionId,
               observedByChampionId: counterRankingV2ObservedByChampionId,
               reviewsByCandidateId: counterRankingV2ReviewsByCandidateId,
@@ -330,7 +335,6 @@ export function AdminLeagueCounterPicksSection({
           )
         : [],
     [
-      counterRankingV2CandidateChampionIds,
       counterRankingV2ObservedByChampionId,
       counterRankingV2ReviewsByCandidateId,
       effectiveSelectedChampionId,
@@ -1463,6 +1467,10 @@ function CounterRankingV2ShadowPanel({
     () => getCounterRankingV2ReviewProgressSummary(rows),
     [rows],
   );
+  const automationSummary = useMemo(
+    () => getCounterRankingV2AutomationSummary(rows),
+    [rows],
+  );
   const publicPreviewRows = useMemo(
     () =>
       getCounterRankingV2PublicPreviewRows({
@@ -1583,6 +1591,7 @@ function CounterRankingV2ShadowPanel({
               <EmptyState text="No review rows have been saved for this champion and role yet." />
             ) : null}
             <CounterRankingV2ReviewProgressSummaryPanel summary={reviewProgressSummary} />
+            <CounterRankingV2AutomationSummaryPanel summary={automationSummary} />
             <CounterRankingV2PublicPreviewPanel
               championsById={championsById}
               previewRows={publicPreviewRows}
@@ -1723,6 +1732,37 @@ function CounterRankingV2ReviewProgressSummaryPanel({
   );
 }
 
+function CounterRankingV2AutomationSummaryPanel({
+  summary,
+}: {
+  summary: CounterRankingV2AutomationSummary;
+}) {
+  const automationItems = [
+    { label: "Generated suggestions", value: summary.generatedSuggestions },
+    { label: "Auto suggested", value: summary.autoSuggested },
+    { label: "Needs review", value: summary.needsReview },
+    { label: "Manually approved", value: summary.manualApproved },
+    { label: "Manually rejected", value: summary.manualRejected },
+  ] as const;
+
+  return (
+    <div className="rounded-lg border border-sky-300/15 bg-sky-500/[0.05] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-sky-100">Automation suggestions</p>
+        <p className="text-xs text-zinc-500">Generated from mechanical profiles only</p>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        {automationItems.map((item) => (
+          <div className="rounded-md border border-white/10 bg-black/15 p-3" key={item.label}>
+            <p className="text-xs uppercase text-zinc-500">{item.label}</p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CounterRankingV2PublicPreviewPanel({
   championsById,
   previewRows,
@@ -1827,7 +1867,9 @@ function CounterRankingV2ShadowRow({
 }) {
   const result = row.mechanicalResult;
   const profile = getCounterRankingV2ChampionProfile(row.candidateChampionId);
-  const topFactors = result.factors.slice(0, 3);
+  const automationSuggestion = row.automationSuggestion;
+  const topReasons = getCounterRankingV2MechanicalReasons(result.factors);
+  const hasWeakMechanicalSignal = hasCounterRankingV2WeakMechanicalSignal(result.factors);
   const [reviewForm, setReviewForm] = useState<CounterRankingV2ReviewForm>(() =>
     getCounterRankingV2ReviewForm(row.review),
   );
@@ -1935,6 +1977,14 @@ function CounterRankingV2ShadowRow({
             }
           />
           <CounterRankingV2Metric
+            label="Suggestion"
+            value={
+              automationSuggestion
+                ? formatCounterRankingV2SuggestedStrength(automationSuggestion.suggestedStrength)
+                : "Skipped"
+            }
+          />
+          <CounterRankingV2Metric
             label="Adjustment"
             value={formatSignedAdjustment(previewAdjustment)}
           />
@@ -1951,6 +2001,21 @@ function CounterRankingV2ShadowRow({
           <Badge className="border-violet-300/20 bg-violet-500/10 text-violet-100">
             {formatRankDelta(row.rankDelta)}
           </Badge>
+          {automationSuggestion ? (
+            <>
+              <Badge className="border-sky-300/20 bg-sky-500/10 text-sky-100">
+                {formatCounterRankingV2AutomationStatus(
+                  automationSuggestion.automationStatus,
+                )}
+              </Badge>
+              <Badge className="border-white/10 bg-white/5 text-zinc-300">
+                {formatCounterRankingV2AutomationConfidence(
+                  automationSuggestion.confidence,
+                )}{" "}
+                confidence
+              </Badge>
+            </>
+          ) : null}
           {row.observed?.winRate !== null && row.observed?.winRate !== undefined ? (
             <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">
               {row.observed.winRate.toFixed(1)}% observed WR
@@ -1984,6 +2049,11 @@ function CounterRankingV2ShadowRow({
           {hasNoObservedData ? (
             <Badge className="border-white/10 bg-white/5 text-zinc-400">No observed data</Badge>
           ) : null}
+          {hasWeakMechanicalSignal ? (
+            <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
+              Weak signal
+            </Badge>
+          ) : null}
         </div>
       </button>
 
@@ -2003,6 +2073,36 @@ function CounterRankingV2ShadowRow({
               value={hasCalculatedScore ? String(finalScorePreview) : "Missing"}
             />
           </div>
+
+          {automationSuggestion ? (
+            <div className="mt-4 rounded-md border border-sky-300/15 bg-sky-500/[0.05] p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="border-sky-300/20 bg-sky-500/10 text-sky-100">
+                  {formatCounterRankingV2AutomationStatus(
+                    automationSuggestion.automationStatus,
+                  )}
+                </Badge>
+                <Badge className="border-white/10 bg-white/5 text-zinc-300">
+                  {formatCounterRankingV2SuggestedStrength(
+                    automationSuggestion.suggestedStrength,
+                  )}
+                </Badge>
+                <Badge className="border-white/10 bg-white/5 text-zinc-300">
+                  {formatCounterRankingV2AutomationConfidence(
+                    automationSuggestion.confidence,
+                  )}{" "}
+                  confidence
+                </Badge>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {automationSuggestion.reasons.map((reason) => (
+                  <li className="text-sm leading-6 text-zinc-400" key={reason}>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           <form
             className="mt-4 grid gap-4 rounded-md border border-white/10 bg-black/15 p-4 lg:grid-cols-2"
@@ -2156,19 +2256,45 @@ function CounterRankingV2ShadowRow({
             </div>
           </form>
 
-          {topFactors.length > 0 ? (
+          {hasWeakMechanicalSignal ? (
+            <p className="mt-4 rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm leading-6 text-amber-100">
+              Score is spread across small factors. Treat this suggestion as needing review.
+            </p>
+          ) : null}
+
+          {topReasons.length > 0 ? (
             <ul className="mt-4 space-y-2">
-              {topFactors.map((factor) => (
+              {topReasons.map((reason) => (
                 <li
                   className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300"
-                  key={`${factor.candidateStrength}-${factor.enemyVulnerability}`}
+                  key={`${reason.factor.candidateStrength}-${reason.factor.enemyVulnerability}`}
                 >
-                  <span className="font-semibold text-zinc-100">
-                    {getTraitLabel(factor.candidateStrength)} into{" "}
-                    {getTraitLabel(factor.enemyVulnerability)}
-                  </span>
-                  <span className="text-zinc-500"> +{factor.contribution.toFixed(1)}</span>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">{factor.reason}</p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-zinc-100">{reason.title}</p>
+                      <p className="mt-1 text-xs leading-5 text-zinc-500">
+                        {reason.explanation}
+                      </p>
+                    </div>
+                    <Badge
+                      className={cn(
+                        "shrink-0",
+                        getCounterRankingV2ImpactBadgeClassName(reason.impactLevel),
+                      )}
+                    >
+                      {formatCounterRankingV2ImpactLevel(reason.impactLevel)}
+                    </Badge>
+                  </div>
+                  <details className="mt-3 text-xs text-zinc-500">
+                    <summary className="cursor-pointer text-zinc-400">
+                      Show calculation details
+                    </summary>
+                    <p className="mt-2">
+                      {getTraitLabel(reason.factor.candidateStrength)} into{" "}
+                      {getTraitLabel(reason.factor.enemyVulnerability)}. Raw contribution +
+                      {reason.factor.contribution.toFixed(1)}.
+                    </p>
+                  </details>
                 </li>
               ))}
             </ul>
@@ -2872,6 +2998,73 @@ function formatCounterRankingV2Status(status: CounterRankingV2FitStatus) {
       return "Missing candidate profile";
     case "missing_enemy_profile":
       return "Missing enemy profile";
+  }
+}
+
+function formatCounterRankingV2ImpactLevel(impactLevel: CounterRankingV2FactorImpactLevel) {
+  switch (impactLevel) {
+    case "high":
+      return "High impact";
+    case "medium":
+      return "Medium impact";
+    case "low":
+      return "Low impact";
+  }
+}
+
+function getCounterRankingV2ImpactBadgeClassName(
+  impactLevel: CounterRankingV2FactorImpactLevel,
+) {
+  switch (impactLevel) {
+    case "high":
+      return "border-emerald-300/20 bg-emerald-500/10 text-emerald-100";
+    case "medium":
+      return "border-sky-300/20 bg-sky-500/10 text-sky-100";
+    case "low":
+      return "border-white/10 bg-white/5 text-zinc-300";
+  }
+}
+
+function formatCounterRankingV2AutomationStatus(status: CounterRankingV2AutomationStatus) {
+  switch (status) {
+    case "auto_approved":
+      return "Auto approved";
+    case "auto_suggested":
+      return "Auto suggested";
+    case "manual_approved":
+      return "Manual approved";
+    case "manual_rejected":
+      return "Manual rejected";
+    case "needs_review":
+      return "Needs review";
+  }
+}
+
+function formatCounterRankingV2SuggestedStrength(strength: CounterRankingV2SuggestedStrength) {
+  switch (strength) {
+    case "hard_counter":
+      return "Hard counter";
+    case "strong_counter":
+      return "Strong counter";
+    case "soft_counter":
+      return "Soft counter";
+    case "neutral":
+      return "Neutral";
+    case "poor_fit":
+      return "Poor fit";
+  }
+}
+
+function formatCounterRankingV2AutomationConfidence(
+  confidence: CounterRankingV2AutomationConfidence,
+) {
+  switch (confidence) {
+    case "high":
+      return "High";
+    case "medium":
+      return "Medium";
+    case "low":
+      return "Low";
   }
 }
 

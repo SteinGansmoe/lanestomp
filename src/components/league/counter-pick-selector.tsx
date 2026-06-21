@@ -455,6 +455,20 @@ export function CounterPickSelector({
   );
 
   useEffect(() => {
+    if (!selectedChampion || !selectedRole) {
+      return;
+    }
+
+    logPublicCounterPickRenderDebug({
+      featureFlagValue: getReviewedMechanicalCountersPublicFeatureFlag(),
+      fullBestCounterRows: bestCounterRows,
+      selectedEnemyChampionId: selectedChampion.id,
+      selectedRole,
+      visibleBestCounterRows,
+    });
+  }, [bestCounterRows, selectedChampion, selectedRole, visibleBestCounterRows]);
+
+  useEffect(() => {
     let isMounted = true;
     const requestKey = activeSelectionKey;
 
@@ -1442,8 +1456,8 @@ function CounterMatchupRow({
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
   const isTrustedStatistics = isCounterPickStatisticsTrusted(row.stats);
-  const hasDesignCounterLabel = hasPublicCounterResultLabel(row.stats, "design_counter");
-  const hasVisibleStatistics = isTrustedStatistics || hasDesignCounterLabel;
+  const hasMechanicalCounterLabel = hasMechanicalCounterPublicLabel(row.stats);
+  const hasVisibleStatistics = isTrustedStatistics || hasMechanicalCounterLabel;
   const rankStyle = getCounterMatchupRankStyle(row.direction, rank);
 
   return (
@@ -3255,7 +3269,7 @@ function buildCounterRowsFromStatistics({
 
     if (
       !isCounterPickStatisticsPubliclyRanked(statistics) &&
-      !hasPublicCounterResultLabel(statistics, "design_counter")
+      !hasMechanicalCounterPublicLabel(statistics)
     ) {
       continue;
     }
@@ -3295,6 +3309,27 @@ function buildCounterRowsFromStatistics({
   return sortCounterRows(rows, direction);
 }
 
+function hasMechanicalCounterPublicLabel(statistics: Pick<CounterPickStatistics, "publicLabels">) {
+  return (
+    hasPublicCounterResultLabel(statistics, "design_counter") ||
+    hasPublicCounterResultLabel(statistics, "strong_stats_design_counter")
+  );
+}
+
+function getMechanicalCounterPublicSortValue(
+  statistics: Pick<CounterPickStatistics, "publicLabels">,
+) {
+  if (hasPublicCounterResultLabel(statistics, "strong_stats_design_counter")) {
+    return 2;
+  }
+
+  if (hasPublicCounterResultLabel(statistics, "design_counter")) {
+    return 1;
+  }
+
+  return 0;
+}
+
 function getVisibleCounterRows({
   isExpanded,
   rows,
@@ -3302,7 +3337,58 @@ function getVisibleCounterRows({
   isExpanded: boolean;
   rows: CounterRowModel[];
 }) {
-  return rows.slice(0, isExpanded ? maxVisibleCounterCount : defaultVisibleCounterCount);
+  const visibleRows = rows.slice(0, isExpanded ? maxVisibleCounterCount : defaultVisibleCounterCount);
+  const visibleRowKeys = new Set(visibleRows.map((row) => row.key));
+
+  for (const row of rows) {
+    if (!hasMechanicalCounterPublicLabel(row.stats) || visibleRowKeys.has(row.key)) {
+      continue;
+    }
+
+    visibleRows.push(row);
+    visibleRowKeys.add(row.key);
+  }
+
+  return visibleRows;
+}
+
+function getReviewedMechanicalCountersPublicFeatureFlag() {
+  return process.env.NEXT_PUBLIC_USE_REVIEWED_MECHANICAL_COUNTERS_PUBLICLY === "true";
+}
+
+function logPublicCounterPickRenderDebug({
+  featureFlagValue,
+  fullBestCounterRows,
+  selectedEnemyChampionId,
+  selectedRole,
+  visibleBestCounterRows,
+}: {
+  featureFlagValue: boolean;
+  fullBestCounterRows: CounterRowModel[];
+  selectedEnemyChampionId: string;
+  selectedRole: LeagueRole;
+  visibleBestCounterRows: CounterRowModel[];
+}) {
+  const fullBestCounterIdsBeforeSlicing = fullBestCounterRows.map(getCounterRowChampionId);
+  const visibleBestCounterIdsAfterSlicing = visibleBestCounterRows.map(getCounterRowChampionId);
+
+  console.info("[Counter Pick] public best-counter render flow", {
+    featureFlagValue,
+    selectedEnemyChampionId,
+    selectedRole,
+    finalFullBestCounterIdsBeforeSlicing: fullBestCounterIdsBeforeSlicing,
+    finalVisibleBestCounterIdsAfterSlicing: visibleBestCounterIdsAfterSlicing,
+    vexPresentBeforeSlicing: fullBestCounterIdsBeforeSlicing.some(isVexCounterPickId),
+    vexPresentAfterSlicing: visibleBestCounterIdsAfterSlicing.some(isVexCounterPickId),
+  });
+}
+
+function getCounterRowChampionId(row: CounterRowModel) {
+  return row.champion?.id ?? row.fallbackName;
+}
+
+function isVexCounterPickId(value: string) {
+  return normalizeChampionLookupKey(value) === "vex";
 }
 
 function getCounterPickSelectionKey(champion: Pick<LeagueChampion, "id">, role: LeagueRole) {
@@ -3351,6 +3437,16 @@ function sortCounterRows(rows: CounterRowModel[], direction: CounterDirection) {
   const statisticDirection = direction === "best-counter" ? "desc" : "asc";
 
   return [...rows].sort((left, right) => {
+    if (direction === "best-counter") {
+      const mechanicalCounterSort =
+        getMechanicalCounterPublicSortValue(right.stats) -
+        getMechanicalCounterPublicSortValue(left.stats);
+
+      if (mechanicalCounterSort !== 0) {
+        return mechanicalCounterSort;
+      }
+    }
+
     const statisticsSort = compareCounterPickStatistics(
       left.stats,
       right.stats,
