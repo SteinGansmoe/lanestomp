@@ -35,6 +35,7 @@ testCoverageQueueLazyLoaded();
 testSeedCandidateAccordionControlled();
 testCollectionPollingIsPassive();
 testCounterPickDomainRoutes();
+testCounterRankingV2ShadowProfileSelection();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -109,4 +110,47 @@ function testCounterPickDomainRoutes() {
   assert.equal(counterPickSectionSource.includes('view === "shadow-ranking"'), true);
   assert.equal(counterPickSectionSource.includes("<RiotMatchScannerPanel"), true);
   assert.equal(counterPickSectionSource.includes("<CounterRankingV2ShadowPanel"), true);
+}
+
+function testCounterRankingV2ShadowProfileSelection() {
+  assert.equal(
+    counterPickSectionSource.includes("const counterRankingV2DefaultChampionId = useMemo"),
+    true,
+  );
+  assert.equal(
+    counterPickSectionSource.includes(
+      'view === "shadow-ranking"\n      ? hasResolvedInitialSelection',
+    ),
+    true,
+  );
+  assert.equal(
+    counterPickSectionSource.includes(
+      'text="This champion does not have a Counter Ranking V2 profile yet."',
+    ),
+    true,
+  );
+  assert.match(
+    counterPickSectionSource,
+    /async function loadCounterRankingV2Reviews\(\)[\s\S]*if \(!effectiveSelectedChampionId \|\| !hasSelectedCounterRankingV2Profile\)[\s\S]*setCounterRankingV2ReviewsByCandidateId\(new Map\(\)\);[\s\S]*return;/,
+    "Missing V2 profiles should clear review state without querying review rows.",
+  );
+  assert.match(
+    counterPickSectionSource,
+    /async function loadCounterRankingV2ObservedStats\(\)[\s\S]*if \(!effectiveSelectedChampionId \|\| !hasSelectedCounterRankingV2Profile\)[\s\S]*setCounterRankingV2ObservedByChampionId\(new Map\(\)\);[\s\S]*return;/,
+    "Missing V2 profiles should clear observed state without fetching observed stats.",
+  );
+  assert.equal(counterPickSectionSource.includes("formatCounterRankingV2ProfileAvailability"), true);
+  assert.equal(counterPickSectionSource.includes("No V2 profile"), true);
+  assert.equal(counterPickSectionSource.includes("Reviewed v${profile.version}"), true);
+  assert.equal(counterPickSectionSource.includes("Needs review profile v${profile.version}"), true);
+  assert.equal(counterPickSectionSource.includes("No observed stats are available"), true);
+  assert.equal(counterPickSectionSource.includes("No review rows have been saved"), true);
+  assert.equal(
+    counterPickSectionSource.includes("includeSelectedChampionOption(championOptions, selectedChampion)"),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes("const canonicalCounterChampionId"), true);
+  assert.equal(counterPickSectionSource.includes("const canonicalEnemyChampionId"), true);
+  assert.equal(counterPickSectionSource.includes("counterChampionId: canonicalCounterChampionId"), true);
+  assert.equal(counterPickSectionSource.includes("enemyChampionId: canonicalEnemyChampionId"), true);
 }

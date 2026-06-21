@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -164,6 +164,8 @@ export function AdminLeagueCounterPicksSection({
   const [savingCounterRankingV2ReviewKey, setSavingCounterRankingV2ReviewKey] = useState<
     string | null
   >(null);
+  const [hasResolvedInitialSelection, setHasResolvedInitialSelection] = useState(false);
+  const hasInitializedSelection = useRef(false);
 
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
@@ -195,14 +197,35 @@ export function AdminLeagueCounterPicksSection({
       return matchesQuery && isChampionInRole(champion, selectedRole, { includeOffMeta: true });
     });
   }, [championSearch, roleSortedChampions, selectedRole]);
-  const effectiveSelectedChampionId = championOptions.some(
-    (champion) => champion.id === selectedChampionId,
-  )
-    ? selectedChampionId
-    : (championOptions[0]?.id ?? "");
+  const counterRankingV2DefaultChampionId = useMemo(
+    () =>
+      counterRankingV2SupportedChampionIds.find((championId) =>
+        counterRankingV2ChampionsById.has(championId),
+      ) ?? "",
+    [counterRankingV2ChampionsById],
+  );
+  const defaultSelectedChampionId =
+    view === "shadow-ranking"
+      ? hasResolvedInitialSelection
+        ? counterRankingV2DefaultChampionId
+        : ""
+      : (roleSortedChampions.find((champion) =>
+          isChampionInRole(champion, selectedRole, { includeOffMeta: true }),
+        )?.id ?? "");
+  const effectiveSelectedChampionId = selectedChampionId
+    ? (getChampionIdFromOptionMap(counterRankingV2ChampionsById, selectedChampionId) ??
+      (championsById.has(selectedChampionId) ? selectedChampionId : defaultSelectedChampionId))
+    : defaultSelectedChampionId;
   const selectedChampion = effectiveSelectedChampionId
     ? championsById.get(effectiveSelectedChampionId)
     : null;
+  const championSelectOptions = useMemo(
+    () => includeSelectedChampionOption(championOptions, selectedChampion),
+    [championOptions, selectedChampion],
+  );
+  const hasSelectedCounterRankingV2Profile = effectiveSelectedChampionId
+    ? isCounterRankingV2SupportedChampion(effectiveSelectedChampionId)
+    : false;
   const selectedChampionCombatProfile = useMemo(
     () =>
       effectiveSelectedChampionId ? getChampionCombatProfile(effectiveSelectedChampionId) : null,
@@ -264,14 +287,14 @@ export function AdminLeagueCounterPicksSection({
   ).length;
   const counterRankingV2CandidateChampionIds = useMemo(
     () =>
-      counterRankingV2SupportedChampionIds.filter((championId) =>
-        counterRankingV2ChampionsById.has(championId),
-      ),
+      counterRankingV2SupportedChampionIds
+        .map((championId) => counterRankingV2ChampionsById.get(championId)?.id ?? null)
+        .filter((championId) => championId !== null),
     [counterRankingV2ChampionsById],
   );
   const counterRankingV2Rows = useMemo(
     () =>
-      effectiveSelectedChampionId
+      effectiveSelectedChampionId && hasSelectedCounterRankingV2Profile
         ? getCounterRankingV2ComparisonRows({
             candidateChampionIds: counterRankingV2CandidateChampionIds,
             enemyChampionId: effectiveSelectedChampionId,
@@ -285,6 +308,7 @@ export function AdminLeagueCounterPicksSection({
       counterRankingV2ObservedByChampionId,
       counterRankingV2ReviewsByCandidateId,
       effectiveSelectedChampionId,
+      hasSelectedCounterRankingV2Profile,
       selectedRole,
     ],
   );
@@ -293,6 +317,53 @@ export function AdminLeagueCounterPicksSection({
     void loadManagementMetrics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (hasInitializedSelection.current || champions.length === 0) {
+      return;
+    }
+
+    hasInitializedSelection.current = true;
+
+    if (typeof window !== "undefined") {
+      const query = new URLSearchParams(window.location.search);
+      const requestedChampionId =
+        query.get("champion") ?? query.get("enemyChampion") ?? query.get("enemy");
+      const requestedRole = normalizeRoleForAdmin(query.get("role"));
+      const normalizedRequestedChampion = requestedChampionId
+        ? getChampionIdFromOptionMap(counterRankingV2ChampionsById, requestedChampionId)
+        : null;
+
+      if (requestedRole) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedRole(requestedRole);
+      }
+
+      if (normalizedRequestedChampion) {
+        setSelectedChampionId(normalizedRequestedChampion);
+        setHasResolvedInitialSelection(true);
+        return;
+      }
+    }
+
+    if (view === "shadow-ranking" && counterRankingV2DefaultChampionId) {
+      setSelectedChampionId(counterRankingV2DefaultChampionId);
+      setHasResolvedInitialSelection(true);
+      return;
+    }
+
+    if (defaultSelectedChampionId) {
+      setSelectedChampionId(defaultSelectedChampionId);
+    }
+
+    setHasResolvedInitialSelection(true);
+  }, [
+    champions.length,
+    counterRankingV2ChampionsById,
+    counterRankingV2DefaultChampionId,
+    defaultSelectedChampionId,
+    view,
+  ]);
 
   useEffect(() => {
     void loadCounterRankingV2ObservedStats();
@@ -352,7 +423,7 @@ export function AdminLeagueCounterPicksSection({
   }
 
   async function loadCounterRankingV2ObservedStats() {
-    if (!effectiveSelectedChampionId) {
+    if (!effectiveSelectedChampionId || !hasSelectedCounterRankingV2Profile) {
       setCounterRankingV2ObservedByChampionId(new Map());
       setCounterRankingV2Status({ error: null, isLoading: false, success: null });
       return;
@@ -396,7 +467,7 @@ export function AdminLeagueCounterPicksSection({
   }
 
   async function loadCounterRankingV2Reviews() {
-    if (!effectiveSelectedChampionId) {
+    if (!effectiveSelectedChampionId || !hasSelectedCounterRankingV2Profile) {
       setCounterRankingV2ReviewsByCandidateId(new Map());
       setCounterRankingV2ReviewStatus({ error: null, isLoading: false, success: null });
       return;
@@ -439,7 +510,7 @@ export function AdminLeagueCounterPicksSection({
     setCounterRankingV2ReviewStatus({
       error: null,
       isLoading: false,
-      success: `${result.reviews.length} review rows loaded.`,
+      success: result.reviews.length > 0 ? `${result.reviews.length} review rows loaded.` : null,
     });
   }
 
@@ -472,12 +543,20 @@ export function AdminLeagueCounterPicksSection({
     setSavingCounterRankingV2ReviewKey(row.candidateChampionId);
     setCounterRankingV2ReviewStatus({ error: null, isLoading: true, success: null });
 
+    const canonicalCounterChampionId =
+      counterRankingV2ChampionsById.get(normalizeCounterRankingV2ChampionId(row.candidateChampionId))
+        ?.id ?? row.candidateChampionId;
+    const canonicalEnemyChampionId =
+      counterRankingV2ChampionsById.get(
+        normalizeCounterRankingV2ChampionId(row.mechanicalResult.enemyChampionId),
+      )?.id ?? row.mechanicalResult.enemyChampionId;
+
     const result = await saveCounterRankingV2MechanicalReview({
       accessToken: tokenResult.accessToken,
       adjustmentReason: form.adjustmentReason,
       adminReviewNote: form.adminReviewNote,
-      counterChampionId: row.candidateChampionId,
-      enemyChampionId: row.mechanicalResult.enemyChampionId,
+      counterChampionId: canonicalCounterChampionId,
+      enemyChampionId: canonicalEnemyChampionId,
       manualAdjustment,
       publicEligible: form.publicEligible,
       reviewStatus: form.reviewStatus,
@@ -788,12 +867,17 @@ export function AdminLeagueCounterPicksSection({
                 <span className="text-sm text-zinc-300">Champion</span>
                 <select
                   className={`${fieldClassName} h-10`}
-                  onChange={(event) => setSelectedChampionId(event.target.value)}
+                  onChange={(event) => {
+                    const nextChampion = championsById.get(event.target.value);
+
+                    setSelectedChampionId(event.target.value);
+                    setChampionSearch(nextChampion?.name ?? "");
+                  }}
                   value={effectiveSelectedChampionId}
                 >
-                  {championOptions.map((champion) => (
+                  {championSelectOptions.map((champion) => (
                     <option className={selectOptionClassName} key={champion.id} value={champion.id}>
-                      {champion.name}
+                      {champion.name} ({formatCounterRankingV2ProfileAvailability(champion.id)})
                     </option>
                   ))}
                 </select>
@@ -886,12 +970,13 @@ export function AdminLeagueCounterPicksSection({
                 className={`${fieldClassName} h-10`}
                 onChange={(event) => {
                   setSelectedChampionId(event.target.value);
+                  setChampionSearch(championsById.get(event.target.value)?.name ?? "");
                   setSelectedIds(new Set());
                   setEditingCounterPickId(null);
                 }}
                 value={effectiveSelectedChampionId}
               >
-                {championOptions.map((champion) => (
+                {championSelectOptions.map((champion) => (
                   <option className={selectOptionClassName} key={champion.id} value={champion.id}>
                     {champion.name}
                   </option>
@@ -1345,6 +1430,8 @@ function CounterRankingV2ShadowPanel({
   const hasSupportedEnemy = enemyChampionId
     ? isCounterRankingV2SupportedChampion(enemyChampionId)
     : false;
+  const hasObservedStats = rows.some((row) => row.observed !== null);
+  const hasReviewRows = rows.some((row) => row.review !== null);
 
   return (
     <Card className="border-cyan-300/15 bg-[#071321]/95 text-white shadow-xl shadow-black/15">
@@ -1377,17 +1464,29 @@ function CounterRankingV2ShadowPanel({
           <CounterRankingV2MetaCell
             label="Observed data"
             value={
-              isLoading ? "Loading" : statusError ? "Unavailable" : "Loaded from current stats"
+              !hasSupportedEnemy
+                ? "Not loaded"
+                : isLoading
+                  ? "Loading"
+                  : statusError
+                    ? "Unavailable"
+                    : hasObservedStats
+                      ? "Loaded from current stats"
+                      : "No observed stats"
             }
           />
           <CounterRankingV2MetaCell
             label="Review layer"
             value={
-              reviewStatus.isLoading
+              !hasSupportedEnemy
+                ? "Not loaded"
+                : reviewStatus.isLoading
                 ? "Loading"
                 : reviewStatus.error
                   ? "Unavailable"
-                  : "Loaded from review table"
+                  : hasReviewRows
+                    ? "Loaded from review table"
+                    : "No review rows yet"
             }
           />
           <CounterRankingV2MetaCell
@@ -1415,23 +1514,31 @@ function CounterRankingV2ShadowPanel({
         {!hasSupportedEnemy ? (
           <EmptyState
             tone="warning"
-            text="This enemy champion does not have a Counter Ranking V2 profile yet. Select one of the initial shadow champions to compare mechanical fit."
+            text="This champion does not have a Counter Ranking V2 profile yet."
           />
         ) : rows.length === 0 ? (
           <EmptyState text="No Counter Ranking V2 candidate rows are available for this selection." />
         ) : (
-          <div className="space-y-3">
-            {rows.map((row) => (
-              <CounterRankingV2ShadowRow
-                candidate={championsById.get(row.candidateChampionId) ?? null}
-                isLoadingObserved={isLoading}
-                key={`${row.candidateChampionId}-${row.review?.updatedAt ?? "new"}`}
-                onSaveReview={onSaveReview}
-                row={row}
-                savingReviewKey={savingReviewKey}
-              />
-            ))}
-          </div>
+          <>
+            {!isLoading && !statusError && !hasObservedStats ? (
+              <EmptyState text="No observed stats are available for this champion and role yet." />
+            ) : null}
+            {!reviewStatus.isLoading && !reviewStatus.error && !hasReviewRows ? (
+              <EmptyState text="No review rows have been saved for this champion and role yet." />
+            ) : null}
+            <div className="space-y-3">
+              {rows.map((row) => (
+                <CounterRankingV2ShadowRow
+                  candidate={championsById.get(row.candidateChampionId) ?? null}
+                  isLoadingObserved={isLoading}
+                  key={`${row.candidateChampionId}-${row.review?.updatedAt ?? "new"}`}
+                  onSaveReview={onSaveReview}
+                  row={row}
+                  savingReviewKey={savingReviewKey}
+                />
+              ))}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
@@ -2368,10 +2475,56 @@ function normalizeCounterRankingV2ChampionId(championId: string) {
   return championId.trim().toLowerCase();
 }
 
+function getChampionIdFromOptionMap(
+  championsByNormalizedId: Map<string, AdminLeagueChampion>,
+  championId: string,
+) {
+  return championsByNormalizedId.get(normalizeCounterRankingV2ChampionId(championId))?.id ?? null;
+}
+
+function includeSelectedChampionOption(
+  championOptions: AdminLeagueChampion[],
+  selectedChampion: AdminLeagueChampion | null | undefined,
+) {
+  if (!selectedChampion || championOptions.some((champion) => champion.id === selectedChampion.id)) {
+    return championOptions;
+  }
+
+  return [selectedChampion, ...championOptions];
+}
+
+function normalizeRoleForAdmin(role: string | null) {
+  if (!role) {
+    return null;
+  }
+
+  const normalizedRole = role.trim().toLowerCase();
+
+  if (normalizedRole === "bottom" || normalizedRole === "bot") {
+    return "adc";
+  }
+
+  return leagueRoles.includes(normalizedRole as LeagueRole)
+    ? (normalizedRole as LeagueRole)
+    : null;
+}
+
 function getTraitLabel(traitId: string) {
   return (
     counterRankingV2TraitDefinitionsById.get(traitId as CounterRankingV2TraitId)?.label ?? traitId
   );
+}
+
+function formatCounterRankingV2ProfileAvailability(championId: string) {
+  const profile = getCounterRankingV2ChampionProfile(championId);
+
+  if (!profile) {
+    return "No V2 profile";
+  }
+
+  return profile.reviewStatus === "reviewed"
+    ? `Reviewed v${profile.version}`
+    : `Needs review profile v${profile.version}`;
 }
 
 function formatProfileStatus(status: CounterRankingV2ProfileStatus) {

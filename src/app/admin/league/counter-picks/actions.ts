@@ -714,17 +714,41 @@ export async function getCounterRankingV2MechanicalReviews({
     };
   }
 
+  const registryResult = await loadChampionRegistry(serviceClientResult.supabase);
+
+  if (!registryResult.ok) {
+    return registryResult;
+  }
+
+  const resolvedEnemyChampion = registryResult.normalizeChampionIdentifier(
+    normalizeChampionIdForReview(enemyChampionId),
+    registryResult.registry,
+  );
+
+  if (!resolvedEnemyChampion) {
+    console.error("Counter Ranking V2 review rows champion resolution failed", {
+      enemyChampionId,
+      normalizedEnemyChampionId: normalizeChampionIdForReview(enemyChampionId),
+      table: "counter_ranking_v2_mechanical_reviews",
+    });
+
+    return {
+      error: "Select a valid enemy champion before loading review rows.",
+      ok: false,
+    };
+  }
+
   const { data, error } = await serviceClientResult.supabase
     .from("counter_ranking_v2_mechanical_reviews")
     .select(counterRankingV2MechanicalReviewSelect)
-    .eq("enemy_champion_id", normalizeChampionIdForReview(enemyChampionId))
+    .eq("enemy_champion_id", resolvedEnemyChampion.canonicalKey)
     .eq("role", role)
     .returns<CounterRankingV2MechanicalReviewRow[]>();
 
   if (error) {
     console.error("Counter Ranking V2 review rows load failed", {
       error: getSafeDatabaseError(error),
-      enemyChampionId: normalizeChampionIdForReview(enemyChampionId),
+      enemyChampionId: resolvedEnemyChampion.canonicalKey,
       role,
       table: "counter_ranking_v2_mechanical_reviews",
     });
@@ -762,6 +786,29 @@ export async function saveCounterRankingV2MechanicalReview(
     return validation;
   }
 
+  const registryResult = await loadChampionRegistry(serviceClientResult.supabase);
+
+  if (!registryResult.ok) {
+    return registryResult;
+  }
+
+  const resolvedChampionIds = resolveCounterRankingV2ReviewChampionIds({
+    counterChampionId: validation.counterChampionId,
+    enemyChampionId: validation.enemyChampionId,
+    registry: registryResult.registry,
+    resolveChampion: registryResult.normalizeChampionIdentifier,
+  });
+
+  if (!resolvedChampionIds.ok) {
+    console.error("Counter Ranking V2 review save champion resolution failed", {
+      counterChampionId: validation.counterChampionId,
+      enemyChampionId: validation.enemyChampionId,
+      table: "counter_ranking_v2_mechanical_reviews",
+    });
+
+    return resolvedChampionIds;
+  }
+
   const mechanicalResult = calculateMechanicalMatchupFit({
     candidateChampionId: validation.counterChampionId,
     enemyChampionId: validation.enemyChampionId,
@@ -783,8 +830,8 @@ export async function saveCounterRankingV2MechanicalReview(
         adjustment_reason: validation.adjustmentReason,
         admin_review_note: nullableTrim(input.adminReviewNote),
         calculated_mechanical_score: mechanicalResult.score,
-        counter_champion_id: validation.counterChampionId,
-        enemy_champion_id: validation.enemyChampionId,
+        counter_champion_id: resolvedChampionIds.counterChampionId,
+        enemy_champion_id: resolvedChampionIds.enemyChampionId,
         manual_adjustment: validation.manualAdjustment,
         public_eligible:
           validation.reviewStatus === "incorrect_suggestion" ? false : validation.publicEligible,
@@ -806,8 +853,8 @@ export async function saveCounterRankingV2MechanicalReview(
       error: error ? getSafeDatabaseError(error) : null,
       hasData: Boolean(data),
       keys: {
-        counterChampionId: validation.counterChampionId,
-        enemyChampionId: validation.enemyChampionId,
+        counterChampionId: resolvedChampionIds.counterChampionId,
+        enemyChampionId: resolvedChampionIds.enemyChampionId,
         role: validation.role,
       },
       table: "counter_ranking_v2_mechanical_reviews",
@@ -7014,6 +7061,50 @@ function validateCounterRankingV2MechanicalReviewInput(
     publicEligible: input.publicEligible,
     reviewStatus: input.reviewStatus,
     role: input.role,
+  };
+}
+
+function resolveCounterRankingV2ReviewChampionIds({
+  counterChampionId,
+  enemyChampionId,
+  registry,
+  resolveChampion,
+}: {
+  counterChampionId: string;
+  enemyChampionId: string;
+  registry: unknown;
+  resolveChampion: (value: unknown, registry: unknown) => { canonicalKey: string } | null;
+}):
+  | {
+      counterChampionId: string;
+      enemyChampionId: string;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  const enemyChampion = resolveChampion(enemyChampionId, registry);
+  const counterChampion = resolveChampion(counterChampionId, registry);
+
+  if (!enemyChampion || !counterChampion) {
+    return {
+      error: "Select valid enemy and counter champions before saving review.",
+      ok: false,
+    };
+  }
+
+  if (enemyChampion.canonicalKey === counterChampion.canonicalKey) {
+    return {
+      error: "A champion cannot be reviewed as a counter to itself.",
+      ok: false,
+    };
+  }
+
+  return {
+    counterChampionId: counterChampion.canonicalKey,
+    enemyChampionId: enemyChampion.canonicalKey,
+    ok: true,
   };
 }
 

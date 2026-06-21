@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+import {
+  buildChampionRegistry,
+  normalizeChampionIdentifier,
+} from "./lib/league-champion-normalizer.mjs";
+
 const rankingModule = await import("../src/features/league/counter-ranking-v2.ts");
 
 const {
@@ -26,6 +31,26 @@ assert.deepEqual(
 );
 
 const traitIds = new Set(counterRankingV2TraitVocabulary.map((trait) => trait.id));
+const championRegistry = buildChampionRegistry([
+  championRegistryRow("Vex", "711", "Vex", "vex"),
+  championRegistryRow("Yone", "777", "Yone", "yone"),
+]);
+
+assert.equal(
+  normalizeChampionIdentifier("vex", championRegistry)?.canonicalKey,
+  "Vex",
+  "Lowercase V2 profile IDs should resolve to canonical league_champions IDs.",
+);
+assert.equal(
+  normalizeChampionIdentifier("yone", championRegistry)?.canonicalKey,
+  "Yone",
+  "Lowercase V2 profile IDs should resolve to canonical league_champions IDs.",
+);
+assert.equal(
+  normalizeChampionIdentifier("definitely-not-a-champion", championRegistry),
+  null,
+  "Invalid review champion IDs should fail normalization before database writes.",
+);
 
 for (const championId of counterRankingV2SupportedChampionIds) {
   const profile = getCounterRankingV2ChampionProfile(championId);
@@ -337,6 +362,13 @@ const mechanicalReviewMigration = readFileSync(
   ),
   "utf8",
 );
+const mechanicalReviewServiceRoleGrantMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260621010000_grant_counter_ranking_v2_mechanical_reviews_service_role.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const counterPickActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
@@ -357,6 +389,11 @@ assert.match(
   /using \(public\.is_admin\(auth\.uid\(\)\)\)/,
   "Review table RLS should use the established admin helper.",
 );
+assert.match(
+  mechanicalReviewServiceRoleGrantMigration,
+  /grant select, insert, update\s+on table public\.counter_ranking_v2_mechanical_reviews\s+to service_role;/,
+  "The service-role admin action should be granted review table load/save privileges.",
+);
 assert.doesNotMatch(
   mechanicalReviewMigration,
   /profiles\.is_admin/,
@@ -374,6 +411,31 @@ assert.match(
 );
 assert.match(
   counterPickActionsSource,
+  /resolveCounterRankingV2ReviewChampionIds/,
+  "The review save action should resolve review champion IDs through the shared champion registry.",
+);
+assert.match(
+  counterPickActionsSource,
+  /counter_champion_id: resolvedChampionIds\.counterChampionId/,
+  "The review save action should write canonical counter champion IDs.",
+);
+assert.match(
+  counterPickActionsSource,
+  /enemy_champion_id: resolvedChampionIds\.enemyChampionId/,
+  "The review save action should write canonical enemy champion IDs.",
+);
+assert.match(
+  counterPickActionsSource,
+  /Counter Ranking V2 review save champion resolution failed/,
+  "Review save champion resolution failures should be logged before database writes.",
+);
+assert.match(
+  counterPickActionsSource,
+  /Counter Ranking V2 review rows champion resolution failed/,
+  "Review load champion resolution failures should be logged before database queries.",
+);
+assert.match(
+  counterPickActionsSource,
   /Counter Ranking V2 review rows load failed/,
   "Review loading should log the exact server-side database error.",
 );
@@ -384,3 +446,13 @@ assert.match(
 );
 
 console.log("Counter Ranking V2 shadow-mode tests passed.");
+
+function championRegistryRow(id, riotKey, name, slug) {
+  return {
+    id,
+    name,
+    riot_data_key: id,
+    riot_key: riotKey,
+    slug,
+  };
+}
