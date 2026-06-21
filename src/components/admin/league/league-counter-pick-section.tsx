@@ -5,6 +5,8 @@ import {
   ArrowRight,
   CheckCircle2,
   CheckSquare,
+  ChevronDown,
+  ChevronRight,
   Pencil,
   Plus,
   RefreshCw,
@@ -46,6 +48,7 @@ import {
   getCounterRankingV2ComparisonRows,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2SupportedChampion,
+  sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
   type CounterRankingV2AdjustmentReason,
   type CounterRankingV2ComparisonRow,
@@ -295,13 +298,15 @@ export function AdminLeagueCounterPicksSection({
   const counterRankingV2Rows = useMemo(
     () =>
       effectiveSelectedChampionId && hasSelectedCounterRankingV2Profile
-        ? getCounterRankingV2ComparisonRows({
-            candidateChampionIds: counterRankingV2CandidateChampionIds,
-            enemyChampionId: effectiveSelectedChampionId,
-            observedByChampionId: counterRankingV2ObservedByChampionId,
-            reviewsByCandidateId: counterRankingV2ReviewsByCandidateId,
-            role: selectedRole,
-          })
+        ? sortCounterRankingV2RowsByReviewPriority(
+            getCounterRankingV2ComparisonRows({
+              candidateChampionIds: counterRankingV2CandidateChampionIds,
+              enemyChampionId: effectiveSelectedChampionId,
+              observedByChampionId: counterRankingV2ObservedByChampionId,
+              reviewsByCandidateId: counterRankingV2ReviewsByCandidateId,
+              role: selectedRole,
+            }),
+          )
         : [],
     [
       counterRankingV2CandidateChampionIds,
@@ -1444,7 +1449,12 @@ function CounterRankingV2ShadowPanel({
               mechanical matchup fit. Public Counter Pick ordering is unchanged.
             </p>
           </div>
-          <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">Shadow mode</Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">Shadow mode</Badge>
+            <Badge className="border-white/10 bg-white/5 text-zinc-300">
+              Sorted by review priority
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1526,22 +1536,57 @@ function CounterRankingV2ShadowPanel({
             {!reviewStatus.isLoading && !reviewStatus.error && !hasReviewRows ? (
               <EmptyState text="No review rows have been saved for this champion and role yet." />
             ) : null}
-            <div className="space-y-3">
-              {rows.map((row) => (
-                <CounterRankingV2ShadowRow
-                  candidate={championsById.get(row.candidateChampionId) ?? null}
-                  isLoadingObserved={isLoading}
-                  key={`${row.candidateChampionId}-${row.review?.updatedAt ?? "new"}`}
-                  onSaveReview={onSaveReview}
-                  row={row}
-                  savingReviewKey={savingReviewKey}
-                />
-              ))}
-            </div>
+            <CounterRankingV2ShadowRows
+              championsById={championsById}
+              isLoadingObserved={isLoading}
+              key={`${enemyChampionId}-${selectedRole}`}
+              onSaveReview={onSaveReview}
+              rows={rows}
+              savingReviewKey={savingReviewKey}
+            />
           </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function CounterRankingV2ShadowRows({
+  championsById,
+  isLoadingObserved,
+  onSaveReview,
+  rows,
+  savingReviewKey,
+}: {
+  championsById: Map<string, AdminLeagueChampion>;
+  isLoadingObserved: boolean;
+  onSaveReview: (row: CounterRankingV2ComparisonRow, form: CounterRankingV2ReviewForm) => void;
+  rows: CounterRankingV2ComparisonRow[];
+  savingReviewKey: string | null;
+}) {
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(
+    () => rows[0]?.candidateChampionId ?? null,
+  );
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row) => (
+        <CounterRankingV2ShadowRow
+          candidate={championsById.get(row.candidateChampionId) ?? null}
+          isExpanded={expandedCandidateId === row.candidateChampionId}
+          isLoadingObserved={isLoadingObserved}
+          key={`${row.candidateChampionId}-${row.review?.updatedAt ?? "new"}`}
+          onSaveReview={onSaveReview}
+          onToggle={() =>
+            setExpandedCandidateId((currentCandidateId) =>
+              currentCandidateId === row.candidateChampionId ? null : row.candidateChampionId,
+            )
+          }
+          row={row}
+          savingReviewKey={savingReviewKey}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -1556,14 +1601,18 @@ function CounterRankingV2MetaCell({ label, value }: { label: string; value: stri
 
 function CounterRankingV2ShadowRow({
   candidate,
+  isExpanded,
   isLoadingObserved,
   onSaveReview,
+  onToggle,
   row,
   savingReviewKey,
 }: {
   candidate: AdminLeagueChampion | null;
+  isExpanded: boolean;
   isLoadingObserved: boolean;
   onSaveReview: (row: CounterRankingV2ComparisonRow, form: CounterRankingV2ReviewForm) => void;
+  onToggle: () => void;
   row: CounterRankingV2ComparisonRow;
   savingReviewKey: string | null;
 }) {
@@ -1583,35 +1632,62 @@ function CounterRankingV2ShadowRow({
   });
   const isSavingReview = savingReviewKey === row.candidateChampionId;
   const hasCalculatedScore = result.status === "calculated";
+  const observedGames = row.observed?.games ?? 0;
+  const hasLowObservedSample =
+    observedGames > 0 && observedGames < publicCounterPickMinimumRankedGames;
+  const hasNoObservedData = !isLoadingObserved && observedGames === 0;
+  const panelId = `counter-ranking-v2-review-${row.candidateChampionId}`;
 
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          {candidate ? (
-            <Image
-              alt=""
-              className="size-11 rounded-md bg-white/10 object-cover"
-              height={44}
-              src={getChampionIconPath(candidate)}
-              width={44}
-            />
-          ) : (
-            <div className="size-11 rounded-md bg-white/10" />
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">
-              {candidate?.name ?? row.candidateChampionId}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {profile
-                ? `${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}`
-                : "No profile"}
-            </p>
+    <div
+      className={cn(
+        "rounded-lg border bg-white/[0.03] transition-colors",
+        isExpanded ? "border-cyan-300/25" : "border-white/10 hover:border-cyan-300/20",
+      )}
+    >
+      <button
+        aria-controls={panelId}
+        aria-expanded={isExpanded}
+        className="w-full p-4 text-left"
+        onClick={onToggle}
+        type="button"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {candidate ? (
+              <Image
+                alt=""
+                className="size-11 rounded-md bg-white/10 object-cover"
+                height={44}
+                src={getChampionIconPath(candidate)}
+                width={44}
+              />
+            ) : (
+              <div className="size-11 rounded-md bg-white/10" />
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">
+                {candidate?.name ?? row.candidateChampionId}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {profile
+                  ? `${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}`
+                  : "No profile"}
+              </p>
+            </div>
           </div>
+
+          <span className="flex shrink-0 items-center gap-2 rounded-md border border-white/10 bg-black/15 px-3 py-2 text-xs font-semibold text-zinc-300">
+            {isExpanded ? (
+              <ChevronDown className="size-4 text-cyan-100" aria-hidden="true" />
+            ) : (
+              <ChevronRight className="size-4 text-cyan-100" aria-hidden="true" />
+            )}
+            {isExpanded ? "Collapse" : "Review"}
+          </span>
         </div>
 
-        <div className="grid min-w-[18rem] flex-1 gap-3 text-sm md:grid-cols-4">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
           <CounterRankingV2Metric
             label="Observed rank"
             value={
@@ -1622,10 +1698,7 @@ function CounterRankingV2ShadowRow({
                   : "None"
             }
           />
-          <CounterRankingV2Metric
-            label="Games"
-            value={formatNullableNumber(row.observed?.games)}
-          />
+          <CounterRankingV2Metric label="Games" value={formatNullableNumber(row.observed?.games)} />
           <CounterRankingV2Metric
             label="Confidence"
             value={row.observed?.confidence.shortLabel ?? "No data"}
@@ -1633,228 +1706,243 @@ function CounterRankingV2ShadowRow({
           <CounterRankingV2Metric
             label="Mechanical"
             value={
-              result.status === "calculated" ? `#${row.mechanicalRank} / ${result.score}` : "Missing"
+              result.status === "calculated"
+                ? `#${row.mechanicalRank} / ${result.score}`
+                : "Missing"
             }
           />
+          <CounterRankingV2Metric
+            label="Adjustment"
+            value={formatSignedAdjustment(previewAdjustment)}
+          />
+          <CounterRankingV2Metric
+            label="Final reviewed"
+            value={hasCalculatedScore ? String(finalScorePreview) : "Missing"}
+          />
         </div>
-      </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <CounterRankingV2Metric
-          label="Calculated mechanical score"
-          value={hasCalculatedScore ? String(result.score) : "Missing"}
-        />
-        <CounterRankingV2Metric
-          label="Manual adjustment"
-          value={formatSignedAdjustment(previewAdjustment)}
-        />
-        <CounterRankingV2Metric
-          label="Final reviewed score"
-          value={hasCalculatedScore ? String(finalScorePreview) : "Missing"}
-        />
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Badge className="border-white/10 bg-white/5 text-zinc-300">
-          {formatCounterRankingV2Status(result.status)}
-        </Badge>
-        <Badge className="border-violet-300/20 bg-violet-500/10 text-violet-100">
-          {formatRankDelta(row.rankDelta)}
-        </Badge>
-        {row.observed?.winRate !== null && row.observed?.winRate !== undefined ? (
-          <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">
-            {row.observed.winRate.toFixed(1)}% observed WR
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Badge className="border-white/10 bg-white/5 text-zinc-300">
+            {formatCounterRankingV2Status(result.status)}
           </Badge>
-        ) : null}
-        {row.review ? (
-          <Badge className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100">
-            {formatCounterRankingV2ReviewStatus(row.review.reviewStatus)}
+          <Badge className="border-violet-300/20 bg-violet-500/10 text-violet-100">
+            {formatRankDelta(row.rankDelta)}
           </Badge>
-        ) : (
-          <Badge className="border-white/10 bg-white/5 text-zinc-400">No review row</Badge>
-        )}
-        {isCounterRankingV2ReviewPublicEligible(row.review) ? (
-          <>
+          {row.observed?.winRate !== null && row.observed?.winRate !== undefined ? (
+            <Badge className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100">
+              {row.observed.winRate.toFixed(1)}% observed WR
+            </Badge>
+          ) : null}
+          {row.review ? (
+            <Badge className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100">
+              {formatCounterRankingV2ReviewStatus(row.review.reviewStatus)}
+            </Badge>
+          ) : (
+            <Badge className="border-white/10 bg-white/5 text-zinc-400">No review row</Badge>
+          )}
+          {isCounterRankingV2ReviewPublicEligible(row.review) ? (
             <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
               Design counter
             </Badge>
-            {(row.observed?.games ?? 0) < publicCounterPickMinimumRankedGames ? (
-              <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
-                Low sample size
-              </Badge>
-            ) : null}
-          </>
-        ) : null}
-      </div>
-
-      <form
-        className="mt-4 grid gap-4 rounded-md border border-white/10 bg-black/15 p-4 lg:grid-cols-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSaveReview(row, reviewForm);
-        }}
-      >
-        <label className="block space-y-2">
-          <span className="text-sm text-zinc-300">Review status</span>
-          <select
-            className={`${fieldClassName} h-10`}
-            disabled={!hasCalculatedScore || isSavingReview}
-            onChange={(event) =>
-              setReviewForm((currentForm) => ({
-                ...currentForm,
-                publicEligible:
-                  event.target.value === "incorrect_suggestion"
-                    ? false
-                    : currentForm.publicEligible,
-                reviewStatus: event.target.value as CounterRankingV2ReviewStatus,
-              }))
-            }
-            value={reviewForm.reviewStatus}
-          >
-            {counterRankingV2ReviewStatuses.map((status) => (
-              <option className={selectOptionClassName} key={status} value={status}>
-                {formatCounterRankingV2ReviewStatus(status)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm text-zinc-300">Adjustment reason</span>
-          <select
-            className={`${fieldClassName} h-10`}
-            disabled={!hasCalculatedScore || isSavingReview}
-            onChange={(event) =>
-              setReviewForm((currentForm) => ({
-                ...currentForm,
-                adjustmentReason: event.target.value as CounterRankingV2AdjustmentReason,
-              }))
-            }
-            value={reviewForm.adjustmentReason}
-          >
-            {counterRankingV2AdjustmentReasons.map((reason) => (
-              <option className={selectOptionClassName} key={reason} value={reason}>
-                {formatCounterRankingV2AdjustmentReason(reason)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block space-y-2">
-          <span className="text-sm text-zinc-300">Manual adjustment</span>
-          <Input
-            className="h-10 border-white/10 bg-white/5 text-zinc-100"
-            disabled={!hasCalculatedScore || isSavingReview}
-            max={30}
-            min={-30}
-            onChange={(event) =>
-              setReviewForm((currentForm) => ({
-                ...currentForm,
-                manualAdjustment: event.target.value,
-              }))
-            }
-            step={1}
-            type="number"
-            value={reviewForm.manualAdjustment}
-          />
-          <input
-            aria-label="Manual adjustment slider"
-            className="w-full accent-cyan-300"
-            disabled={!hasCalculatedScore || isSavingReview}
-            max={30}
-            min={-30}
-            onChange={(event) =>
-              setReviewForm((currentForm) => ({
-                ...currentForm,
-                manualAdjustment: event.target.value,
-              }))
-            }
-            step={1}
-            type="range"
-            value={Number.isFinite(parsedAdjustment) ? parsedAdjustment : 0}
-          />
-        </label>
-
-        <label className="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3">
-          <input
-            checked={
-              reviewForm.reviewStatus !== "incorrect_suggestion" && reviewForm.publicEligible
-            }
-            className="size-4 accent-cyan-300"
-            disabled={
-              !hasCalculatedScore ||
-              isSavingReview ||
-              reviewForm.reviewStatus === "incorrect_suggestion"
-            }
-            onChange={(event) =>
-              setReviewForm((currentForm) => ({
-                ...currentForm,
-                publicEligible: event.target.checked,
-              }))
-            }
-            type="checkbox"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-zinc-100">Public eligible</span>
-            <span className="block text-xs leading-5 text-zinc-500">
-              Stored for shadow review. Public use requires the reviewed-counter feature flag.
-            </span>
-          </span>
-        </label>
-
-        <label className="block space-y-2 lg:col-span-2">
-          <span className="text-sm text-zinc-300">Admin review note</span>
-          <textarea
-            className={`${fieldClassName} min-h-24 py-2 leading-6`}
-            disabled={!hasCalculatedScore || isSavingReview}
-            onChange={(event) =>
-              setReviewForm((currentForm) => ({
-                ...currentForm,
-                adminReviewNote: event.target.value,
-              }))
-            }
-            placeholder="Why this mechanical suggestion should be trusted, adjusted, or rejected..."
-            value={reviewForm.adminReviewNote}
-          />
-        </label>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
-          <p className="text-xs leading-5 text-zinc-500">
-            Raw calculated score stays model-owned. Saving only updates the review layer.
-          </p>
-          <Button
-            className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20"
-            disabled={!hasCalculatedScore || isSavingReview}
-            type="submit"
-            variant="ghost"
-          >
-            <Save className="size-4" aria-hidden="true" />
-            {isSavingReview ? "Saving..." : "Save review"}
-          </Button>
+          ) : null}
+          {hasLowObservedSample ? (
+            <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
+              Low sample size
+            </Badge>
+          ) : null}
+          {hasNoObservedData ? (
+            <Badge className="border-white/10 bg-white/5 text-zinc-400">No observed data</Badge>
+          ) : null}
         </div>
-      </form>
+      </button>
 
-      {topFactors.length > 0 ? (
-        <ul className="mt-4 space-y-2">
-          {topFactors.map((factor) => (
-            <li
-              className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300"
-              key={`${factor.candidateStrength}-${factor.enemyVulnerability}`}
-            >
-              <span className="font-semibold text-zinc-100">
-                {getTraitLabel(factor.candidateStrength)} into{" "}
-                {getTraitLabel(factor.enemyVulnerability)}
+      {isExpanded ? (
+        <div className="border-t border-white/10 p-4" id={panelId}>
+          <div className="grid gap-3 md:grid-cols-3">
+            <CounterRankingV2Metric
+              label="Calculated mechanical score"
+              value={hasCalculatedScore ? String(result.score) : "Missing"}
+            />
+            <CounterRankingV2Metric
+              label="Manual adjustment"
+              value={formatSignedAdjustment(previewAdjustment)}
+            />
+            <CounterRankingV2Metric
+              label="Final reviewed score"
+              value={hasCalculatedScore ? String(finalScorePreview) : "Missing"}
+            />
+          </div>
+
+          <form
+            className="mt-4 grid gap-4 rounded-md border border-white/10 bg-black/15 p-4 lg:grid-cols-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSaveReview(row, reviewForm);
+            }}
+          >
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Review status</span>
+              <select
+                className={`${fieldClassName} h-10`}
+                disabled={!hasCalculatedScore || isSavingReview}
+                onChange={(event) =>
+                  setReviewForm((currentForm) => ({
+                    ...currentForm,
+                    publicEligible:
+                      event.target.value === "incorrect_suggestion"
+                        ? false
+                        : currentForm.publicEligible,
+                    reviewStatus: event.target.value as CounterRankingV2ReviewStatus,
+                  }))
+                }
+                value={reviewForm.reviewStatus}
+              >
+                {counterRankingV2ReviewStatuses.map((status) => (
+                  <option className={selectOptionClassName} key={status} value={status}>
+                    {formatCounterRankingV2ReviewStatus(status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Adjustment reason</span>
+              <select
+                className={`${fieldClassName} h-10`}
+                disabled={!hasCalculatedScore || isSavingReview}
+                onChange={(event) =>
+                  setReviewForm((currentForm) => ({
+                    ...currentForm,
+                    adjustmentReason: event.target.value as CounterRankingV2AdjustmentReason,
+                  }))
+                }
+                value={reviewForm.adjustmentReason}
+              >
+                {counterRankingV2AdjustmentReasons.map((reason) => (
+                  <option className={selectOptionClassName} key={reason} value={reason}>
+                    {formatCounterRankingV2AdjustmentReason(reason)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm text-zinc-300">Manual adjustment</span>
+              <Input
+                className="h-10 border-white/10 bg-white/5 text-zinc-100"
+                disabled={!hasCalculatedScore || isSavingReview}
+                max={30}
+                min={-30}
+                onChange={(event) =>
+                  setReviewForm((currentForm) => ({
+                    ...currentForm,
+                    manualAdjustment: event.target.value,
+                  }))
+                }
+                step={1}
+                type="number"
+                value={reviewForm.manualAdjustment}
+              />
+              <input
+                aria-label="Manual adjustment slider"
+                className="w-full accent-cyan-300"
+                disabled={!hasCalculatedScore || isSavingReview}
+                max={30}
+                min={-30}
+                onChange={(event) =>
+                  setReviewForm((currentForm) => ({
+                    ...currentForm,
+                    manualAdjustment: event.target.value,
+                  }))
+                }
+                step={1}
+                type="range"
+                value={Number.isFinite(parsedAdjustment) ? parsedAdjustment : 0}
+              />
+            </label>
+
+            <label className="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3">
+              <input
+                checked={
+                  reviewForm.reviewStatus !== "incorrect_suggestion" && reviewForm.publicEligible
+                }
+                className="size-4 accent-cyan-300"
+                disabled={
+                  !hasCalculatedScore ||
+                  isSavingReview ||
+                  reviewForm.reviewStatus === "incorrect_suggestion"
+                }
+                onChange={(event) =>
+                  setReviewForm((currentForm) => ({
+                    ...currentForm,
+                    publicEligible: event.target.checked,
+                  }))
+                }
+                type="checkbox"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-zinc-100">Public eligible</span>
+                <span className="block text-xs leading-5 text-zinc-500">
+                  Stored for shadow review. Public use requires the reviewed-counter feature flag.
+                </span>
               </span>
-              <span className="text-zinc-500"> +{factor.contribution.toFixed(1)}</span>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">{factor.reason}</p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-500">
-          No contributing mechanical factors are available for this candidate and enemy profile.
-        </p>
-      )}
+            </label>
+
+            <label className="block space-y-2 lg:col-span-2">
+              <span className="text-sm text-zinc-300">Admin review note</span>
+              <textarea
+                className={`${fieldClassName} min-h-24 py-2 leading-6`}
+                disabled={!hasCalculatedScore || isSavingReview}
+                onChange={(event) =>
+                  setReviewForm((currentForm) => ({
+                    ...currentForm,
+                    adminReviewNote: event.target.value,
+                  }))
+                }
+                placeholder="Why this mechanical suggestion should be trusted, adjusted, or rejected..."
+                value={reviewForm.adminReviewNote}
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
+              <p className="text-xs leading-5 text-zinc-500">
+                Raw calculated score stays model-owned. Saving only updates the review layer.
+              </p>
+              <Button
+                className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20"
+                disabled={!hasCalculatedScore || isSavingReview}
+                type="submit"
+                variant="ghost"
+              >
+                <Save className="size-4" aria-hidden="true" />
+                {isSavingReview ? "Saving..." : "Save review"}
+              </Button>
+            </div>
+          </form>
+
+          {topFactors.length > 0 ? (
+            <ul className="mt-4 space-y-2">
+              {topFactors.map((factor) => (
+                <li
+                  className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300"
+                  key={`${factor.candidateStrength}-${factor.enemyVulnerability}`}
+                >
+                  <span className="font-semibold text-zinc-100">
+                    {getTraitLabel(factor.candidateStrength)} into{" "}
+                    {getTraitLabel(factor.enemyVulnerability)}
+                  </span>
+                  <span className="text-zinc-500"> +{factor.contribution.toFixed(1)}</span>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">{factor.reason}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-500">
+              No contributing mechanical factors are available for this candidate and enemy profile.
+            </p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

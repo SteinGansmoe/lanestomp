@@ -36,6 +36,7 @@ testSeedCandidateAccordionControlled();
 testCollectionPollingIsPassive();
 testCounterPickDomainRoutes();
 testCounterRankingV2ShadowProfileSelection();
+testCounterRankingV2ShadowCandidateAccordion();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -153,4 +154,36 @@ function testCounterRankingV2ShadowProfileSelection() {
   assert.equal(counterPickSectionSource.includes("const canonicalEnemyChampionId"), true);
   assert.equal(counterPickSectionSource.includes("counterChampionId: canonicalCounterChampionId"), true);
   assert.equal(counterPickSectionSource.includes("enemyChampionId: canonicalEnemyChampionId"), true);
+  assert.equal(counterPickSectionSource.includes("sortCounterRankingV2RowsByReviewPriority"), true);
+  assert.equal(counterPickSectionSource.includes("Sorted by review priority"), true);
+}
+
+function testCounterRankingV2ShadowCandidateAccordion() {
+  assert.equal(counterPickSectionSource.includes("function CounterRankingV2ShadowRows"), true);
+  assert.equal(
+    counterPickSectionSource.includes("const [expandedCandidateId, setExpandedCandidateId] = useState"),
+    true,
+  );
+  assert.equal(
+    counterPickSectionSource.includes("() => rows[0]?.candidateChampionId ?? null"),
+    true,
+  );
+  assert.equal(
+    counterPickSectionSource.includes("isExpanded={expandedCandidateId === row.candidateChampionId}"),
+    true,
+  );
+  assert.match(
+    counterPickSectionSource,
+    /setExpandedCandidateId\(\(currentCandidateId\) =>[\s\S]*currentCandidateId === row\.candidateChampionId \? null : row\.candidateChampionId/,
+    "Candidate rows should be controlled so only one row expands at a time.",
+  );
+  assert.equal(counterPickSectionSource.includes("aria-expanded={isExpanded}"), true);
+  assert.equal(counterPickSectionSource.includes("aria-controls={panelId}"), true);
+  assert.equal(counterPickSectionSource.includes("<ChevronDown"), true);
+  assert.equal(counterPickSectionSource.includes("<ChevronRight"), true);
+  assert.equal(counterPickSectionSource.includes('label="Final reviewed"'), true);
+  assert.equal(counterPickSectionSource.includes('label="Final reviewed score"'), true);
+  assert.equal(counterPickSectionSource.includes("Save review"), true);
+  assert.equal(counterPickSectionSource.includes("hasLowObservedSample"), true);
+  assert.equal(counterPickSectionSource.includes("No observed data"), true);
 }

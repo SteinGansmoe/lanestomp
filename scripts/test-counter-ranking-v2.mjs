@@ -22,6 +22,7 @@ const {
   isCounterRankingV2PublicCandidateEligible,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ShadowCandidateEligible,
+  sortCounterRankingV2RowsByReviewPriority,
 } = rankingModule;
 
 assert.deepEqual(
@@ -269,6 +270,91 @@ assert.equal(
   reviewedRows.at(0)?.review?.manualAdjustment,
   10,
   "Comparison rows should attach an existing review row by counter champion ID.",
+);
+
+const unreviewedBeforeReviewedRows = sortCounterRankingV2RowsByReviewPriority(
+  getCounterRankingV2ComparisonRows({
+    candidateChampionIds: ["vex", "kassadin"],
+    enemyChampionId: "yone",
+    observedByChampionId: new Map(),
+    reviewsByCandidateId: new Map([
+      [
+        "vex",
+        createCounterRankingV2MechanicalReview({
+          calculatedMechanicalScore: vexIntoYone.score,
+          counterChampionId: "vex",
+          enemyChampionId: "yone",
+          manualAdjustment: 30,
+          reviewStatus: "verified_strong_counter",
+          role: "mid",
+        }),
+      ],
+    ]),
+    role: "mid",
+  }),
+);
+
+assert.equal(
+  unreviewedBeforeReviewedRows.at(0)?.candidateChampionId,
+  "kassadin",
+  "Review-priority sorting should place unreviewed candidates before reviewed candidates.",
+);
+
+const finalReviewedScoreRows = sortCounterRankingV2RowsByReviewPriority(
+  getCounterRankingV2ComparisonRows({
+    candidateChampionIds: ["vex", "kassadin"],
+    enemyChampionId: "yone",
+    observedByChampionId: new Map(),
+    reviewsByCandidateId: new Map([
+      [
+        "vex",
+        createCounterRankingV2MechanicalReview({
+          calculatedMechanicalScore: 55,
+          counterChampionId: "vex",
+          enemyChampionId: "yone",
+          manualAdjustment: 30,
+          reviewStatus: "verified_strong_counter",
+          role: "mid",
+        }),
+      ],
+      [
+        "kassadin",
+        createCounterRankingV2MechanicalReview({
+          calculatedMechanicalScore: 90,
+          counterChampionId: "kassadin",
+          enemyChampionId: "yone",
+          manualAdjustment: -20,
+          reviewStatus: "verified_soft_counter",
+          role: "mid",
+        }),
+      ],
+    ]),
+    role: "mid",
+  }),
+);
+
+assert.equal(
+  finalReviewedScoreRows.at(0)?.candidateChampionId,
+  "vex",
+  "Review-priority sorting should use final reviewed score when review rows exist.",
+);
+
+const calculatedScoreRows = sortCounterRankingV2RowsByReviewPriority(
+  getCounterRankingV2ComparisonRows({
+    candidateChampionIds: ["kassadin", "vex"],
+    enemyChampionId: "yone",
+    observedByChampionId: new Map(),
+    role: "mid",
+  }),
+);
+const highestCalculatedScore = Math.max(
+  ...calculatedScoreRows.map((row) => row.mechanicalResult.score),
+);
+
+assert.equal(
+  calculatedScoreRows.at(0)?.mechanicalResult.score,
+  highestCalculatedScore,
+  "Review-priority sorting should use calculated score when no review row exists.",
 );
 assert.equal(
   isCounterRankingV2ShadowCandidateEligible({

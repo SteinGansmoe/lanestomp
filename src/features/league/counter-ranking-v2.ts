@@ -612,6 +612,54 @@ export function getCounterRankingV2ComparisonRows({
     });
 }
 
+export function sortCounterRankingV2RowsByReviewPriority(
+  rows: CounterRankingV2ComparisonRow[],
+): CounterRankingV2ComparisonRow[] {
+  return [...rows].sort((left, right) => {
+    const leftReviewedPriority = getCounterRankingV2ReviewPriority(left);
+    const rightReviewedPriority = getCounterRankingV2ReviewPriority(right);
+
+    if (leftReviewedPriority !== rightReviewedPriority) {
+      return leftReviewedPriority - rightReviewedPriority;
+    }
+
+    const leftScore = getCounterRankingV2ReviewPriorityScore(left);
+    const rightScore = getCounterRankingV2ReviewPriorityScore(right);
+
+    if (leftScore !== rightScore) {
+      return rightScore - leftScore;
+    }
+
+    const leftRankDelta = Math.max(0, left.rankDelta ?? 0);
+    const rightRankDelta = Math.max(0, right.rankDelta ?? 0);
+
+    if (leftRankDelta !== rightRankDelta) {
+      return rightRankDelta - leftRankDelta;
+    }
+
+    const leftMechanicalRank = left.mechanicalRank ?? Number.POSITIVE_INFINITY;
+    const rightMechanicalRank = right.mechanicalRank ?? Number.POSITIVE_INFINITY;
+
+    if (leftMechanicalRank !== rightMechanicalRank) {
+      return leftMechanicalRank - rightMechanicalRank;
+    }
+
+    return left.candidateChampionId.localeCompare(right.candidateChampionId);
+  });
+}
+
+function getCounterRankingV2ReviewPriority(row: CounterRankingV2ComparisonRow) {
+  return row.review?.reviewStatus === undefined || row.review.reviewStatus === "unreviewed" ? 0 : 1;
+}
+
+function getCounterRankingV2ReviewPriorityScore(row: CounterRankingV2ComparisonRow) {
+  if (row.review) {
+    return row.review.finalMechanicalScore;
+  }
+
+  return row.mechanicalResult.status === "calculated" ? row.mechanicalResult.score : -1;
+}
+
 export function clampCounterRankingV2ManualAdjustment(adjustment: number) {
   const finiteAdjustment = Number.isFinite(adjustment) ? adjustment : 0;
 
