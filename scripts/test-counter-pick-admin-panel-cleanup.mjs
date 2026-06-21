@@ -39,6 +39,7 @@ testCounterRankingV2ShadowProfileSelection();
 testCounterRankingV2ShadowCandidateAccordion();
 testCounterRankingV2ShadowReviewFilters();
 testCounterRankingV2PublicEligibilityControls();
+testCounterRankingV2ReviewProgressSummary();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -238,4 +239,21 @@ function testCounterRankingV2PublicEligibilityControls() {
   );
   assert.equal(actionsSource.includes("normalizeCounterRankingV2PublicEligible"), true);
   assert.equal(actionsSource.includes("public_eligible: validation.publicEligible"), true);
+}
+
+function testCounterRankingV2ReviewProgressSummary() {
+  assert.equal(counterPickSectionSource.includes("getCounterRankingV2ReviewProgressSummary"), true);
+  assert.equal(
+    counterPickSectionSource.includes("function CounterRankingV2ReviewProgressSummaryPanel"),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes("Review progress"), true);
+  assert.equal(counterPickSectionSource.includes("Total candidates"), true);
+  assert.equal(counterPickSectionSource.includes("Reviewed candidates"), true);
+  assert.equal(counterPickSectionSource.includes("Unreviewed candidates"), true);
+  assert.equal(counterPickSectionSource.includes("Verified strong counters"), true);
+  assert.equal(counterPickSectionSource.includes("Verified soft counters"), true);
+  assert.equal(counterPickSectionSource.includes("Needs more data"), true);
+  assert.equal(counterPickSectionSource.includes("Incorrect suggestions"), true);
+  assert.equal(counterPickSectionSource.includes("Public eligible"), true);
 }

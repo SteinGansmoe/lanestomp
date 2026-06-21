@@ -47,6 +47,7 @@ import {
   filterCounterRankingV2RowsByReviewFilter,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  getCounterRankingV2ReviewProgressSummary,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2SupportedChampion,
@@ -59,6 +60,7 @@ import {
   type CounterRankingV2ObservedRankSnapshot,
   type CounterRankingV2ProfileStatus,
   type CounterRankingV2ReviewFilter,
+  type CounterRankingV2ReviewProgressSummary,
   type CounterRankingV2ReviewStatus,
   type CounterRankingV2TraitId,
 } from "@/src/features/league/counter-ranking-v2";
@@ -1455,6 +1457,10 @@ function CounterRankingV2ShadowPanel({
     : false;
   const hasObservedStats = rows.some((row) => row.observed !== null);
   const hasReviewRows = rows.some((row) => row.review !== null);
+  const reviewProgressSummary = useMemo(
+    () => getCounterRankingV2ReviewProgressSummary(rows),
+    [rows],
+  );
   const filteredRows = useMemo(
     () =>
       filterCounterRankingV2RowsByReviewFilter({
@@ -1566,6 +1572,7 @@ function CounterRankingV2ShadowPanel({
             {!reviewStatus.isLoading && !reviewStatus.error && !hasReviewRows ? (
               <EmptyState text="No review rows have been saved for this champion and role yet." />
             ) : null}
+            <CounterRankingV2ReviewProgressSummaryPanel summary={reviewProgressSummary} />
             <div className="rounded-lg border border-white/10 bg-black/15 p-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-zinc-100">Review filters</p>
@@ -1664,6 +1671,40 @@ function CounterRankingV2MetaCell({ label, value }: { label: string; value: stri
     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
       <p className="text-xs uppercase text-zinc-500">{label}</p>
       <p className="mt-1 text-sm font-semibold text-zinc-100">{value}</p>
+    </div>
+  );
+}
+
+function CounterRankingV2ReviewProgressSummaryPanel({
+  summary,
+}: {
+  summary: CounterRankingV2ReviewProgressSummary;
+}) {
+  const progressItems = [
+    { label: "Total candidates", value: summary.total },
+    { label: "Reviewed candidates", value: summary.reviewed },
+    { label: "Unreviewed candidates", value: summary.unreviewed },
+    { label: "Verified strong counters", value: summary.verifiedStrongCounters },
+    { label: "Verified soft counters", value: summary.verifiedSoftCounters },
+    { label: "Needs more data", value: summary.needsMoreData },
+    { label: "Incorrect suggestions", value: summary.incorrectSuggestions },
+    { label: "Public eligible", value: summary.publicEligible },
+  ] as const;
+
+  return (
+    <div className="rounded-lg border border-cyan-300/15 bg-cyan-500/[0.06] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-cyan-100">Review progress</p>
+        <p className="text-xs text-zinc-500">Selected enemy and role</p>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {progressItems.map((item) => (
+          <div className="rounded-md border border-white/10 bg-black/15 p-3" key={item.label}>
+            <p className="text-xs uppercase text-zinc-500">{item.label}</p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">{item.value}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

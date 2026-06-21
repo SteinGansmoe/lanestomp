@@ -19,6 +19,7 @@ const {
   filterCounterRankingV2RowsByReviewFilter,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  getCounterRankingV2ReviewProgressSummary,
   isCounterRankingV2ManualAdjustmentInBounds,
   isCounterRankingV2PublicCandidateEligible,
   isCounterRankingV2ReviewPublicEligible,
@@ -509,6 +510,21 @@ assert.deepEqual(
     .sort(),
   ["akali", "lissandra", "yasuo"],
   "The unreviewed filter should include missing review rows and explicit unreviewed rows.",
+);
+
+assert.deepEqual(
+  getCounterRankingV2ReviewProgressSummary(reviewFilterRows),
+  {
+    incorrectSuggestions: 1,
+    needsMoreData: 1,
+    publicEligible: 1,
+    reviewed: 4,
+    total: 7,
+    unreviewed: 3,
+    verifiedSoftCounters: 1,
+    verifiedStrongCounters: 1,
+  },
+  "Review progress summary should count review states and public eligibility for the selected matchup.",
 );
 assert.equal(
   isCounterRankingV2ShadowCandidateEligible({

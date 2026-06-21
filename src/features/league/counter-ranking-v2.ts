@@ -140,6 +140,17 @@ export type CounterRankingV2ComparisonRow = {
   observed: CounterRankingV2ObservedRankSnapshot | null;
 };
 
+export type CounterRankingV2ReviewProgressSummary = {
+  incorrectSuggestions: number;
+  needsMoreData: number;
+  publicEligible: number;
+  reviewed: number;
+  total: number;
+  unreviewed: number;
+  verifiedSoftCounters: number;
+  verifiedStrongCounters: number;
+};
+
 type CounterRankingV2TraitInteraction = {
   candidateStrength: CounterRankingV2TraitId;
   enemyVulnerability: CounterRankingV2TraitId;
@@ -716,6 +727,42 @@ export function isCounterRankingV2RowMatchingReviewFilter({
   }
 
   return row.review?.reviewStatus === filter;
+}
+
+export function getCounterRankingV2ReviewProgressSummary(
+  rows: CounterRankingV2ComparisonRow[],
+): CounterRankingV2ReviewProgressSummary {
+  return rows.reduce<CounterRankingV2ReviewProgressSummary>(
+    (summary, row) => {
+      const reviewStatus = row.review?.reviewStatus ?? "unreviewed";
+      const isUnreviewed = row.review === null || reviewStatus === "unreviewed";
+
+      return {
+        incorrectSuggestions:
+          summary.incorrectSuggestions + (reviewStatus === "incorrect_suggestion" ? 1 : 0),
+        needsMoreData: summary.needsMoreData + (reviewStatus === "needs_more_data" ? 1 : 0),
+        publicEligible:
+          summary.publicEligible + (isCounterRankingV2ReviewPublicEligible(row.review) ? 1 : 0),
+        reviewed: summary.reviewed + (isUnreviewed ? 0 : 1),
+        total: summary.total + 1,
+        unreviewed: summary.unreviewed + (isUnreviewed ? 1 : 0),
+        verifiedSoftCounters:
+          summary.verifiedSoftCounters + (reviewStatus === "verified_soft_counter" ? 1 : 0),
+        verifiedStrongCounters:
+          summary.verifiedStrongCounters + (reviewStatus === "verified_strong_counter" ? 1 : 0),
+      };
+    },
+    {
+      incorrectSuggestions: 0,
+      needsMoreData: 0,
+      publicEligible: 0,
+      reviewed: 0,
+      total: 0,
+      unreviewed: 0,
+      verifiedSoftCounters: 0,
+      verifiedStrongCounters: 0,
+    },
+  );
 }
 
 export function clampCounterRankingV2ManualAdjustment(adjustment: number) {
