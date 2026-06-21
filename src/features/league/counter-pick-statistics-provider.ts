@@ -9,7 +9,9 @@ import {
   type CounterPickStatistics,
   type CounterPickStatisticsTier,
   minimumTrustedCounterPickGames,
+  type PublicReviewedMechanicalCounter,
 } from "./counter-pick-statistics";
+import { useReviewedMechanicalCountersPublicly } from "./counter-ranking-v2";
 import { calculateCounterPickConfidence } from "./counter-pick-confidence";
 import type { LeagueRole } from "./roles";
 
@@ -54,6 +56,13 @@ type CounterPickStatsResult = {
   statisticsByCounterChampion: Map<string, CounterPickStatistics>;
 };
 
+type CounterRankingV2PublicReviewRow = {
+  counter_champion_id: string;
+  enemy_champion_id: string;
+  public_eligible: boolean;
+  review_status: string;
+};
+
 type CalculateCounterTierInput = {
   confidence: CounterPickStatsConfidence;
   games: number;
@@ -69,6 +78,12 @@ type MockCounterPickStatsSeed = Omit<
 
 const defaultMockPatch = "15.12";
 const mockLastUpdatedAt = "2026-06-14T00:00:00.000Z";
+const counterRankingV2PublicReviewSelect = [
+  "counter_champion_id",
+  "enemy_champion_id",
+  "public_eligible",
+  "review_status",
+].join(", ");
 
 const confidenceSortValue = {
   high: 3,
@@ -164,9 +179,20 @@ export async function fetchCounterPickStatsForEnemy({
     rankBracket: "all",
     role,
   });
+  const reviewedMechanicalCounters = useReviewedMechanicalCountersPublicly
+    ? await fetchPublicEligibleCounterRankingV2Reviews({
+        client,
+        enemyChampion,
+        role,
+      })
+    : [];
   const publicResults = getPublicCounterResultsForSelectedChampionStats(
     counteredByResult.stats,
     enemyChampion,
+    {
+      reviewedMechanicalCounters,
+      useReviewedMechanicalCounters: useReviewedMechanicalCountersPublicly,
+    },
   );
 
   for (const result of publicResults.countersIntoSelectedChampion) {
@@ -190,6 +216,40 @@ export async function fetchCounterPickStatsForEnemy({
     selectedChampionStatsByEnemyChampion: selectedChampionGoodInto,
     statisticsByCounterChampion: countersIntoSelectedChampion,
   };
+}
+
+async function fetchPublicEligibleCounterRankingV2Reviews({
+  client,
+  enemyChampion,
+  role,
+}: {
+  client?: CounterPickStatsProviderClient | null;
+  enemyChampion: string;
+  role: LeagueRole;
+}): Promise<PublicReviewedMechanicalCounter[]> {
+  if (!client) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("counter_ranking_v2_mechanical_reviews")
+    .select(counterRankingV2PublicReviewSelect)
+    .eq("enemy_champion_id", enemyChampion)
+    .eq("role", role)
+    .eq("public_eligible", true)
+    .in("review_status", ["verified_strong_counter", "verified_soft_counter"])
+    .returns<CounterRankingV2PublicReviewRow[]>();
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    counterChampionId: row.counter_champion_id,
+    enemyChampionId: row.enemy_champion_id,
+    publicEligible: row.public_eligible,
+    reviewStatus: row.review_status,
+  }));
 }
 
 function getNotEnoughDataCounterPickStats({

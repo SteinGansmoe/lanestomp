@@ -220,7 +220,7 @@ function testCounterRankingV2PublicEligibilityControls() {
   assert.equal(counterPickSectionSource.includes("isSavedPublicEligible"), true);
   assert.equal(counterPickSectionSource.includes("Public eligible"), true);
   assert.equal(counterPickSectionSource.includes("Internal review only"), true);
-  assert.equal(counterPickSectionSource.includes("Low sample design counter"), true);
+  assert.equal(counterPickSectionSource.includes("Low sample mechanical counter"), true);
   assert.equal(
     counterPickSectionSource.includes("Choose a reviewed status before enabling public eligibility."),
     true,
@@ -230,7 +230,7 @@ function testCounterRankingV2PublicEligibilityControls() {
     true,
   );
   assert.equal(
-    counterPickSectionSource.includes("This will be treated as a low-sample design counter."),
+    counterPickSectionSource.includes("This will be treated as a low-sample mechanical counter."),
     true,
   );
   assert.match(
@@ -271,7 +271,7 @@ function testCounterRankingV2PublicPreview() {
   assert.equal(counterPickSectionSource.includes("Final reviewed score"), true);
   assert.equal(counterPickSectionSource.includes("Observed games"), true);
   assert.equal(counterPickSectionSource.includes("Confidence"), true);
-  assert.equal(counterPickSectionSource.includes("Low sample design counter"), true);
+  assert.equal(counterPickSectionSource.includes("Low sample mechanical counter"), true);
   assert.equal(
     counterPickSectionSource.includes(
       "No reviewed mechanical candidates are public-preview eligible yet.",

@@ -707,6 +707,13 @@ const mechanicalReviewServiceRoleGrantMigration = readFileSync(
   ),
   "utf8",
 );
+const publicMechanicalReviewPolicyMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260621115000_add_public_counter_ranking_v2_review_read_policy.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const counterPickActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
@@ -731,6 +738,16 @@ assert.match(
   mechanicalReviewServiceRoleGrantMigration,
   /grant select, insert, update\s+on table public\.counter_ranking_v2_mechanical_reviews\s+to service_role;/,
   "The service-role admin action should be granted review table load/save privileges.",
+);
+assert.match(
+  publicMechanicalReviewPolicyMigration,
+  /grant select\s+on table public\.counter_ranking_v2_mechanical_reviews\s+to anon, authenticated;/,
+  "Public readers should only receive SELECT on the review table.",
+);
+assert.match(
+  publicMechanicalReviewPolicyMigration,
+  /public_eligible = true[\s\S]*review_status in \('verified_strong_counter', 'verified_soft_counter'\)/,
+  "Public review table reads should be restricted to eligible verified counter rows.",
 );
 assert.doesNotMatch(
   mechanicalReviewMigration,

@@ -1773,7 +1773,7 @@ function CounterRankingV2PublicPreviewPanel({
                   </div>
                   {previewRow.isLowSampleDesignCounter ? (
                     <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
-                      Low sample design counter
+                      Low sample mechanical counter
                     </Badge>
                   ) : null}
                 </div>
@@ -1857,7 +1857,7 @@ function CounterRankingV2ShadowRow({
       : reviewForm.reviewStatus === "incorrect_suggestion"
         ? "Incorrect suggestions cannot be public eligible."
         : isPublicEligibleChecked && hasLowObservedSample
-          ? "This will be treated as a low-sample design counter."
+          ? "This will be treated as a low-sample mechanical counter."
           : "Stored for shadow review. Public use requires the reviewed-counter feature flag.";
   const panelId = `counter-ranking-v2-review-${row.candidateChampionId}`;
 
@@ -1974,7 +1974,7 @@ function CounterRankingV2ShadowRow({
           )}
           {isLowSampleDesignCounter ? (
             <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
-              Low sample design counter
+              Low sample mechanical counter
             </Badge>
           ) : hasLowObservedSample ? (
             <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
@@ -2120,7 +2120,7 @@ function CounterRankingV2ShadowRow({
 
             {isPublicEligibleChecked && hasLowObservedSample ? (
               <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100 lg:col-span-2">
-                This will be treated as a low-sample design counter.
+                This will be treated as a low-sample mechanical counter.
               </p>
             ) : null}
 

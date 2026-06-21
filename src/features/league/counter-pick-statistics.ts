@@ -14,6 +14,11 @@ export type CounterPickStatisticsSource =
   | "manual"
   | "match_statistics_cache"
   | "provider";
+export type PublicCounterResultLabel =
+  | "design_counter"
+  | "low_sample"
+  | "strong_stats_design_counter"
+  | "verified_counter";
 
 export type CounterPickStatistics = {
   confidence: CounterPickConfidence;
@@ -25,6 +30,7 @@ export type CounterPickStatistics = {
   sampleConfidence: CounterPickSampleConfidence | null;
   source: CounterPickStatisticsSource;
   tier: CounterPickStatisticsTier | null;
+  publicLabels?: PublicCounterResultLabel[];
   winRate: number | null;
   wins: number | null;
 };
@@ -44,6 +50,13 @@ export type PublicCounterResult = {
 export type PublicCounterResultBuckets = {
   countersIntoSelectedChampion: PublicCounterResult[];
   selectedChampionGoodInto: PublicCounterResult[];
+};
+
+export type PublicReviewedMechanicalCounter = {
+  counterChampionId: string;
+  enemyChampionId: string;
+  publicEligible: boolean;
+  reviewStatus: "verified_soft_counter" | "verified_strong_counter" | string;
 };
 
 export type DirectedCounterPickAggregateForPublicResult = {
@@ -199,12 +212,25 @@ export function isCounterPickStatisticsPubliclyRanked(statistics: CounterPickSta
   return isCounterPickStatisticsTrusted(statistics) && statistics.confidence.publiclyRanked;
 }
 
+export function hasPublicCounterResultLabel(
+  statistics: Pick<CounterPickStatistics, "publicLabels">,
+  label: PublicCounterResultLabel,
+) {
+  return Boolean(statistics.publicLabels?.includes(label));
+}
+
 export function getPublicCounterResultsForSelectedChampionStats(
   stats: DirectedCounterPickAggregateForPublicResult[],
   selectedChampionId: string,
+  options: {
+    reviewedMechanicalCounters?: PublicReviewedMechanicalCounter[];
+    useReviewedMechanicalCounters?: boolean;
+  } = {},
 ): PublicCounterResultBuckets {
   const countersIntoSelectedChampion: PublicCounterResult[] = [];
   const selectedChampionGoodInto: PublicCounterResult[] = [];
+  const allObservedResultsByChampionId = new Map<string, PublicCounterResult>();
+  const countersIntoSelectedChampionByChampionId = new Map<string, PublicCounterResult>();
   const listedChampionIds = new Set<string>();
 
   for (const stat of stats) {
@@ -215,6 +241,7 @@ export function getPublicCounterResultsForSelectedChampionStats(
     }
 
     const listedChampionKey = getPublicCounterResultIdentityKey(result.listedChampionId);
+    allObservedResultsByChampionId.set(listedChampionKey, result);
 
     if (listedChampionIds.has(listedChampionKey)) {
       continue;
@@ -222,6 +249,7 @@ export function getPublicCounterResultsForSelectedChampionStats(
 
     if (isCounterIntoSelectedChampion(result)) {
       countersIntoSelectedChampion.push(result);
+      countersIntoSelectedChampionByChampionId.set(listedChampionKey, result);
       listedChampionIds.add(listedChampionKey);
     } else if (isSelectedChampionGoodInto(result)) {
       selectedChampionGoodInto.push(result);
@@ -229,10 +257,123 @@ export function getPublicCounterResultsForSelectedChampionStats(
     }
   }
 
+  if (options.useReviewedMechanicalCounters) {
+    for (const reviewedCounter of options.reviewedMechanicalCounters ?? []) {
+      if (!isPublicReviewedMechanicalCounterEligible(reviewedCounter, selectedChampionId)) {
+        continue;
+      }
+
+      const listedChampionKey = getPublicCounterResultIdentityKey(reviewedCounter.counterChampionId);
+      const existingCounter = countersIntoSelectedChampionByChampionId.get(listedChampionKey);
+
+      if (existingCounter) {
+        existingCounter.statistics.publicLabels = getPublicReviewedMechanicalCounterLabels({
+          isExistingObservedCounter: true,
+          statistics: existingCounter.statistics,
+        });
+        continue;
+      }
+
+      const observedResult = allObservedResultsByChampionId.get(listedChampionKey);
+      const designCounterResult = observedResult
+        ? clonePublicCounterResultWithLabels(observedResult, {
+            isExistingObservedCounter: false,
+          })
+        : createDesignCounterPublicResult(reviewedCounter, selectedChampionId);
+
+      countersIntoSelectedChampion.push(designCounterResult);
+      countersIntoSelectedChampionByChampionId.set(listedChampionKey, designCounterResult);
+    }
+  }
+
   return {
     countersIntoSelectedChampion,
     selectedChampionGoodInto,
   };
+}
+
+function isPublicReviewedMechanicalCounterEligible(
+  reviewedCounter: PublicReviewedMechanicalCounter,
+  selectedChampionId: string,
+) {
+  return (
+    reviewedCounter.enemyChampionId === selectedChampionId &&
+    reviewedCounter.publicEligible &&
+    (reviewedCounter.reviewStatus === "verified_strong_counter" ||
+      reviewedCounter.reviewStatus === "verified_soft_counter")
+  );
+}
+
+function clonePublicCounterResultWithLabels(
+  result: PublicCounterResult,
+  { isExistingObservedCounter }: { isExistingObservedCounter: boolean },
+): PublicCounterResult {
+  return {
+    ...result,
+    statistics: {
+      ...result.statistics,
+      publicLabels: getPublicReviewedMechanicalCounterLabels({
+        isExistingObservedCounter,
+        statistics: result.statistics,
+      }),
+    },
+  };
+}
+
+function createDesignCounterPublicResult(
+  reviewedCounter: PublicReviewedMechanicalCounter,
+  selectedChampionId: string,
+): PublicCounterResult {
+  const confidence = calculateCounterPickConfidence(0);
+  const statistics: CounterPickStatistics = {
+    ...emptyCounterPickStatistics,
+    confidence,
+    games: 0,
+    publicLabels: getPublicReviewedMechanicalCounterLabels({
+      isExistingObservedCounter: false,
+      statistics: {
+        ...emptyCounterPickStatistics,
+        confidence,
+      },
+    }),
+    sampleConfidence: "low_sample",
+    source: "provider",
+  };
+
+  return {
+    games: 0,
+    listedChampionId: reviewedCounter.counterChampionId,
+    listedChampionWinRate: 0,
+    losses: 0,
+    selectedChampionId,
+    selectedChampionWinRate: 0,
+    statistics,
+    tier: null,
+    wins: 0,
+  };
+}
+
+function getPublicReviewedMechanicalCounterLabels({
+  isExistingObservedCounter,
+  statistics,
+}: {
+  isExistingObservedCounter: boolean;
+  statistics: Pick<CounterPickStatistics, "confidence" | "publicLabels">;
+}): PublicCounterResultLabel[] {
+  const labels = new Set<PublicCounterResultLabel>(statistics.publicLabels ?? []);
+
+  labels.add("design_counter");
+  labels.add("verified_counter");
+
+  if (statistics.confidence.publiclyRanked && isExistingObservedCounter) {
+    labels.add("strong_stats_design_counter");
+  }
+
+  if (!statistics.confidence.publiclyRanked) {
+    labels.add("low_sample");
+  }
+
+  return Array.from(labels);
 }
 
 export function toPublicCounterPickResult(

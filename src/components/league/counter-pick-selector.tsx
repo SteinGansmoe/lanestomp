@@ -41,11 +41,13 @@ import {
   compareCounterPickStatistics,
   emptyCounterPickStatistics,
   getCounterPickPublicTierLabel,
+  hasPublicCounterResultLabel,
   hasCounterPickStatistics,
   isCounterPickStatisticsPubliclyRanked,
   isCounterPickStatisticsTrusted,
   publicCounterPickMinimumRankedGames,
   type CounterPickStatistics,
+  type PublicCounterResultLabel,
 } from "@/src/features/league/counter-pick-statistics";
 import {
   getCounterPickAlternativeBuildSections,
@@ -1440,6 +1442,8 @@ function CounterMatchupRow({
 }) {
   const championName = row.champion?.name ?? row.fallbackName;
   const isTrustedStatistics = isCounterPickStatisticsTrusted(row.stats);
+  const hasDesignCounterLabel = hasPublicCounterResultLabel(row.stats, "design_counter");
+  const hasVisibleStatistics = isTrustedStatistics || hasDesignCounterLabel;
   const rankStyle = getCounterMatchupRankStyle(row.direction, rank);
 
   return (
@@ -1477,15 +1481,18 @@ function CounterMatchupRow({
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-base font-semibold text-white">{championName}</h3>
         <p className="mt-1 text-xs text-zinc-500 md:hidden">
-          {isTrustedStatistics
+          {hasVisibleStatistics
             ? `${formatCounterPickWinRate(row.stats)} | ${formatCounterPickGames(row.stats)} | ${formatCounterPickTier(row.stats)} | ${row.stats.confidence.label}`
             : "Not enough data"}
         </p>
-        {isTrustedStatistics ? <CounterPickConfidenceBadge statistics={row.stats} /> : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {hasVisibleStatistics ? <CounterPickConfidenceBadge statistics={row.stats} /> : null}
+          <CounterPickPublicLabels statistics={row.stats} />
+        </div>
       </div>
 
       <div className="col-span-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-right sm:grid-cols-4">
-        {isTrustedStatistics ? (
+        {hasVisibleStatistics ? (
           <>
             <CounterMatchupRowStat
               label="WR"
@@ -2038,6 +2045,47 @@ function CounterPickConfidenceBadge({ statistics }: { statistics: CounterPickSta
   );
 }
 
+function CounterPickPublicLabels({ statistics }: { statistics: CounterPickStatistics }) {
+  const labels = getCounterPickPublicLabelItems(statistics.publicLabels ?? []);
+
+  if (labels.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      {labels.map((label) => (
+        <span
+          className={cn(
+            "inline-flex w-fit items-center border px-2 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em]",
+            label.tone === "amber"
+              ? "border-amber-300/25 bg-amber-400/10 text-amber-100"
+              : "border-emerald-300/20 bg-emerald-400/10 text-emerald-100",
+          )}
+          key={label.value}
+        >
+          {label.text}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function getCounterPickPublicLabelItems(labels: PublicCounterResultLabel[]) {
+  return labels.map((label) => {
+    switch (label) {
+      case "design_counter":
+        return { text: "Mechanical counter", tone: "emerald", value: label } as const;
+      case "low_sample":
+        return { text: "Low sample", tone: "amber", value: label } as const;
+      case "strong_stats_design_counter":
+        return { text: "Strong mechanical counter", tone: "emerald", value: label } as const;
+      case "verified_counter":
+        return { text: "Verified counter", tone: "emerald", value: label } as const;
+    }
+  });
+}
+
 function CounterPickTip({ champion }: { champion: LeagueChampion }) {
   return (
     <section className="relative overflow-hidden border-y border-white/10 py-5">
@@ -2253,7 +2301,7 @@ function formatCounterPickWinRate(
 }
 
 function formatCounterPickGames(statistics: CounterPickStatistics) {
-  return isCounterPickStatisticsTrusted(statistics) && statistics.games !== null
+  return statistics.games !== null
     ? `${new Intl.NumberFormat("en").format(statistics.games)} games`
     : "Not enough data";
 }
@@ -3205,7 +3253,10 @@ function buildCounterRowsFromStatistics({
       continue;
     }
 
-    if (!isCounterPickStatisticsPubliclyRanked(statistics)) {
+    if (
+      !isCounterPickStatisticsPubliclyRanked(statistics) &&
+      !hasPublicCounterResultLabel(statistics, "design_counter")
+    ) {
       continue;
     }
 

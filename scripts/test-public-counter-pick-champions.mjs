@@ -9,6 +9,7 @@ const { getPublicCounterPickChampionSearchText, matchesPublicCounterPickChampion
 const {
   compareCounterPickStatistics,
   getPublicCounterResultsForSelectedChampionStats,
+  hasPublicCounterResultLabel,
   isCounterIntoSelectedChampion,
   isCounterPickStatisticsPubliclyRanked,
   isCounterPickStatisticsTrusted,
@@ -237,6 +238,106 @@ async function testPublicCounterPickDirectionMapping() {
   assert.deepEqual(bucketBadIds, ["sylas"]);
   assert.equal(bucketZed?.statistics.winRate, 70);
   assert.equal(bucketSylas?.statistics.winRate, 20);
+
+  const disabledDesignBuckets = getPublicCounterResultsForSelectedChampionStats(
+    [zed.stat],
+    "Ahri",
+    {
+      reviewedMechanicalCounters: [
+        reviewedMechanicalCounter({
+          counterChampionId: "Annie",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "verified_strong_counter",
+        }),
+      ],
+      useReviewedMechanicalCounters: false,
+    },
+  );
+  assert.deepEqual(
+    disabledDesignBuckets.countersIntoSelectedChampion.map((result) => result.listedChampionId),
+    ["Zed"],
+    "Feature flag disabled should keep current public output unchanged.",
+  );
+
+  const enabledDesignBuckets = getPublicCounterResultsForSelectedChampionStats(
+    [zed.stat, talon.stat],
+    "Ahri",
+    {
+      reviewedMechanicalCounters: [
+        reviewedMechanicalCounter({
+          counterChampionId: "Zed",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "verified_strong_counter",
+        }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Annie",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "verified_soft_counter",
+        }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Talon",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "verified_strong_counter",
+        }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Lux",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "incorrect_suggestion",
+        }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Orianna",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "unreviewed",
+        }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Viktor",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "needs_more_data",
+        }),
+      ],
+      useReviewedMechanicalCounters: true,
+    },
+  );
+  const enabledDesignIds = enabledDesignBuckets.countersIntoSelectedChampion.map(
+    (result) => result.listedChampionId,
+  );
+  const enabledZedRows = enabledDesignBuckets.countersIntoSelectedChampion.filter(
+    (result) => result.listedChampionId === "Zed",
+  );
+  const enabledAnnie = enabledDesignBuckets.countersIntoSelectedChampion.find(
+    (result) => result.listedChampionId === "Annie",
+  );
+  const enabledTalon = enabledDesignBuckets.countersIntoSelectedChampion.find(
+    (result) => result.listedChampionId === "Talon",
+  );
+
+  assert.equal(enabledDesignIds.includes("Annie"), true);
+  assert.equal(
+    enabledZedRows.length,
+    1,
+    "Existing observed counters should be enhanced, not duplicated.",
+  );
+  assert.equal(hasPublicCounterResultLabel(enabledZedRows[0].statistics, "design_counter"), true);
+  assert.equal(
+    hasPublicCounterResultLabel(enabledZedRows[0].statistics, "strong_stats_design_counter"),
+    true,
+  );
+  assert.equal(hasPublicCounterResultLabel(enabledAnnie.statistics, "design_counter"), true);
+  assert.equal(hasPublicCounterResultLabel(enabledAnnie.statistics, "low_sample"), true);
+  assert.equal(hasPublicCounterResultLabel(enabledTalon.statistics, "low_sample"), true);
+  assert.equal(enabledDesignIds.includes("Lux"), false);
+  assert.equal(enabledDesignIds.includes("Orianna"), false);
+  assert.equal(enabledDesignIds.includes("Viktor"), false);
+  assert.equal("calculatedMechanicalScore" in enabledAnnie, false);
+  assert.equal("manualAdjustment" in enabledAnnie, false);
+  assert.equal("finalReviewedScore" in enabledAnnie, false);
 }
 
 function publicResultFromStoredStat(input, selectedChampionId) {
@@ -272,5 +373,22 @@ function storedStat({
     updated_at: "2026-06-15T00:00:00.000Z",
     win_rate: winRate,
     wins,
+  };
+}
+
+function reviewedMechanicalCounter({
+  counterChampionId,
+  enemyChampionId,
+  publicEligible,
+  reviewStatus,
+}) {
+  return {
+    calculatedMechanicalScore: 99,
+    counterChampionId,
+    enemyChampionId,
+    finalReviewedScore: 99,
+    manualAdjustment: 10,
+    publicEligible,
+    reviewStatus,
   };
 }
