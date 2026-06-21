@@ -99,6 +99,7 @@ export type CounterRankingV2ObservedRankSnapshot = {
 };
 
 export type CounterRankingV2AdjustmentReason =
+  | "auto_generated"
   | "data_disagreement"
   | "manual_review"
   | "meta_shift"
@@ -117,6 +118,7 @@ export type CounterRankingV2ReviewStatus =
 
 export type CounterRankingV2ReviewFilter =
   | "all"
+  | "auto_approval_candidate"
   | "auto_approved"
   | "auto_suggested"
   | "incorrect_suggestion"
@@ -138,6 +140,7 @@ export type CounterRankingV2SuggestedStrength =
   | "strong_counter";
 
 export type CounterRankingV2AutomationStatus =
+  | "auto_approval_candidate"
   | "auto_approved"
   | "auto_suggested"
   | "manual_approved"
@@ -154,6 +157,8 @@ export type CounterRankingV2MechanicalReview = {
   createdAt: string | null;
   enemyChampionId: string;
   finalMechanicalScore: number;
+  generatedAt: string | null;
+  generatedBy: string | null;
   manualAdjustment: number;
   publicEligible: boolean;
   reviewStatus: CounterRankingV2ReviewStatus;
@@ -183,6 +188,7 @@ export type CounterRankingV2MechanicalSuggestion = {
 };
 
 export type CounterRankingV2AutomationSummary = {
+  autoApprovalCandidates: number;
   autoApproved: number;
   autoSuggested: number;
   generatedSuggestions: number;
@@ -228,6 +234,7 @@ export const useReviewedMechanicalCountersPublicly =
   process.env.NEXT_PUBLIC_USE_REVIEWED_MECHANICAL_COUNTERS_PUBLICLY === "true";
 
 export const counterRankingV2AdjustmentReasons = [
+  "auto_generated",
   "patch_buff",
   "patch_nerf",
   "meta_shift",
@@ -271,6 +278,30 @@ export const counterRankingV2SupportedChampionIds = [
   "hwei",
   "malphite",
   "veigar",
+  "akshan",
+  "anivia",
+  "aurelionsol",
+  "aurora",
+  "azir",
+  "cassiopeia",
+  "corki",
+  "diana",
+  "ekko",
+  "galio",
+  "irelia",
+  "lux",
+  "mel",
+  "naafiri",
+  "neeko",
+  "qiyana",
+  "ryze",
+  "taliyah",
+  "talon",
+  "twistedfate",
+  "vladimir",
+  "xerath",
+  "ziggs",
+  "zoe",
 ] as const;
 
 export const counterRankingV2TraitVocabulary = [
@@ -659,6 +690,141 @@ export const counterRankingV2ChampionProfiles = [
     strengths: [trait("late_scaling", 5), trait("burst_damage", 4), trait("reliable_cc", 4), trait("waveclear", 3)],
     vulnerabilities: [trait("immobile", 4), trait("early_weakness", 4), trait("cooldown_reliant", 3)],
   }),
+  profile("akshan", "draft", 1, {
+    notes: "Ranged roaming marksman profile with lane poke, swing mobility, and reset pressure.",
+    strengths: [trait("poke", 4), trait("mobility", 4), trait("sustained_damage", 3), trait("waveclear", 2)],
+    vulnerabilities: [trait("mobility_reliant", 4), trait("cooldown_reliant", 3), trait("fragile", 3)],
+  }),
+  profile("anivia", "draft", 1, {
+    notes: "Immobile control mage profile with strong waveclear, scaling, and reliable zone control.",
+    strengths: [trait("waveclear", 5), trait("reliable_cc", 4), trait("late_scaling", 4), trait("burst_damage", 3)],
+    vulnerabilities: [trait("immobile", 5), trait("early_weakness", 3), trait("cooldown_reliant", 3)],
+  }),
+  profile("aurelionsol", "draft", 1, {
+    notes: "Late-scaling battlemage profile with strong wave control but punishable early lane states.",
+    strengths: [trait("late_scaling", 5), trait("waveclear", 4), trait("sustained_damage", 4), trait("poke", 2)],
+    vulnerabilities: [trait("early_weakness", 5), trait("immobile", 3), trait("cooldown_reliant", 3)],
+  }),
+  profile("aurora", "draft", 1, {
+    notes: "Mobile short-range mage profile with burst windows and repositioning dependence.",
+    strengths: [trait("mobility", 4), trait("burst_damage", 4), trait("sustained_damage", 3), trait("poke", 2)],
+    vulnerabilities: [trait("short_range", 4), trait("mobility_reliant", 3), trait("cooldown_reliant", 3)],
+  }),
+  profile("azir", "draft", 1, {
+    notes: "Scaling control mage profile with sustained soldier damage and wave control.",
+    strengths: [trait("late_scaling", 5), trait("sustained_damage", 5), trait("waveclear", 4), trait("mobility", 2)],
+    vulnerabilities: [trait("early_weakness", 4), trait("cooldown_reliant", 3), trait("fragile", 3)],
+  }),
+  profile("cassiopeia", "draft", 1, {
+    notes: "Short-range sustained DPS mage profile with anti-dash threat and low repositioning.",
+    strengths: [trait("sustained_damage", 5), trait("anti_dash", 4), trait("late_scaling", 4), trait("reliable_cc", 2)],
+    vulnerabilities: [trait("short_range", 4), trait("immobile", 4), trait("cooldown_reliant", 2)],
+  }),
+  profile("corki", "draft", 1, {
+    notes: "Scaling poke marksman profile with package-era burst windows and cooldown dependence.",
+    strengths: [trait("poke", 4), trait("late_scaling", 4), trait("burst_damage", 3), trait("mobility", 2)],
+    vulnerabilities: [trait("cooldown_reliant", 3), trait("early_weakness", 3), trait("fragile", 3)],
+  }),
+  profile("diana", "draft", 1, {
+    notes: "Melee AP diver profile with burst engage and committed dash access.",
+    strengths: [trait("burst_damage", 4), trait("mobility", 4), trait("sustained_damage", 3), trait("waveclear", 3)],
+    vulnerabilities: [trait("dash_reliant", 4), trait("melee_commit", 4), trait("cooldown_reliant", 3)],
+  }),
+  profile("ekko", "draft", 1, {
+    notes: "Mobile AP skirmisher profile with burst trades, late scaling, and cooldown windows.",
+    strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("late_scaling", 3), trait("waveclear", 3)],
+    vulnerabilities: [trait("mobility_reliant", 4), trait("cooldown_reliant", 4), trait("melee_commit", 3)],
+  }),
+  profile("galio", "draft", 1, {
+    notes: "Anti-magic control tank profile with reliable crowd control and roam support.",
+    strengths: [trait("anti_magic", 5), trait("reliable_cc", 4), trait("waveclear", 3), trait("burst_damage", 2)],
+    vulnerabilities: [trait("short_range", 3), trait("cooldown_reliant", 3), trait("early_weakness", 2)],
+  }),
+  profile("irelia", "draft", 1, {
+    notes: "Dash-reliant melee skirmisher profile with sustained damage and wave-dependent access.",
+    strengths: [trait("mobility", 5), trait("sustained_damage", 5), trait("burst_damage", 3)],
+    vulnerabilities: [
+      trait("dash_reliant", 5),
+      trait("melee_commit", 4),
+      trait("mobility_reliant", 4),
+      trait("cooldown_reliant", 2),
+    ],
+  }),
+  profile("lux", "draft", 1, {
+    notes: "Long-range pick mage profile with poke, waveclear, and fragile immobile spacing.",
+    strengths: [trait("poke", 5), trait("burst_damage", 4), trait("reliable_cc", 3), trait("waveclear", 3)],
+    vulnerabilities: [trait("immobile", 5), trait("fragile", 4), trait("cooldown_reliant", 3)],
+  }),
+  profile("mel", "draft", 1, {
+    notes: "Ranged mage profile with poke pressure, projectile defense, and cooldown-reliant trades.",
+    strengths: [trait("poke", 4), trait("burst_damage", 4), trait("waveclear", 3), trait("reliable_cc", 2)],
+    vulnerabilities: [trait("cooldown_reliant", 4), trait("fragile", 3), trait("immobile", 3)],
+  }),
+  profile("naafiri", "draft", 1, {
+    notes: "Melee AD assassin profile with pack poke and highly committed dash engage.",
+    strengths: [trait("burst_damage", 4), trait("mobility", 4), trait("poke", 2), trait("sustained_damage", 2)],
+    vulnerabilities: [
+      trait("dash_reliant", 4),
+      trait("melee_commit", 5),
+      trait("mobility_reliant", 3),
+      trait("fragile", 3),
+    ],
+  }),
+  profile("neeko", "draft", 1, {
+    notes: "Pick mage profile with reliable crowd control, burst setup, and moderate wave control.",
+    strengths: [trait("reliable_cc", 4), trait("burst_damage", 4), trait("waveclear", 3), trait("poke", 3)],
+    vulnerabilities: [trait("cooldown_reliant", 3), trait("short_range", 3), trait("fragile", 3)],
+  }),
+  profile("qiyana", "draft", 1, {
+    notes: "Mobile terrain assassin profile with burst windows and committed melee entries.",
+    strengths: [trait("mobility", 5), trait("burst_damage", 5), trait("reliable_cc", 2)],
+    vulnerabilities: [
+      trait("melee_commit", 4),
+      trait("cooldown_reliant", 4),
+      trait("mobility_reliant", 4),
+      trait("waveclear_weak", 3),
+    ],
+  }),
+  profile("ryze", "draft", 1, {
+    notes: "Shorter-range scaling battlemage profile with wave control and sustained spell damage.",
+    strengths: [trait("late_scaling", 5), trait("sustained_damage", 4), trait("waveclear", 4), trait("point_and_click_cc", 2)],
+    vulnerabilities: [trait("short_range", 4), trait("early_weakness", 3), trait("cooldown_reliant", 2)],
+  }),
+  profile("taliyah", "draft", 1, {
+    notes: "Roaming control mage profile with anti-dash tools, poke, and waveclear.",
+    strengths: [trait("anti_dash", 4), trait("poke", 4), trait("waveclear", 4), trait("reliable_cc", 3)],
+    vulnerabilities: [trait("immobile", 4), trait("cooldown_reliant", 3), trait("fragile", 3)],
+  }),
+  profile("talon", "draft", 1, {
+    notes: "Roaming AD assassin profile with burst access and weak sustained wave states.",
+    strengths: [trait("mobility", 4), trait("burst_damage", 5), trait("waveclear", 3)],
+    vulnerabilities: [trait("melee_commit", 4), trait("cooldown_reliant", 4), trait("waveclear_weak", 3)],
+  }),
+  profile("twistedfate", "draft", 1, {
+    notes: "Roaming utility mage profile with point-and-click pick tools and low combat mobility.",
+    strengths: [trait("point_and_click_cc", 5), trait("waveclear", 4), trait("reliable_cc", 3), trait("poke", 2)],
+    vulnerabilities: [trait("immobile", 4), trait("fragile", 3), trait("cooldown_reliant", 3)],
+  }),
+  profile("vladimir", "draft", 1, {
+    notes: "Late-scaling short-range battlemage profile with sustained damage and weak early pressure.",
+    strengths: [trait("late_scaling", 5), trait("sustained_damage", 4), trait("anti_magic", 2), trait("burst_damage", 2)],
+    vulnerabilities: [trait("early_weakness", 4), trait("short_range", 4), trait("cooldown_reliant", 3)],
+  }),
+  profile("xerath", "draft", 1, {
+    notes: "Artillery mage profile with extreme poke and waveclear but very low mobility.",
+    strengths: [trait("poke", 5), trait("waveclear", 4), trait("burst_damage", 3), trait("late_scaling", 2)],
+    vulnerabilities: [trait("immobile", 5), trait("fragile", 4), trait("cooldown_reliant", 3)],
+  }),
+  profile("ziggs", "draft", 1, {
+    notes: "Artillery waveclear mage profile with poke siege pressure and fragile immobile spacing.",
+    strengths: [trait("waveclear", 5), trait("poke", 5), trait("burst_damage", 3), trait("late_scaling", 2)],
+    vulnerabilities: [trait("immobile", 5), trait("fragile", 3), trait("cooldown_reliant", 3)],
+  }),
+  profile("zoe", "draft", 1, {
+    notes: "Long-range pick mage profile with burst poke and cooldown-dependent bubble setups.",
+    strengths: [trait("poke", 5), trait("burst_damage", 5), trait("reliable_cc", 3)],
+    vulnerabilities: [trait("fragile", 4), trait("cooldown_reliant", 4), trait("waveclear_weak", 3)],
+  }),
 ] as const satisfies readonly CounterRankingV2ChampionProfile[];
 
 export const counterRankingV2ChampionProfilesById = new Map(
@@ -1017,6 +1183,15 @@ function getCounterRankingV2ManualAutomationStatus(
   return "needs_review";
 }
 
+function isCounterRankingV2AutoApprovalBlockedByReview(
+  review: CounterRankingV2MechanicalReview | null | undefined,
+) {
+  return (
+    review?.reviewStatus === "incorrect_suggestion" ||
+    review?.reviewStatus === "needs_more_data"
+  );
+}
+
 function isCounterRankingV2HighMasteryCandidate(candidateChampionId: string) {
   const masteryLevel = getChampionMasteryRequirementLevel(candidateChampionId);
 
@@ -1039,6 +1214,13 @@ function isCounterRankingV2ObservedContradiction({
   );
 }
 
+function isCounterRankingV2OneWeakFactorSignal(factors: CounterRankingV2Factor[]) {
+  return (
+    factors.length === 1 &&
+    getCounterRankingV2FactorImpactLevel(factors[0]) === "low"
+  );
+}
+
 function getCounterRankingV2AutomationConfidence({
   automationStatus,
   score,
@@ -1046,7 +1228,11 @@ function getCounterRankingV2AutomationConfidence({
   automationStatus: CounterRankingV2AutomationStatus;
   score: number;
 }): CounterRankingV2AutomationConfidence {
-  if (automationStatus === "auto_suggested" || automationStatus === "manual_approved") {
+  if (
+    automationStatus === "auto_approval_candidate" ||
+    automationStatus === "auto_suggested" ||
+    automationStatus === "manual_approved"
+  ) {
     return "high";
   }
 
@@ -1061,6 +1247,7 @@ function isCounterRankingV2AutomationStatus(
   value: CounterRankingV2ReviewFilter,
 ): value is CounterRankingV2AutomationStatus {
   return (
+    value === "auto_approval_candidate" ||
     value === "auto_approved" ||
     value === "auto_suggested" ||
     value === "manual_approved" ||
@@ -1144,6 +1331,14 @@ export function generateCounterRankingV2MechanicalSuggestion({
 
   const suggestedStrength = getCounterRankingV2SuggestedStrength(mechanicalResult.score);
   const manualAutomationStatus = getCounterRankingV2ManualAutomationStatus(review);
+  const hasHighMasteryBlocker = isCounterRankingV2HighMasteryCandidate(
+    mechanicalResult.candidateChampionId,
+  );
+  const hasObservedContradiction = isCounterRankingV2ObservedContradiction({
+    mechanicalResult,
+    observed,
+  });
+  const hasOneWeakFactorSignal = isCounterRankingV2OneWeakFactorSignal(mechanicalResult.factors);
   const reasons: string[] = [];
   let automationStatus: CounterRankingV2AutomationStatus =
     mechanicalResult.score >= 80 ? "auto_suggested" : "needs_review";
@@ -1156,19 +1351,37 @@ export function generateCounterRankingV2MechanicalSuggestion({
       reasons.push("Mechanical score is below the default suggestion threshold.");
     }
 
+    if (
+      mechanicalResult.score >= 85 &&
+      candidateProfile.reviewStatus === "reviewed" &&
+      enemyProfile.reviewStatus === "reviewed" &&
+      !hasHighMasteryBlocker &&
+      !isCounterRankingV2AutoApprovalBlockedByReview(review) &&
+      !hasObservedContradiction &&
+      !hasOneWeakFactorSignal
+    ) {
+      automationStatus = "auto_approval_candidate";
+      reasons.push("Safe high-score suggestion is eligible for batch auto-approval review.");
+    }
+
     if (candidateProfile.reviewStatus !== "reviewed" || enemyProfile.reviewStatus !== "reviewed") {
       automationStatus = "needs_review";
       reasons.push("Draft or needs-review profile requires admin review.");
     }
 
-    if (isCounterRankingV2HighMasteryCandidate(mechanicalResult.candidateChampionId)) {
+    if (hasHighMasteryBlocker) {
       automationStatus = "needs_review";
       reasons.push("High mastery candidate requires manual review.");
     }
 
-    if (isCounterRankingV2ObservedContradiction({ mechanicalResult, observed })) {
+    if (hasObservedContradiction) {
       automationStatus = "needs_review";
       reasons.push("Observed stats strongly contradict the mechanical suggestion.");
+    }
+
+    if (hasOneWeakFactorSignal) {
+      automationStatus = "needs_review";
+      reasons.push("Single weak factor signal requires manual review.");
     }
 
     if (mechanicalResult.score >= 65 && mechanicalResult.score < 80) {
@@ -1206,6 +1419,9 @@ export function getCounterRankingV2AutomationSummary(
       }
 
       return {
+        autoApprovalCandidates:
+          summary.autoApprovalCandidates +
+          (automationStatus === "auto_approval_candidate" ? 1 : 0),
         autoApproved: summary.autoApproved + (automationStatus === "auto_approved" ? 1 : 0),
         autoSuggested: summary.autoSuggested + (automationStatus === "auto_suggested" ? 1 : 0),
         generatedSuggestions: summary.generatedSuggestions + 1,
@@ -1215,6 +1431,7 @@ export function getCounterRankingV2AutomationSummary(
       };
     },
     {
+      autoApprovalCandidates: 0,
       autoApproved: 0,
       autoSuggested: 0,
       generatedSuggestions: 0,
@@ -1334,6 +1551,8 @@ export function createCounterRankingV2MechanicalReview({
   counterChampionId,
   createdAt = null,
   enemyChampionId,
+  generatedAt = null,
+  generatedBy = null,
   manualAdjustment = 0,
   publicEligible = false,
   reviewStatus = counterRankingV2DefaultReviewStatus,
@@ -1351,6 +1570,8 @@ export function createCounterRankingV2MechanicalReview({
       | "adjustmentReason"
       | "adminReviewNote"
       | "createdAt"
+      | "generatedAt"
+      | "generatedBy"
       | "manualAdjustment"
       | "publicEligible"
       | "reviewStatus"
@@ -1372,6 +1593,8 @@ export function createCounterRankingV2MechanicalReview({
       calculatedMechanicalScore,
       manualAdjustment: boundedAdjustment,
     }),
+    generatedAt,
+    generatedBy,
     manualAdjustment: boundedAdjustment,
     publicEligible: normalizeCounterRankingV2PublicEligible({
       publicEligible,

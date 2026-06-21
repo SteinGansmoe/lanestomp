@@ -41,6 +41,7 @@ testCounterRankingV2ShadowReviewFilters();
 testCounterRankingV2PublicEligibilityControls();
 testCounterRankingV2ReviewProgressSummary();
 testCounterRankingV2PublicPreview();
+testCounterRankingV2DirectionCopy();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -208,9 +209,9 @@ function testCounterRankingV2ShadowReviewFilters() {
   assert.equal(counterPickSectionSource.includes('label: "Low sample"'), true);
   assert.equal(counterPickSectionSource.includes("filterCounterRankingV2RowsByReviewFilter"), true);
   assert.equal(counterPickSectionSource.includes("const [reviewFilter, setReviewFilter]"), true);
-  assert.equal(counterPickSectionSource.includes("filteredRows.length} of {rows.length} candidates"), true);
+  assert.equal(counterPickSectionSource.includes("filteredRows.length} of {rows.length} counter candidates"), true);
   assert.equal(counterPickSectionSource.includes("aria-pressed={isActiveFilter}"), true);
-  assert.equal(counterPickSectionSource.includes('text="No candidates match this filter."'), true);
+  assert.equal(counterPickSectionSource.includes('text="No mechanical candidates match this filter."'), true);
   assert.equal(counterPickSectionSource.includes("rows={filteredRows}"), true);
 }
 
@@ -249,9 +250,10 @@ function testCounterRankingV2ReviewProgressSummary() {
     true,
   );
   assert.equal(counterPickSectionSource.includes("Review progress"), true);
-  assert.equal(counterPickSectionSource.includes("Total candidates"), true);
-  assert.equal(counterPickSectionSource.includes("Reviewed candidates"), true);
-  assert.equal(counterPickSectionSource.includes("Unreviewed candidates"), true);
+  assert.equal(counterPickSectionSource.includes("Selected target and role"), true);
+  assert.equal(counterPickSectionSource.includes("Total counter candidates"), true);
+  assert.equal(counterPickSectionSource.includes("Reviewed counter candidates"), true);
+  assert.equal(counterPickSectionSource.includes("Unreviewed counter candidates"), true);
   assert.equal(counterPickSectionSource.includes("Verified strong counters"), true);
   assert.equal(counterPickSectionSource.includes("Verified soft counters"), true);
   assert.equal(counterPickSectionSource.includes("Needs more data"), true);
@@ -262,7 +264,9 @@ function testCounterRankingV2ReviewProgressSummary() {
 function testCounterRankingV2PublicPreview() {
   assert.equal(counterPickSectionSource.includes("getCounterRankingV2PublicPreviewRows"), true);
   assert.equal(counterPickSectionSource.includes("function CounterRankingV2PublicPreviewPanel"), true);
-  assert.equal(counterPickSectionSource.includes("Public Preview"), true);
+  assert.equal(counterPickSectionSource.includes("Public preview: approved counters against"), true);
+  assert.equal(counterPickSectionSource.includes("would appear as a"), true);
+  assert.equal(counterPickSectionSource.includes("public counter against {targetLabel}"), true);
   assert.equal(
     counterPickSectionSource.includes("Preview only — public ordering unchanged"),
     true,
@@ -274,8 +278,24 @@ function testCounterRankingV2PublicPreview() {
   assert.equal(counterPickSectionSource.includes("Low sample mechanical counter"), true);
   assert.equal(
     counterPickSectionSource.includes(
-      "No reviewed mechanical candidates are public-preview eligible yet.",
+      "No approved mechanical counters against {targetLabel} are public-preview eligible yet.",
     ),
     true,
   );
+}
+
+function testCounterRankingV2DirectionCopy() {
+  assert.equal(counterPickSectionSource.includes("Counter review target"), true);
+  assert.equal(counterPickSectionSource.includes("Find counters against"), true);
+  assert.equal(
+    counterPickSectionSource.includes(
+      "Every candidate below is evaluated as a champion picked into the selected target.",
+    ),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes("Review target"), true);
+  assert.equal(counterPickSectionSource.includes("Mechanical counters against"), true);
+  assert.equal(counterPickSectionSource.includes("Mechanical candidates into"), true);
+  assert.equal(counterPickSectionSource.includes("into {targetLabel}"), true);
+  assert.equal(counterPickSectionSource.includes("Selected target and role"), true);
 }

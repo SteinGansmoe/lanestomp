@@ -184,6 +184,8 @@ const counterRankingV2MechanicalReviewSelect = [
   "created_at",
   "enemy_champion_id",
   "final_mechanical_score",
+  "generated_at",
+  "generated_by",
   "manual_adjustment",
   "public_eligible",
   "review_status",
@@ -290,6 +292,8 @@ type CounterRankingV2MechanicalReviewRow = {
   created_at: string;
   enemy_champion_id: string;
   final_mechanical_score: number;
+  generated_at: string | null;
+  generated_by: string | null;
   manual_adjustment: number;
   public_eligible: boolean;
   review_status: CounterRankingV2ReviewStatus;
@@ -370,10 +374,34 @@ export type SaveCounterRankingV2MechanicalReviewInput = {
   role: LeagueRole;
 };
 
+export type BatchCounterRankingV2MechanicalReviewAction =
+  | "approve"
+  | "needs_review"
+  | "reject";
+
+export type BatchSaveCounterRankingV2MechanicalReviewsInput = {
+  accessToken: string;
+  action: BatchCounterRankingV2MechanicalReviewAction;
+  counterChampionIds: string[];
+  enemyChampionId: string;
+  publicEligible?: boolean;
+  role: LeagueRole;
+};
+
 export type SaveCounterRankingV2MechanicalReviewResult =
   | {
       ok: true;
       review: CounterRankingV2MechanicalReview;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type BatchSaveCounterRankingV2MechanicalReviewsResult =
+  | {
+      ok: true;
+      reviews: CounterRankingV2MechanicalReview[];
     }
   | {
       error: string;
@@ -870,6 +898,146 @@ export async function saveCounterRankingV2MechanicalReview(
   return {
     ok: true,
     review: toCounterRankingV2MechanicalReview(data),
+  };
+}
+
+export async function batchSaveCounterRankingV2MechanicalReviews(
+  input: BatchSaveCounterRankingV2MechanicalReviewsInput,
+): Promise<BatchSaveCounterRankingV2MechanicalReviewsResult> {
+  const authResult = await getAuthorizedAdmin(
+    input.accessToken,
+    "batch save Counter Ranking V2 reviews",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const normalizedEnemyChampionId = normalizeChampionIdForReview(input.enemyChampionId);
+  const normalizedCounterChampionIds = Array.from(
+    new Set(input.counterChampionIds.map(normalizeChampionIdForReview).filter(Boolean)),
+  );
+
+  if (!normalizedEnemyChampionId || normalizedCounterChampionIds.length === 0) {
+    return {
+      error: "Select an enemy champion and at least one candidate before batch saving reviews.",
+      ok: false,
+    };
+  }
+
+  if (!leagueRoles.includes(input.role)) {
+    return {
+      error: "Select a valid role before batch saving reviews.",
+      ok: false,
+    };
+  }
+
+  if (!isCounterRankingV2BatchAction(input.action)) {
+    return {
+      error: "Select a valid batch review action.",
+      ok: false,
+    };
+  }
+
+  const registryResult = await loadChampionRegistry(serviceClientResult.supabase);
+
+  if (!registryResult.ok) {
+    return registryResult;
+  }
+
+  const now = new Date().toISOString();
+  const rowsToUpsert: Array<Record<string, unknown>> = [];
+
+  for (const counterChampionId of normalizedCounterChampionIds) {
+    const resolvedChampionIds = resolveCounterRankingV2ReviewChampionIds({
+      counterChampionId,
+      enemyChampionId: normalizedEnemyChampionId,
+      registry: registryResult.registry,
+      resolveChampion: registryResult.normalizeChampionIdentifier,
+    });
+
+    if (!resolvedChampionIds.ok) {
+      console.error("Counter Ranking V2 batch review champion resolution failed", {
+        counterChampionId,
+        enemyChampionId: normalizedEnemyChampionId,
+        table: "counter_ranking_v2_mechanical_reviews",
+      });
+
+      return resolvedChampionIds;
+    }
+
+    const mechanicalResult = calculateMechanicalMatchupFit({
+      candidateChampionId: resolvedChampionIds.counterChampionId,
+      enemyChampionId: resolvedChampionIds.enemyChampionId,
+      role: input.role,
+    });
+
+    if (mechanicalResult.status !== "calculated") {
+      return {
+        error: "Counter Ranking V2 could not calculate one or more selected matchups.",
+        ok: false,
+      };
+    }
+
+    const reviewStatus = getCounterRankingV2BatchReviewStatus({
+      action: input.action,
+      mechanicalScore: mechanicalResult.score,
+    });
+
+    rowsToUpsert.push({
+      adjustment_reason: "auto_generated",
+      admin_review_note: getCounterRankingV2BatchReviewNote(input.action),
+      calculated_mechanical_score: mechanicalResult.score,
+      counter_champion_id: resolvedChampionIds.counterChampionId,
+      enemy_champion_id: resolvedChampionIds.enemyChampionId,
+      generated_at: now,
+      generated_by: "system",
+      manual_adjustment: 0,
+      public_eligible: normalizeCounterRankingV2PublicEligible({
+        publicEligible: Boolean(input.publicEligible) && input.action === "approve",
+        reviewStatus,
+      }),
+      review_status: reviewStatus,
+      reviewed_at: now,
+      reviewed_by: authResult.userId,
+      role: input.role,
+      updated_at: now,
+    });
+  }
+
+  const { data, error } = await serviceClientResult.supabase
+    .from("counter_ranking_v2_mechanical_reviews")
+    .upsert(rowsToUpsert, {
+      onConflict: "enemy_champion_id,counter_champion_id,role",
+    })
+    .select(counterRankingV2MechanicalReviewSelect)
+    .returns<CounterRankingV2MechanicalReviewRow[]>();
+
+  if (error || !data) {
+    console.error("Counter Ranking V2 batch review save failed", {
+      action: input.action,
+      error: error ? getSafeDatabaseError(error) : null,
+      hasData: Boolean(data),
+      selectedCount: normalizedCounterChampionIds.length,
+      table: "counter_ranking_v2_mechanical_reviews",
+      upsertConflictTarget: "enemy_champion_id,counter_champion_id,role",
+    });
+
+    return {
+      error: "Counter Ranking V2 batch reviews could not be saved.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    reviews: data.map(toCounterRankingV2MechanicalReview),
   };
 }
 
@@ -7121,6 +7289,8 @@ function toCounterRankingV2MechanicalReview(
     counterChampionId: row.counter_champion_id,
     createdAt: row.created_at,
     enemyChampionId: row.enemy_champion_id,
+    generatedAt: row.generated_at,
+    generatedBy: row.generated_by,
     manualAdjustment: Number(row.manual_adjustment),
     publicEligible: row.public_eligible,
     reviewStatus: row.review_status,
@@ -7129,6 +7299,43 @@ function toCounterRankingV2MechanicalReview(
     role: row.role,
     updatedAt: row.updated_at,
   });
+}
+
+function isCounterRankingV2BatchAction(
+  value: string,
+): value is BatchCounterRankingV2MechanicalReviewAction {
+  return value === "approve" || value === "needs_review" || value === "reject";
+}
+
+function getCounterRankingV2BatchReviewStatus({
+  action,
+  mechanicalScore,
+}: {
+  action: BatchCounterRankingV2MechanicalReviewAction;
+  mechanicalScore: number;
+}): CounterRankingV2ReviewStatus {
+  if (action === "reject") {
+    return "incorrect_suggestion";
+  }
+
+  if (action === "needs_review") {
+    return "needs_more_data";
+  }
+
+  return mechanicalScore >= 80 ? "verified_strong_counter" : "verified_soft_counter";
+}
+
+function getCounterRankingV2BatchReviewNote(
+  action: BatchCounterRankingV2MechanicalReviewAction,
+) {
+  switch (action) {
+    case "approve":
+      return "Batch approved from Counter Ranking V2 auto-approval candidates.";
+    case "needs_review":
+      return "Batch marked for manual review from Counter Ranking V2 auto-approval candidates.";
+    case "reject":
+      return "Batch rejected from Counter Ranking V2 auto-approval candidates.";
+  }
 }
 
 function normalizeChampionIdForReview(championId: string) {

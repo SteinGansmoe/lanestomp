@@ -52,6 +52,36 @@ const secondBatchMidChampionIds = [
   "malphite",
   "veigar",
 ];
+const finalMidCoverageChampionIds = [
+  "akshan",
+  "anivia",
+  "aurelionsol",
+  "aurora",
+  "azir",
+  "cassiopeia",
+  "corki",
+  "diana",
+  "ekko",
+  "galio",
+  "irelia",
+  "lux",
+  "mel",
+  "naafiri",
+  "neeko",
+  "qiyana",
+  "ryze",
+  "taliyah",
+  "talon",
+  "twistedfate",
+  "vladimir",
+  "xerath",
+  "ziggs",
+  "zoe",
+];
+const draftAddedMidChampionIds = [
+  ...secondBatchMidChampionIds,
+  ...finalMidCoverageChampionIds,
+];
 
 assert.deepEqual(
   counterRankingV2SupportedChampionIds,
@@ -65,8 +95,9 @@ assert.deepEqual(
     "lissandra",
     "kassadin",
     ...secondBatchMidChampionIds,
+    ...finalMidCoverageChampionIds,
   ],
-  "Counter Ranking V2 shadow profile support should include the first set and the second mid batch.",
+  "Counter Ranking V2 shadow profile support should include the first set plus expanded mid coverage.",
 );
 assert.equal(
   useReviewedMechanicalCountersPublicly,
@@ -88,6 +119,30 @@ const championRegistry = buildChampionRegistry([
   championRegistryRow("Hwei", "910", "Hwei", "hwei"),
   championRegistryRow("Malphite", "54", "Malphite", "malphite"),
   championRegistryRow("Veigar", "45", "Veigar", "veigar"),
+  championRegistryRow("Akshan", "166", "Akshan", "akshan"),
+  championRegistryRow("Anivia", "34", "Anivia", "anivia"),
+  championRegistryRow("AurelionSol", "136", "Aurelion Sol", "aurelion-sol"),
+  championRegistryRow("Aurora", "893", "Aurora", "aurora"),
+  championRegistryRow("Azir", "268", "Azir", "azir"),
+  championRegistryRow("Cassiopeia", "69", "Cassiopeia", "cassiopeia"),
+  championRegistryRow("Corki", "42", "Corki", "corki"),
+  championRegistryRow("Diana", "131", "Diana", "diana"),
+  championRegistryRow("Ekko", "245", "Ekko", "ekko"),
+  championRegistryRow("Galio", "3", "Galio", "galio"),
+  championRegistryRow("Irelia", "39", "Irelia", "irelia"),
+  championRegistryRow("Lux", "99", "Lux", "lux"),
+  championRegistryRow("Mel", "800", "Mel", "mel"),
+  championRegistryRow("Naafiri", "950", "Naafiri", "naafiri"),
+  championRegistryRow("Neeko", "518", "Neeko", "neeko"),
+  championRegistryRow("Qiyana", "246", "Qiyana", "qiyana"),
+  championRegistryRow("Ryze", "13", "Ryze", "ryze"),
+  championRegistryRow("Taliyah", "163", "Taliyah", "taliyah"),
+  championRegistryRow("Talon", "91", "Talon", "talon"),
+  championRegistryRow("TwistedFate", "4", "Twisted Fate", "twisted-fate"),
+  championRegistryRow("Vladimir", "8", "Vladimir", "vladimir"),
+  championRegistryRow("Xerath", "101", "Xerath", "xerath"),
+  championRegistryRow("Ziggs", "115", "Ziggs", "ziggs"),
+  championRegistryRow("Zoe", "142", "Zoe", "zoe"),
   championRegistryRow("Vex", "711", "Vex", "vex"),
   championRegistryRow("Yone", "777", "Yone", "yone"),
   championRegistryRow("Yasuo", "157", "Yasuo", "yasuo"),
@@ -114,6 +169,16 @@ assert.equal(
   "LeBlanc should resolve to the canonical Riot data id used by league_champions.",
 );
 assert.equal(
+  normalizeChampionIdentifier("aurelionsol", championRegistry)?.canonicalKey,
+  "AurelionSol",
+  "Lowercase Aurelion Sol profile IDs should resolve to canonical league_champions IDs.",
+);
+assert.equal(
+  normalizeChampionIdentifier("twistedfate", championRegistry)?.canonicalKey,
+  "TwistedFate",
+  "Lowercase Twisted Fate profile IDs should resolve to canonical league_champions IDs.",
+);
+assert.equal(
   normalizeChampionIdentifier("definitely-not-a-champion", championRegistry),
   null,
   "Invalid review champion IDs should fail normalization before database writes.",
@@ -134,11 +199,11 @@ for (const championId of counterRankingV2SupportedChampionIds) {
   }
 }
 
-for (const championId of secondBatchMidChampionIds) {
+for (const championId of draftAddedMidChampionIds) {
   const profile = getCounterRankingV2ChampionProfile(championId);
   const canonicalChampionId = normalizeChampionIdentifier(championId, championRegistry)?.canonicalKey;
 
-  assert.ok(profile, `${championId} should load as a second-batch profile.`);
+  assert.ok(profile, `${championId} should load as an expanded mid profile.`);
   assert.equal(profile.reviewStatus, "draft", `${championId} should remain draft until reviewed.`);
   assert.ok(canonicalChampionId, `${championId} should resolve to a canonical champion id.`);
   assert.ok(
@@ -168,6 +233,18 @@ for (const championId of secondBatchMidChampionIds) {
     canonicalMatchup.status,
     "calculated",
     `${canonicalChampionId} should score through canonical id normalization.`,
+  );
+}
+
+const finalMidCoverageRows = generateCounterRankingV2MechanicalSuggestionsForRole({
+  enemyChampionId: "yone",
+  observedByChampionId: new Map(),
+  role: "mid",
+});
+for (const championId of finalMidCoverageChampionIds) {
+  assert.ok(
+    finalMidCoverageRows.some((row) => row.candidateChampionId === championId),
+    `${championId} should appear as a Shadow Ranking candidate when Yone Mid is selected.`,
   );
 }
 
@@ -475,13 +552,27 @@ const highScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
 
 assert.equal(
   highScoreSuggestion?.automationStatus,
-  "auto_suggested",
-  "High-score reviewed-profile matchups should generate auto-suggested candidates.",
+  "auto_approval_candidate",
+  "Safe high-score reviewed-profile matchups should become auto-approval candidates.",
 );
 assert.equal(
   highScoreSuggestion?.suggestedStrength,
   "strong_counter",
   "Scores from 80-89 should be suggested as strong counters.",
+);
+
+const autoSuggestedScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    score: 82,
+  },
+  observed: null,
+});
+
+assert.equal(
+  autoSuggestedScoreSuggestion?.automationStatus,
+  "auto_suggested",
+  "Reviewed-profile scores from 80-84 should remain auto-suggested instead of auto-approval candidates.",
 );
 
 const mediumScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
@@ -547,6 +638,42 @@ assert.equal(
   contradictedSuggestion?.automationStatus,
   "needs_review",
   "Observed stats that strongly contradict a suggestion should require review.",
+);
+
+const oneWeakFactorSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    factors: [testMechanicalFactor({ contribution: 4 })],
+    score: 88,
+  },
+  observed: null,
+});
+
+assert.equal(
+  oneWeakFactorSuggestion?.automationStatus,
+  "needs_review",
+  "Auto approval should be blocked when the score is based on only one weak factor.",
+);
+
+const manuallyRejectedSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    score: 88,
+  },
+  observed: null,
+  review: createCounterRankingV2MechanicalReview({
+    calculatedMechanicalScore: 88,
+    counterChampionId: "vex",
+    enemyChampionId: "yone",
+    reviewStatus: "incorrect_suggestion",
+    role: "mid",
+  }),
+});
+
+assert.equal(
+  manuallyRejectedSuggestion?.automationStatus,
+  "manual_rejected",
+  "Manually rejected suggestions should never become auto-approval candidates.",
 );
 
 assert.equal(
@@ -839,6 +966,7 @@ assert.deepEqual(
 assert.deepEqual(
   getCounterRankingV2AutomationSummary(reviewFilterRows),
   {
+    autoApprovalCandidates: 0,
     autoApproved: 0,
     autoSuggested: 0,
     generatedSuggestions: 7,
@@ -1076,6 +1204,13 @@ const publicMechanicalReviewPolicyMigration = readFileSync(
   ),
   "utf8",
 );
+const autoApprovalAuditMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260621193000_add_counter_ranking_v2_auto_approval_audit.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const counterPickActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
@@ -1114,6 +1249,21 @@ assert.match(
   publicMechanicalReviewPolicyMigration,
   /public_eligible = true[\s\S]*review_status in \('verified_strong_counter', 'verified_soft_counter'\)/,
   "Public review table reads should be restricted to eligible verified counter rows.",
+);
+assert.match(
+  autoApprovalAuditMigration,
+  /add column if not exists generated_at timestamptz/,
+  "Auto-approval audit migration should add generated_at to mechanical review rows.",
+);
+assert.match(
+  autoApprovalAuditMigration,
+  /add column if not exists generated_by text/,
+  "Auto-approval audit migration should add generated_by to mechanical review rows.",
+);
+assert.match(
+  autoApprovalAuditMigration,
+  /'auto_generated'/,
+  "Auto-approval audit migration should allow auto_generated adjustment reasons.",
 );
 assert.doesNotMatch(
   mechanicalReviewMigration,
@@ -1166,6 +1316,26 @@ assert.match(
   "Review saving should log the exact server-side database error.",
 );
 assert.match(
+  counterPickActionsSource,
+  /batchSaveCounterRankingV2MechanicalReviews/,
+  "The admin action should expose a batch review save action for auto-approval candidates.",
+);
+assert.match(
+  counterPickActionsSource,
+  /generated_by: "system"/,
+  "Batch review saves should stamp generated_by as system.",
+);
+assert.match(
+  counterPickActionsSource,
+  /adjustment_reason: "auto_generated"/,
+  "Batch review saves should use the auto_generated adjustment reason.",
+);
+assert.match(
+  counterPickActionsSource,
+  /publicEligible: Boolean\(input\.publicEligible\) && input\.action === "approve"/,
+  "Batch review saves should keep public eligibility default-off unless explicitly selected for approval.",
+);
+assert.match(
   counterPickAdminSectionSource,
   /generateCounterRankingV2MechanicalSuggestionsForRole/,
   "The admin Shadow Ranking panel should generate suggestions for all supported role profiles.",
@@ -1194,6 +1364,16 @@ assert.match(
   counterPickAdminSectionSource,
   /Weak signal/,
   "The admin factor cards should flag weak mechanical signal rows.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Auto-approval batch review/,
+  "The admin Shadow Ranking panel should expose batch controls for auto-approval candidates.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Public eligible on approve/,
+  "Batch approval public eligibility should be an explicit UI choice.",
 );
 
 console.log("Counter Ranking V2 shadow-mode tests passed.");
