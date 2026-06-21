@@ -40,6 +40,7 @@ testCounterRankingV2ShadowCandidateAccordion();
 testCounterRankingV2ShadowReviewFilters();
 testCounterRankingV2PublicEligibilityControls();
 testCounterRankingV2ReviewProgressSummary();
+testCounterRankingV2PublicPreview();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -256,4 +257,25 @@ function testCounterRankingV2ReviewProgressSummary() {
   assert.equal(counterPickSectionSource.includes("Needs more data"), true);
   assert.equal(counterPickSectionSource.includes("Incorrect suggestions"), true);
   assert.equal(counterPickSectionSource.includes("Public eligible"), true);
+}
+
+function testCounterRankingV2PublicPreview() {
+  assert.equal(counterPickSectionSource.includes("getCounterRankingV2PublicPreviewRows"), true);
+  assert.equal(counterPickSectionSource.includes("function CounterRankingV2PublicPreviewPanel"), true);
+  assert.equal(counterPickSectionSource.includes("Public Preview"), true);
+  assert.equal(
+    counterPickSectionSource.includes("Preview only — public ordering unchanged"),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes("Current public ranking"), true);
+  assert.equal(counterPickSectionSource.includes("Final reviewed score"), true);
+  assert.equal(counterPickSectionSource.includes("Observed games"), true);
+  assert.equal(counterPickSectionSource.includes("Confidence"), true);
+  assert.equal(counterPickSectionSource.includes("Low sample design counter"), true);
+  assert.equal(
+    counterPickSectionSource.includes(
+      "No reviewed mechanical candidates are public-preview eligible yet.",
+    ),
+    true,
+  );
 }

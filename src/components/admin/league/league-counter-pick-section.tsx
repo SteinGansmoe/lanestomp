@@ -47,6 +47,7 @@ import {
   filterCounterRankingV2RowsByReviewFilter,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
@@ -59,6 +60,7 @@ import {
   type CounterRankingV2MechanicalReview,
   type CounterRankingV2ObservedRankSnapshot,
   type CounterRankingV2ProfileStatus,
+  type CounterRankingV2PublicPreviewRow,
   type CounterRankingV2ReviewFilter,
   type CounterRankingV2ReviewProgressSummary,
   type CounterRankingV2ReviewStatus,
@@ -1461,6 +1463,14 @@ function CounterRankingV2ShadowPanel({
     () => getCounterRankingV2ReviewProgressSummary(rows),
     [rows],
   );
+  const publicPreviewRows = useMemo(
+    () =>
+      getCounterRankingV2PublicPreviewRows({
+        minimumGames: publicCounterPickMinimumRankedGames,
+        rows,
+      }),
+    [rows],
+  );
   const filteredRows = useMemo(
     () =>
       filterCounterRankingV2RowsByReviewFilter({
@@ -1573,6 +1583,10 @@ function CounterRankingV2ShadowPanel({
               <EmptyState text="No review rows have been saved for this champion and role yet." />
             ) : null}
             <CounterRankingV2ReviewProgressSummaryPanel summary={reviewProgressSummary} />
+            <CounterRankingV2PublicPreviewPanel
+              championsById={championsById}
+              previewRows={publicPreviewRows}
+            />
             <div className="rounded-lg border border-white/10 bg-black/15 p-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-zinc-100">Review filters</p>
@@ -1705,6 +1719,91 @@ function CounterRankingV2ReviewProgressSummaryPanel({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CounterRankingV2PublicPreviewPanel({
+  championsById,
+  previewRows,
+}: {
+  championsById: Map<string, AdminLeagueChampion>;
+  previewRows: CounterRankingV2PublicPreviewRow[];
+}) {
+  return (
+    <div className="rounded-lg border border-emerald-300/15 bg-emerald-500/[0.05] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-emerald-100">Public Preview</p>
+        <Badge className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100">
+          Preview only — public ordering unchanged
+        </Badge>
+      </div>
+
+      {previewRows.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {previewRows.map((previewRow) => {
+            const candidate = championsById.get(previewRow.candidateChampionId) ?? null;
+
+            return (
+              <li
+                className="rounded-md border border-white/10 bg-black/15 p-3"
+                key={previewRow.candidateChampionId}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {candidate ? (
+                      <Image
+                        alt=""
+                        className="size-10 rounded-md bg-white/10 object-cover"
+                        height={40}
+                        src={getChampionIconPath(candidate)}
+                        width={40}
+                      />
+                    ) : (
+                      <div className="size-10 rounded-md bg-white/10" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">
+                        {candidate?.name ?? previewRow.candidateChampionId}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {formatCounterRankingV2ReviewStatus(previewRow.reviewStatus)}
+                      </p>
+                    </div>
+                  </div>
+                  {previewRow.isLowSampleDesignCounter ? (
+                    <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
+                      Low sample design counter
+                    </Badge>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <CounterRankingV2Metric
+                    label="Current public ranking"
+                    value={
+                      previewRow.currentPublicRank ? `#${previewRow.currentPublicRank}` : "Unranked"
+                    }
+                  />
+                  <CounterRankingV2Metric
+                    label="Final reviewed score"
+                    value={String(previewRow.finalReviewedScore)}
+                  />
+                  <CounterRankingV2Metric
+                    label="Observed games"
+                    value={formatNullableNumber(previewRow.observedGames)}
+                  />
+                  <CounterRankingV2Metric label="Confidence" value={previewRow.confidenceLabel} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="mt-3 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-500">
+          No reviewed mechanical candidates are public-preview eligible yet.
+        </p>
+      )}
     </div>
   );
 }

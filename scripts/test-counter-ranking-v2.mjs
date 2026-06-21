@@ -19,6 +19,7 @@ const {
   filterCounterRankingV2RowsByReviewFilter,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
   isCounterRankingV2ManualAdjustmentInBounds,
   isCounterRankingV2PublicCandidateEligible,
@@ -526,6 +527,34 @@ assert.deepEqual(
   },
   "Review progress summary should count review states and public eligibility for the selected matchup.",
 );
+
+const publicPreviewRows = getCounterRankingV2PublicPreviewRows({
+  minimumGames: 5,
+  rows: reviewFilterRows,
+});
+
+assert.deepEqual(
+  publicPreviewRows.map((row) => row.candidateChampionId),
+  ["vex"],
+  "Public Preview should include only reviewed mechanical candidates that would be eligible.",
+);
+assert.deepEqual(
+  {
+    confidenceLabel: publicPreviewRows.at(0)?.confidenceLabel,
+    currentPublicRank: publicPreviewRows.at(0)?.currentPublicRank,
+    finalReviewedScore: publicPreviewRows.at(0)?.finalReviewedScore,
+    isLowSampleDesignCounter: publicPreviewRows.at(0)?.isLowSampleDesignCounter,
+    observedGames: publicPreviewRows.at(0)?.observedGames,
+  },
+  {
+    confidenceLabel: "No data",
+    currentPublicRank: null,
+    finalReviewedScore: 80,
+    isLowSampleDesignCounter: true,
+    observedGames: null,
+  },
+  "Public Preview rows should expose preview-only public rank, score, games, confidence, and low-sample design labels.",
+);
 assert.equal(
   isCounterRankingV2ShadowCandidateEligible({
     minimumGames: 5,
@@ -544,6 +573,16 @@ assert.equal(
   }),
   false,
   "Public candidate logic must not change while reviewed mechanical counters are disabled.",
+);
+assert.equal(
+  isCounterRankingV2PublicCandidateEligible({
+    minimumGames: 5,
+    observedGames: publicPreviewRows.at(0)?.observedGames ?? 0,
+    review: reviewFilterRows.find((row) => row.candidateChampionId === "vex")?.review ?? null,
+    useReviewedMechanicalCounters: false,
+  }),
+  false,
+  "Public Preview data should not affect public API/output while the feature flag is disabled.",
 );
 assert.equal(
   isCounterRankingV2PublicCandidateEligible({

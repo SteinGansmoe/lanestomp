@@ -151,6 +151,16 @@ export type CounterRankingV2ReviewProgressSummary = {
   verifiedStrongCounters: number;
 };
 
+export type CounterRankingV2PublicPreviewRow = {
+  candidateChampionId: string;
+  confidenceLabel: string;
+  currentPublicRank: number | null;
+  finalReviewedScore: number;
+  isLowSampleDesignCounter: boolean;
+  observedGames: number | null;
+  reviewStatus: CounterRankingV2ReviewStatus;
+};
+
 type CounterRankingV2TraitInteraction = {
   candidateStrength: CounterRankingV2TraitId;
   enemyVulnerability: CounterRankingV2TraitId;
@@ -763,6 +773,40 @@ export function getCounterRankingV2ReviewProgressSummary(
       verifiedStrongCounters: 0,
     },
   );
+}
+
+export function getCounterRankingV2PublicPreviewRows({
+  minimumGames,
+  rows,
+}: {
+  minimumGames: number;
+  rows: CounterRankingV2ComparisonRow[];
+}): CounterRankingV2PublicPreviewRow[] {
+  return rows
+    .filter((row) => isCounterRankingV2ReviewPublicEligible(row.review))
+    .map((row) => ({
+      candidateChampionId: row.candidateChampionId,
+      confidenceLabel: row.observed?.confidence.shortLabel ?? "No data",
+      currentPublicRank: row.observed?.rank ?? null,
+      finalReviewedScore: row.review?.finalMechanicalScore ?? 0,
+      isLowSampleDesignCounter: (row.observed?.games ?? 0) < minimumGames,
+      observedGames: row.observed?.games ?? null,
+      reviewStatus: row.review?.reviewStatus ?? "unreviewed",
+    }))
+    .sort((left, right) => {
+      if (left.finalReviewedScore !== right.finalReviewedScore) {
+        return right.finalReviewedScore - left.finalReviewedScore;
+      }
+
+      const leftRank = left.currentPublicRank ?? Number.POSITIVE_INFINITY;
+      const rightRank = right.currentPublicRank ?? Number.POSITIVE_INFINITY;
+
+      if (leftRank !== rightRank) {
+        return leftRank - rightRank;
+      }
+
+      return left.candidateChampionId.localeCompare(right.candidateChampionId);
+    });
 }
 
 export function clampCounterRankingV2ManualAdjustment(adjustment: number) {
