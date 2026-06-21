@@ -379,6 +379,116 @@ async function testPublicCounterPickDirectionMapping() {
   assert.equal("calculatedMechanicalScore" in enabledAnnie, false);
   assert.equal("manualAdjustment" in enabledAnnie, false);
   assert.equal("finalReviewedScore" in enabledAnnie, false);
+
+  const melFizzReview = reviewedMechanicalCounter({
+    counterChampionId: "Fizz",
+    enemyChampionId: "Mel",
+    publicEligible: true,
+    reviewStatus: "verified_strong_counter",
+  });
+  const melBuckets = getPublicCounterResultsForSelectedChampionStats([], "Mel", {
+    reviewedMechanicalCounters: [melFizzReview],
+    useReviewedMechanicalCounters: true,
+  });
+  const fizzBuckets = getPublicCounterResultsForSelectedChampionStats([], "Fizz", {
+    reviewedMechanicalCounters: [melFizzReview],
+    useReviewedMechanicalCounters: true,
+  });
+  const disabledFizzBuckets = getPublicCounterResultsForSelectedChampionStats([], "Fizz", {
+    reviewedMechanicalCounters: [melFizzReview],
+    useReviewedMechanicalCounters: false,
+  });
+
+  assert.deepEqual(
+    melBuckets.countersIntoSelectedChampion.map((result) => result.listedChampionId),
+    ["Fizz"],
+    "Mel Mid reviewed row should render Fizz in Best Counters.",
+  );
+  assert.deepEqual(
+    fizzBuckets.selectedChampionGoodInto.map((result) => result.listedChampionId),
+    ["Mel"],
+    "The same reviewed row should render Mel in Fizz Bad Into.",
+  );
+  assert.deepEqual(
+    fizzBuckets.countersIntoSelectedChampion.map((result) => result.listedChampionId),
+    [],
+    "The inverse reviewed row should not appear in Fizz Best Counters.",
+  );
+  assert.deepEqual(
+    disabledFizzBuckets.selectedChampionGoodInto.map((result) => result.listedChampionId),
+    [],
+    "Feature flag disabled should hide inverse reviewed rows.",
+  );
+  assert.equal(fizzBuckets.selectedChampionGoodInto[0].games, 0);
+  assert.equal(fizzBuckets.selectedChampionGoodInto[0].statistics.winRate, null);
+  assert.equal(
+    hasPublicCounterResultLabel(
+      fizzBuckets.selectedChampionGoodInto[0].statistics,
+      "strong_stats_design_counter",
+    ),
+    true,
+  );
+  assert.equal(
+    hasPublicCounterResultLabel(fizzBuckets.selectedChampionGoodInto[0].statistics, "low_sample"),
+    true,
+  );
+
+  const observedFizzIntoMelBuckets = getPublicCounterResultsForSelectedChampionStats(
+    [
+      storedStat({
+        counterChampionId: "Mel",
+        enemyChampionId: "Fizz",
+        games: 220,
+        winRate: 55,
+      }),
+    ],
+    "Fizz",
+    {
+      reviewedMechanicalCounters: [melFizzReview],
+      useReviewedMechanicalCounters: true,
+    },
+  );
+  const observedFizzMelRows = observedFizzIntoMelBuckets.selectedChampionGoodInto.filter(
+    (result) => result.listedChampionId === "Mel",
+  );
+
+  assert.equal(
+    observedFizzMelRows.length,
+    1,
+    "Existing inverse observed rows should be labeled, not duplicated.",
+  );
+  assert.equal(observedFizzMelRows[0].games, 220);
+  assert.equal(observedFizzMelRows[0].statistics.winRate, 45);
+  assert.equal(
+    hasPublicCounterResultLabel(
+      observedFizzMelRows[0].statistics,
+      "strong_stats_design_counter",
+    ),
+    true,
+  );
+
+  const lowSampleFizzIntoMelBuckets = getPublicCounterResultsForSelectedChampionStats(
+    [
+      storedStat({
+        counterChampionId: "Mel",
+        enemyChampionId: "Fizz",
+        games: 4,
+        winRate: 55,
+      }),
+    ],
+    "Fizz",
+    {
+      reviewedMechanicalCounters: [melFizzReview],
+      useReviewedMechanicalCounters: true,
+    },
+  );
+  const lowSampleFizzMel = lowSampleFizzIntoMelBuckets.selectedChampionGoodInto.find(
+    (result) => result.listedChampionId === "Mel",
+  );
+
+  assert.ok(lowSampleFizzMel);
+  assert.equal(lowSampleFizzMel.games, 4);
+  assert.equal(hasPublicCounterResultLabel(lowSampleFizzMel.statistics, "low_sample"), true);
 }
 
 async function testReviewedMechanicalCountersBypassPublicMinimumGames() {
@@ -505,21 +615,29 @@ async function testReviewedMechanicalCountersBypassPublicMinimumGames() {
   );
 
   assert.match(providerSource, /fetchCounterPickStatsByEnemyRoleAndCounters/);
+  assert.match(providerSource, /fetchCounterPickStatsByCounterAndRole/);
   assert.match(providerSource, /import \{ supabase \} from "@\/src\/lib\/supabase"/);
   assert.match(providerSource, /client = supabase/);
   assert.match(providerSource, /counterChampionIds:\s*reviewedMechanicalCounters\.map/);
+  assert.match(providerSource, /inverseReviewedMechanicalCounters/);
+  assert.match(providerSource, /orientCounterPickStatForSelectedChampionGoodInto/);
   assert.match(providerSource, /mergeCounterPickStatsForPublicResults/);
   assert.match(providerSource, /\.eq\("role", role\)/);
   assert.doesNotMatch(providerSource, /\.eq\("enemy_champion_id", enemyChampion\)/);
   assert.match(providerSource, /console\.info\("\[Counter Pick\] reviewed mechanical counter public flow"/);
   assert.match(providerSource, /reviewRowsForSelectedEnemyBeforePublicFiltering/);
+  assert.match(providerSource, /reviewRowsForSelectedCounterBeforePublicFiltering/);
   assert.match(providerSource, /fetchedReviewRowChampionIds/);
   assert.match(providerSource, /mergedBestCounterIdsBeforeFinalSorting/);
+  assert.match(providerSource, /mergedGoodIntoIdsBeforeFinalSorting/);
+  assert.match(providerSource, /finalPublicGoodIntoIds/);
   assert.match(statSource, /\.in\("counter_champion_id", counterChampionIds\)/);
   assert.match(selectorSource, /getMechanicalCounterPublicSortValue/);
   assert.match(selectorSource, /hasMechanicalCounterPublicLabel\(row\.stats\)/);
   assert.match(selectorSource, /finalFullBestCounterIdsBeforeSlicing/);
   assert.match(selectorSource, /finalVisibleBestCounterIdsAfterSlicing/);
+  assert.match(selectorSource, /finalFullBadIntoIdsBeforeSlicing/);
+  assert.match(selectorSource, /finalVisibleBadIntoIdsAfterSlicing/);
   assert.match(selectorSource, /vexPresentBeforeSlicing/);
   assert.match(selectorSource, /vexPresentAfterSlicing/);
   assert.match(rankingSource, /counterRankingV2PublicApprovedReviewStatuses/);

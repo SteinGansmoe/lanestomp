@@ -200,6 +200,11 @@ function testCounterRankingV2ShadowReviewFilters() {
     true,
   );
   assert.equal(counterPickSectionSource.includes('label: "All"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Auto suggested"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Auto approval candidate"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Needs review automation"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Manual approved"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Manual rejected"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Unreviewed"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Verified strong counter"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Verified soft counter"'), true);

@@ -564,7 +564,7 @@ assert.equal(
 const autoSuggestedScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
     ...vexIntoYone,
-    score: 82,
+    score: 75,
   },
   observed: null,
 });
@@ -572,13 +572,13 @@ const autoSuggestedScoreSuggestion = generateCounterRankingV2MechanicalSuggestio
 assert.equal(
   autoSuggestedScoreSuggestion?.automationStatus,
   "auto_suggested",
-  "Reviewed-profile scores from 80-84 should remain auto-suggested instead of auto-approval candidates.",
+  "Reviewed-profile scores from 75-84 should remain auto-suggested instead of auto-approval candidates.",
 );
 
 const mediumScoreSuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
     ...vexIntoYone,
-    score: 70,
+    score: 74,
   },
   observed: null,
 });
@@ -591,7 +591,7 @@ assert.equal(
 assert.equal(
   mediumScoreSuggestion?.suggestedStrength,
   "soft_counter",
-  "Scores from 65-79 should be suggested as soft counters.",
+  "Scores from 65-79 should still be suggested as soft counters.",
 );
 
 const draftProfileSuggestion = generateCounterRankingV2MechanicalSuggestion({
@@ -1369,6 +1369,21 @@ assert.match(
   counterPickAdminSectionSource,
   /Auto-approval batch review/,
   "The admin Shadow Ranking panel should expose batch controls for auto-approval candidates.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Generated suggestion/,
+  "Generated suggestion panels should clearly identify automation output.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Blockers and reasons/,
+  "Generated suggestion panels should label blockers and reasons.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Top mechanical reasons/,
+  "Generated suggestion panels should label top mechanical reasons.",
 );
 assert.match(
   counterPickAdminSectionSource,

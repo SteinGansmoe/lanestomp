@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   calculateCounterPickStatTier,
+  fetchCounterPickStatsByCounterAndRole,
   fetchCounterPickStatsByEnemyRoleAndCounters,
   fetchCounterPickStatsByEnemyAndRole,
   type CounterPickStat,
@@ -69,6 +70,9 @@ type CounterRankingV2PublicReviewRow = {
 type PublicEligibleCounterRankingV2ReviewsResult = {
   fetchedReviewRows: CounterRankingV2PublicReviewRow[];
   filteredReviewRows: CounterRankingV2PublicReviewRow[];
+  inverseFilteredReviewRows: CounterRankingV2PublicReviewRow[];
+  inverseReviewedMechanicalCounters: PublicReviewedMechanicalCounter[];
+  selectedCounterReviewRowsBeforePublicFiltering: CounterRankingV2PublicReviewRow[];
   selectedEnemyReviewRowsBeforePublicFiltering: CounterRankingV2PublicReviewRow[];
   reviewedMechanicalCounters: PublicReviewedMechanicalCounter[];
 };
@@ -197,6 +201,7 @@ export async function fetchCounterPickStatsForEnemy({
       })
     : createEmptyPublicEligibleCounterRankingV2ReviewsResult();
   const reviewedMechanicalCounters = reviewResult.reviewedMechanicalCounters;
+  const inverseReviewedMechanicalCounters = reviewResult.inverseReviewedMechanicalCounters;
   const reviewedMechanicalCounterStats =
     reviewedMechanicalCounters.length > 0
       ? await fetchCounterPickStatsByEnemyRoleAndCounters({
@@ -210,15 +215,44 @@ export async function fetchCounterPickStatsForEnemy({
           role,
         })
       : { error: null, stats: [] };
+  const inverseReviewedMechanicalCounterStats =
+    inverseReviewedMechanicalCounters.length > 0
+      ? await fetchCounterPickStatsByCounterAndRole({
+          client,
+          counterChampionId: enemyChampion,
+          patch,
+          rankBracket: "all",
+          role,
+        })
+      : { error: null, stats: [] };
+  const inverseReviewedMechanicalCounterEnemyIds = new Set(
+    inverseReviewedMechanicalCounters.map((counter) =>
+      normalizeCounterPickStatsKey(counter.enemyChampionId),
+    ),
+  );
+  const orientedInverseReviewedMechanicalCounterStats =
+    inverseReviewedMechanicalCounterStats.stats
+      .filter((stat) =>
+        inverseReviewedMechanicalCounterEnemyIds.has(
+          normalizeCounterPickStatsKey(stat.enemy_champion_id),
+        ),
+      )
+      .map((stat) => orientCounterPickStatForSelectedChampionGoodInto(stat, enemyChampion));
   const statsForPublicResults = mergeCounterPickStatsForPublicResults(
     counteredByResult.stats,
-    reviewedMechanicalCounterStats.stats,
+    [
+      ...reviewedMechanicalCounterStats.stats,
+      ...orientedInverseReviewedMechanicalCounterStats,
+    ],
   );
   const publicResults = getPublicCounterResultsForSelectedChampionStats(
     statsForPublicResults,
     enemyChampion,
     {
-      reviewedMechanicalCounters,
+      reviewedMechanicalCounters: [
+        ...reviewedMechanicalCounters,
+        ...inverseReviewedMechanicalCounters,
+      ],
       useReviewedMechanicalCounters,
     },
   );
@@ -229,7 +263,17 @@ export async function fetchCounterPickStatsForEnemy({
     finalPublicCounterIds: publicResults.countersIntoSelectedChampion.map(
       (result) => result.listedChampionId,
     ),
+    finalPublicGoodIntoIds: publicResults.selectedChampionGoodInto.map(
+      (result) => result.listedChampionId,
+    ),
+    inverseFilteredReviewRows: reviewResult.inverseFilteredReviewRows,
+    inverseReviewedCounterChampionIds: inverseReviewedMechanicalCounters.map(
+      (counter) => counter.enemyChampionId,
+    ),
     mergedBestCounterIdsBeforeFinalSorting: statsForPublicResults.map(
+      (stat) => stat.counter_champion_id,
+    ),
+    mergedGoodIntoIdsBeforeFinalSorting: orientedInverseReviewedMechanicalCounterStats.map(
       (stat) => stat.counter_champion_id,
     ),
     reviewedCounterChampionIds: reviewedMechanicalCounters.map(
@@ -241,8 +285,12 @@ export async function fetchCounterPickStatsForEnemy({
     ),
     role,
     selectedEnemyChampionId: enemyChampion,
+    selectedCounterReviewRowsBeforePublicFiltering:
+      reviewResult.selectedCounterReviewRowsBeforePublicFiltering,
     selectedEnemyReviewRowsBeforePublicFiltering:
       reviewResult.selectedEnemyReviewRowsBeforePublicFiltering,
+    statsRowsFetchedForInverseReviewedCounterIds:
+      inverseReviewedMechanicalCounterStats.stats.map(getCounterPickStatDebugSnapshot),
     statsRowsFetchedForReviewedCounterIds: reviewedMechanicalCounterStats.stats.map(
       getCounterPickStatDebugSnapshot,
     ),
@@ -321,16 +369,32 @@ async function fetchPublicEligibleCounterRankingV2Reviews({
   const selectedEnemyReviewRowsBeforePublicFiltering = data.filter((row) =>
     hasMatchingCounterRankingV2ReviewEnemy(row, enemyChampion),
   );
+  const selectedCounterReviewRowsBeforePublicFiltering = data.filter((row) =>
+    hasMatchingCounterRankingV2ReviewCounter(row, enemyChampion),
+  );
   const filteredReviewRows = selectedEnemyReviewRowsBeforePublicFiltering.filter((row) =>
+    isPublicEligibleCounterRankingV2ReviewRow(row),
+  );
+  const inverseFilteredReviewRows = selectedCounterReviewRowsBeforePublicFiltering.filter((row) =>
     isPublicEligibleCounterRankingV2ReviewRow(row),
   );
 
   return {
     fetchedReviewRows: data,
     filteredReviewRows,
+    inverseFilteredReviewRows,
+    inverseReviewedMechanicalCounters: inverseFilteredReviewRows.map((row) => ({
+      counterChampionId: row.counter_champion_id,
+      direction: "selected_good_into",
+      enemyChampionId: row.enemy_champion_id,
+      publicEligible: row.public_eligible,
+      reviewStatus: row.review_status,
+    })),
+    selectedCounterReviewRowsBeforePublicFiltering,
     selectedEnemyReviewRowsBeforePublicFiltering,
     reviewedMechanicalCounters: filteredReviewRows.map((row) => ({
       counterChampionId: row.counter_champion_id,
+      direction: "counter_into_selected",
       enemyChampionId: row.enemy_champion_id,
       publicEligible: row.public_eligible,
       reviewStatus: row.review_status,
@@ -342,6 +406,9 @@ function createEmptyPublicEligibleCounterRankingV2ReviewsResult(): PublicEligibl
   return {
     fetchedReviewRows: [],
     filteredReviewRows: [],
+    inverseFilteredReviewRows: [],
+    inverseReviewedMechanicalCounters: [],
+    selectedCounterReviewRowsBeforePublicFiltering: [],
     selectedEnemyReviewRowsBeforePublicFiltering: [],
     reviewedMechanicalCounters: [],
   };
@@ -355,6 +422,14 @@ function hasMatchingCounterRankingV2ReviewEnemy(
     normalizeCounterPickStatsKey(enemyChampion);
 }
 
+function hasMatchingCounterRankingV2ReviewCounter(
+  row: CounterRankingV2PublicReviewRow,
+  counterChampion: string,
+) {
+  return normalizeCounterPickStatsKey(row.counter_champion_id) ===
+    normalizeCounterPickStatsKey(counterChampion);
+}
+
 function isPublicEligibleCounterRankingV2ReviewRow(row: CounterRankingV2PublicReviewRow) {
   return (
     row.public_eligible &&
@@ -362,6 +437,20 @@ function isPublicEligibleCounterRankingV2ReviewRow(row: CounterRankingV2PublicRe
       row.review_status as (typeof counterRankingV2PublicApprovedReviewStatuses)[number],
     )
   );
+}
+
+function orientCounterPickStatForSelectedChampionGoodInto(
+  stat: CounterPickStat,
+  selectedChampionId: string,
+): CounterPickStat {
+  return {
+    ...stat,
+    counter_champion_id: stat.enemy_champion_id,
+    enemy_champion_id: selectedChampionId,
+    losses: stat.wins,
+    win_rate: Number((100 - Number(stat.win_rate)).toFixed(2)),
+    wins: stat.losses,
+  };
 }
 
 function getReviewedCountersWithoutStats(
@@ -396,24 +485,36 @@ function logPublicReviewedMechanicalCountersDebug({
   featureFlagValue,
   filteredReviewRows,
   finalPublicCounterIds,
+  finalPublicGoodIntoIds,
+  inverseFilteredReviewRows,
+  inverseReviewedCounterChampionIds,
   mergedBestCounterIdsBeforeFinalSorting,
+  mergedGoodIntoIdsBeforeFinalSorting,
   reviewedCounterChampionIds,
   reviewedCountersRenderedWithoutStats,
   role,
   selectedEnemyChampionId,
+  selectedCounterReviewRowsBeforePublicFiltering,
   selectedEnemyReviewRowsBeforePublicFiltering,
+  statsRowsFetchedForInverseReviewedCounterIds,
   statsRowsFetchedForReviewedCounterIds,
 }: {
   fetchedReviewRows: CounterRankingV2PublicReviewRow[];
   featureFlagValue: boolean;
   filteredReviewRows: CounterRankingV2PublicReviewRow[];
   finalPublicCounterIds: string[];
+  finalPublicGoodIntoIds: string[];
+  inverseFilteredReviewRows: CounterRankingV2PublicReviewRow[];
+  inverseReviewedCounterChampionIds: string[];
   mergedBestCounterIdsBeforeFinalSorting: string[];
+  mergedGoodIntoIdsBeforeFinalSorting: string[];
   reviewedCounterChampionIds: string[];
   reviewedCountersRenderedWithoutStats: string[];
   role: LeagueRole;
   selectedEnemyChampionId: string;
+  selectedCounterReviewRowsBeforePublicFiltering: CounterRankingV2PublicReviewRow[];
   selectedEnemyReviewRowsBeforePublicFiltering: CounterRankingV2PublicReviewRow[];
+  statsRowsFetchedForInverseReviewedCounterIds: ReturnType<typeof getCounterPickStatDebugSnapshot>[];
   statsRowsFetchedForReviewedCounterIds: ReturnType<typeof getCounterPickStatDebugSnapshot>[];
 }) {
   const normalizedSelectedEnemyChampionId = normalizeCounterPickStatsKey(selectedEnemyChampionId);
@@ -437,12 +538,19 @@ function logPublicReviewedMechanicalCountersDebug({
     })),
     reviewRowsForSelectedEnemyBeforePublicFiltering:
       selectedEnemyReviewRowsBeforePublicFiltering,
+    reviewRowsForSelectedCounterBeforePublicFiltering:
+      selectedCounterReviewRowsBeforePublicFiltering,
     reviewRowsAfterPublicEligibleStatusFiltering: filteredReviewRows,
+    inverseReviewRowsAfterPublicEligibleStatusFiltering: inverseFilteredReviewRows,
     reviewedCounterChampionIds,
+    inverseReviewedCounterChampionIds,
     statsRowsFetchedForReviewedCounterIds,
+    statsRowsFetchedForInverseReviewedCounterIds,
     mergedBestCounterIdsBeforeFinalSorting,
+    mergedGoodIntoIdsBeforeFinalSorting,
     reviewedCountersRenderedWithoutStats,
     finalPublicCounterIds,
+    finalPublicGoodIntoIds,
   });
 }
 

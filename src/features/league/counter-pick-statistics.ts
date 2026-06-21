@@ -55,6 +55,7 @@ export type PublicCounterResultBuckets = {
 
 export type PublicReviewedMechanicalCounter = {
   counterChampionId: string;
+  direction?: "counter_into_selected" | "selected_good_into";
   enemyChampionId: string;
   publicEligible: boolean;
   reviewStatus: "verified_soft_counter" | "verified_strong_counter" | string;
@@ -232,6 +233,7 @@ export function getPublicCounterResultsForSelectedChampionStats(
   const selectedChampionGoodInto: PublicCounterResult[] = [];
   const allObservedResultsByChampionId = new Map<string, PublicCounterResult>();
   const countersIntoSelectedChampionByChampionId = new Map<string, PublicCounterResult>();
+  const selectedChampionGoodIntoByChampionId = new Map<string, PublicCounterResult>();
   const listedChampionIds = new Set<string>();
 
   for (const stat of stats) {
@@ -254,18 +256,34 @@ export function getPublicCounterResultsForSelectedChampionStats(
       listedChampionIds.add(listedChampionKey);
     } else if (isSelectedChampionGoodInto(result)) {
       selectedChampionGoodInto.push(result);
+      selectedChampionGoodIntoByChampionId.set(listedChampionKey, result);
       listedChampionIds.add(listedChampionKey);
     }
   }
 
   if (options.useReviewedMechanicalCounters) {
     for (const reviewedCounter of options.reviewedMechanicalCounters ?? []) {
-      if (!isPublicReviewedMechanicalCounterEligible(reviewedCounter, selectedChampionId)) {
+      const reviewedCounterDirection = getPublicReviewedMechanicalCounterDirection(
+        reviewedCounter,
+        selectedChampionId,
+      );
+
+      if (!reviewedCounterDirection) {
         continue;
       }
 
-      const listedChampionKey = getPublicCounterResultIdentityKey(reviewedCounter.counterChampionId);
-      const existingCounter = countersIntoSelectedChampionByChampionId.get(listedChampionKey);
+      const isInverseCounter = reviewedCounterDirection === "selected_good_into";
+      const listedChampionId = isInverseCounter
+        ? reviewedCounter.enemyChampionId
+        : reviewedCounter.counterChampionId;
+      const listedChampionKey = getPublicCounterResultIdentityKey(listedChampionId);
+      const targetBucket = isInverseCounter
+        ? selectedChampionGoodInto
+        : countersIntoSelectedChampion;
+      const targetBucketByChampionId = isInverseCounter
+        ? selectedChampionGoodIntoByChampionId
+        : countersIntoSelectedChampionByChampionId;
+      const existingCounter = targetBucketByChampionId.get(listedChampionKey);
 
       if (existingCounter) {
         existingCounter.statistics.publicLabels = getPublicReviewedMechanicalCounterLabels({
@@ -280,10 +298,14 @@ export function getPublicCounterResultsForSelectedChampionStats(
         ? clonePublicCounterResultWithLabels(observedResult, {
             reviewStatus: reviewedCounter.reviewStatus,
           })
-        : createDesignCounterPublicResult(reviewedCounter, selectedChampionId);
+        : createDesignCounterPublicResult({
+            listedChampionId,
+            reviewStatus: reviewedCounter.reviewStatus,
+            selectedChampionId,
+          });
 
-      countersIntoSelectedChampion.push(designCounterResult);
-      countersIntoSelectedChampionByChampionId.set(listedChampionKey, designCounterResult);
+      targetBucket.push(designCounterResult);
+      targetBucketByChampionId.set(listedChampionKey, designCounterResult);
     }
   }
 
@@ -293,13 +315,33 @@ export function getPublicCounterResultsForSelectedChampionStats(
   };
 }
 
-function isPublicReviewedMechanicalCounterEligible(
+function getPublicReviewedMechanicalCounterDirection(
   reviewedCounter: PublicReviewedMechanicalCounter,
   selectedChampionId: string,
 ) {
+  if (!isPublicReviewedMechanicalCounterEligible(reviewedCounter)) {
+    return null;
+  }
+
+  const selectedChampionKey = getPublicCounterResultIdentityKey(selectedChampionId);
+  const enemyChampionKey = getPublicCounterResultIdentityKey(reviewedCounter.enemyChampionId);
+  const counterChampionKey = getPublicCounterResultIdentityKey(reviewedCounter.counterChampionId);
+
+  if (enemyChampionKey === selectedChampionKey) {
+    return "counter_into_selected";
+  }
+
+  if (counterChampionKey === selectedChampionKey) {
+    return "selected_good_into";
+  }
+
+  return null;
+}
+
+function isPublicReviewedMechanicalCounterEligible(
+  reviewedCounter: PublicReviewedMechanicalCounter,
+) {
   return (
-    getPublicCounterResultIdentityKey(reviewedCounter.enemyChampionId) ===
-      getPublicCounterResultIdentityKey(selectedChampionId) &&
     reviewedCounter.publicEligible &&
     counterRankingV2PublicApprovedReviewStatuses.includes(
       reviewedCounter.reviewStatus as (typeof counterRankingV2PublicApprovedReviewStatuses)[number],
@@ -325,17 +367,22 @@ function clonePublicCounterResultWithLabels(
   };
 }
 
-function createDesignCounterPublicResult(
-  reviewedCounter: PublicReviewedMechanicalCounter,
-  selectedChampionId: string,
-): PublicCounterResult {
+function createDesignCounterPublicResult({
+  listedChampionId,
+  reviewStatus,
+  selectedChampionId,
+}: {
+  listedChampionId: string;
+  reviewStatus: PublicReviewedMechanicalCounter["reviewStatus"];
+  selectedChampionId: string;
+}): PublicCounterResult {
   const confidence = calculateCounterPickConfidence(0);
   const statistics: CounterPickStatistics = {
     ...emptyCounterPickStatistics,
     confidence,
     games: 0,
     publicLabels: getPublicReviewedMechanicalCounterLabels({
-      reviewStatus: reviewedCounter.reviewStatus,
+      reviewStatus,
       statistics: {
         ...emptyCounterPickStatistics,
         confidence,
@@ -347,7 +394,7 @@ function createDesignCounterPublicResult(
 
   return {
     games: 0,
-    listedChampionId: reviewedCounter.counterChampionId,
+    listedChampionId,
     listedChampionWinRate: 0,
     losses: 0,
     selectedChampionId,

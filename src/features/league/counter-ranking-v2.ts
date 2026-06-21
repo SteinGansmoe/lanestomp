@@ -1341,7 +1341,7 @@ export function generateCounterRankingV2MechanicalSuggestion({
   const hasOneWeakFactorSignal = isCounterRankingV2OneWeakFactorSignal(mechanicalResult.factors);
   const reasons: string[] = [];
   let automationStatus: CounterRankingV2AutomationStatus =
-    mechanicalResult.score >= 80 ? "auto_suggested" : "needs_review";
+    mechanicalResult.score >= 75 ? "auto_suggested" : "needs_review";
 
   if (manualAutomationStatus) {
     automationStatus = manualAutomationStatus;
@@ -1384,7 +1384,7 @@ export function generateCounterRankingV2MechanicalSuggestion({
       reasons.push("Single weak factor signal requires manual review.");
     }
 
-    if (mechanicalResult.score >= 65 && mechanicalResult.score < 80) {
+    if (mechanicalResult.score >= 65 && mechanicalResult.score < 75) {
       automationStatus = "needs_review";
       reasons.push("Medium mechanical score requires manual review.");
     }

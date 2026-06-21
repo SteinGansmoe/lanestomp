@@ -460,13 +460,22 @@ export function CounterPickSelector({
     }
 
     logPublicCounterPickRenderDebug({
+      fullCounteredByRows: counteredByRows,
       featureFlagValue: getReviewedMechanicalCountersPublicFeatureFlag(),
       fullBestCounterRows: bestCounterRows,
       selectedEnemyChampionId: selectedChampion.id,
       selectedRole,
       visibleBestCounterRows,
+      visibleCounteredByRows,
     });
-  }, [bestCounterRows, selectedChampion, selectedRole, visibleBestCounterRows]);
+  }, [
+    bestCounterRows,
+    counteredByRows,
+    selectedChampion,
+    selectedRole,
+    visibleBestCounterRows,
+    visibleCounteredByRows,
+  ]);
 
   useEffect(() => {
     let isMounted = true;
@@ -3359,18 +3368,24 @@ function getReviewedMechanicalCountersPublicFeatureFlag() {
 function logPublicCounterPickRenderDebug({
   featureFlagValue,
   fullBestCounterRows,
+  fullCounteredByRows,
   selectedEnemyChampionId,
   selectedRole,
   visibleBestCounterRows,
+  visibleCounteredByRows,
 }: {
   featureFlagValue: boolean;
   fullBestCounterRows: CounterRowModel[];
+  fullCounteredByRows: CounterRowModel[];
   selectedEnemyChampionId: string;
   selectedRole: LeagueRole;
   visibleBestCounterRows: CounterRowModel[];
+  visibleCounteredByRows: CounterRowModel[];
 }) {
   const fullBestCounterIdsBeforeSlicing = fullBestCounterRows.map(getCounterRowChampionId);
   const visibleBestCounterIdsAfterSlicing = visibleBestCounterRows.map(getCounterRowChampionId);
+  const fullBadIntoIdsBeforeSlicing = fullCounteredByRows.map(getCounterRowChampionId);
+  const visibleBadIntoIdsAfterSlicing = visibleCounteredByRows.map(getCounterRowChampionId);
 
   console.info("[Counter Pick] public best-counter render flow", {
     featureFlagValue,
@@ -3378,6 +3393,8 @@ function logPublicCounterPickRenderDebug({
     selectedRole,
     finalFullBestCounterIdsBeforeSlicing: fullBestCounterIdsBeforeSlicing,
     finalVisibleBestCounterIdsAfterSlicing: visibleBestCounterIdsAfterSlicing,
+    finalFullBadIntoIdsBeforeSlicing: fullBadIntoIdsBeforeSlicing,
+    finalVisibleBadIntoIdsAfterSlicing: visibleBadIntoIdsAfterSlicing,
     vexPresentBeforeSlicing: fullBestCounterIdsBeforeSlicing.some(isVexCounterPickId),
     vexPresentAfterSlicing: visibleBestCounterIdsAfterSlicing.some(isVexCounterPickId),
   });

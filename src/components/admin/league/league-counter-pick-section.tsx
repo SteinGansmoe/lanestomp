@@ -2376,6 +2376,7 @@ function CounterRankingV2ShadowRow({
 
           {automationSuggestion ? (
             <div className="mt-4 rounded-md border border-sky-300/15 bg-sky-500/[0.05] p-4">
+              <p className="text-sm font-semibold text-sky-100">Generated suggestion</p>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="border-sky-300/20 bg-sky-500/10 text-sky-100">
                   {formatCounterRankingV2AutomationStatus(
@@ -2394,6 +2395,9 @@ function CounterRankingV2ShadowRow({
                   confidence
                 </Badge>
               </div>
+              <p className="mt-3 text-xs font-semibold uppercase text-zinc-500">
+                Blockers and reasons
+              </p>
               <ul className="mt-3 space-y-2">
                 {automationSuggestion.reasons.map((reason) => (
                   <li className="text-sm leading-6 text-zinc-400" key={reason}>
@@ -2563,41 +2567,44 @@ function CounterRankingV2ShadowRow({
           ) : null}
 
           {topReasons.length > 0 ? (
-            <ul className="mt-4 space-y-2">
-              {topReasons.map((reason) => (
-                <li
-                  className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300"
-                  key={`${reason.factor.candidateStrength}-${reason.factor.enemyVulnerability}`}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-zinc-100">{reason.title}</p>
-                      <p className="mt-1 text-xs leading-5 text-zinc-500">
-                        {reason.explanation}
-                      </p>
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-zinc-100">Top mechanical reasons</p>
+              <ul className="mt-3 space-y-2">
+                {topReasons.map((reason) => (
+                  <li
+                    className="rounded-md border border-white/10 bg-black/15 p-3 text-sm leading-6 text-zinc-300"
+                    key={`${reason.factor.candidateStrength}-${reason.factor.enemyVulnerability}`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-zinc-100">{reason.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          {reason.explanation}
+                        </p>
+                      </div>
+                      <Badge
+                        className={cn(
+                          "shrink-0",
+                          getCounterRankingV2ImpactBadgeClassName(reason.impactLevel),
+                        )}
+                      >
+                        {formatCounterRankingV2ImpactLevel(reason.impactLevel)}
+                      </Badge>
                     </div>
-                    <Badge
-                      className={cn(
-                        "shrink-0",
-                        getCounterRankingV2ImpactBadgeClassName(reason.impactLevel),
-                      )}
-                    >
-                      {formatCounterRankingV2ImpactLevel(reason.impactLevel)}
-                    </Badge>
-                  </div>
-                  <details className="mt-3 text-xs text-zinc-500">
-                    <summary className="cursor-pointer text-zinc-400">
-                      Show calculation details
-                    </summary>
-                    <p className="mt-2">
-                      {getTraitLabel(reason.factor.candidateStrength)} into{" "}
-                      {getTraitLabel(reason.factor.enemyVulnerability)}. Raw contribution +
-                      {reason.factor.contribution.toFixed(1)}.
-                    </p>
-                  </details>
-                </li>
-              ))}
-            </ul>
+                    <details className="mt-3 text-xs text-zinc-500">
+                      <summary className="cursor-pointer text-zinc-400">
+                        Show calculation details
+                      </summary>
+                      <p className="mt-2">
+                        {getTraitLabel(reason.factor.candidateStrength)} into{" "}
+                        {getTraitLabel(reason.factor.enemyVulnerability)}. Raw contribution +
+                        {reason.factor.contribution.toFixed(1)}.
+                      </p>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : (
             <p className="mt-4 rounded-md border border-white/10 bg-black/15 p-3 text-sm text-zinc-500">
               No contributing mechanical factors are available for this candidate and selected
