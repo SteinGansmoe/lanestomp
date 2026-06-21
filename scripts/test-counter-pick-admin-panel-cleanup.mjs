@@ -37,6 +37,8 @@ testCollectionPollingIsPassive();
 testCounterPickDomainRoutes();
 testCounterRankingV2ShadowProfileSelection();
 testCounterRankingV2ShadowCandidateAccordion();
+testCounterRankingV2ShadowReviewFilters();
+testCounterRankingV2PublicEligibilityControls();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -186,4 +188,54 @@ function testCounterRankingV2ShadowCandidateAccordion() {
   assert.equal(counterPickSectionSource.includes("Save review"), true);
   assert.equal(counterPickSectionSource.includes("hasLowObservedSample"), true);
   assert.equal(counterPickSectionSource.includes("No observed data"), true);
+}
+
+function testCounterRankingV2ShadowReviewFilters() {
+  assert.equal(counterPickSectionSource.includes("CounterRankingV2ReviewFilter"), true);
+  assert.equal(
+    counterPickSectionSource.includes("counterRankingV2ShadowReviewFilterOptions"),
+    true,
+  );
+  assert.equal(counterPickSectionSource.includes('label: "All"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Unreviewed"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Verified strong counter"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Verified soft counter"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Needs more data"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Incorrect suggestion"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Public eligible"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Low sample"'), true);
+  assert.equal(counterPickSectionSource.includes("filterCounterRankingV2RowsByReviewFilter"), true);
+  assert.equal(counterPickSectionSource.includes("const [reviewFilter, setReviewFilter]"), true);
+  assert.equal(counterPickSectionSource.includes("filteredRows.length} of {rows.length} candidates"), true);
+  assert.equal(counterPickSectionSource.includes("aria-pressed={isActiveFilter}"), true);
+  assert.equal(counterPickSectionSource.includes('text="No candidates match this filter."'), true);
+  assert.equal(counterPickSectionSource.includes("rows={filteredRows}"), true);
+}
+
+function testCounterRankingV2PublicEligibilityControls() {
+  assert.equal(counterPickSectionSource.includes("isCounterRankingV2ReviewStatusPublicEligible"), true);
+  assert.equal(counterPickSectionSource.includes("isPublicEligibleChecked"), true);
+  assert.equal(counterPickSectionSource.includes("isSavedPublicEligible"), true);
+  assert.equal(counterPickSectionSource.includes("Public eligible"), true);
+  assert.equal(counterPickSectionSource.includes("Internal review only"), true);
+  assert.equal(counterPickSectionSource.includes("Low sample design counter"), true);
+  assert.equal(
+    counterPickSectionSource.includes("Choose a reviewed status before enabling public eligibility."),
+    true,
+  );
+  assert.equal(
+    counterPickSectionSource.includes("Incorrect suggestions cannot be public eligible."),
+    true,
+  );
+  assert.equal(
+    counterPickSectionSource.includes("This will be treated as a low-sample design counter."),
+    true,
+  );
+  assert.match(
+    counterPickSectionSource,
+    /event\.target\.value === "incorrect_suggestion" \|\|\s+event\.target\.value === "unreviewed"/,
+    "Changing to unreviewed or incorrect suggestion should clear public eligibility.",
+  );
+  assert.equal(actionsSource.includes("normalizeCounterRankingV2PublicEligible"), true);
+  assert.equal(actionsSource.includes("public_eligible: validation.publicEligible"), true);
 }

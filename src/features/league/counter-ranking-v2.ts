@@ -104,6 +104,16 @@ export type CounterRankingV2ReviewStatus =
   | "verified_soft_counter"
   | "verified_strong_counter";
 
+export type CounterRankingV2ReviewFilter =
+  | "all"
+  | "incorrect_suggestion"
+  | "low_sample"
+  | "needs_more_data"
+  | "public_eligible"
+  | "unreviewed"
+  | "verified_soft_counter"
+  | "verified_strong_counter";
+
 export type CounterRankingV2MechanicalReview = {
   adjustmentReason: CounterRankingV2AdjustmentReason;
   adminReviewNote: string | null;
@@ -660,6 +670,54 @@ function getCounterRankingV2ReviewPriorityScore(row: CounterRankingV2ComparisonR
   return row.mechanicalResult.status === "calculated" ? row.mechanicalResult.score : -1;
 }
 
+export function filterCounterRankingV2RowsByReviewFilter({
+  filter,
+  minimumGames,
+  rows,
+}: {
+  filter: CounterRankingV2ReviewFilter;
+  minimumGames: number;
+  rows: CounterRankingV2ComparisonRow[];
+}) {
+  if (filter === "all") {
+    return rows;
+  }
+
+  return rows.filter((row) =>
+    isCounterRankingV2RowMatchingReviewFilter({
+      filter,
+      minimumGames,
+      row,
+    }),
+  );
+}
+
+export function isCounterRankingV2RowMatchingReviewFilter({
+  filter,
+  minimumGames,
+  row,
+}: {
+  filter: CounterRankingV2ReviewFilter;
+  minimumGames: number;
+  row: CounterRankingV2ComparisonRow;
+}) {
+  if (filter === "unreviewed") {
+    return row.review === null || row.review.reviewStatus === "unreviewed";
+  }
+
+  if (filter === "public_eligible") {
+    return isCounterRankingV2ReviewPublicEligible(row.review);
+  }
+
+  if (filter === "low_sample") {
+    const observedGames = row.observed?.games ?? 0;
+
+    return observedGames > 0 && observedGames < minimumGames;
+  }
+
+  return row.review?.reviewStatus === filter;
+}
+
 export function clampCounterRankingV2ManualAdjustment(adjustment: number) {
   const finiteAdjustment = Number.isFinite(adjustment) ? adjustment : 0;
 
@@ -738,7 +796,10 @@ export function createCounterRankingV2MechanicalReview({
       manualAdjustment: boundedAdjustment,
     }),
     manualAdjustment: boundedAdjustment,
-    publicEligible,
+    publicEligible: normalizeCounterRankingV2PublicEligible({
+      publicEligible,
+      reviewStatus,
+    }),
     reviewStatus,
     reviewedAt,
     reviewedBy,
@@ -755,10 +816,28 @@ export function isCounterRankingV2ReviewStatus(value: string): value is CounterR
   return counterRankingV2ReviewStatuses.includes(value as CounterRankingV2ReviewStatus);
 }
 
+export function isCounterRankingV2ReviewStatusPublicEligible(
+  reviewStatus: CounterRankingV2ReviewStatus,
+) {
+  return reviewStatus !== "incorrect_suggestion" && reviewStatus !== "unreviewed";
+}
+
+export function normalizeCounterRankingV2PublicEligible({
+  publicEligible,
+  reviewStatus,
+}: {
+  publicEligible: boolean;
+  reviewStatus: CounterRankingV2ReviewStatus;
+}) {
+  return publicEligible && isCounterRankingV2ReviewStatusPublicEligible(reviewStatus);
+}
+
 export function isCounterRankingV2ReviewPublicEligible(
   review: Pick<CounterRankingV2MechanicalReview, "publicEligible" | "reviewStatus"> | null,
 ) {
-  return Boolean(review?.publicEligible && review.reviewStatus !== "incorrect_suggestion");
+  return Boolean(
+    review?.publicEligible && isCounterRankingV2ReviewStatusPublicEligible(review.reviewStatus),
+  );
 }
 
 export function isCounterRankingV2ShadowCandidateEligible({

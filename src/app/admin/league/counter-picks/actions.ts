@@ -12,6 +12,7 @@ import {
   createCounterRankingV2MechanicalReview,
   isCounterRankingV2AdjustmentReason,
   isCounterRankingV2ManualAdjustmentInBounds,
+  normalizeCounterRankingV2PublicEligible,
   isCounterRankingV2ReviewStatus,
   type CounterRankingV2AdjustmentReason,
   type CounterRankingV2MechanicalReview,
@@ -833,8 +834,7 @@ export async function saveCounterRankingV2MechanicalReview(
         counter_champion_id: resolvedChampionIds.counterChampionId,
         enemy_champion_id: resolvedChampionIds.enemyChampionId,
         manual_adjustment: validation.manualAdjustment,
-        public_eligible:
-          validation.reviewStatus === "incorrect_suggestion" ? false : validation.publicEligible,
+        public_eligible: validation.publicEligible,
         review_status: validation.reviewStatus,
         reviewed_at: now,
         reviewed_by: authResult.userId,
@@ -7058,7 +7058,10 @@ function validateCounterRankingV2MechanicalReviewInput(
     enemyChampionId,
     manualAdjustment: input.manualAdjustment,
     ok: true,
-    publicEligible: input.publicEligible,
+    publicEligible: normalizeCounterRankingV2PublicEligible({
+      publicEligible: input.publicEligible,
+      reviewStatus: input.reviewStatus,
+    }),
     reviewStatus: input.reviewStatus,
     role: input.role,
   };

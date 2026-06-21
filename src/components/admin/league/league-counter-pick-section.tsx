@@ -44,9 +44,11 @@ import {
   counterRankingV2DefaultAdjustmentReason,
   counterRankingV2DefaultReviewStatus,
   clampCounterRankingV2ManualAdjustment,
+  filterCounterRankingV2RowsByReviewFilter,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
   isCounterRankingV2ReviewPublicEligible,
+  isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2SupportedChampion,
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
@@ -56,6 +58,7 @@ import {
   type CounterRankingV2MechanicalReview,
   type CounterRankingV2ObservedRankSnapshot,
   type CounterRankingV2ProfileStatus,
+  type CounterRankingV2ReviewFilter,
   type CounterRankingV2ReviewStatus,
   type CounterRankingV2TraitId,
 } from "@/src/features/league/counter-ranking-v2";
@@ -92,6 +95,10 @@ type CounterRankingV2ReviewForm = {
   publicEligible: boolean;
   reviewStatus: CounterRankingV2ReviewStatus;
 };
+type CounterRankingV2ShadowReviewFilterOption = {
+  filter: CounterRankingV2ReviewFilter;
+  label: string;
+};
 
 const emptyCreateForm: CounterPickCreateForm = {
   counter_champion_id: "",
@@ -99,6 +106,16 @@ const emptyCreateForm: CounterPickCreateForm = {
   counter_type: "best_counter",
   reason: "",
 };
+const counterRankingV2ShadowReviewFilterOptions = [
+  { filter: "all", label: "All" },
+  { filter: "unreviewed", label: "Unreviewed" },
+  { filter: "verified_strong_counter", label: "Verified strong counter" },
+  { filter: "verified_soft_counter", label: "Verified soft counter" },
+  { filter: "needs_more_data", label: "Needs more data" },
+  { filter: "incorrect_suggestion", label: "Incorrect suggestion" },
+  { filter: "public_eligible", label: "Public eligible" },
+  { filter: "low_sample", label: "Low sample" },
+] as const satisfies readonly CounterRankingV2ShadowReviewFilterOption[];
 
 export function AdminLeagueCounterPicksSection({
   champions,
@@ -1430,6 +1447,7 @@ function CounterRankingV2ShadowPanel({
   selectedRole: LeagueRole;
   statusError: string | null;
 }) {
+  const [reviewFilter, setReviewFilter] = useState<CounterRankingV2ReviewFilter>("all");
   const enemyChampion = championsById.get(normalizeCounterRankingV2ChampionId(enemyChampionId));
   const enemyProfile = enemyChampionId ? getCounterRankingV2ChampionProfile(enemyChampionId) : null;
   const hasSupportedEnemy = enemyChampionId
@@ -1437,6 +1455,18 @@ function CounterRankingV2ShadowPanel({
     : false;
   const hasObservedStats = rows.some((row) => row.observed !== null);
   const hasReviewRows = rows.some((row) => row.review !== null);
+  const filteredRows = useMemo(
+    () =>
+      filterCounterRankingV2RowsByReviewFilter({
+        filter: reviewFilter,
+        minimumGames: publicCounterPickMinimumRankedGames,
+        rows,
+      }),
+    [reviewFilter, rows],
+  );
+  const activeFilterLabel =
+    counterRankingV2ShadowReviewFilterOptions.find((option) => option.filter === reviewFilter)
+      ?.label ?? "All";
 
   return (
     <Card className="border-cyan-300/15 bg-[#071321]/95 text-white shadow-xl shadow-black/15">
@@ -1536,14 +1566,53 @@ function CounterRankingV2ShadowPanel({
             {!reviewStatus.isLoading && !reviewStatus.error && !hasReviewRows ? (
               <EmptyState text="No review rows have been saved for this champion and role yet." />
             ) : null}
-            <CounterRankingV2ShadowRows
-              championsById={championsById}
-              isLoadingObserved={isLoading}
-              key={`${enemyChampionId}-${selectedRole}`}
-              onSaveReview={onSaveReview}
-              rows={rows}
-              savingReviewKey={savingReviewKey}
-            />
+            <div className="rounded-lg border border-white/10 bg-black/15 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-zinc-100">Review filters</p>
+                <p className="text-xs text-zinc-500">
+                  {activeFilterLabel}: {filteredRows.length} of {rows.length} candidates
+                </p>
+              </div>
+              <div
+                aria-label="Counter Ranking V2 review filters"
+                className="mt-3 flex flex-wrap gap-2"
+                role="group"
+              >
+                {counterRankingV2ShadowReviewFilterOptions.map((option) => {
+                  const isActiveFilter = option.filter === reviewFilter;
+
+                  return (
+                    <button
+                      aria-pressed={isActiveFilter}
+                      className={cn(
+                        "rounded-md border px-3 py-2 text-xs font-semibold transition-colors",
+                        isActiveFilter
+                          ? "border-cyan-300/30 bg-cyan-500/15 text-cyan-100"
+                          : "border-white/10 bg-white/5 text-zinc-300 hover:border-cyan-300/20 hover:bg-white/10",
+                      )}
+                      key={option.filter}
+                      onClick={() => setReviewFilter(option.filter)}
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {filteredRows.length === 0 ? (
+              <EmptyState text="No candidates match this filter." />
+            ) : (
+              <CounterRankingV2ShadowRows
+                championsById={championsById}
+                isLoadingObserved={isLoading}
+                key={`${enemyChampionId}-${selectedRole}-${reviewFilter}`}
+                onSaveReview={onSaveReview}
+                rows={filteredRows}
+                savingReviewKey={savingReviewKey}
+              />
+            )}
           </>
         )}
       </CardContent>
@@ -1636,6 +1705,20 @@ function CounterRankingV2ShadowRow({
   const hasLowObservedSample =
     observedGames > 0 && observedGames < publicCounterPickMinimumRankedGames;
   const hasNoObservedData = !isLoadingObserved && observedGames === 0;
+  const isReviewStatusPublicEligible = isCounterRankingV2ReviewStatusPublicEligible(
+    reviewForm.reviewStatus,
+  );
+  const isPublicEligibleChecked = isReviewStatusPublicEligible && reviewForm.publicEligible;
+  const isSavedPublicEligible = isCounterRankingV2ReviewPublicEligible(row.review);
+  const isLowSampleDesignCounter = isSavedPublicEligible && hasLowObservedSample;
+  const publicEligibilityHelperText =
+    reviewForm.reviewStatus === "unreviewed"
+      ? "Choose a reviewed status before enabling public eligibility."
+      : reviewForm.reviewStatus === "incorrect_suggestion"
+        ? "Incorrect suggestions cannot be public eligible."
+        : isPublicEligibleChecked && hasLowObservedSample
+          ? "This will be treated as a low-sample design counter."
+          : "Stored for shadow review. Public use requires the reviewed-counter feature flag.";
   const panelId = `counter-ranking-v2-review-${row.candidateChampionId}`;
 
   return (
@@ -1740,12 +1823,20 @@ function CounterRankingV2ShadowRow({
           ) : (
             <Badge className="border-white/10 bg-white/5 text-zinc-400">No review row</Badge>
           )}
-          {isCounterRankingV2ReviewPublicEligible(row.review) ? (
-            <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
-              Design counter
+          {isSavedPublicEligible ? (
+            <Badge className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100">
+              Public eligible
             </Badge>
-          ) : null}
-          {hasLowObservedSample ? (
+          ) : (
+            <Badge className="border-white/10 bg-white/5 text-zinc-400">
+              Internal review only
+            </Badge>
+          )}
+          {isLowSampleDesignCounter ? (
+            <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
+              Low sample design counter
+            </Badge>
+          ) : hasLowObservedSample ? (
             <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
               Low sample size
             </Badge>
@@ -1789,7 +1880,8 @@ function CounterRankingV2ShadowRow({
                   setReviewForm((currentForm) => ({
                     ...currentForm,
                     publicEligible:
-                      event.target.value === "incorrect_suggestion"
+                      event.target.value === "incorrect_suggestion" ||
+                      event.target.value === "unreviewed"
                         ? false
                         : currentForm.publicEligible,
                     reviewStatus: event.target.value as CounterRankingV2ReviewStatus,
@@ -1863,14 +1955,12 @@ function CounterRankingV2ShadowRow({
 
             <label className="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3">
               <input
-                checked={
-                  reviewForm.reviewStatus !== "incorrect_suggestion" && reviewForm.publicEligible
-                }
+                checked={isPublicEligibleChecked}
                 className="size-4 accent-cyan-300"
                 disabled={
                   !hasCalculatedScore ||
                   isSavingReview ||
-                  reviewForm.reviewStatus === "incorrect_suggestion"
+                  !isReviewStatusPublicEligible
                 }
                 onChange={(event) =>
                   setReviewForm((currentForm) => ({
@@ -1883,10 +1973,16 @@ function CounterRankingV2ShadowRow({
               <span>
                 <span className="block text-sm font-semibold text-zinc-100">Public eligible</span>
                 <span className="block text-xs leading-5 text-zinc-500">
-                  Stored for shadow review. Public use requires the reviewed-counter feature flag.
+                  {publicEligibilityHelperText}
                 </span>
               </span>
             </label>
+
+            {isPublicEligibleChecked && hasLowObservedSample ? (
+              <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100 lg:col-span-2">
+                This will be treated as a low-sample design counter.
+              </p>
+            ) : null}
 
             <label className="block space-y-2 lg:col-span-2">
               <span className="text-sm text-zinc-300">Admin review note</span>

@@ -16,19 +16,28 @@ const {
   counterRankingV2TraitVocabulary,
   createCounterRankingV2MechanicalReview,
   createObservedCounterRankingV2Snapshot,
+  filterCounterRankingV2RowsByReviewFilter,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
   isCounterRankingV2ManualAdjustmentInBounds,
   isCounterRankingV2PublicCandidateEligible,
   isCounterRankingV2ReviewPublicEligible,
+  isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2ShadowCandidateEligible,
+  normalizeCounterRankingV2PublicEligible,
   sortCounterRankingV2RowsByReviewPriority,
+  useReviewedMechanicalCountersPublicly,
 } = rankingModule;
 
 assert.deepEqual(
   counterRankingV2SupportedChampionIds,
   ["vex", "yone", "yasuo", "akali", "annie", "malzahar", "lissandra", "kassadin"],
   "The first Counter Ranking V2 shadow profile set should stay intentionally small.",
+);
+assert.equal(
+  useReviewedMechanicalCountersPublicly,
+  false,
+  "Reviewed mechanical counters should remain disabled publicly by default.",
 );
 
 const traitIds = new Set(counterRankingV2TraitVocabulary.map((trait) => trait.id));
@@ -356,6 +365,151 @@ assert.equal(
   highestCalculatedScore,
   "Review-priority sorting should use calculated score when no review row exists.",
 );
+
+const reviewFilterRows = getCounterRankingV2ComparisonRows({
+  candidateChampionIds: ["vex", "kassadin", "malzahar", "annie", "lissandra", "akali", "yasuo"],
+  enemyChampionId: "yone",
+  observedByChampionId: new Map([
+    [
+      "akali",
+      createObservedCounterRankingV2Snapshot({
+        games: 3,
+        rank: 6,
+        winRate: 48,
+      }),
+    ],
+  ]),
+  reviewsByCandidateId: new Map([
+    [
+      "vex",
+      createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 80,
+        counterChampionId: "vex",
+        enemyChampionId: "yone",
+        publicEligible: true,
+        reviewStatus: "verified_strong_counter",
+        role: "mid",
+      }),
+    ],
+    [
+      "kassadin",
+      createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 70,
+        counterChampionId: "kassadin",
+        enemyChampionId: "yone",
+        reviewStatus: "verified_soft_counter",
+        role: "mid",
+      }),
+    ],
+    [
+      "malzahar",
+      createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 60,
+        counterChampionId: "malzahar",
+        enemyChampionId: "yone",
+        reviewStatus: "needs_more_data",
+        role: "mid",
+      }),
+    ],
+    [
+      "annie",
+      createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 50,
+        counterChampionId: "annie",
+        enemyChampionId: "yone",
+        publicEligible: true,
+        reviewStatus: "incorrect_suggestion",
+        role: "mid",
+      }),
+    ],
+    [
+      "lissandra",
+      createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 75,
+        counterChampionId: "lissandra",
+        enemyChampionId: "yone",
+        reviewStatus: "unreviewed",
+        role: "mid",
+      }),
+    ],
+  ]),
+  role: "mid",
+});
+
+assert.equal(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "all",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).length,
+  reviewFilterRows.length,
+  "The all filter should keep every candidate row.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "verified_strong_counter",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["vex"],
+  "The strong-counter filter should only include strong verified reviews.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "verified_soft_counter",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["kassadin"],
+  "The soft-counter filter should only include soft verified reviews.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "needs_more_data",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["malzahar"],
+  "The needs-more-data filter should only include those review rows.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "incorrect_suggestion",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["annie"],
+  "The incorrect-suggestion filter should only include rejected review rows.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "public_eligible",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["vex"],
+  "The public-eligible filter should exclude incorrect suggestions even if marked public eligible.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "low_sample",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["akali"],
+  "The low-sample filter should include observed rows below the ranked-games threshold.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
+    filter: "unreviewed",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  })
+    .map((row) => row.candidateChampionId)
+    .sort(),
+  ["akali", "lissandra", "yasuo"],
+  "The unreviewed filter should include missing review rows and explicit unreviewed rows.",
+);
 assert.equal(
   isCounterRankingV2ShadowCandidateEligible({
     minimumGames: 5,
@@ -408,6 +562,49 @@ assert.equal(
   isCounterRankingV2ReviewPublicEligible(incorrectSuggestionReview),
   false,
   "Incorrect suggestions should not be public eligible by default.",
+);
+assert.equal(
+  incorrectSuggestionReview.publicEligible,
+  false,
+  "Incorrect suggestions should be normalized away from persisted public eligibility.",
+);
+assert.equal(
+  normalizeCounterRankingV2PublicEligible({
+    publicEligible: true,
+    reviewStatus: "incorrect_suggestion",
+  }),
+  false,
+  "Public eligibility normalization should reject incorrect suggestions.",
+);
+assert.equal(
+  normalizeCounterRankingV2PublicEligible({
+    publicEligible: true,
+    reviewStatus: "unreviewed",
+  }),
+  false,
+  "Public eligibility normalization should reject unreviewed rows.",
+);
+assert.equal(
+  isCounterRankingV2ReviewStatusPublicEligible("verified_strong_counter"),
+  true,
+  "Verified statuses can be marked public eligible for future reviewed mechanical counters.",
+);
+assert.equal(
+  isCounterRankingV2ReviewStatusPublicEligible("unreviewed"),
+  false,
+  "Unreviewed status should require status selection before public eligibility.",
+);
+assert.equal(
+  createCounterRankingV2MechanicalReview({
+    calculatedMechanicalScore: 80,
+    counterChampionId: "vex",
+    enemyChampionId: "yone",
+    publicEligible: true,
+    reviewStatus: "unreviewed",
+    role: "mid",
+  }).publicEligible,
+  false,
+  "Creating unreviewed review rows should not persist public eligibility.",
 );
 
 const minimumAdjustmentReview = createCounterRankingV2MechanicalReview({
