@@ -1,14 +1,22 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 const rankingModule = await import("../src/features/league/counter-ranking-v2.ts");
 
 const {
   calculateMechanicalMatchupFit,
+  calculateCounterRankingV2FinalMechanicalScore,
+  clampCounterRankingV2ManualAdjustment,
   counterRankingV2SupportedChampionIds,
   counterRankingV2TraitVocabulary,
+  createCounterRankingV2MechanicalReview,
   createObservedCounterRankingV2Snapshot,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  isCounterRankingV2ManualAdjustmentInBounds,
+  isCounterRankingV2PublicCandidateEligible,
+  isCounterRankingV2ReviewPublicEligible,
+  isCounterRankingV2ShadowCandidateEligible,
 } = rankingModule;
 
 assert.deepEqual(
@@ -134,6 +142,245 @@ assert.equal(
   shadowVexRow.rankDelta,
   7,
   "Rank delta should compare observed rank and shadow mechanical rank.",
+);
+
+assert.equal(clampCounterRankingV2ManualAdjustment(45), 30, "Positive manual adjustments clamp.");
+assert.equal(clampCounterRankingV2ManualAdjustment(-45), -30, "Negative manual adjustments clamp.");
+assert.equal(
+  clampCounterRankingV2ManualAdjustment(Number.NaN),
+  0,
+  "Invalid adjustments become neutral.",
+);
+assert.equal(
+  isCounterRankingV2ManualAdjustmentInBounds(-30),
+  true,
+  "The minimum review adjustment should be accepted.",
+);
+assert.equal(
+  isCounterRankingV2ManualAdjustmentInBounds(30),
+  true,
+  "The maximum review adjustment should be accepted.",
+);
+assert.equal(
+  isCounterRankingV2ManualAdjustmentInBounds(-31),
+  false,
+  "Review saves should reject adjustments below the lower bound.",
+);
+assert.equal(
+  isCounterRankingV2ManualAdjustmentInBounds(31),
+  false,
+  "Review saves should reject adjustments above the upper bound.",
+);
+assert.equal(
+  calculateCounterRankingV2FinalMechanicalScore({
+    calculatedMechanicalScore: 78,
+    manualAdjustment: 10,
+  }),
+  88,
+  "Final reviewed score should add bounded manual adjustment.",
+);
+assert.equal(
+  calculateCounterRankingV2FinalMechanicalScore({
+    calculatedMechanicalScore: 88,
+    manualAdjustment: 30,
+  }),
+  100,
+  "Final reviewed score should clamp at 100.",
+);
+assert.equal(
+  calculateCounterRankingV2FinalMechanicalScore({
+    calculatedMechanicalScore: 12,
+    manualAdjustment: -30,
+  }),
+  0,
+  "Final reviewed score should clamp at 0.",
+);
+
+const reviewedVex = createCounterRankingV2MechanicalReview({
+  adjustmentReason: "manual_review",
+  adminReviewNote: "Vex reliably punishes Yone dash commits.",
+  calculatedMechanicalScore: vexIntoYone.score,
+  counterChampionId: "vex",
+  enemyChampionId: "yone",
+  manualAdjustment: 10,
+  publicEligible: true,
+  reviewStatus: "verified_strong_counter",
+  role: "mid",
+});
+
+const unreviewedRows = getCounterRankingV2ComparisonRows({
+  candidateChampionIds: ["vex"],
+  enemyChampionId: "yone",
+  observedByChampionId: new Map(),
+  role: "mid",
+});
+
+assert.equal(
+  unreviewedRows.at(0)?.review,
+  null,
+  "Comparison rows should load cleanly when no review row exists.",
+);
+assert.equal(
+  reviewedVex.calculatedMechanicalScore,
+  vexIntoYone.score,
+  "Review rows should preserve the calculated mechanical model score.",
+);
+assert.equal(reviewedVex.manualAdjustment, 10, "Review rows should store manual adjustment separately.");
+assert.equal(
+  reviewedVex.finalMechanicalScore,
+  Math.min(100, vexIntoYone.score + 10),
+  "Review rows should expose final score.",
+);
+
+const reviewedRows = getCounterRankingV2ComparisonRows({
+  candidateChampionIds: ["vex"],
+  enemyChampionId: "yone",
+  observedByChampionId: new Map(),
+  reviewsByCandidateId: new Map([["vex", reviewedVex]]),
+  role: "mid",
+});
+
+assert.equal(
+  reviewedRows.at(0)?.review?.manualAdjustment,
+  10,
+  "Comparison rows should attach an existing review row by counter champion ID.",
+);
+assert.equal(
+  isCounterRankingV2ShadowCandidateEligible({
+    minimumGames: 5,
+    observedGames: 3,
+    review: reviewedVex,
+  }),
+  true,
+  "Shadow candidate logic can treat public-eligible mechanical reviews as eligible below 5 games.",
+);
+assert.equal(
+  isCounterRankingV2PublicCandidateEligible({
+    minimumGames: 5,
+    observedGames: 3,
+    review: reviewedVex,
+    useReviewedMechanicalCounters: false,
+  }),
+  false,
+  "Public candidate logic must not change while reviewed mechanical counters are disabled.",
+);
+assert.equal(
+  isCounterRankingV2PublicCandidateEligible({
+    minimumGames: 5,
+    observedGames: 3,
+    review: reviewedVex,
+    useReviewedMechanicalCounters: true,
+  }),
+  true,
+  "The feature flag can explicitly allow reviewed mechanical counters publicly.",
+);
+assert.equal(
+  isCounterRankingV2ShadowCandidateEligible({
+    minimumGames: 5,
+    observedGames: 3,
+    review: null,
+  }),
+  false,
+  "Missing review rows should not make low-sample counters eligible.",
+);
+
+const incorrectSuggestionReview = createCounterRankingV2MechanicalReview({
+  calculatedMechanicalScore: 90,
+  counterChampionId: "kassadin",
+  enemyChampionId: "yone",
+  publicEligible: true,
+  reviewStatus: "incorrect_suggestion",
+  role: "mid",
+});
+
+assert.equal(
+  isCounterRankingV2ReviewPublicEligible(incorrectSuggestionReview),
+  false,
+  "Incorrect suggestions should not be public eligible by default.",
+);
+
+const minimumAdjustmentReview = createCounterRankingV2MechanicalReview({
+  calculatedMechanicalScore: 12,
+  counterChampionId: "vex",
+  enemyChampionId: "yone",
+  manualAdjustment: -30,
+  reviewStatus: "needs_more_data",
+  role: "mid",
+});
+
+assert.equal(
+  minimumAdjustmentReview.finalMechanicalScore,
+  0,
+  "A saved -30 review adjustment should clamp the final score at 0.",
+);
+
+const updatedReview = createCounterRankingV2MechanicalReview({
+  calculatedMechanicalScore: 88,
+  counterChampionId: "vex",
+  enemyChampionId: "yone",
+  manualAdjustment: 30,
+  publicEligible: true,
+  reviewStatus: "verified_strong_counter",
+  role: "mid",
+});
+
+assert.equal(
+  updatedReview.finalMechanicalScore,
+  100,
+  "Updating an existing review to +30 should clamp the final score at 100.",
+);
+
+const mechanicalReviewMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260621003000_create_counter_ranking_v2_mechanical_reviews.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const counterPickActionsSource = readFileSync(
+  new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
+  "utf8",
+);
+
+assert.match(
+  mechanicalReviewMigration,
+  /create table if not exists public\.counter_ranking_v2_mechanical_reviews/,
+  "The review layer migration should create the table loaded by the admin action.",
+);
+assert.match(
+  mechanicalReviewMigration,
+  /constraint counter_ranking_v2_mechanical_reviews_unique\s+unique \(enemy_champion_id, counter_champion_id, role\)/,
+  "The review upsert conflict target should be backed by a table unique constraint.",
+);
+assert.match(
+  mechanicalReviewMigration,
+  /using \(public\.is_admin\(auth\.uid\(\)\)\)/,
+  "Review table RLS should use the established admin helper.",
+);
+assert.doesNotMatch(
+  mechanicalReviewMigration,
+  /profiles\.is_admin/,
+  "Review table RLS should not depend on the removed profiles.is_admin column.",
+);
+assert.match(
+  counterPickActionsSource,
+  /from\("counter_ranking_v2_mechanical_reviews"\)/,
+  "The admin action should query the review table created by the migration.",
+);
+assert.match(
+  counterPickActionsSource,
+  /onConflict: "enemy_champion_id,counter_champion_id,role"/,
+  "The review save action should upsert by the table unique key.",
+);
+assert.match(
+  counterPickActionsSource,
+  /Counter Ranking V2 review rows load failed/,
+  "Review loading should log the exact server-side database error.",
+);
+assert.match(
+  counterPickActionsSource,
+  /Counter Ranking V2 review save failed/,
+  "Review saving should log the exact server-side database error.",
 );
 
 console.log("Counter Ranking V2 shadow-mode tests passed.");

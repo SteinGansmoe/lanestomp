@@ -87,10 +87,45 @@ export type CounterRankingV2ObservedRankSnapshot = {
   winRate: number | null;
 };
 
+export type CounterRankingV2AdjustmentReason =
+  | "data_disagreement"
+  | "manual_review"
+  | "meta_shift"
+  | "other"
+  | "patch_buff"
+  | "patch_nerf"
+  | "practical_difficulty";
+
+export type CounterRankingV2ReviewStatus =
+  | "high_mastery_required"
+  | "incorrect_suggestion"
+  | "needs_more_data"
+  | "unreviewed"
+  | "verified_soft_counter"
+  | "verified_strong_counter";
+
+export type CounterRankingV2MechanicalReview = {
+  adjustmentReason: CounterRankingV2AdjustmentReason;
+  adminReviewNote: string | null;
+  calculatedMechanicalScore: number;
+  counterChampionId: string;
+  createdAt: string | null;
+  enemyChampionId: string;
+  finalMechanicalScore: number;
+  manualAdjustment: number;
+  publicEligible: boolean;
+  reviewStatus: CounterRankingV2ReviewStatus;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  role: LeagueRole;
+  updatedAt: string | null;
+};
+
 export type CounterRankingV2ComparisonRow = {
   candidateChampionId: string;
   mechanicalRank: number | null;
   mechanicalResult: CounterRankingV2MechanicalFitResult;
+  review: CounterRankingV2MechanicalReview | null;
   rankDelta: number | null;
   observed: CounterRankingV2ObservedRankSnapshot | null;
 };
@@ -103,6 +138,31 @@ type CounterRankingV2TraitInteraction = {
 };
 
 const maxTraitWeight = 5;
+export const counterRankingV2ManualAdjustmentMin = -30;
+export const counterRankingV2ManualAdjustmentMax = 30;
+export const counterRankingV2DefaultAdjustmentReason = "manual_review";
+export const counterRankingV2DefaultReviewStatus = "unreviewed";
+export const useReviewedMechanicalCountersPublicly =
+  process.env.NEXT_PUBLIC_USE_REVIEWED_MECHANICAL_COUNTERS_PUBLICLY === "true";
+
+export const counterRankingV2AdjustmentReasons = [
+  "patch_buff",
+  "patch_nerf",
+  "meta_shift",
+  "practical_difficulty",
+  "data_disagreement",
+  "manual_review",
+  "other",
+] as const satisfies readonly CounterRankingV2AdjustmentReason[];
+
+export const counterRankingV2ReviewStatuses = [
+  "unreviewed",
+  "verified_strong_counter",
+  "verified_soft_counter",
+  "incorrect_suggestion",
+  "high_mastery_required",
+  "needs_more_data",
+] as const satisfies readonly CounterRankingV2ReviewStatus[];
 
 export const counterRankingV2SupportedChampionIds = [
   "vex",
@@ -492,11 +552,13 @@ export function getCounterRankingV2ComparisonRows({
   candidateChampionIds,
   enemyChampionId,
   observedByChampionId,
+  reviewsByCandidateId = new Map(),
   role,
 }: {
   candidateChampionIds: string[];
   enemyChampionId: string;
   observedByChampionId: Map<string, CounterRankingV2ObservedRankSnapshot>;
+  reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
   role: LeagueRole;
 }): CounterRankingV2ComparisonRow[] {
   const mechanicalRows = candidateChampionIds
@@ -534,6 +596,7 @@ export function getCounterRankingV2ComparisonRows({
         mechanicalRank,
         mechanicalResult: row.mechanicalResult,
         observed,
+        review: reviewsByCandidateId.get(row.candidateChampionId) ?? null,
         rankDelta,
       };
     })
@@ -547,6 +610,136 @@ export function getCounterRankingV2ComparisonRows({
 
       return left.candidateChampionId.localeCompare(right.candidateChampionId);
     });
+}
+
+export function clampCounterRankingV2ManualAdjustment(adjustment: number) {
+  const finiteAdjustment = Number.isFinite(adjustment) ? adjustment : 0;
+
+  return Math.min(
+    counterRankingV2ManualAdjustmentMax,
+    Math.max(counterRankingV2ManualAdjustmentMin, finiteAdjustment),
+  );
+}
+
+export function isCounterRankingV2ManualAdjustmentInBounds(adjustment: number) {
+  return (
+    Number.isFinite(adjustment) &&
+    adjustment >= counterRankingV2ManualAdjustmentMin &&
+    adjustment <= counterRankingV2ManualAdjustmentMax
+  );
+}
+
+export function calculateCounterRankingV2FinalMechanicalScore({
+  calculatedMechanicalScore,
+  manualAdjustment,
+}: {
+  calculatedMechanicalScore: number;
+  manualAdjustment: number;
+}) {
+  const finiteCalculatedScore = Number.isFinite(calculatedMechanicalScore)
+    ? calculatedMechanicalScore
+    : 0;
+  const boundedAdjustment = clampCounterRankingV2ManualAdjustment(manualAdjustment);
+
+  return Math.min(100, Math.max(0, finiteCalculatedScore + boundedAdjustment));
+}
+
+export function createCounterRankingV2MechanicalReview({
+  adjustmentReason = counterRankingV2DefaultAdjustmentReason,
+  adminReviewNote = null,
+  calculatedMechanicalScore,
+  counterChampionId,
+  createdAt = null,
+  enemyChampionId,
+  manualAdjustment = 0,
+  publicEligible = false,
+  reviewStatus = counterRankingV2DefaultReviewStatus,
+  reviewedAt = null,
+  reviewedBy = null,
+  role,
+  updatedAt = null,
+}: Pick<
+  CounterRankingV2MechanicalReview,
+  "calculatedMechanicalScore" | "counterChampionId" | "enemyChampionId" | "role"
+> &
+  Partial<
+    Pick<
+      CounterRankingV2MechanicalReview,
+      | "adjustmentReason"
+      | "adminReviewNote"
+      | "createdAt"
+      | "manualAdjustment"
+      | "publicEligible"
+      | "reviewStatus"
+      | "reviewedAt"
+      | "reviewedBy"
+      | "updatedAt"
+    >
+  >): CounterRankingV2MechanicalReview {
+  const boundedAdjustment = clampCounterRankingV2ManualAdjustment(manualAdjustment);
+
+  return {
+    adjustmentReason,
+    adminReviewNote,
+    calculatedMechanicalScore,
+    counterChampionId: normalizeChampionId(counterChampionId),
+    createdAt,
+    enemyChampionId: normalizeChampionId(enemyChampionId),
+    finalMechanicalScore: calculateCounterRankingV2FinalMechanicalScore({
+      calculatedMechanicalScore,
+      manualAdjustment: boundedAdjustment,
+    }),
+    manualAdjustment: boundedAdjustment,
+    publicEligible,
+    reviewStatus,
+    reviewedAt,
+    reviewedBy,
+    role,
+    updatedAt,
+  };
+}
+
+export function isCounterRankingV2AdjustmentReason(value: string): value is CounterRankingV2AdjustmentReason {
+  return counterRankingV2AdjustmentReasons.includes(value as CounterRankingV2AdjustmentReason);
+}
+
+export function isCounterRankingV2ReviewStatus(value: string): value is CounterRankingV2ReviewStatus {
+  return counterRankingV2ReviewStatuses.includes(value as CounterRankingV2ReviewStatus);
+}
+
+export function isCounterRankingV2ReviewPublicEligible(
+  review: Pick<CounterRankingV2MechanicalReview, "publicEligible" | "reviewStatus"> | null,
+) {
+  return Boolean(review?.publicEligible && review.reviewStatus !== "incorrect_suggestion");
+}
+
+export function isCounterRankingV2ShadowCandidateEligible({
+  minimumGames,
+  observedGames,
+  review,
+}: {
+  minimumGames: number;
+  observedGames: number | null;
+  review: Pick<CounterRankingV2MechanicalReview, "publicEligible" | "reviewStatus"> | null;
+}) {
+  return (observedGames ?? 0) >= minimumGames || isCounterRankingV2ReviewPublicEligible(review);
+}
+
+export function isCounterRankingV2PublicCandidateEligible({
+  minimumGames,
+  observedGames,
+  review,
+  useReviewedMechanicalCounters = useReviewedMechanicalCountersPublicly,
+}: {
+  minimumGames: number;
+  observedGames: number | null;
+  review: Pick<CounterRankingV2MechanicalReview, "publicEligible" | "reviewStatus"> | null;
+  useReviewedMechanicalCounters?: boolean;
+}) {
+  return (
+    (observedGames ?? 0) >= minimumGames ||
+    (useReviewedMechanicalCounters && isCounterRankingV2ReviewPublicEligible(review))
+  );
 }
 
 export function createObservedCounterRankingV2Snapshot({

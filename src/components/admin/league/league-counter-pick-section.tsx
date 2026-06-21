@@ -16,7 +16,11 @@ import {
   X,
 } from "lucide-react";
 
-import { getCounterPickManagementMetrics } from "@/src/app/admin/league/counter-picks/actions";
+import {
+  getCounterPickManagementMetrics,
+  getCounterRankingV2MechanicalReviews,
+  saveCounterRankingV2MechanicalReview,
+} from "@/src/app/admin/league/counter-picks/actions";
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
@@ -25,19 +29,31 @@ import type { CounterPickManagementMetrics } from "@/src/features/league/counter
 import { fetchCounterPickStatsByEnemyAndRole } from "@/src/features/league/counter-pick-stats";
 import {
   compareCounterPickStatistics,
+  publicCounterPickMinimumRankedGames,
   toPublicCounterPickResult,
 } from "@/src/features/league/counter-pick-statistics";
 import {
   counterRankingV2SupportedChampionIds,
+  counterRankingV2AdjustmentReasons,
+  counterRankingV2ReviewStatuses,
   counterRankingV2TraitDefinitionsById,
   createObservedCounterRankingV2Snapshot,
+  calculateCounterRankingV2FinalMechanicalScore,
+  counterRankingV2DefaultAdjustmentReason,
+  counterRankingV2DefaultReviewStatus,
+  clampCounterRankingV2ManualAdjustment,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
+  isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2SupportedChampion,
+  useReviewedMechanicalCountersPublicly,
+  type CounterRankingV2AdjustmentReason,
   type CounterRankingV2ComparisonRow,
   type CounterRankingV2FitStatus,
+  type CounterRankingV2MechanicalReview,
   type CounterRankingV2ObservedRankSnapshot,
   type CounterRankingV2ProfileStatus,
+  type CounterRankingV2ReviewStatus,
   type CounterRankingV2TraitId,
 } from "@/src/features/league/counter-ranking-v2";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
@@ -65,6 +81,13 @@ type CounterPickEditForm = {
 };
 type CounterPickCreateForm = CounterPickEditForm & {
   counter_champion_id: string;
+};
+type CounterRankingV2ReviewForm = {
+  adjustmentReason: CounterRankingV2AdjustmentReason;
+  adminReviewNote: string;
+  manualAdjustment: string;
+  publicEligible: boolean;
+  reviewStatus: CounterRankingV2ReviewStatus;
 };
 
 const emptyCreateForm: CounterPickCreateForm = {
@@ -125,11 +148,22 @@ export function AdminLeagueCounterPicksSection({
   const [counterRankingV2ObservedByChampionId, setCounterRankingV2ObservedByChampionId] = useState<
     Map<string, CounterRankingV2ObservedRankSnapshot>
   >(() => new Map());
+  const [counterRankingV2ReviewsByCandidateId, setCounterRankingV2ReviewsByCandidateId] = useState<
+    Map<string, CounterRankingV2MechanicalReview>
+  >(() => new Map());
   const [counterRankingV2Status, setCounterRankingV2Status] = useState<FormStatus>({
     error: null,
     isLoading: false,
     success: null,
   });
+  const [counterRankingV2ReviewStatus, setCounterRankingV2ReviewStatus] = useState<FormStatus>({
+    error: null,
+    isLoading: false,
+    success: null,
+  });
+  const [savingCounterRankingV2ReviewKey, setSavingCounterRankingV2ReviewKey] = useState<
+    string | null
+  >(null);
 
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
@@ -242,12 +276,14 @@ export function AdminLeagueCounterPicksSection({
             candidateChampionIds: counterRankingV2CandidateChampionIds,
             enemyChampionId: effectiveSelectedChampionId,
             observedByChampionId: counterRankingV2ObservedByChampionId,
+            reviewsByCandidateId: counterRankingV2ReviewsByCandidateId,
             role: selectedRole,
           })
         : [],
     [
       counterRankingV2CandidateChampionIds,
       counterRankingV2ObservedByChampionId,
+      counterRankingV2ReviewsByCandidateId,
       effectiveSelectedChampionId,
       selectedRole,
     ],
@@ -260,6 +296,7 @@ export function AdminLeagueCounterPicksSection({
 
   useEffect(() => {
     void loadCounterRankingV2ObservedStats();
+    void loadCounterRankingV2Reviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveSelectedChampionId, selectedRole]);
 
@@ -355,6 +392,115 @@ export function AdminLeagueCounterPicksSection({
       error: null,
       isLoading: false,
       success: `${publicResults.length} observed rows loaded.`,
+    });
+  }
+
+  async function loadCounterRankingV2Reviews() {
+    if (!effectiveSelectedChampionId) {
+      setCounterRankingV2ReviewsByCandidateId(new Map());
+      setCounterRankingV2ReviewStatus({ error: null, isLoading: false, success: null });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setCounterRankingV2ReviewsByCandidateId(new Map());
+      setCounterRankingV2ReviewStatus({
+        error: tokenResult.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCounterRankingV2ReviewStatus({ error: null, isLoading: true, success: null });
+
+    const result = await getCounterRankingV2MechanicalReviews({
+      accessToken: tokenResult.accessToken,
+      enemyChampionId: effectiveSelectedChampionId,
+      role: selectedRole,
+    });
+
+    if (!result.ok) {
+      setCounterRankingV2ReviewsByCandidateId(new Map());
+      setCounterRankingV2ReviewStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setCounterRankingV2ReviewsByCandidateId(
+      new Map(
+        result.reviews.map((review) => [
+          normalizeCounterRankingV2ChampionId(review.counterChampionId),
+          review,
+        ] as const),
+      ),
+    );
+    setCounterRankingV2ReviewStatus({
+      error: null,
+      isLoading: false,
+      success: `${result.reviews.length} review rows loaded.`,
+    });
+  }
+
+  async function saveCounterRankingV2Review(
+    row: CounterRankingV2ComparisonRow,
+    form: CounterRankingV2ReviewForm,
+  ) {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setCounterRankingV2ReviewStatus({
+        error: tokenResult.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const manualAdjustment = Number(form.manualAdjustment);
+
+    if (!Number.isFinite(manualAdjustment)) {
+      setCounterRankingV2ReviewStatus({
+        error: "Manual adjustment must be a finite number.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setSavingCounterRankingV2ReviewKey(row.candidateChampionId);
+    setCounterRankingV2ReviewStatus({ error: null, isLoading: true, success: null });
+
+    const result = await saveCounterRankingV2MechanicalReview({
+      accessToken: tokenResult.accessToken,
+      adjustmentReason: form.adjustmentReason,
+      adminReviewNote: form.adminReviewNote,
+      counterChampionId: row.candidateChampionId,
+      enemyChampionId: row.mechanicalResult.enemyChampionId,
+      manualAdjustment,
+      publicEligible: form.publicEligible,
+      reviewStatus: form.reviewStatus,
+      role: selectedRole,
+    });
+
+    setSavingCounterRankingV2ReviewKey(null);
+
+    if (!result.ok) {
+      setCounterRankingV2ReviewStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setCounterRankingV2ReviewsByCandidateId((currentReviews) => {
+      const nextReviews = new Map(currentReviews);
+
+      nextReviews.set(normalizeCounterRankingV2ChampionId(result.review.counterChampionId), result.review);
+      return nextReviews;
+    });
+    setCounterRankingV2ReviewStatus({
+      error: null,
+      isLoading: false,
+      success: "Mechanical review saved.",
     });
   }
 
@@ -675,7 +821,10 @@ export function AdminLeagueCounterPicksSection({
           championsById={counterRankingV2ChampionsById}
           enemyChampionId={effectiveSelectedChampionId}
           isLoading={counterRankingV2Status.isLoading}
+          onSaveReview={saveCounterRankingV2Review}
+          reviewStatus={counterRankingV2ReviewStatus}
           rows={counterRankingV2Rows}
+          savingReviewKey={savingCounterRankingV2ReviewKey}
           selectedRole={selectedRole}
           statusError={counterRankingV2Status.error}
         />
@@ -1174,14 +1323,20 @@ function CounterRankingV2ShadowPanel({
   championsById,
   enemyChampionId,
   isLoading,
+  onSaveReview,
+  reviewStatus,
   rows,
+  savingReviewKey,
   selectedRole,
   statusError,
 }: {
   championsById: Map<string, AdminLeagueChampion>;
   enemyChampionId: string;
   isLoading: boolean;
+  onSaveReview: (row: CounterRankingV2ComparisonRow, form: CounterRankingV2ReviewForm) => void;
+  reviewStatus: FormStatus;
   rows: CounterRankingV2ComparisonRow[];
+  savingReviewKey: string | null;
   selectedRole: LeagueRole;
   statusError: string | null;
 }) {
@@ -1206,7 +1361,7 @@ function CounterRankingV2ShadowPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-5">
           <CounterRankingV2MetaCell
             label="Enemy"
             value={enemyChampion ? `${enemyChampion.name} ${getRoleLabel(selectedRole)}` : "None"}
@@ -1225,11 +1380,35 @@ function CounterRankingV2ShadowPanel({
               isLoading ? "Loading" : statusError ? "Unavailable" : "Loaded from current stats"
             }
           />
+          <CounterRankingV2MetaCell
+            label="Review layer"
+            value={
+              reviewStatus.isLoading
+                ? "Loading"
+                : reviewStatus.error
+                  ? "Unavailable"
+                  : "Loaded from review table"
+            }
+          />
+          <CounterRankingV2MetaCell
+            label="Public reviewed counters"
+            value={useReviewedMechanicalCountersPublicly ? "Feature flag enabled" : "Disabled"}
+          />
         </div>
 
         {statusError ? (
           <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100">
             {statusError}
+          </p>
+        ) : null}
+        {reviewStatus.error ? (
+          <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-100">
+            {reviewStatus.error}
+          </p>
+        ) : null}
+        {reviewStatus.success ? (
+          <p className="rounded-md border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+            {reviewStatus.success}
           </p>
         ) : null}
 
@@ -1246,8 +1425,10 @@ function CounterRankingV2ShadowPanel({
               <CounterRankingV2ShadowRow
                 candidate={championsById.get(row.candidateChampionId) ?? null}
                 isLoadingObserved={isLoading}
-                key={row.candidateChampionId}
+                key={`${row.candidateChampionId}-${row.review?.updatedAt ?? "new"}`}
+                onSaveReview={onSaveReview}
                 row={row}
+                savingReviewKey={savingReviewKey}
               />
             ))}
           </div>
@@ -1269,15 +1450,32 @@ function CounterRankingV2MetaCell({ label, value }: { label: string; value: stri
 function CounterRankingV2ShadowRow({
   candidate,
   isLoadingObserved,
+  onSaveReview,
   row,
+  savingReviewKey,
 }: {
   candidate: AdminLeagueChampion | null;
   isLoadingObserved: boolean;
+  onSaveReview: (row: CounterRankingV2ComparisonRow, form: CounterRankingV2ReviewForm) => void;
   row: CounterRankingV2ComparisonRow;
+  savingReviewKey: string | null;
 }) {
   const result = row.mechanicalResult;
   const profile = getCounterRankingV2ChampionProfile(row.candidateChampionId);
   const topFactors = result.factors.slice(0, 3);
+  const [reviewForm, setReviewForm] = useState<CounterRankingV2ReviewForm>(() =>
+    getCounterRankingV2ReviewForm(row.review),
+  );
+  const parsedAdjustment = Number(reviewForm.manualAdjustment);
+  const previewAdjustment = clampCounterRankingV2ManualAdjustment(
+    Number.isFinite(parsedAdjustment) ? parsedAdjustment : 0,
+  );
+  const finalScorePreview = calculateCounterRankingV2FinalMechanicalScore({
+    calculatedMechanicalScore: result.score,
+    manualAdjustment: previewAdjustment,
+  });
+  const isSavingReview = savingReviewKey === row.candidateChampionId;
+  const hasCalculatedScore = result.status === "calculated";
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
@@ -1334,6 +1532,21 @@ function CounterRankingV2ShadowRow({
         </div>
       </div>
 
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <CounterRankingV2Metric
+          label="Calculated mechanical score"
+          value={hasCalculatedScore ? String(result.score) : "Missing"}
+        />
+        <CounterRankingV2Metric
+          label="Manual adjustment"
+          value={formatSignedAdjustment(previewAdjustment)}
+        />
+        <CounterRankingV2Metric
+          label="Final reviewed score"
+          value={hasCalculatedScore ? String(finalScorePreview) : "Missing"}
+        />
+      </div>
+
       <div className="mt-4 flex flex-wrap gap-2">
         <Badge className="border-white/10 bg-white/5 text-zinc-300">
           {formatCounterRankingV2Status(result.status)}
@@ -1346,7 +1559,173 @@ function CounterRankingV2ShadowRow({
             {row.observed.winRate.toFixed(1)}% observed WR
           </Badge>
         ) : null}
+        {row.review ? (
+          <Badge className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100">
+            {formatCounterRankingV2ReviewStatus(row.review.reviewStatus)}
+          </Badge>
+        ) : (
+          <Badge className="border-white/10 bg-white/5 text-zinc-400">No review row</Badge>
+        )}
+        {isCounterRankingV2ReviewPublicEligible(row.review) ? (
+          <>
+            <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
+              Design counter
+            </Badge>
+            {(row.observed?.games ?? 0) < publicCounterPickMinimumRankedGames ? (
+              <Badge className="border-amber-300/20 bg-amber-500/10 text-amber-100">
+                Low sample size
+              </Badge>
+            ) : null}
+          </>
+        ) : null}
       </div>
+
+      <form
+        className="mt-4 grid gap-4 rounded-md border border-white/10 bg-black/15 p-4 lg:grid-cols-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSaveReview(row, reviewForm);
+        }}
+      >
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Review status</span>
+          <select
+            className={`${fieldClassName} h-10`}
+            disabled={!hasCalculatedScore || isSavingReview}
+            onChange={(event) =>
+              setReviewForm((currentForm) => ({
+                ...currentForm,
+                publicEligible:
+                  event.target.value === "incorrect_suggestion"
+                    ? false
+                    : currentForm.publicEligible,
+                reviewStatus: event.target.value as CounterRankingV2ReviewStatus,
+              }))
+            }
+            value={reviewForm.reviewStatus}
+          >
+            {counterRankingV2ReviewStatuses.map((status) => (
+              <option className={selectOptionClassName} key={status} value={status}>
+                {formatCounterRankingV2ReviewStatus(status)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Adjustment reason</span>
+          <select
+            className={`${fieldClassName} h-10`}
+            disabled={!hasCalculatedScore || isSavingReview}
+            onChange={(event) =>
+              setReviewForm((currentForm) => ({
+                ...currentForm,
+                adjustmentReason: event.target.value as CounterRankingV2AdjustmentReason,
+              }))
+            }
+            value={reviewForm.adjustmentReason}
+          >
+            {counterRankingV2AdjustmentReasons.map((reason) => (
+              <option className={selectOptionClassName} key={reason} value={reason}>
+                {formatCounterRankingV2AdjustmentReason(reason)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm text-zinc-300">Manual adjustment</span>
+          <Input
+            className="h-10 border-white/10 bg-white/5 text-zinc-100"
+            disabled={!hasCalculatedScore || isSavingReview}
+            max={30}
+            min={-30}
+            onChange={(event) =>
+              setReviewForm((currentForm) => ({
+                ...currentForm,
+                manualAdjustment: event.target.value,
+              }))
+            }
+            step={1}
+            type="number"
+            value={reviewForm.manualAdjustment}
+          />
+          <input
+            aria-label="Manual adjustment slider"
+            className="w-full accent-cyan-300"
+            disabled={!hasCalculatedScore || isSavingReview}
+            max={30}
+            min={-30}
+            onChange={(event) =>
+              setReviewForm((currentForm) => ({
+                ...currentForm,
+                manualAdjustment: event.target.value,
+              }))
+            }
+            step={1}
+            type="range"
+            value={Number.isFinite(parsedAdjustment) ? parsedAdjustment : 0}
+          />
+        </label>
+
+        <label className="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.03] p-3">
+          <input
+            checked={
+              reviewForm.reviewStatus !== "incorrect_suggestion" && reviewForm.publicEligible
+            }
+            className="size-4 accent-cyan-300"
+            disabled={
+              !hasCalculatedScore ||
+              isSavingReview ||
+              reviewForm.reviewStatus === "incorrect_suggestion"
+            }
+            onChange={(event) =>
+              setReviewForm((currentForm) => ({
+                ...currentForm,
+                publicEligible: event.target.checked,
+              }))
+            }
+            type="checkbox"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-zinc-100">Public eligible</span>
+            <span className="block text-xs leading-5 text-zinc-500">
+              Stored for shadow review. Public use requires the reviewed-counter feature flag.
+            </span>
+          </span>
+        </label>
+
+        <label className="block space-y-2 lg:col-span-2">
+          <span className="text-sm text-zinc-300">Admin review note</span>
+          <textarea
+            className={`${fieldClassName} min-h-24 py-2 leading-6`}
+            disabled={!hasCalculatedScore || isSavingReview}
+            onChange={(event) =>
+              setReviewForm((currentForm) => ({
+                ...currentForm,
+                adminReviewNote: event.target.value,
+              }))
+            }
+            placeholder="Why this mechanical suggestion should be trusted, adjusted, or rejected..."
+            value={reviewForm.adminReviewNote}
+          />
+        </label>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
+          <p className="text-xs leading-5 text-zinc-500">
+            Raw calculated score stays model-owned. Saving only updates the review layer.
+          </p>
+          <Button
+            className="border-cyan-300/20 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20"
+            disabled={!hasCalculatedScore || isSavingReview}
+            type="submit"
+            variant="ghost"
+          >
+            <Save className="size-4" aria-hidden="true" />
+            {isSavingReview ? "Saving..." : "Save review"}
+          </Button>
+        </div>
+      </form>
 
       {topFactors.length > 0 ? (
         <ul className="mt-4 space-y-2">
@@ -1380,6 +1759,26 @@ function CounterRankingV2Metric({ label, value }: { label: string; value: string
       <p className="mt-1 font-semibold text-zinc-100">{value}</p>
     </div>
   );
+}
+
+function getCounterRankingV2ReviewForm(
+  review: CounterRankingV2MechanicalReview | null,
+): CounterRankingV2ReviewForm {
+  return {
+    adjustmentReason: review?.adjustmentReason ?? counterRankingV2DefaultAdjustmentReason,
+    adminReviewNote: review?.adminReviewNote ?? "",
+    manualAdjustment: String(review?.manualAdjustment ?? 0),
+    publicEligible: review?.publicEligible ?? false,
+    reviewStatus: review?.reviewStatus ?? counterRankingV2DefaultReviewStatus,
+  };
+}
+
+function formatSignedAdjustment(adjustment: number) {
+  if (!Number.isFinite(adjustment) || adjustment === 0) {
+    return "0";
+  }
+
+  return adjustment > 0 ? `+${adjustment}` : String(adjustment);
 }
 
 function CounterPickRow({
@@ -1996,6 +2395,42 @@ function formatCounterRankingV2Status(status: CounterRankingV2FitStatus) {
       return "Missing candidate profile";
     case "missing_enemy_profile":
       return "Missing enemy profile";
+  }
+}
+
+function formatCounterRankingV2ReviewStatus(status: CounterRankingV2ReviewStatus) {
+  switch (status) {
+    case "unreviewed":
+      return "Unreviewed";
+    case "verified_strong_counter":
+      return "Verified strong counter";
+    case "verified_soft_counter":
+      return "Verified soft counter";
+    case "incorrect_suggestion":
+      return "Incorrect suggestion";
+    case "high_mastery_required":
+      return "High mastery required";
+    case "needs_more_data":
+      return "Needs more data";
+  }
+}
+
+function formatCounterRankingV2AdjustmentReason(reason: CounterRankingV2AdjustmentReason) {
+  switch (reason) {
+    case "patch_buff":
+      return "Patch buff";
+    case "patch_nerf":
+      return "Patch nerf";
+    case "meta_shift":
+      return "Meta shift";
+    case "practical_difficulty":
+      return "Practical difficulty";
+    case "data_disagreement":
+      return "Data disagreement";
+    case "manual_review":
+      return "Manual review";
+    case "other":
+      return "Other";
   }
 }
 

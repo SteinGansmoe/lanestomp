@@ -8,6 +8,16 @@ import {
   normalizeRiotScanJobMetrics,
 } from "@/src/features/league/counter-pick-management-metrics";
 import {
+  calculateMechanicalMatchupFit,
+  createCounterRankingV2MechanicalReview,
+  isCounterRankingV2AdjustmentReason,
+  isCounterRankingV2ManualAdjustmentInBounds,
+  isCounterRankingV2ReviewStatus,
+  type CounterRankingV2AdjustmentReason,
+  type CounterRankingV2MechanicalReview,
+  type CounterRankingV2ReviewStatus,
+} from "@/src/features/league/counter-ranking-v2";
+import {
   createEmptyRiotCollectionDiscoveryDiagnostics,
   defaultRiotCollectionSafetyLimits,
   getAdaptiveRiotCollectionSeedBatchSize,
@@ -80,7 +90,7 @@ import {
   type PaginatedSeedCandidates,
   type RiotSeedCandidateRankGroupId,
 } from "@/src/features/league/riot-seed-candidate-rank-groups";
-import type { LeagueRole } from "@/src/features/league/roles";
+import { leagueRoles, type LeagueRole } from "@/src/features/league/roles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -164,6 +174,22 @@ const riotSeedCandidateSelect = [
   "consecutive_scan_failures",
   "latest_match_seen_at",
   "created_at",
+].join(", ");
+const counterRankingV2MechanicalReviewSelect = [
+  "adjustment_reason",
+  "admin_review_note",
+  "calculated_mechanical_score",
+  "counter_champion_id",
+  "created_at",
+  "enemy_champion_id",
+  "final_mechanical_score",
+  "manual_adjustment",
+  "public_eligible",
+  "review_status",
+  "reviewed_at",
+  "reviewed_by",
+  "role",
+  "updated_at",
 ].join(", ");
 
 type AuthorizedClientResult =
@@ -255,6 +281,23 @@ type RiotCollectionMetricRow = {
   updated_at: string | null;
 };
 
+type CounterRankingV2MechanicalReviewRow = {
+  adjustment_reason: CounterRankingV2AdjustmentReason;
+  admin_review_note: string | null;
+  calculated_mechanical_score: number;
+  counter_champion_id: string;
+  created_at: string;
+  enemy_champion_id: string;
+  final_mechanical_score: number;
+  manual_adjustment: number;
+  public_eligible: boolean;
+  review_status: CounterRankingV2ReviewStatus;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  role: LeagueRole;
+  updated_at: string;
+};
+
 type RiotSeedCandidateQueryBuilder = {
   eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
@@ -298,6 +341,38 @@ export type LeagueChampionRegistryAdminStatusResult =
         unknown: string[];
         unknownCount: number;
       };
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type CounterRankingV2MechanicalReviewsResult =
+  | {
+      ok: true;
+      reviews: CounterRankingV2MechanicalReview[];
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type SaveCounterRankingV2MechanicalReviewInput = {
+  accessToken: string;
+  adjustmentReason: CounterRankingV2AdjustmentReason;
+  adminReviewNote: string | null;
+  counterChampionId: string;
+  enemyChampionId: string;
+  manualAdjustment: number;
+  publicEligible: boolean;
+  reviewStatus: CounterRankingV2ReviewStatus;
+  role: LeagueRole;
+};
+
+export type SaveCounterRankingV2MechanicalReviewResult =
+  | {
+      ok: true;
+      review: CounterRankingV2MechanicalReview;
     }
   | {
       error: string;
@@ -608,6 +683,146 @@ export async function getCounterPickManagementMetrics({
   return {
     metrics,
     ok: true,
+  };
+}
+
+export async function getCounterRankingV2MechanicalReviews({
+  accessToken,
+  enemyChampionId,
+  role,
+}: {
+  accessToken: string;
+  enemyChampionId: string;
+  role: LeagueRole;
+}): Promise<CounterRankingV2MechanicalReviewsResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "view Counter Ranking V2 reviews");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  if (!enemyChampionId.trim()) {
+    return {
+      error: "Select an enemy champion before loading review rows.",
+      ok: false,
+    };
+  }
+
+  const { data, error } = await serviceClientResult.supabase
+    .from("counter_ranking_v2_mechanical_reviews")
+    .select(counterRankingV2MechanicalReviewSelect)
+    .eq("enemy_champion_id", normalizeChampionIdForReview(enemyChampionId))
+    .eq("role", role)
+    .returns<CounterRankingV2MechanicalReviewRow[]>();
+
+  if (error) {
+    console.error("Counter Ranking V2 review rows load failed", {
+      error: getSafeDatabaseError(error),
+      enemyChampionId: normalizeChampionIdForReview(enemyChampionId),
+      role,
+      table: "counter_ranking_v2_mechanical_reviews",
+    });
+
+    return {
+      error: "Counter Ranking V2 review rows could not be loaded.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    reviews: (data ?? []).map(toCounterRankingV2MechanicalReview),
+  };
+}
+
+export async function saveCounterRankingV2MechanicalReview(
+  input: SaveCounterRankingV2MechanicalReviewInput,
+): Promise<SaveCounterRankingV2MechanicalReviewResult> {
+  const authResult = await getAuthorizedAdmin(input.accessToken, "save Counter Ranking V2 reviews");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const validation = validateCounterRankingV2MechanicalReviewInput(input);
+
+  if (!validation.ok) {
+    return validation;
+  }
+
+  const mechanicalResult = calculateMechanicalMatchupFit({
+    candidateChampionId: validation.counterChampionId,
+    enemyChampionId: validation.enemyChampionId,
+    role: validation.role,
+  });
+
+  if (mechanicalResult.status !== "calculated") {
+    return {
+      error: "Counter Ranking V2 could not calculate a mechanical score for this matchup.",
+      ok: false,
+    };
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await serviceClientResult.supabase
+    .from("counter_ranking_v2_mechanical_reviews")
+    .upsert(
+      {
+        adjustment_reason: validation.adjustmentReason,
+        admin_review_note: nullableTrim(input.adminReviewNote),
+        calculated_mechanical_score: mechanicalResult.score,
+        counter_champion_id: validation.counterChampionId,
+        enemy_champion_id: validation.enemyChampionId,
+        manual_adjustment: validation.manualAdjustment,
+        public_eligible:
+          validation.reviewStatus === "incorrect_suggestion" ? false : validation.publicEligible,
+        review_status: validation.reviewStatus,
+        reviewed_at: now,
+        reviewed_by: authResult.userId,
+        role: validation.role,
+        updated_at: now,
+      },
+      {
+        onConflict: "enemy_champion_id,counter_champion_id,role",
+      },
+    )
+    .select(counterRankingV2MechanicalReviewSelect)
+    .single<CounterRankingV2MechanicalReviewRow>();
+
+  if (error || !data) {
+    console.error("Counter Ranking V2 review save failed", {
+      error: error ? getSafeDatabaseError(error) : null,
+      hasData: Boolean(data),
+      keys: {
+        counterChampionId: validation.counterChampionId,
+        enemyChampionId: validation.enemyChampionId,
+        role: validation.role,
+      },
+      table: "counter_ranking_v2_mechanical_reviews",
+      upsertConflictTarget: "enemy_champion_id,counter_champion_id,role",
+    });
+
+    return {
+      error: "Counter Ranking V2 review could not be saved.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    review: toCounterRankingV2MechanicalReview(data),
   };
 }
 
@@ -3039,9 +3254,17 @@ async function fetchScanSeedCandidates({
   return (data ?? []) as unknown as RiotSeedCandidateView[];
 }
 
-function getSafeDatabaseError(error: { code?: string; message?: string; status?: number }) {
+function getSafeDatabaseError(error: {
+  code?: string;
+  details?: string;
+  hint?: string;
+  message?: string;
+  status?: number;
+}) {
   return {
     code: error.code ?? null,
+    details: error.details ?? null,
+    hint: error.hint ?? null,
     message: error.message ?? "Database operation failed.",
     status: error.status ?? null,
   };
@@ -6711,6 +6934,117 @@ function getRiotRankRefreshErrorMessage(error: Error) {
   }
 
   return error.message || "Riot rank refresh failed.";
+}
+
+function validateCounterRankingV2MechanicalReviewInput(
+  input: SaveCounterRankingV2MechanicalReviewInput,
+):
+  | {
+      adjustmentReason: CounterRankingV2AdjustmentReason;
+      counterChampionId: string;
+      enemyChampionId: string;
+      manualAdjustment: number;
+      publicEligible: boolean;
+      reviewStatus: CounterRankingV2ReviewStatus;
+      role: LeagueRole;
+      ok: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    } {
+  const enemyChampionId = normalizeChampionIdForReview(input.enemyChampionId);
+  const counterChampionId = normalizeChampionIdForReview(input.counterChampionId);
+
+  if (!enemyChampionId || !counterChampionId) {
+    return {
+      error: "Select an enemy champion and counter champion before saving review.",
+      ok: false,
+    };
+  }
+
+  if (enemyChampionId === counterChampionId) {
+    return {
+      error: "A champion cannot be reviewed as a counter to itself.",
+      ok: false,
+    };
+  }
+
+  if (!leagueRoles.includes(input.role)) {
+    return {
+      error: "Select a valid role before saving review.",
+      ok: false,
+    };
+  }
+
+  if (!isCounterRankingV2AdjustmentReason(input.adjustmentReason)) {
+    return {
+      error: "Select a valid adjustment reason.",
+      ok: false,
+    };
+  }
+
+  if (!isCounterRankingV2ReviewStatus(input.reviewStatus)) {
+    return {
+      error: "Select a valid review status.",
+      ok: false,
+    };
+  }
+
+  if (!Number.isFinite(input.manualAdjustment)) {
+    return {
+      error: "Manual adjustment must be a finite number.",
+      ok: false,
+    };
+  }
+
+  if (!isCounterRankingV2ManualAdjustmentInBounds(input.manualAdjustment)) {
+    return {
+      error: "Manual adjustment must be between -30 and 30.",
+      ok: false,
+    };
+  }
+
+  return {
+    adjustmentReason: input.adjustmentReason,
+    counterChampionId,
+    enemyChampionId,
+    manualAdjustment: input.manualAdjustment,
+    ok: true,
+    publicEligible: input.publicEligible,
+    reviewStatus: input.reviewStatus,
+    role: input.role,
+  };
+}
+
+function toCounterRankingV2MechanicalReview(
+  row: CounterRankingV2MechanicalReviewRow,
+): CounterRankingV2MechanicalReview {
+  return createCounterRankingV2MechanicalReview({
+    adjustmentReason: row.adjustment_reason,
+    adminReviewNote: row.admin_review_note,
+    calculatedMechanicalScore: Number(row.calculated_mechanical_score),
+    counterChampionId: row.counter_champion_id,
+    createdAt: row.created_at,
+    enemyChampionId: row.enemy_champion_id,
+    manualAdjustment: Number(row.manual_adjustment),
+    publicEligible: row.public_eligible,
+    reviewStatus: row.review_status,
+    reviewedAt: row.reviewed_at,
+    reviewedBy: row.reviewed_by,
+    role: row.role,
+    updatedAt: row.updated_at,
+  });
+}
+
+function normalizeChampionIdForReview(championId: string) {
+  return championId.trim().toLowerCase();
+}
+
+function nullableTrim(value: string | null) {
+  const trimmedValue = value?.trim() ?? "";
+
+  return trimmedValue || null;
 }
 
 function getRegistryRowLabel(row: { id?: string | null; name?: string | null }) {

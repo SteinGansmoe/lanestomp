@@ -92,8 +92,8 @@ create policy "Admins can manage counter ranking v2 trait profiles"
 on public.counter_ranking_v2_champion_trait_profiles
 for all
 to authenticated
-using (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin))
-with check (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin));
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Admins can manage counter ranking v2 vulnerability profiles"
 on public.counter_ranking_v2_champion_vulnerability_profiles;
@@ -101,8 +101,8 @@ create policy "Admins can manage counter ranking v2 vulnerability profiles"
 on public.counter_ranking_v2_champion_vulnerability_profiles
 for all
 to authenticated
-using (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin))
-with check (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin));
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Admins can manage counter ranking v2 profile reviews"
 on public.counter_ranking_v2_profile_reviews;
@@ -110,8 +110,8 @@ create policy "Admins can manage counter ranking v2 profile reviews"
 on public.counter_ranking_v2_profile_reviews
 for all
 to authenticated
-using (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin))
-with check (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin));
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
 
 drop policy if exists "Admins can manage counter ranking v2 mechanical fit results"
 on public.counter_ranking_v2_mechanical_fit_results;
@@ -119,8 +119,8 @@ create policy "Admins can manage counter ranking v2 mechanical fit results"
 on public.counter_ranking_v2_mechanical_fit_results
 for all
 to authenticated
-using (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin))
-with check (exists (select 1 from public.profiles where profiles.id = auth.uid() and profiles.is_admin));
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
 
 grant select, insert, update, delete
 on table
