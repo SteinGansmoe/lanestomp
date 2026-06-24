@@ -16,12 +16,18 @@ export type CounterRankingV2TraitCategory =
 
 export type CounterRankingV2TraitId =
   | "anti_dash"
+  | "anti_heal"
   | "anti_magic"
+  | "anti_shield"
+  | "all_in_threat"
   | "burst_damage"
   | "cooldown_reliant"
   | "dash_reliant"
+  | "disengage"
   | "early_weakness"
+  | "falls_off_late"
   | "fragile"
+  | "gap_closing"
   | "immobile"
   | "late_scaling"
   | "melee_commit"
@@ -30,11 +36,23 @@ export type CounterRankingV2TraitId =
   | "point_and_click_cc"
   | "poke"
   | "reliable_cc"
+  | "roaming"
+  | "scaling"
   | "short_range"
+  | "skillshot_reliant"
   | "suppression"
+  | "strong_early"
   | "sustained_damage"
+  | "sustain"
+  | "vulnerable_to_all_in"
   | "waveclear"
-  | "waveclear_weak";
+  | "waveclear_weak"
+  | "weak_early"
+  | "weak_vs_poke"
+  | "weak_vs_range"
+  | "weak_vs_roaming"
+  | "weak_vs_sustain"
+  | "weak_vs_waveclear";
 
 export type CounterRankingV2ProfileStatus = "draft" | "needs_revision" | "reviewed";
 
@@ -374,10 +392,29 @@ export const counterRankingV2TraitVocabulary = [
     label: "Anti-dash",
   },
   {
+    category: "utility",
+    description: "Can reduce, punish, or naturally pressure sustain/healing-heavy champions.",
+    id: "anti_heal",
+    label: "Anti-heal",
+  },
+  {
     category: "defensive_shape",
     description: "Naturally reduces or absorbs magic-heavy pressure.",
     id: "anti_magic",
     label: "Anti-magic",
+  },
+  {
+    category: "utility",
+    description: "Can reduce, break, bypass, or punish shield-based durability.",
+    id: "anti_shield",
+    label: "Anti-shield",
+  },
+  {
+    category: "target_access",
+    description:
+      "Can threaten decisive engage or kill windows through committed burst, engage, or full-combo pressure.",
+    id: "all_in_threat",
+    label: "All-in threat",
   },
   {
     category: "damage_pattern",
@@ -398,6 +435,13 @@ export const counterRankingV2TraitVocabulary = [
     label: "Dash-reliant",
   },
   {
+    category: "defensive_shape",
+    description:
+      "Can deny engage, reset fights, peel, escape, or interrupt enemy commitment.",
+    id: "disengage",
+    label: "Disengage",
+  },
+  {
     category: "vulnerability",
     description: "Can be punished before levels, items, or core scaling breakpoints.",
     id: "early_weakness",
@@ -405,9 +449,22 @@ export const counterRankingV2TraitVocabulary = [
   },
   {
     category: "vulnerability",
+    description: "Loses relative impact later in the game compared to scaling opponents.",
+    id: "falls_off_late",
+    label: "Falls off late",
+  },
+  {
+    category: "vulnerability",
     description: "Low tolerance for burst or locked-down all-ins.",
     id: "fragile",
     label: "Fragile",
+  },
+  {
+    category: "vulnerability",
+    description:
+      "Vulnerable to enemies that can quickly close distance and force trades or all-ins.",
+    id: "gap_closing",
+    label: "Gap closing",
   },
   {
     category: "vulnerability",
@@ -418,8 +475,8 @@ export const counterRankingV2TraitVocabulary = [
   {
     category: "damage_pattern",
     description: "Gains large relative value after levels or items.",
-    id: "late_scaling",
-    label: "Late scaling",
+    id: "scaling",
+    label: "Scaling",
   },
   {
     category: "vulnerability",
@@ -458,10 +515,24 @@ export const counterRankingV2TraitVocabulary = [
     label: "Reliable CC",
   },
   {
+    category: "utility",
+    description:
+      "Can leave lane and impact side lanes, jungle fights, or map tempo effectively.",
+    id: "roaming",
+    label: "Roaming",
+  },
+  {
     category: "vulnerability",
     description: "Needs to stand close enough to be threatened during normal trades.",
     id: "short_range",
     label: "Short range",
+  },
+  {
+    category: "vulnerability",
+    description:
+      "Loses reliability when enemies can dodge, dash, become untargetable, or otherwise avoid key spells.",
+    id: "skillshot_reliant",
+    label: "Skillshot-reliant",
   },
   {
     category: "utility",
@@ -471,9 +542,28 @@ export const counterRankingV2TraitVocabulary = [
   },
   {
     category: "damage_pattern",
+    description: "Has strong early lane pressure, kill threat, or early skirmish power.",
+    id: "strong_early",
+    label: "Strong early",
+  },
+  {
+    category: "damage_pattern",
     description: "Wins through repeated DPS rather than one burst window.",
     id: "sustained_damage",
     label: "Sustained damage",
+  },
+  {
+    category: "defensive_shape",
+    description:
+      "Can recover health or stay in fights/trades longer through healing, shielding, or repeated combat recovery.",
+    id: "sustain",
+    label: "Sustain",
+  },
+  {
+    category: "vulnerability",
+    description: "Struggles when enemies can commit and force decisive kill windows.",
+    id: "vulnerable_to_all_in",
+    label: "Weak to all-in",
   },
   {
     category: "utility",
@@ -487,11 +577,65 @@ export const counterRankingV2TraitVocabulary = [
     id: "waveclear_weak",
     label: "Weak waveclear",
   },
+  {
+    category: "vulnerability",
+    description: "Vulnerable before key levels/items and can be punished by early pressure.",
+    id: "weak_early",
+    label: "Weak early",
+  },
+  {
+    category: "vulnerability",
+    description: "Struggles against repeated ranged damage, chip pressure, or long-range harassment.",
+    id: "weak_vs_poke",
+    label: "Vulnerable to poke",
+  },
+  {
+    category: "vulnerability",
+    description: "Struggles to farm or trade against long-range champions and poke.",
+    id: "weak_vs_range",
+    label: "Weak vs range",
+  },
+  {
+    category: "vulnerability",
+    description: "Struggles to match, punish, or respond to enemy map movement.",
+    id: "weak_vs_roaming",
+    label: "Weak vs roaming",
+  },
+  {
+    category: "vulnerability",
+    description:
+      "Loses value when enemies can heal, shield, or recover through its poke/trade pattern.",
+    id: "weak_vs_sustain",
+    label: "Weak vs sustain",
+  },
+  {
+    category: "vulnerability",
+    description:
+      "Loses pressure or roam opportunities when enemies can quickly clear waves and neutralize lane tempo.",
+    id: "weak_vs_waveclear",
+    label: "Weak vs waveclear",
+  },
 ] as const satisfies readonly CounterRankingV2TraitDefinition[];
 
-export const counterRankingV2TraitDefinitionsById = new Map(
+export const counterRankingV2TraitDefinitionsById: ReadonlyMap<
+  CounterRankingV2TraitId,
+  CounterRankingV2TraitDefinition
+> = new Map(
   counterRankingV2TraitVocabulary.map((trait) => [trait.id, trait] as const),
 );
+
+const counterRankingV2TraitAliases: Partial<Record<CounterRankingV2TraitId, CounterRankingV2TraitId>> = {
+  late_scaling: "scaling",
+};
+
+export function normalizeCounterRankingV2TraitId(
+  value: unknown,
+): CounterRankingV2TraitId | null {
+  const rawTraitId = String(value ?? "").trim() as CounterRankingV2TraitId;
+  const normalizedTraitId = counterRankingV2TraitAliases[rawTraitId] ?? rawTraitId;
+
+  return counterRankingV2TraitDefinitionsById.has(normalizedTraitId) ? normalizedTraitId : null;
+}
 
 const counterRankingV2TraitInteractions = [
   {
@@ -511,6 +655,12 @@ const counterRankingV2TraitInteractions = [
     enemyVulnerability: "melee_commit",
     reason: "Committed melee entries are easier to interrupt when anti-dash tools are available.",
     weight: 0.8,
+  },
+  {
+    candidateStrength: "mobility",
+    enemyVulnerability: "gap_closing",
+    reason: "Mobility helps force trades into champions vulnerable to quick gap closing.",
+    weight: 0.7,
   },
   {
     candidateStrength: "point_and_click_cc",
@@ -537,6 +687,18 @@ const counterRankingV2TraitInteractions = [
     weight: 0.75,
   },
   {
+    candidateStrength: "disengage",
+    enemyVulnerability: "melee_commit",
+    reason: "Disengage can reset or interrupt committed melee entries.",
+    weight: 0.75,
+  },
+  {
+    candidateStrength: "disengage",
+    enemyVulnerability: "gap_closing",
+    reason: "Disengage punishes opponents that must close distance to start trades.",
+    weight: 0.7,
+  },
+  {
     candidateStrength: "suppression",
     enemyVulnerability: "mobility_reliant",
     reason: "Suppression denies mobility-reliant champions their escape and outplay windows.",
@@ -561,6 +723,18 @@ const counterRankingV2TraitInteractions = [
     weight: 0.65,
   },
   {
+    candidateStrength: "poke",
+    enemyVulnerability: "weak_vs_poke",
+    reason: "Repeated poke directly pressures champions vulnerable to ranged harassment.",
+    weight: 0.75,
+  },
+  {
+    candidateStrength: "poke",
+    enemyVulnerability: "weak_vs_range",
+    reason: "Range and chip damage tax champions that struggle to farm into long reach.",
+    weight: 0.7,
+  },
+  {
     candidateStrength: "burst_damage",
     enemyVulnerability: "fragile",
     reason: "Burst damage threatens fragile champions before extended patterns develop.",
@@ -573,16 +747,76 @@ const counterRankingV2TraitInteractions = [
     weight: 0.65,
   },
   {
+    candidateStrength: "all_in_threat",
+    enemyVulnerability: "vulnerable_to_all_in",
+    reason: "All-in pressure directly attacks champions weak to decisive commit windows.",
+    weight: 0.9,
+  },
+  {
+    candidateStrength: "all_in_threat",
+    enemyVulnerability: "short_range",
+    reason: "Committed kill pressure is easier to force against short-range champions.",
+    weight: 0.65,
+  },
+  {
+    candidateStrength: "all_in_threat",
+    enemyVulnerability: "immobile",
+    reason: "Immobile champions have fewer ways to avoid committed all-in windows.",
+    weight: 0.75,
+  },
+  {
+    candidateStrength: "all_in_threat",
+    enemyVulnerability: "skillshot_reliant",
+    reason: "All-in pressure can punish champions that need reliable skillshot setup.",
+    weight: 0.6,
+  },
+  {
     candidateStrength: "waveclear",
     enemyVulnerability: "waveclear_weak",
     reason: "Waveclear can trap weak-waveclear champions in poor tempo states.",
     weight: 0.75,
   },
   {
-    candidateStrength: "late_scaling",
+    candidateStrength: "waveclear",
+    enemyVulnerability: "weak_vs_waveclear",
+    reason: "Waveclear neutralizes champions that need lane tempo or roam windows.",
+    weight: 0.75,
+  },
+  {
+    candidateStrength: "scaling",
+    enemyVulnerability: "falls_off_late",
+    reason: "Scaling champions gain value against opponents that lose relative late impact.",
+    weight: 0.8,
+  },
+  {
+    candidateStrength: "scaling",
     enemyVulnerability: "early_weakness",
     reason: "Scaling value is safer when the enemy also has limited early punishment.",
     weight: 0.45,
+  },
+  {
+    candidateStrength: "scaling",
+    enemyVulnerability: "weak_early",
+    reason: "Scaling value is safer when the enemy has limited early punishment.",
+    weight: 0.5,
+  },
+  {
+    candidateStrength: "strong_early",
+    enemyVulnerability: "early_weakness",
+    reason: "Strong early pressure punishes champions before their core levels or items.",
+    weight: 0.75,
+  },
+  {
+    candidateStrength: "strong_early",
+    enemyVulnerability: "weak_early",
+    reason: "Strong early pressure directly attacks weak early lanes.",
+    weight: 0.8,
+  },
+  {
+    candidateStrength: "strong_early",
+    enemyVulnerability: "falls_off_late",
+    reason: "Early pressure can decide games before lower-scaling champions stabilize.",
+    weight: 0.55,
   },
   {
     candidateStrength: "sustained_damage",
@@ -591,10 +825,52 @@ const counterRankingV2TraitInteractions = [
     weight: 0.55,
   },
   {
+    candidateStrength: "sustain",
+    enemyVulnerability: "weak_vs_sustain",
+    reason: "Sustain outlasts champions whose poke or trade pattern depends on damage sticking.",
+    weight: 0.75,
+  },
+  {
+    candidateStrength: "sustain",
+    enemyVulnerability: "weak_vs_poke",
+    reason: "Sustain blunts poke lanes that need chip damage to stay permanent.",
+    weight: 0.6,
+  },
+  {
     candidateStrength: "anti_magic",
     enemyVulnerability: "burst_damage",
     reason: "Anti-magic durability reduces the impact of magic burst windows.",
     weight: 0.5,
+  },
+  {
+    candidateStrength: "anti_heal",
+    enemyVulnerability: "sustain",
+    reason: "Anti-heal pressure reduces the value of sustain-heavy patterns.",
+    weight: 0.7,
+  },
+  {
+    candidateStrength: "anti_shield",
+    enemyVulnerability: "sustain",
+    reason: "Anti-shield tools punish shield-based durability and recovery windows.",
+    weight: 0.55,
+  },
+  {
+    candidateStrength: "roaming",
+    enemyVulnerability: "weak_vs_roaming",
+    reason: "Roaming pressure exploits champions that cannot match or punish map movement.",
+    weight: 0.8,
+  },
+  {
+    candidateStrength: "mobility",
+    enemyVulnerability: "skillshot_reliant",
+    reason: "Mobility makes key skillshots less reliable.",
+    weight: 0.65,
+  },
+  {
+    candidateStrength: "anti_dash",
+    enemyVulnerability: "gap_closing",
+    reason: "Anti-dash tools punish champions that rely on quick gap closing.",
+    weight: 0.75,
   },
 ] as const satisfies readonly CounterRankingV2TraitInteraction[];
 
@@ -611,7 +887,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("yone", "reviewed", 1, {
     notes: "Mobile melee carry profile used as the primary dash-reliant enemy fixture.",
-    strengths: [trait("mobility", 5), trait("sustained_damage", 4), trait("late_scaling", 4)],
+    strengths: [trait("mobility", 5), trait("sustained_damage", 4), trait("scaling", 4)],
     vulnerabilities: [
       trait("dash_reliant", 5),
       trait("melee_commit", 4),
@@ -655,7 +931,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("kassadin", "needs_revision", 1, {
     notes: "Late-scaling anti-magic assassin profile with exploitable early wave states.",
-    strengths: [trait("late_scaling", 5), trait("anti_magic", 4), trait("mobility", 4)],
+    strengths: [trait("scaling", 5), trait("anti_magic", 4), trait("mobility", 4)],
     vulnerabilities: [
       trait("early_weakness", 5),
       trait("waveclear_weak", 4),
@@ -674,7 +950,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("orianna", "draft", 1, {
     notes: "Control mage profile with wave control and reliable zone setup, offset by immobility.",
-    strengths: [trait("waveclear", 5), trait("poke", 3), trait("reliable_cc", 3), trait("late_scaling", 3)],
+    strengths: [trait("waveclear", 5), trait("poke", 3), trait("reliable_cc", 3), trait("scaling", 3)],
     vulnerabilities: [trait("immobile", 4), trait("fragile", 3), trait("cooldown_reliant", 2)],
   }),
   profile("zed", "draft", 1, {
@@ -709,7 +985,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("viktor", "draft", 1, {
     notes: "Scaling control mage profile with wave control and zone pressure but low repositioning.",
-    strengths: [trait("waveclear", 5), trait("poke", 4), trait("late_scaling", 4), trait("sustained_damage", 3)],
+    strengths: [trait("waveclear", 5), trait("poke", 4), trait("scaling", 4), trait("sustained_damage", 3)],
     vulnerabilities: [trait("immobile", 4), trait("early_weakness", 3), trait("cooldown_reliant", 2)],
   }),
   profile("sylas", "draft", 1, {
@@ -749,7 +1025,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("veigar", "draft", 1, {
     notes: "Scaling cage mage profile with burst and zone control but punishable early tempo.",
-    strengths: [trait("late_scaling", 5), trait("burst_damage", 4), trait("reliable_cc", 4), trait("waveclear", 3)],
+    strengths: [trait("scaling", 5), trait("burst_damage", 4), trait("reliable_cc", 4), trait("waveclear", 3)],
     vulnerabilities: [trait("immobile", 4), trait("early_weakness", 4), trait("cooldown_reliant", 3)],
   }),
   profile("akshan", "draft", 1, {
@@ -759,12 +1035,12 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("anivia", "draft", 1, {
     notes: "Immobile control mage profile with strong waveclear, scaling, and reliable zone control.",
-    strengths: [trait("waveclear", 5), trait("reliable_cc", 4), trait("late_scaling", 4), trait("burst_damage", 3)],
+    strengths: [trait("waveclear", 5), trait("reliable_cc", 4), trait("scaling", 4), trait("burst_damage", 3)],
     vulnerabilities: [trait("immobile", 5), trait("early_weakness", 3), trait("cooldown_reliant", 3)],
   }),
   profile("aurelionsol", "draft", 1, {
     notes: "Late-scaling battlemage profile with strong wave control but punishable early lane states.",
-    strengths: [trait("late_scaling", 5), trait("waveclear", 4), trait("sustained_damage", 4), trait("poke", 2)],
+    strengths: [trait("scaling", 5), trait("waveclear", 4), trait("sustained_damage", 4), trait("poke", 2)],
     vulnerabilities: [trait("early_weakness", 5), trait("immobile", 3), trait("cooldown_reliant", 3)],
   }),
   profile("aurora", "draft", 1, {
@@ -774,17 +1050,17 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("azir", "draft", 1, {
     notes: "Scaling control mage profile with sustained soldier damage and wave control.",
-    strengths: [trait("late_scaling", 5), trait("sustained_damage", 5), trait("waveclear", 4), trait("mobility", 2)],
+    strengths: [trait("scaling", 5), trait("sustained_damage", 5), trait("waveclear", 4), trait("mobility", 2)],
     vulnerabilities: [trait("early_weakness", 4), trait("cooldown_reliant", 3), trait("fragile", 3)],
   }),
   profile("cassiopeia", "draft", 1, {
     notes: "Short-range sustained DPS mage profile with anti-dash threat and low repositioning.",
-    strengths: [trait("sustained_damage", 5), trait("anti_dash", 4), trait("late_scaling", 4), trait("reliable_cc", 2)],
+    strengths: [trait("sustained_damage", 5), trait("anti_dash", 4), trait("scaling", 4), trait("reliable_cc", 2)],
     vulnerabilities: [trait("short_range", 4), trait("immobile", 4), trait("cooldown_reliant", 2)],
   }),
   profile("corki", "draft", 1, {
     notes: "Scaling poke marksman profile with package-era burst windows and cooldown dependence.",
-    strengths: [trait("poke", 4), trait("late_scaling", 4), trait("burst_damage", 3), trait("mobility", 2)],
+    strengths: [trait("poke", 4), trait("scaling", 4), trait("burst_damage", 3), trait("mobility", 2)],
     vulnerabilities: [trait("cooldown_reliant", 3), trait("early_weakness", 3), trait("fragile", 3)],
   }),
   profile("diana", "draft", 1, {
@@ -794,7 +1070,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("ekko", "draft", 1, {
     notes: "Mobile AP skirmisher profile with burst trades, late scaling, and cooldown windows.",
-    strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("late_scaling", 3), trait("waveclear", 3)],
+    strengths: [trait("mobility", 5), trait("burst_damage", 4), trait("scaling", 3), trait("waveclear", 3)],
     vulnerabilities: [trait("mobility_reliant", 4), trait("cooldown_reliant", 4), trait("melee_commit", 3)],
   }),
   profile("galio", "draft", 1, {
@@ -849,7 +1125,7 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("ryze", "draft", 1, {
     notes: "Shorter-range scaling battlemage profile with wave control and sustained spell damage.",
-    strengths: [trait("late_scaling", 5), trait("sustained_damage", 4), trait("waveclear", 4), trait("point_and_click_cc", 2)],
+    strengths: [trait("scaling", 5), trait("sustained_damage", 4), trait("waveclear", 4), trait("point_and_click_cc", 2)],
     vulnerabilities: [trait("short_range", 4), trait("early_weakness", 3), trait("cooldown_reliant", 2)],
   }),
   profile("taliyah", "draft", 1, {
@@ -869,17 +1145,17 @@ export const counterRankingV2ChampionProfiles = [
   }),
   profile("vladimir", "draft", 1, {
     notes: "Late-scaling short-range battlemage profile with sustained damage and weak early pressure.",
-    strengths: [trait("late_scaling", 5), trait("sustained_damage", 4), trait("anti_magic", 2), trait("burst_damage", 2)],
+    strengths: [trait("scaling", 5), trait("sustained_damage", 4), trait("anti_magic", 2), trait("burst_damage", 2)],
     vulnerabilities: [trait("early_weakness", 4), trait("short_range", 4), trait("cooldown_reliant", 3)],
   }),
   profile("xerath", "draft", 1, {
     notes: "Artillery mage profile with extreme poke and waveclear but very low mobility.",
-    strengths: [trait("poke", 5), trait("waveclear", 4), trait("burst_damage", 3), trait("late_scaling", 2)],
+    strengths: [trait("poke", 5), trait("waveclear", 4), trait("burst_damage", 3), trait("scaling", 2)],
     vulnerabilities: [trait("immobile", 5), trait("fragile", 4), trait("cooldown_reliant", 3)],
   }),
   profile("ziggs", "draft", 1, {
     notes: "Artillery waveclear mage profile with poke siege pressure and fragile immobile spacing.",
-    strengths: [trait("waveclear", 5), trait("poke", 5), trait("burst_damage", 3), trait("late_scaling", 2)],
+    strengths: [trait("waveclear", 5), trait("poke", 5), trait("burst_damage", 3), trait("scaling", 2)],
     vulnerabilities: [trait("immobile", 5), trait("fragile", 3), trait("cooldown_reliant", 3)],
   }),
   profile("zoe", "draft", 1, {
@@ -917,8 +1193,49 @@ export function getCounterRankingV2ChampionProfile(
         supportedRoles: profileOverride.supportedRoles.length > 0 ? profileOverride.supportedRoles : profile.supportedRoles,
       }
     : profile;
+  const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(mergedProfile);
 
-  return reviewedStatus ? { ...mergedProfile, reviewStatus: reviewedStatus } : mergedProfile;
+  return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
+}
+
+function normalizeCounterRankingV2ChampionProfileTraits(
+  profile: CounterRankingV2ChampionProfile,
+): CounterRankingV2ChampionProfile {
+  return {
+    ...profile,
+    strengths: normalizeCounterRankingV2ProfileTraitList(profile.strengths),
+    vulnerabilities: normalizeCounterRankingV2ProfileTraitList(profile.vulnerabilities),
+  };
+}
+
+function normalizeCounterRankingV2ProfileTraitList(
+  traits: readonly CounterRankingV2ProfileTrait[],
+): CounterRankingV2ProfileTrait[] {
+  const traitsById = new Map<CounterRankingV2TraitId, CounterRankingV2ProfileTrait>();
+
+  for (const traitValue of traits) {
+    const traitId = normalizeCounterRankingV2TraitId(traitValue.traitId);
+
+    if (!traitId) {
+      continue;
+    }
+
+    const weight = Number(traitValue.weight);
+    const existingTrait = traitsById.get(traitId);
+    const normalizedTrait = {
+      traitId,
+      weight: Number.isFinite(weight) ? weight : 0,
+    };
+
+    traitsById.set(
+      traitId,
+      existingTrait && existingTrait.weight > normalizedTrait.weight
+        ? existingTrait
+        : normalizedTrait,
+    );
+  }
+
+  return Array.from(traitsById.values());
 }
 
 export function isCounterRankingV2SupportedChampion(championId: string) {
@@ -987,7 +1304,7 @@ export function calculateMechanicalMatchupFit({
   const rawScore = Number(
     factors.reduce((total, factor) => total + factor.contribution, 0).toFixed(4),
   );
-  const maxRawScore = getMechanicalFitMaxRawScore(candidateProfile);
+  const maxRawScore = getMechanicalFitMaxRawScore(candidateProfile, enemyProfile);
   const score =
     maxRawScore > 0
       ? Math.min(100, Math.round(Math.sqrt(rawScore / maxRawScore) * 100))
@@ -1421,8 +1738,24 @@ function getCounterRankingV2FactorTitle(factor: CounterRankingV2Factor) {
       return "Punishes cooldown windows";
     case "waveclear:waveclear_weak":
       return "Controls lane tempo";
-    case "late_scaling:early_weakness":
+    case "scaling:early_weakness":
       return "Scales through weak early pressure";
+    case "scaling:falls_off_late":
+      return "Outscales late falloff";
+    case "scaling:weak_early":
+      return "Scales through weak early pressure";
+    case "strong_early:weak_early":
+    case "strong_early:early_weakness":
+      return "Punishes weak early lanes";
+    case "all_in_threat:vulnerable_to_all_in":
+      return "Forces decisive all-ins";
+    case "disengage:gap_closing":
+    case "disengage:melee_commit":
+      return "Resets enemy commitment";
+    case "sustain:weak_vs_sustain":
+      return "Outlasts trade patterns";
+    case "roaming:weak_vs_roaming":
+      return "Punishes map-response gaps";
     case "sustained_damage:cooldown_reliant":
       return "Punishes cooldown downtime";
     case "anti_magic:burst_damage":
@@ -1439,7 +1772,13 @@ function getCounterRankingV2FactorExplanation(factor: CounterRankingV2Factor) {
 }
 
 function getCounterRankingV2TraitLabel(traitId: CounterRankingV2TraitId) {
-  return counterRankingV2TraitDefinitionsById.get(traitId)?.label ?? traitId;
+  const normalizedTraitId = normalizeCounterRankingV2TraitId(traitId);
+
+  return (
+    (normalizedTraitId
+      ? counterRankingV2TraitDefinitionsById.get(normalizedTraitId)?.label
+      : null) ?? traitId
+  );
 }
 
 export function generateCounterRankingV2MechanicalSuggestion({
@@ -2046,10 +2385,20 @@ function getMechanicalFitFactors(
   return factors;
 }
 
-function getMechanicalFitMaxRawScore(candidateProfile: CounterRankingV2ChampionProfile) {
+function getMechanicalFitMaxRawScore(
+  candidateProfile: CounterRankingV2ChampionProfile,
+  enemyProfile: CounterRankingV2ChampionProfile,
+) {
+  const enemyVulnerabilityIds = new Set(
+    enemyProfile.vulnerabilities.map((vulnerability) => vulnerability.traitId),
+  );
   const maxRawScore = candidateProfile.strengths.reduce((total, strength) => {
     const maxContributionForStrength = counterRankingV2TraitInteractions
-      .filter((interaction) => interaction.candidateStrength === strength.traitId)
+      .filter(
+        (interaction) =>
+          interaction.candidateStrength === strength.traitId &&
+          enemyVulnerabilityIds.has(interaction.enemyVulnerability),
+      )
       .reduce(
         (strengthTotal, interaction) =>
           strengthTotal + clampTraitWeight(strength.weight) * maxTraitWeight * interaction.weight,
@@ -2104,8 +2453,10 @@ function trait(
   traitId: CounterRankingV2TraitId,
   weight: number,
 ): CounterRankingV2ProfileTrait {
+  const normalizedTraitId = normalizeCounterRankingV2TraitId(traitId);
+
   return {
-    traitId,
+    traitId: normalizedTraitId ?? traitId,
     weight: clampTraitWeight(weight),
   };
 }

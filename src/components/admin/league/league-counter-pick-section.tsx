@@ -65,6 +65,7 @@ import {
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2SupportedChampion,
+  normalizeCounterRankingV2TraitId,
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
   type CounterRankingV2AdjustmentReason,
@@ -2347,7 +2348,7 @@ function CounterRankingV2ProfileTraitEditor({
   title: string;
   traits: CounterRankingV2ProfileTrait[];
 }) {
-  const availableTraitIds = counterRankingV2TraitVocabulary
+  const availableTraitIds: CounterRankingV2TraitId[] = counterRankingV2TraitVocabulary
     .map((traitDefinition) => traitDefinition.id)
     .filter((traitId) => !traits.some((trait) => trait.traitId === traitId));
   const [selectedTraitId, setSelectedTraitId] = useState<CounterRankingV2TraitId>(
@@ -4319,8 +4320,12 @@ function normalizeRoleForAdmin(role: string | null) {
 }
 
 function getTraitLabel(traitId: string) {
+  const normalizedTraitId = normalizeCounterRankingV2TraitId(traitId);
+
   return (
-    counterRankingV2TraitDefinitionsById.get(traitId as CounterRankingV2TraitId)?.label ?? traitId
+    (normalizedTraitId
+      ? counterRankingV2TraitDefinitionsById.get(normalizedTraitId)?.label
+      : null) ?? traitId
   );
 }
 

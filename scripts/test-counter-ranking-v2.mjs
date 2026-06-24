@@ -36,6 +36,7 @@ const {
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2ShadowCandidateEligible,
   isCounterRankingV2ProfileValueInBounds,
+  normalizeCounterRankingV2TraitId,
   normalizeCounterRankingV2PublicEligible,
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
@@ -109,6 +110,53 @@ assert.equal(
 );
 
 const traitIds = new Set(counterRankingV2TraitVocabulary.map((trait) => trait.id));
+const traitLabelsById = new Map(counterRankingV2TraitVocabulary.map((trait) => [trait.id, trait.label]));
+const expectedNewTraitLabels = {
+  all_in_threat: "All-in threat",
+  anti_heal: "Anti-heal",
+  anti_shield: "Anti-shield",
+  disengage: "Disengage",
+  roaming: "Roaming",
+  scaling: "Scaling",
+  strong_early: "Strong early",
+  sustain: "Sustain",
+};
+const expectedNewVulnerabilityLabels = {
+  falls_off_late: "Falls off late",
+  gap_closing: "Gap closing",
+  skillshot_reliant: "Skillshot-reliant",
+  vulnerable_to_all_in: "Weak to all-in",
+  weak_early: "Weak early",
+  weak_vs_poke: "Vulnerable to poke",
+  weak_vs_range: "Weak vs range",
+  weak_vs_roaming: "Weak vs roaming",
+  weak_vs_sustain: "Weak vs sustain",
+  weak_vs_waveclear: "Weak vs waveclear",
+};
+
+for (const [traitId, label] of Object.entries(expectedNewTraitLabels)) {
+  assert.equal(traitLabelsById.get(traitId), label, `${traitId} should be available as a trait.`);
+}
+
+for (const [traitId, label] of Object.entries(expectedNewVulnerabilityLabels)) {
+  assert.equal(
+    traitLabelsById.get(traitId),
+    label,
+    `${traitId} should be available as a vulnerability.`,
+  );
+}
+
+assert.equal(traitIds.has("mana_reliant"), false, "Mana reliance should not be added.");
+assert.equal(
+  traitIds.has("late_scaling"),
+  false,
+  "Legacy late_scaling should not appear in the visible trait dropdown vocabulary.",
+);
+assert.equal(
+  normalizeCounterRankingV2TraitId("late_scaling"),
+  "scaling",
+  "Legacy late_scaling values should alias to scaling.",
+);
 const championRegistry = buildChampionRegistry([
   championRegistryRow("Ahri", "103", "Ahri", "ahri"),
   championRegistryRow("Syndra", "134", "Syndra", "syndra"),
@@ -201,6 +249,96 @@ for (const championId of counterRankingV2SupportedChampionIds) {
     assert.ok(profileTrait.weight >= 0 && profileTrait.weight <= 5, "Profile weights are 0-5.");
   }
 }
+
+const baseVexProfile = getCounterRankingV2ChampionProfile("vex");
+assert.ok(baseVexProfile, "Vex should have a base profile for alias tests.");
+
+const legacyScalingOverride = {
+  ...baseVexProfile,
+  strengths: [{ traitId: "late_scaling", weight: 7 }],
+};
+const legacyScalingProfile = getCounterRankingV2ChampionProfile(
+  "vex",
+  undefined,
+  new Map([["vex", legacyScalingOverride]]),
+);
+
+assert.equal(
+  legacyScalingProfile?.strengths.at(0)?.traitId,
+  "scaling",
+  "Legacy late_scaling values should load as scaling.",
+);
+assert.equal(
+  legacyScalingProfile?.strengths.at(0)?.weight,
+  7,
+  "Legacy late_scaling weights should be preserved when aliased to scaling.",
+);
+assert.equal(
+  legacyScalingProfile?.reviewStatus,
+  baseVexProfile.reviewStatus,
+  "Aliasing legacy traits should not change existing profile review statuses.",
+);
+
+const roamingReloadProfile = getCounterRankingV2ChampionProfile(
+  "vex",
+  undefined,
+  new Map([
+    [
+      "vex",
+      {
+        ...baseVexProfile,
+        strengths: [{ traitId: "roaming", weight: 8 }],
+        vulnerabilities: [{ traitId: "weak_vs_roaming", weight: 6 }],
+      },
+    ],
+  ]),
+);
+
+assert.deepEqual(
+  roamingReloadProfile?.strengths,
+  [{ traitId: "roaming", weight: 8 }],
+  "New trait values should load back unchanged after profile management save/reload.",
+);
+assert.deepEqual(
+  roamingReloadProfile?.vulnerabilities,
+  [{ traitId: "weak_vs_roaming", weight: 6 }],
+  "New vulnerability values should load back unchanged after profile management save/reload.",
+);
+assert.equal(
+  roamingReloadProfile?.reviewStatus,
+  baseVexProfile.reviewStatus,
+  "Editing trait values should not automatically change profile review status.",
+);
+
+const scalingIntoLateFalloff = calculateMechanicalMatchupFit({
+  candidateChampionId: "vex",
+  enemyChampionId: "yone",
+  profileOverridesByChampionId: new Map([
+    [
+      "vex",
+      {
+        ...baseVexProfile,
+        strengths: [{ traitId: "late_scaling", weight: 7 }],
+      },
+    ],
+    [
+      "yone",
+      {
+        ...getCounterRankingV2ChampionProfile("yone"),
+        vulnerabilities: [{ traitId: "falls_off_late", weight: 6 }],
+      },
+    ],
+  ]),
+  role: "mid",
+});
+
+assert.ok(
+  scalingIntoLateFalloff.factors.some(
+    (factor) =>
+      factor.candidateStrength === "scaling" && factor.enemyVulnerability === "falls_off_late",
+  ),
+  "Aliased scaling should participate in conservative scaling/falls-off-late scoring.",
+);
 
 for (const championId of draftAddedMidChampionIds) {
   const profile = getCounterRankingV2ChampionProfile(championId);
@@ -1556,6 +1694,16 @@ assert.match(
 );
 assert.match(
   counterPickActionsSource,
+  /normalizeCounterRankingV2TraitId\(trait\.traitId\)/,
+  "Profile management saves should normalize legacy trait IDs before storing edits.",
+);
+assert.match(
+  counterPickActionsSource,
+  /normalizeCounterRankingV2TraitId\(record\.traitId \?\? record\.trait_id\)/,
+  "Profile management reloads should normalize legacy trait IDs from stored JSON.",
+);
+assert.match(
+  counterPickActionsSource,
   /updated_by: authResult\.userId/,
   "Profile management saves should store the editor when supported.",
 );
@@ -1593,6 +1741,16 @@ assert.match(
   counterPickAdminSectionSource,
   /CounterRankingV2ProfileTraitEditor/,
   "The profile management page should expose editable trait and vulnerability controls.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /counterRankingV2TraitVocabulary/,
+  "The profile management dropdown should be driven by the shared trait vocabulary.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /normalizeCounterRankingV2TraitId/,
+  "The profile management UI should display legacy trait aliases consistently.",
 );
 assert.match(
   counterPickAdminSectionSource,

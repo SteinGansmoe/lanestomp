@@ -16,6 +16,7 @@ import {
   isCounterRankingV2AdjustmentReason,
   isCounterRankingV2ManualAdjustmentInBounds,
   normalizeCounterRankingV2PublicEligible,
+  normalizeCounterRankingV2TraitId,
   normalizeCounterRankingV2ProfileStatus,
   isCounterRankingV2ReviewStatus,
   type CounterRankingV2ChampionProfile,
@@ -8062,10 +8063,10 @@ function validateCounterRankingV2ProfileTraits(
   const traits: CounterRankingV2ProfileTrait[] = [];
 
   for (const trait of inputTraits) {
-    const traitId = String(trait.traitId).trim() as CounterRankingV2TraitId;
+    const traitId = normalizeCounterRankingV2TraitId(trait.traitId);
     const weight = Number(trait.weight);
 
-    if (!counterRankingV2TraitDefinitionsById.has(traitId)) {
+    if (!traitId) {
       return {
         error: `Select a valid ${label}.`,
         ok: false,
@@ -8103,17 +8104,29 @@ function normalizeCounterRankingV2ProfileTraits(
     return null;
   }
 
-  return value
-    .map((item) => {
-      const record = item as { traitId?: unknown; trait_id?: unknown; weight?: unknown };
-      const traitId = String(record.traitId ?? record.trait_id ?? "").trim() as CounterRankingV2TraitId;
-      const weight = Number(record.weight);
+  const traitsById = new Map<CounterRankingV2TraitId, CounterRankingV2ProfileTrait>();
 
-      return counterRankingV2TraitDefinitionsById.has(traitId) && Number.isFinite(weight)
-        ? { traitId, weight }
-        : null;
-    })
-    .filter((trait): trait is CounterRankingV2ProfileTrait => trait !== null);
+  for (const item of value) {
+    const record = item as { traitId?: unknown; trait_id?: unknown; weight?: unknown };
+    const traitId = normalizeCounterRankingV2TraitId(record.traitId ?? record.trait_id);
+    const weight = Number(record.weight);
+
+    if (!traitId || !Number.isFinite(weight)) {
+      continue;
+    }
+
+    const existingTrait = traitsById.get(traitId);
+    const normalizedTrait = { traitId, weight };
+
+    traitsById.set(
+      traitId,
+      existingTrait && existingTrait.weight > normalizedTrait.weight
+        ? existingTrait
+        : normalizedTrait,
+    );
+  }
+
+  return Array.from(traitsById.values());
 }
 
 function normalizeTextList(value: unknown) {
