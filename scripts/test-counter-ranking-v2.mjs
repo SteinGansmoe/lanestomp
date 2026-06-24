@@ -19,6 +19,7 @@ const {
   filterCounterRankingV2RowsByReviewFilter,
   generateCounterRankingV2MechanicalSuggestion,
   generateCounterRankingV2MechanicalSuggestionsForRole,
+  getCounterRankingV2AutomationBlockerSummary,
   getCounterRankingV2AutomationSummary,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
@@ -595,6 +596,17 @@ assert.equal(
   "soft_counter",
   "Scores from 65-79 should still be suggested as soft counters.",
 );
+assert.deepEqual(
+  mediumScoreSuggestion?.blockers.map((blocker) => blocker.id),
+  ["score_below_auto_suggested_threshold", "score_below_auto_approval_threshold"],
+  "Medium-score needs-review suggestions should explain both blocked automation thresholds.",
+);
+assert.ok(
+  mediumScoreSuggestion?.blockers.some(
+    (blocker) => blocker.message === "Score 74 is below auto_suggested threshold 75.",
+  ),
+  "Per-candidate blocker messages should include the exact score and auto_suggested threshold.",
+);
 
 const draftProfileSuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
@@ -608,6 +620,12 @@ assert.equal(
   draftProfileSuggestion?.automationStatus,
   "needs_review",
   "Draft profile suggestions should require review even when the score is high.",
+);
+assert.ok(
+  draftProfileSuggestion?.blockers.some(
+    (blocker) => blocker.id === "candidate_profile_generated_draft",
+  ),
+  "Draft candidate profiles should produce a generated_draft blocker.",
 );
 assert.equal(isCounterRankingV2ProfileValueInBounds(-1), false);
 assert.equal(isCounterRankingV2ProfileValueInBounds(0), true);
@@ -677,6 +695,10 @@ assert.equal(
   "needs_review",
   "High-mastery candidate suggestions should require manual review.",
 );
+assert.ok(
+  highMasterySuggestion?.blockers.some((blocker) => blocker.id === "high_mastery_candidate"),
+  "High-mastery candidates should expose a blocker explanation.",
+);
 
 const contradictedSuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
@@ -695,6 +717,12 @@ assert.equal(
   "needs_review",
   "Observed stats that strongly contradict a suggestion should require review.",
 );
+assert.ok(
+  contradictedSuggestion?.blockers.some(
+    (blocker) => blocker.id === "observed_stat_contradiction",
+  ),
+  "Observed-stat contradictions should expose a blocker explanation.",
+);
 
 const oneWeakFactorSuggestion = generateCounterRankingV2MechanicalSuggestion({
   mechanicalResult: {
@@ -709,6 +737,10 @@ assert.equal(
   oneWeakFactorSuggestion?.automationStatus,
   "needs_review",
   "Auto approval should be blocked when the score is based on only one weak factor.",
+);
+assert.ok(
+  oneWeakFactorSuggestion?.blockers.some((blocker) => blocker.id === "weak_one_factor_signal"),
+  "Weak one-factor suggestions should expose a blocker explanation.",
 );
 
 const manuallyRejectedSuggestion = generateCounterRankingV2MechanicalSuggestion({
@@ -730,6 +762,76 @@ assert.equal(
   manuallyRejectedSuggestion?.automationStatus,
   "manual_rejected",
   "Manually rejected suggestions should never become auto-approval candidates.",
+);
+assert.ok(
+  manuallyRejectedSuggestion?.blockers.some((blocker) => blocker.id === "manually_rejected"),
+  "Manual rejections should expose a manually rejected blocker.",
+);
+
+const blockerSummary = getCounterRankingV2AutomationBlockerSummary([
+  {
+    automationSuggestion: mediumScoreSuggestion,
+    candidateChampionId: "vex",
+    mechanicalRank: 1,
+    mechanicalResult: {
+      ...vexIntoYone,
+      score: 74,
+    },
+    observed: null,
+    rankDelta: null,
+    review: null,
+  },
+  {
+    automationSuggestion: draftProfileSuggestion,
+    candidateChampionId: "ahri",
+    mechanicalRank: 2,
+    mechanicalResult: {
+      ...calculateMechanicalMatchupFit({ candidateChampionId: "ahri", enemyChampionId: "yone" }),
+      score: 88,
+    },
+    observed: null,
+    rankDelta: null,
+    review: null,
+  },
+  {
+    automationSuggestion: manuallyRejectedSuggestion,
+    candidateChampionId: "vex",
+    mechanicalRank: 1,
+    mechanicalResult: {
+      ...vexIntoYone,
+      score: 88,
+    },
+    observed: null,
+    rankDelta: null,
+    review: createCounterRankingV2MechanicalReview({
+      calculatedMechanicalScore: 88,
+      counterChampionId: "vex",
+      enemyChampionId: "yone",
+      reviewStatus: "incorrect_suggestion",
+      role: "mid",
+    }),
+  },
+]);
+
+assert.equal(
+  blockerSummary.score_below_auto_suggested_threshold,
+  1,
+  "Blocker summary should count score-below-auto-suggested blockers.",
+);
+assert.equal(
+  blockerSummary.score_below_auto_approval_threshold,
+  1,
+  "Blocker summary should count score-below-auto-approval blockers.",
+);
+assert.equal(
+  blockerSummary.candidate_profile_generated_draft,
+  1,
+  "Blocker summary should count generated_draft candidate profiles.",
+);
+assert.equal(
+  blockerSummary.manually_rejected,
+  1,
+  "Blocker summary should count manually rejected suggestions.",
 );
 
 assert.equal(
@@ -1554,8 +1656,23 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /Blockers and reasons/,
-  "Generated suggestion panels should label blockers and reasons.",
+  /Why this needs review/,
+  "Generated suggestion panels should explain why needs-review rows need review.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Automation blocker breakdown/,
+  "The admin Shadow Ranking panel should render automation blocker counts.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /auto_suggested 75-84, auto_approval_candidate 85\+, 65-74 needs_review/,
+  "The admin Shadow Ranking panel should show current automation thresholds.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Observed-stat contradiction/,
+  "The admin Shadow Ranking panel should label observed-stat contradiction blockers.",
 );
 assert.match(
   counterPickAdminSectionSource,

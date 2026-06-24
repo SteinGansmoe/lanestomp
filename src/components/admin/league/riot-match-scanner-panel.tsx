@@ -33,6 +33,7 @@ import {
   rerunMatchupRankCoverageAttribution,
   startRiotCollectionJob,
   startRiotScanJob,
+  syncLeagueChampionRegistryAdmin,
   type LeagueChampionRegistryAdminStatusResult,
 } from "@/src/app/admin/league/counter-picks/actions";
 import { Button } from "@/src/components/ui/button";
@@ -821,6 +822,40 @@ function LeagueChampionRegistryStatusPanel({
     setStatus({ error: null, isLoading: false, success: null });
   }
 
+  async function syncRegistry() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setStatus({ error: tokenResult.error, isLoading: false, success: null });
+      return;
+    }
+
+    setStatus({ error: null, isLoading: true, success: null });
+
+    const result = await syncLeagueChampionRegistryAdmin({
+      accessToken: tokenResult.accessToken,
+    });
+
+    if (!result.ok) {
+      setStatus({ error: result.error, isLoading: false, success: null });
+      return;
+    }
+
+    setRegistryStatus(result.status);
+
+    const summary = result.summary;
+    const syncMessage = `Registry sync ${summary.failed > 0 ? "finished with failures" : "complete"}: ${formatNumber(summary.inserted)} inserted, ${formatNumber(summary.updated)} updated, ${formatNumber(summary.skipped)} skipped, ${formatNumber(summary.remainingMissing)} remaining missing.`;
+
+    setStatus({
+      error:
+        summary.failed > 0
+          ? `${syncMessage} ${summary.failures.join(" ")}`
+          : null,
+      isLoading: false,
+      success: summary.failed > 0 ? null : syncMessage,
+    });
+  }
+
   const issueCount =
     (registryStatus?.missingCount ?? 0) +
     (registryStatus?.unknownCount ?? 0) +
@@ -838,20 +873,35 @@ function LeagueChampionRegistryStatusPanel({
               Read-only health check for the canonical Data Dragon champion registry.
             </p>
           </div>
-          <Button
-            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-            disabled={status.isLoading}
-            onClick={() => void loadRegistryStatus()}
-            type="button"
-            variant="ghost"
-          >
-            {status.isLoading ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <RefreshCw className="size-4" aria-hidden="true" />
-            )}
-            Refresh registry
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="border-cyan-300/30 bg-cyan-500/15 text-cyan-50 hover:bg-cyan-500/25"
+              disabled={status.isLoading}
+              onClick={() => void syncRegistry()}
+              type="button"
+            >
+              {status.isLoading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <RefreshCw className="size-4" aria-hidden="true" />
+              )}
+              Sync missing champions
+            </Button>
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={status.isLoading}
+              onClick={() => void loadRegistryStatus()}
+              type="button"
+              variant="ghost"
+            >
+              {status.isLoading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <RefreshCw className="size-4" aria-hidden="true" />
+              )}
+              Refresh registry
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

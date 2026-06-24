@@ -441,6 +441,26 @@ export type CounterRankingV2MechanicalReviewsResult =
       ok: false;
     };
 
+export type SyncLeagueChampionRegistryAdminResult =
+  | {
+      ok: true;
+      status: Extract<LeagueChampionRegistryAdminStatusResult, { ok: true }>["status"];
+      summary: {
+        deactivated: number;
+        failed: number;
+        failures: string[];
+        inserted: number;
+        remainingMissing: number;
+        skipped: number;
+        sourceVersion: string;
+        updated: number;
+      };
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
 export type CounterRankingV2ProfileReviewsResult =
   | {
       ok: true;
@@ -703,6 +723,94 @@ export async function getLeagueChampionRegistryAdminStatus({
         error instanceof Error
           ? error.message
           : "League champion registry status could not be loaded.",
+      ok: false,
+    };
+  }
+}
+
+export async function syncLeagueChampionRegistryAdmin({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<SyncLeagueChampionRegistryAdminResult> {
+  const authResult = await getAuthorizedAdmin(accessToken, "sync League champion registry");
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  try {
+    const { getLeagueChampionRegistryStatus, syncLeagueChampionRegistry } =
+      await import("@/scripts/lib/league-champion-registry.mjs");
+    const beforeStatus = await getLeagueChampionRegistryStatus({
+      supabase: serviceClientResult.supabase,
+    });
+    const summary = await syncLeagueChampionRegistry({
+      supabase: serviceClientResult.supabase,
+      version: beforeStatus.sourceVersion,
+    });
+
+    if (!summary.ok || summary.failures.length > 0) {
+      console.warn("League champion registry sync completed with validation failures", {
+        failures: summary.failures,
+        sourceVersion: summary.sourceVersion,
+      });
+    }
+
+    const afterStatus = await getLeagueChampionRegistryStatus({
+      supabase: serviceClientResult.supabase,
+      version: summary.sourceVersion,
+    });
+
+    return {
+      ok: true,
+      status: {
+        activeDatabaseChampionCount: afterStatus.activeDatabaseChampionCount,
+        conflictCount: afterStatus.conflicts.length,
+        conflicts: afterStatus.conflicts.slice(0, 8),
+        databaseChampionCount: afterStatus.databaseChampionCount,
+        inactiveReturnedByRiot: afterStatus.inactiveReturnedByRiot
+          .slice(0, 8)
+          .map(getRegistryRowLabel),
+        inactiveReturnedByRiotCount: afterStatus.inactiveReturnedByRiot.length,
+        lastSyncedAt: afterStatus.lastSyncedAt,
+        lastSyncError: afterStatus.lastSyncError,
+        lastSyncStatus: afterStatus.lastSyncStatus,
+        missing: afterStatus.missing.slice(0, 8).map(getRegistryRowLabel),
+        missingCount: afterStatus.missing.length,
+        nameMismatchCount: afterStatus.nameMismatches.length,
+        nameMismatches: afterStatus.nameMismatches.slice(0, 8).map((mismatch) => {
+          return `${mismatch.id}: ${mismatch.databaseName} -> ${mismatch.sourceName}`;
+        }),
+        registryOk: afterStatus.ok,
+        sourceChampionCount: afterStatus.sourceChampionCount,
+        sourceVersion: afterStatus.sourceVersion,
+        unknown: afterStatus.unknown.slice(0, 8).map(getRegistryRowLabel),
+        unknownCount: afterStatus.unknown.length,
+      },
+      summary: {
+        deactivated: summary.championsDeactivated,
+        failed: summary.failed,
+        failures: summary.failures.slice(0, 8),
+        inserted: summary.championsInserted,
+        remainingMissing: afterStatus.missing.length,
+        skipped: summary.championsUnchanged,
+        sourceVersion: summary.sourceVersion,
+        updated: summary.championsUpdated,
+      },
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "League champion registry sync could not be completed.",
       ok: false,
     };
   }

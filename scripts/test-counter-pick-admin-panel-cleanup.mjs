@@ -46,6 +46,7 @@ testCounterRankingV2PublicEligibilityControls();
 testCounterRankingV2ReviewProgressSummary();
 testCounterRankingV2PublicPreview();
 testCounterRankingV2DirectionCopy();
+testLeagueChampionRegistryAdminSync();
 
 console.log("Counter Pick admin panel cleanup regression tests passed.");
 
@@ -322,4 +323,27 @@ function testCounterRankingV2DirectionCopy() {
   assert.equal(counterPickSectionSource.includes("Mechanical candidates into"), true);
   assert.equal(counterPickSectionSource.includes("into {targetLabel}"), true);
   assert.equal(counterPickSectionSource.includes("Selected target and role"), true);
+}
+
+function testLeagueChampionRegistryAdminSync() {
+  assert.equal(actionsSource.includes("export async function syncLeagueChampionRegistryAdmin"), true);
+  assert.match(
+    actionsSource,
+    /syncLeagueChampionRegistryAdmin[\s\S]*getAuthorizedAdmin\(accessToken, "sync League champion registry"\)/,
+    "Registry sync action should keep admin authorization inside the server action.",
+  );
+  assert.match(
+    actionsSource,
+    /syncLeagueChampionRegistryAdmin[\s\S]*getServiceSupabaseClient\(\)/,
+    "Registry sync action should use the service-role Supabase client.",
+  );
+  assert.match(
+    actionsSource,
+    /syncLeagueChampionRegistryAdmin[\s\S]*syncLeagueChampionRegistry\({[\s\S]*supabase: serviceClientResult\.supabase/,
+    "Registry sync should delegate writes to the server-side registry sync module.",
+  );
+  assert.equal(panelSource.includes("syncLeagueChampionRegistryAdmin"), true);
+  assert.equal(panelSource.includes("Sync missing champions"), true);
+  assert.equal(panelSource.includes("remaining missing"), true);
+  assert.equal(panelSource.includes('supabase.from("league_champions")'), false);
 }

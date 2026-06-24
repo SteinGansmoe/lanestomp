@@ -174,6 +174,26 @@ export type CounterRankingV2AutomationStatus =
 
 export type CounterRankingV2AutomationConfidence = "high" | "low" | "medium";
 
+export type CounterRankingV2AutomationBlockerId =
+  | "candidate_profile_generated_draft"
+  | "existing_manual_review_override"
+  | "high_mastery_candidate"
+  | "manually_rejected"
+  | "missing_profile"
+  | "observed_stat_contradiction"
+  | "other"
+  | "profile_deprecated"
+  | "profile_needs_revision"
+  | "score_below_auto_approval_threshold"
+  | "score_below_auto_suggested_threshold"
+  | "target_profile_generated_draft"
+  | "weak_one_factor_signal";
+
+export type CounterRankingV2AutomationBlocker = {
+  id: CounterRankingV2AutomationBlockerId;
+  message: string;
+};
+
 export type CounterRankingV2MechanicalReview = {
   adjustmentReason: CounterRankingV2AdjustmentReason;
   adminReviewNote: string | null;
@@ -205,6 +225,7 @@ export type CounterRankingV2ComparisonRow = {
 
 export type CounterRankingV2MechanicalSuggestion = {
   automationStatus: CounterRankingV2AutomationStatus;
+  blockers: CounterRankingV2AutomationBlocker[];
   confidence: CounterRankingV2AutomationConfidence;
   factors: CounterRankingV2Factor[];
   reasons: string[];
@@ -221,6 +242,11 @@ export type CounterRankingV2AutomationSummary = {
   manualRejected: number;
   needsReview: number;
 };
+
+export type CounterRankingV2AutomationBlockerSummary = Record<
+  CounterRankingV2AutomationBlockerId,
+  number
+>;
 
 export type CounterRankingV2ReviewProgressSummary = {
   incorrectSuggestions: number;
@@ -251,6 +277,9 @@ type CounterRankingV2TraitInteraction = {
 };
 
 const maxTraitWeight = 5;
+export const counterRankingV2AutoSuggestedScoreThreshold = 75;
+export const counterRankingV2AutoApprovalScoreThreshold = 85;
+export const counterRankingV2NeedsReviewScoreThreshold = 65;
 export const counterRankingV2ProfileValueMin = 0;
 export const counterRankingV2ProfileValueMax = 10;
 export const counterRankingV2ManualAdjustmentMin = -30;
@@ -1272,6 +1301,10 @@ function isCounterRankingV2AutoApprovalBlockedByReview(
   );
 }
 
+function isCounterRankingV2DeprecatedProfile(profile: CounterRankingV2ChampionProfile) {
+  return String(profile.reviewStatus) === "deprecated";
+}
+
 function isCounterRankingV2HighMasteryCandidate(candidateProfile: CounterRankingV2ChampionProfile) {
   const masteryLevel =
     candidateProfile.masteryRequirement ??
@@ -1336,6 +1369,24 @@ function isCounterRankingV2AutomationStatus(
     value === "manual_rejected" ||
     value === "needs_review"
   );
+}
+
+function createEmptyCounterRankingV2AutomationBlockerSummary(): CounterRankingV2AutomationBlockerSummary {
+  return {
+    candidate_profile_generated_draft: 0,
+    existing_manual_review_override: 0,
+    high_mastery_candidate: 0,
+    manually_rejected: 0,
+    missing_profile: 0,
+    observed_stat_contradiction: 0,
+    other: 0,
+    profile_deprecated: 0,
+    profile_needs_revision: 0,
+    score_below_auto_approval_threshold: 0,
+    score_below_auto_suggested_threshold: 0,
+    target_profile_generated_draft: 0,
+    weak_one_factor_signal: 0,
+  };
 }
 
 function getCounterRankingV2FactorTitle(factor: CounterRankingV2Factor) {
@@ -1431,20 +1482,45 @@ export function generateCounterRankingV2MechanicalSuggestion({
     observed,
   });
   const hasOneWeakFactorSignal = isCounterRankingV2OneWeakFactorSignal(mechanicalResult.factors);
+  const blockers: CounterRankingV2AutomationBlocker[] = [];
   const reasons: string[] = [];
   let automationStatus: CounterRankingV2AutomationStatus =
-    mechanicalResult.score >= 75 ? "auto_suggested" : "needs_review";
+    mechanicalResult.score >= counterRankingV2AutoSuggestedScoreThreshold
+      ? "auto_suggested"
+      : "needs_review";
 
   if (manualAutomationStatus) {
     automationStatus = manualAutomationStatus;
-    reasons.push("Existing manual review row takes priority over generated suggestions.");
+    blockers.push({
+      id: "existing_manual_review_override",
+      message: "Existing manual review overrides automation.",
+    });
+
+    if (review?.reviewStatus === "incorrect_suggestion") {
+      blockers.push({
+        id: "manually_rejected",
+        message: "Manually rejected review row blocks automation.",
+      });
+    }
+
+    reasons.push(...blockers.map((blocker) => blocker.message));
   } else {
-    if (mechanicalResult.score < 65) {
-      reasons.push("Mechanical score is below the default suggestion threshold.");
+    if (mechanicalResult.score < counterRankingV2AutoSuggestedScoreThreshold) {
+      blockers.push({
+        id: "score_below_auto_suggested_threshold",
+        message: `Score ${mechanicalResult.score} is below auto_suggested threshold ${counterRankingV2AutoSuggestedScoreThreshold}.`,
+      });
+    }
+
+    if (mechanicalResult.score < counterRankingV2AutoApprovalScoreThreshold) {
+      blockers.push({
+        id: "score_below_auto_approval_threshold",
+        message: `Score ${mechanicalResult.score} is below auto_approval threshold ${counterRankingV2AutoApprovalScoreThreshold}.`,
+      });
     }
 
     if (
-      mechanicalResult.score >= 85 &&
+      mechanicalResult.score >= counterRankingV2AutoApprovalScoreThreshold &&
       candidateProfile.reviewStatus === "reviewed" &&
       enemyProfile.reviewStatus === "reviewed" &&
       !hasHighMasteryBlocker &&
@@ -1456,30 +1532,83 @@ export function generateCounterRankingV2MechanicalSuggestion({
       reasons.push("Safe high-score suggestion is eligible for batch auto-approval review.");
     }
 
+    if (enemyProfile.reviewStatus === "draft") {
+      blockers.push({
+        id: "target_profile_generated_draft",
+        message: "Target profile is generated_draft.",
+      });
+    }
+
+    if (candidateProfile.reviewStatus === "draft") {
+      blockers.push({
+        id: "candidate_profile_generated_draft",
+        message: "Candidate profile is generated_draft.",
+      });
+    }
+
+    if (
+      candidateProfile.reviewStatus === "needs_revision" ||
+      enemyProfile.reviewStatus === "needs_revision"
+    ) {
+      blockers.push({
+        id: "profile_needs_revision",
+        message: "Profile needs_revision requires admin review.",
+      });
+    }
+
+    if (
+      isCounterRankingV2DeprecatedProfile(candidateProfile) ||
+      isCounterRankingV2DeprecatedProfile(enemyProfile)
+    ) {
+      blockers.push({
+        id: "profile_deprecated",
+        message: "Deprecated profile requires admin review.",
+      });
+    }
+
     if (candidateProfile.reviewStatus !== "reviewed" || enemyProfile.reviewStatus !== "reviewed") {
       automationStatus = "needs_review";
-      reasons.push("Draft or needs-revision profile requires admin review.");
     }
 
     if (hasHighMasteryBlocker) {
       automationStatus = "needs_review";
-      reasons.push("High mastery candidate requires manual review.");
+      blockers.push({
+        id: "high_mastery_candidate",
+        message: "High mastery candidate requires manual review.",
+      });
     }
 
     if (hasObservedContradiction) {
       automationStatus = "needs_review";
-      reasons.push("Observed stats strongly contradict the mechanical suggestion.");
+      blockers.push({
+        id: "observed_stat_contradiction",
+        message: "Observed stats strongly contradict the mechanical suggestion.",
+      });
     }
 
     if (hasOneWeakFactorSignal) {
       automationStatus = "needs_review";
-      reasons.push("Single weak factor signal requires manual review.");
+      blockers.push({
+        id: "weak_one_factor_signal",
+        message: "Weak one-factor signal requires manual review.",
+      });
     }
 
-    if (mechanicalResult.score >= 65 && mechanicalResult.score < 75) {
+    if (
+      mechanicalResult.score >= counterRankingV2NeedsReviewScoreThreshold &&
+      mechanicalResult.score < counterRankingV2AutoSuggestedScoreThreshold
+    ) {
       automationStatus = "needs_review";
-      reasons.push("Medium mechanical score requires manual review.");
     }
+
+    if (automationStatus === "needs_review" && blockers.length === 0) {
+      blockers.push({
+        id: "other",
+        message: "Other automation guardrail requires manual review.",
+      });
+    }
+
+    reasons.push(...blockers.map((blocker) => blocker.message));
   }
 
   if (reasons.length === 0) {
@@ -1488,6 +1617,7 @@ export function generateCounterRankingV2MechanicalSuggestion({
 
   return {
     automationStatus,
+    blockers,
     confidence: getCounterRankingV2AutomationConfidence({
       automationStatus,
       score: mechanicalResult.score,
@@ -1497,6 +1627,39 @@ export function generateCounterRankingV2MechanicalSuggestion({
     score: mechanicalResult.score,
     suggestedStrength,
   };
+}
+
+export function getCounterRankingV2AutomationBlockerSummary(
+  rows: CounterRankingV2ComparisonRow[],
+): CounterRankingV2AutomationBlockerSummary {
+  return rows.reduce<CounterRankingV2AutomationBlockerSummary>(
+    (summary, row) => {
+      const blockers = row.automationSuggestion?.blockers ?? [];
+
+      if (blockers.length > 0) {
+        for (const blocker of blockers) {
+          summary[blocker.id] += 1;
+        }
+
+        return summary;
+      }
+
+      if (
+        row.mechanicalResult.status === "missing_candidate_profile" ||
+        row.mechanicalResult.status === "missing_enemy_profile"
+      ) {
+        summary.missing_profile += 1;
+        return summary;
+      }
+
+      if (!row.automationSuggestion && row.mechanicalResult.status !== "calculated") {
+        summary.other += 1;
+      }
+
+      return summary;
+    },
+    createEmptyCounterRankingV2AutomationBlockerSummary(),
+  );
 }
 
 export function getCounterRankingV2AutomationSummary(

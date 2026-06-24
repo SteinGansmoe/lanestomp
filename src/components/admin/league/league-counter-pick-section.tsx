@@ -57,6 +57,7 @@ import {
   getCounterRankingV2MechanicalReasons,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ProfileImpactLabel,
+  getCounterRankingV2AutomationBlockerSummary,
   getCounterRankingV2AutomationSummary,
   getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
@@ -67,6 +68,7 @@ import {
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
   type CounterRankingV2AdjustmentReason,
+  type CounterRankingV2AutomationBlockerSummary,
   type CounterRankingV2AutomationConfidence,
   type CounterRankingV2AutomationStatus,
   type CounterRankingV2AutomationSummary,
@@ -2514,6 +2516,10 @@ function CounterRankingV2ShadowPanel({
     () => getCounterRankingV2AutomationSummary(rows),
     [rows],
   );
+  const automationBlockerSummary = useMemo(
+    () => getCounterRankingV2AutomationBlockerSummary(rows),
+    [rows],
+  );
   const publicPreviewRows = useMemo(
     () =>
       getCounterRankingV2PublicPreviewRows({
@@ -2662,6 +2668,9 @@ function CounterRankingV2ShadowPanel({
             ) : null}
             <CounterRankingV2ReviewProgressSummaryPanel summary={reviewProgressSummary} />
             <CounterRankingV2AutomationSummaryPanel summary={automationSummary} />
+            <CounterRankingV2AutomationBlockerSummaryPanel
+              summary={automationBlockerSummary}
+            />
             <CounterRankingV2BatchReviewPanel
               autoApprovalCandidateCount={autoApprovalCandidateRows.length}
               isBatchSaving={isBatchSaving}
@@ -2878,6 +2887,72 @@ function CounterRankingV2AutomationSummaryPanel({
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {automationItems.map((item) => (
           <div className="rounded-md border border-white/10 bg-black/15 p-3" key={item.label}>
+            <p className="text-xs uppercase text-zinc-500">{item.label}</p>
+            <p className="mt-1 text-lg font-semibold text-zinc-100">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CounterRankingV2AutomationBlockerSummaryPanel({
+  summary,
+}: {
+  summary: CounterRankingV2AutomationBlockerSummary;
+}) {
+  const blockerItems = [
+    { label: "Target profile is generated_draft", value: summary.target_profile_generated_draft },
+    {
+      label: "Candidate profile is generated_draft",
+      value: summary.candidate_profile_generated_draft,
+    },
+    { label: "Profile needs_revision", value: summary.profile_needs_revision },
+    { label: "Profile deprecated", value: summary.profile_deprecated },
+    {
+      label: "Score below auto_suggested threshold",
+      value: summary.score_below_auto_suggested_threshold,
+    },
+    {
+      label: "Score below auto_approval threshold",
+      value: summary.score_below_auto_approval_threshold,
+    },
+    { label: "High mastery candidate", value: summary.high_mastery_candidate },
+    { label: "Observed-stat contradiction", value: summary.observed_stat_contradiction },
+    { label: "Weak one-factor signal", value: summary.weak_one_factor_signal },
+    {
+      label: "Existing manual review overrides automation",
+      value: summary.existing_manual_review_override,
+    },
+    { label: "Manually rejected", value: summary.manually_rejected },
+    { label: "Missing profile", value: summary.missing_profile },
+    { label: "Other", value: summary.other },
+  ] as const;
+
+  return (
+    <div className="rounded-lg border border-amber-300/15 bg-amber-500/[0.05] p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-amber-100">
+            Automation blocker breakdown
+          </p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">
+            Thresholds: auto_suggested 75-84, auto_approval_candidate 85+, 65-74 needs_review.
+          </p>
+        </div>
+        <p className="text-xs text-zinc-500">Selected target and role</p>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {blockerItems.map((item) => (
+          <div
+            className={cn(
+              "rounded-md border p-3",
+              item.value > 0
+                ? "border-amber-300/20 bg-amber-500/10"
+                : "border-white/10 bg-black/15",
+            )}
+            key={item.label}
+          >
             <p className="text-xs uppercase text-zinc-500">{item.label}</p>
             <p className="mt-1 text-lg font-semibold text-zinc-100">{item.value}</p>
           </div>
@@ -3152,6 +3227,15 @@ function CounterRankingV2ShadowRow({
   const panelId = `counter-ranking-v2-review-${row.candidateChampionId}`;
   const isAutoApprovalCandidate =
     automationSuggestion?.automationStatus === "auto_approval_candidate";
+  const automationExplanationTitle =
+    automationSuggestion?.automationStatus === "needs_review"
+      ? "Why this needs review"
+      : "Automation reasons";
+  const automationExplanations =
+    automationSuggestion?.automationStatus === "needs_review" &&
+    automationSuggestion.blockers.length > 0
+      ? automationSuggestion.blockers.map((blocker) => blocker.message)
+      : (automationSuggestion?.reasons ?? []);
 
   return (
     <div
@@ -3358,10 +3442,10 @@ function CounterRankingV2ShadowRow({
                 </Badge>
               </div>
               <p className="mt-3 text-xs font-semibold uppercase text-zinc-500">
-                Blockers and reasons
+                {automationExplanationTitle}
               </p>
               <ul className="mt-3 space-y-2">
-                {automationSuggestion.reasons.map((reason) => (
+                {automationExplanations.map((reason) => (
                   <li className="text-sm leading-6 text-zinc-400" key={reason}>
                     {reason}
                   </li>
