@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import {
+  backfillCounterRankingV2GeneratedDraftProfiles,
   batchSaveCounterRankingV2MechanicalReviews,
   getCounterPickManagementMetrics,
   getCounterRankingV2EditableProfiles,
@@ -705,6 +706,42 @@ export function AdminLeagueCounterPicksSection({
     );
   }
 
+  async function backfillCounterRankingV2ProfileDrafts() {
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: tokenResult.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCounterRankingV2ProfileReviewStatus({ error: null, isLoading: true, success: null });
+
+    const result = await backfillCounterRankingV2GeneratedDraftProfiles({
+      accessToken: tokenResult.accessToken,
+    });
+
+    if (!result.ok) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: result.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    await Promise.all([loadCounterRankingV2ProfileReviews(), loadCounterRankingV2EditableProfiles()]);
+
+    setCounterRankingV2ProfileReviewStatus({
+      error: null,
+      isLoading: false,
+      success: `Generated draft profile backfill complete: ${result.summary.createdProfiles} created, ${result.summary.repairedProfiles} repaired, ${result.summary.skippedProfiles} skipped, ${result.summary.missingProfiles} missing.`,
+    });
+  }
+
   async function saveCounterRankingV2ProfileReviewForm({
     championId,
     form,
@@ -1177,6 +1214,7 @@ export function AdminLeagueCounterPicksSection({
         <CounterRankingV2ProfileReviewPanel
           championsById={counterRankingV2ChampionsById}
           isSaving={savingCounterRankingV2ProfileReviewId !== null}
+          onBackfillDrafts={() => void backfillCounterRankingV2ProfileDrafts()}
           onRefresh={() => {
             void loadCounterRankingV2ProfileReviews();
             void loadCounterRankingV2EditableProfiles();
@@ -1814,9 +1852,16 @@ function CounterRankingV2TraitList({
   );
 }
 
+type CounterRankingV2ProfileReviewPanelRow = {
+  champion: AdminLeagueChampion | null;
+  profile: CounterRankingV2ChampionProfile;
+  review: CounterRankingV2ProfileReview | null;
+};
+
 function CounterRankingV2ProfileReviewPanel({
   championsById,
   isSaving,
+  onBackfillDrafts,
   onRefresh,
   onSaveReview,
   onSelectChampion,
@@ -1830,6 +1875,7 @@ function CounterRankingV2ProfileReviewPanel({
 }: {
   championsById: Map<string, AdminLeagueChampion>;
   isSaving: boolean;
+  onBackfillDrafts: () => void;
   onRefresh: () => void;
   onSaveReview: (championId: string, form: CounterRankingV2ProfileReviewForm) => void;
   onSelectChampion: (championId: string) => void;
@@ -1854,18 +1900,72 @@ function CounterRankingV2ProfileReviewPanel({
     ? profileReviewsByChampionId.get(normalizeCounterRankingV2ChampionId(selectedChampionId)) ?? null
     : null;
   const profileRows = useMemo(
-    () =>
-      counterRankingV2ChampionProfiles.map((profile) => ({
-        champion: championsById.get(profile.championId) ?? null,
-        profile:
+    () => {
+      const championIds = new Set<string>([
+        ...Array.from(championsById.values()).map((champion) => champion.id),
+        ...counterRankingV2ChampionProfiles.map((profile) => profile.championId),
+        ...Array.from(profileOverridesByChampionId.values()).map((profile) => profile.championId),
+      ]);
+      const rowsByChampionId = new Map<string, CounterRankingV2ProfileReviewPanelRow>();
+      const duplicateRowsByChampionId = new Map<string, CounterRankingV2ProfileReviewPanelRow[]>();
+
+      for (const championId of championIds) {
+        const normalizedChampionId = normalizeCounterRankingV2ChampionId(championId);
+        const champion = championsById.get(normalizedChampionId) ?? null;
+        const profile =
           getCounterRankingV2ChampionProfile(
-            profile.championId,
+            champion?.id ?? championId,
             profileStatusesByChampionId,
             profileOverridesByChampionId,
           ) ??
+          profileOverridesByChampionId.get(normalizedChampionId) ??
+          null;
+
+        if (!profile) {
+          continue;
+        }
+
+        const row = {
+          champion,
           profile,
-        review: profileReviewsByChampionId.get(profile.championId) ?? null,
-      })),
+          review: profileReviewsByChampionId.get(normalizedChampionId) ?? null,
+        };
+        const existingRow = rowsByChampionId.get(normalizedChampionId);
+
+        if (!existingRow) {
+          rowsByChampionId.set(normalizedChampionId, row);
+          continue;
+        }
+
+        duplicateRowsByChampionId.set(normalizedChampionId, [
+          ...(duplicateRowsByChampionId.get(normalizedChampionId) ?? [existingRow]),
+          row,
+        ]);
+        rowsByChampionId.set(
+          normalizedChampionId,
+          getPreferredCounterRankingV2ProfileRow(existingRow, row),
+        );
+      }
+
+      if (duplicateRowsByChampionId.size > 0) {
+        console.warn(
+          "Counter Ranking V2 profile duplicates detected before rendering; using one row per normalized champion id.",
+          Array.from(duplicateRowsByChampionId.entries()).map(([normalizedChampionId, rows]) => ({
+            duplicateRowIds: rows.map((row) => row.profile.championId),
+            normalizedChampionId,
+            statuses: rows.map((row) => row.profile.reviewStatus),
+            updatedAtValues: rows.map((row) => row.review?.updatedAt ?? null),
+          })),
+        );
+      }
+
+      return Array.from(rowsByChampionId.values()).sort((rowA, rowB) => {
+        const nameA = rowA.champion?.name ?? rowA.profile.championId;
+        const nameB = rowB.champion?.name ?? rowB.profile.championId;
+
+        return nameA.localeCompare(nameB);
+      });
+    },
     [
       championsById,
       profileOverridesByChampionId,
@@ -1874,8 +1974,12 @@ function CounterRankingV2ProfileReviewPanel({
     ],
   );
   const profileCoverageSummary = useMemo(
-    () => getCounterRankingV2ProfileCoverageSummary(profileRows.map((row) => row.profile)),
-    [profileRows],
+    () =>
+      getCounterRankingV2ProfileCoverageSummary(
+        profileRows.map((row) => row.profile),
+        championsById.size,
+      ),
+    [championsById.size, profileRows],
   );
   const filteredProfileRows = useMemo(
     () =>
@@ -1889,7 +1993,7 @@ function CounterRankingV2ProfileReviewPanel({
   );
 
   const selectedChampion = selectedProfile
-    ? championsById.get(selectedProfile.championId) ?? null
+    ? championsById.get(normalizeCounterRankingV2ChampionId(selectedProfile.championId)) ?? null
     : null;
   const masteryRequirement = selectedProfile
     ? getChampionMasteryRequirementLevel(selectedProfile.championId)
@@ -1908,16 +2012,28 @@ function CounterRankingV2ProfileReviewPanel({
               Review champion mechanical profiles before automation can promote their suggestions.
             </p>
           </div>
-          <Button
-            className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
-            disabled={reviewStatus.isLoading}
-            onClick={onRefresh}
-            type="button"
-            variant="outline"
-          >
-            <RefreshCw className="mr-2 size-4" aria-hidden="true" />
-            Refresh profiles
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
+              disabled={reviewStatus.isLoading}
+              onClick={onBackfillDrafts}
+              type="button"
+              variant="outline"
+            >
+              <Plus className="mr-2 size-4" aria-hidden="true" />
+              Create missing drafts
+            </Button>
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={reviewStatus.isLoading}
+              onClick={onRefresh}
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw className="mr-2 size-4" aria-hidden="true" />
+              Refresh profiles
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -1932,9 +2048,20 @@ function CounterRankingV2ProfileReviewPanel({
           </p>
         ) : null}
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <CounterRankingV2MetaCell
+            label="Active champions"
+            value={String(profileCoverageSummary.activeChampions)}
+          />
           <CounterRankingV2MetaCell label="Total profiles" value={String(profileCoverageSummary.total)} />
-          <CounterRankingV2MetaCell label="Draft" value={String(profileCoverageSummary.draft)} />
+          <CounterRankingV2MetaCell
+            label="Missing profiles"
+            value={String(profileCoverageSummary.missing)}
+          />
+          <CounterRankingV2MetaCell
+            label="Draft/generated_draft"
+            value={String(profileCoverageSummary.draft)}
+          />
           <CounterRankingV2MetaCell
             label="Needs revision"
             value={String(profileCoverageSummary.needsRevision)}
@@ -2075,7 +2202,7 @@ function CounterRankingV2ProfileReviewPanel({
                   ? "border-emerald-300/30 bg-emerald-500/10"
                   : "border-white/10 bg-white/[0.03] hover:border-emerald-300/20 hover:bg-white/[0.06]",
               )}
-              key={profile.championId}
+              key={normalizeCounterRankingV2ChampionId(profile.championId)}
               onClick={() => onSelectChampion(profile.championId)}
               type="button"
             >
@@ -4373,7 +4500,51 @@ function getProfileStatusBadgeClassName(status: CounterRankingV2ProfileStatus) {
   }
 }
 
-function getCounterRankingV2ProfileCoverageSummary(profiles: CounterRankingV2ChampionProfile[]) {
+function getPreferredCounterRankingV2ProfileRow(
+  currentRow: CounterRankingV2ProfileReviewPanelRow,
+  nextRow: CounterRankingV2ProfileReviewPanelRow,
+) {
+  const currentScore = getCounterRankingV2ProfileRowPreferenceScore(currentRow);
+  const nextScore = getCounterRankingV2ProfileRowPreferenceScore(nextRow);
+
+  if (nextScore !== currentScore) {
+    return nextScore > currentScore ? nextRow : currentRow;
+  }
+
+  const currentUpdatedAt = getProfileRowUpdatedAtTimestamp(currentRow);
+  const nextUpdatedAt = getProfileRowUpdatedAtTimestamp(nextRow);
+
+  return nextUpdatedAt > currentUpdatedAt ? nextRow : currentRow;
+}
+
+function getCounterRankingV2ProfileRowPreferenceScore(row: CounterRankingV2ProfileReviewPanelRow) {
+  const statusScore =
+    row.profile.reviewStatus === "reviewed"
+      ? 300
+      : row.profile.reviewStatus === "needs_revision"
+        ? 200
+        : 100;
+  const editableContentScore =
+    row.profile.strengths.length +
+    row.profile.vulnerabilities.length +
+    (row.profile.identitySummary ? 1 : 0) +
+    (row.profile.notes ? 1 : 0);
+  const championRegistryScore = row.champion ? 10 : 0;
+
+  return statusScore + championRegistryScore + Math.min(9, editableContentScore);
+}
+
+function getProfileRowUpdatedAtTimestamp(row: CounterRankingV2ProfileReviewPanelRow) {
+  const updatedAt = row.review?.updatedAt ?? null;
+  const timestamp = updatedAt ? new Date(updatedAt).getTime() : 0;
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function getCounterRankingV2ProfileCoverageSummary(
+  profiles: CounterRankingV2ChampionProfile[],
+  activeChampionCount: number,
+) {
   const reviewedByRole = Object.fromEntries(
     leagueRoles.map((role) => [role, { reviewed: 0, total: 0 }]),
   ) as Record<LeagueRole, { reviewed: number; total: number }>;
@@ -4389,7 +4560,9 @@ function getCounterRankingV2ProfileCoverageSummary(profiles: CounterRankingV2Cha
       }
 
       return {
+        activeChampions: summary.activeChampions,
         draft: summary.draft + (profile.reviewStatus === "draft" ? 1 : 0),
+        missing: summary.missing,
         needsRevision:
           summary.needsRevision + (profile.reviewStatus === "needs_revision" ? 1 : 0),
         reviewed: summary.reviewed + (profile.reviewStatus === "reviewed" ? 1 : 0),
@@ -4398,7 +4571,9 @@ function getCounterRankingV2ProfileCoverageSummary(profiles: CounterRankingV2Cha
       };
     },
     {
+      activeChampions: activeChampionCount,
       draft: 0,
+      missing: Math.max(0, activeChampionCount - profiles.length),
       needsRevision: 0,
       reviewed: 0,
       reviewedByRole,

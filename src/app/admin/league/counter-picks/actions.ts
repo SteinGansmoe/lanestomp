@@ -11,6 +11,8 @@ import {
   calculateMechanicalMatchupFit,
   counterRankingV2TraitDefinitionsById,
   createCounterRankingV2MechanicalReview,
+  createCounterRankingV2GeneratedDraftChampionProfile,
+  counterRankingV2GeneratedDraftProfileVersion,
   getCounterRankingV2ChampionProfile,
   isCounterRankingV2ProfileValueInBounds,
   isCounterRankingV2AdjustmentReason,
@@ -383,6 +385,10 @@ type CounterRankingV2VulnerabilityProfileRow = {
   vulnerabilities: unknown;
 };
 
+type CounterRankingV2ActiveChampionRow = {
+  id: string;
+};
+
 type RiotSeedCandidateQueryBuilder = {
   eq: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
   gt: (column: string, value: unknown) => RiotSeedCandidateQueryBuilder;
@@ -476,6 +482,27 @@ export type CounterRankingV2EditableProfilesResult =
   | {
       ok: true;
       profiles: CounterRankingV2ChampionProfile[];
+    }
+  | {
+      error: string;
+      ok: false;
+    };
+
+export type BackfillCounterRankingV2ProfileDraftsResult =
+  | {
+      ok: true;
+      summary: {
+        activeChampions: number;
+        createdProfiles: number;
+        generatedDraftProfiles: number;
+        invalidStoredProfiles: number;
+        missingProfiles: number;
+        needsRevisionProfiles: number;
+        repairedProfiles: number;
+        reviewedProfiles: number;
+        skippedProfiles: number;
+        totalProfiles: number;
+      };
     }
   | {
       error: string;
@@ -1058,6 +1085,193 @@ export async function getCounterRankingV2EditableProfiles({
   };
 }
 
+export async function backfillCounterRankingV2GeneratedDraftProfiles({
+  accessToken,
+}: {
+  accessToken: string;
+}): Promise<BackfillCounterRankingV2ProfileDraftsResult> {
+  const authResult = await getAuthorizedAdmin(
+    accessToken,
+    "create Counter Ranking V2 generated draft profiles",
+  );
+
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  const serviceClientResult = getServiceSupabaseClient();
+
+  if (!serviceClientResult.ok) {
+    return serviceClientResult;
+  }
+
+  const supabase = serviceClientResult.supabase;
+  const [championsResult, traitResult, vulnerabilityResult, reviewResult] = await Promise.all([
+    supabase
+      .from("league_champions")
+      .select("id")
+      .eq("is_active", true)
+      .order("id", { ascending: true })
+      .returns<CounterRankingV2ActiveChampionRow[]>(),
+    supabase
+      .from("counter_ranking_v2_champion_trait_profiles")
+      .select("champion_id")
+      .returns<Pick<CounterRankingV2TraitProfileRow, "champion_id">[]>(),
+    supabase
+      .from("counter_ranking_v2_champion_vulnerability_profiles")
+      .select("champion_id")
+      .returns<Pick<CounterRankingV2VulnerabilityProfileRow, "champion_id">[]>(),
+    supabase
+      .from("counter_ranking_v2_profile_reviews")
+      .select("champion_id, status")
+      .returns<Pick<CounterRankingV2ProfileReviewRow, "champion_id" | "status">[]>(),
+  ]);
+
+  if (
+    championsResult.error ||
+    traitResult.error ||
+    vulnerabilityResult.error ||
+    reviewResult.error
+  ) {
+    console.error("Counter Ranking V2 generated draft profile backfill load failed", {
+      championsError: championsResult.error ? getSafeDatabaseError(championsResult.error) : null,
+      reviewError: reviewResult.error ? getSafeDatabaseError(reviewResult.error) : null,
+      traitError: traitResult.error ? getSafeDatabaseError(traitResult.error) : null,
+      vulnerabilityError: vulnerabilityResult.error
+        ? getSafeDatabaseError(vulnerabilityResult.error)
+        : null,
+    });
+
+    return {
+      error: "Counter Ranking V2 profile draft backfill could not load current profile rows.",
+      ok: false,
+    };
+  }
+
+  const activeChampionIds = (championsResult.data ?? [])
+    .map((champion) => champion.id.trim())
+    .filter(Boolean);
+  const activeChampionIdSet = new Set(activeChampionIds);
+  const traitChampionIds = new Set((traitResult.data ?? []).map((row) => row.champion_id));
+  const vulnerabilityChampionIds = new Set(
+    (vulnerabilityResult.data ?? []).map((row) => row.champion_id),
+  );
+  const reviewRows = reviewResult.data ?? [];
+  const reviewChampionIds = new Set(reviewRows.map((row) => row.champion_id));
+  const invalidStoredProfileIds = new Set(
+    [...traitChampionIds, ...vulnerabilityChampionIds, ...reviewChampionIds].filter(
+      (championId) => !activeChampionIdSet.has(championId),
+    ),
+  );
+  const now = new Date().toISOString();
+  const missingTraitRows: Array<Record<string, unknown>> = [];
+  const missingVulnerabilityRows: Array<Record<string, unknown>> = [];
+  const missingReviewRows: Array<Record<string, unknown>> = [];
+  let createdProfiles = 0;
+  let repairedProfiles = 0;
+  let skippedProfiles = 0;
+
+  for (const championId of activeChampionIds) {
+    const hasTraitProfile = traitChampionIds.has(championId);
+    const hasVulnerabilityProfile = vulnerabilityChampionIds.has(championId);
+    const hasReviewProfile = reviewChampionIds.has(championId);
+    const isCompleteProfile = hasTraitProfile && hasVulnerabilityProfile && hasReviewProfile;
+    const isMissingAllProfileRows = !hasTraitProfile && !hasVulnerabilityProfile && !hasReviewProfile;
+
+    if (isCompleteProfile) {
+      skippedProfiles += 1;
+      continue;
+    }
+
+    if (isMissingAllProfileRows) {
+      createdProfiles += 1;
+    } else {
+      repairedProfiles += 1;
+    }
+
+    if (!hasTraitProfile) {
+      missingTraitRows.push(createCounterRankingV2GeneratedTraitProfileRow(championId, now));
+      traitChampionIds.add(championId);
+    }
+
+    if (!hasVulnerabilityProfile) {
+      missingVulnerabilityRows.push(
+        createCounterRankingV2GeneratedVulnerabilityProfileRow(championId, now),
+      );
+      vulnerabilityChampionIds.add(championId);
+    }
+
+    if (!hasReviewProfile) {
+      missingReviewRows.push(createCounterRankingV2GeneratedReviewRow(championId, now));
+      reviewChampionIds.add(championId);
+      reviewRows.push({
+        champion_id: championId,
+        status: "draft",
+      });
+    }
+  }
+
+  const [traitInsertResult, vulnerabilityInsertResult, reviewInsertResult] = await Promise.all([
+    missingTraitRows.length > 0
+      ? supabase
+          .from("counter_ranking_v2_champion_trait_profiles")
+          .upsert(missingTraitRows, { ignoreDuplicates: true, onConflict: "champion_id" })
+      : Promise.resolve({ error: null }),
+    missingVulnerabilityRows.length > 0
+      ? supabase
+          .from("counter_ranking_v2_champion_vulnerability_profiles")
+          .upsert(missingVulnerabilityRows, { ignoreDuplicates: true, onConflict: "champion_id" })
+      : Promise.resolve({ error: null }),
+    missingReviewRows.length > 0
+      ? supabase
+          .from("counter_ranking_v2_profile_reviews")
+          .upsert(missingReviewRows, { ignoreDuplicates: true, onConflict: "champion_id" })
+      : Promise.resolve({ error: null }),
+  ]);
+
+  if (traitInsertResult.error || vulnerabilityInsertResult.error || reviewInsertResult.error) {
+    console.error("Counter Ranking V2 generated draft profile backfill save failed", {
+      reviewError: reviewInsertResult.error ? getSafeDatabaseError(reviewInsertResult.error) : null,
+      traitError: traitInsertResult.error ? getSafeDatabaseError(traitInsertResult.error) : null,
+      vulnerabilityError: vulnerabilityInsertResult.error
+        ? getSafeDatabaseError(vulnerabilityInsertResult.error)
+        : null,
+    });
+
+    return {
+      error: "Counter Ranking V2 generated draft profiles could not be saved.",
+      ok: false,
+    };
+  }
+
+  const completeProfileCount = activeChampionIds.filter(
+    (championId) =>
+      traitChampionIds.has(championId) &&
+      vulnerabilityChampionIds.has(championId) &&
+      reviewChampionIds.has(championId),
+  ).length;
+  const normalizedStatuses = reviewRows
+    .filter((row) => activeChampionIdSet.has(row.champion_id))
+    .map((row) => normalizeCounterRankingV2ProfileStatus(row.status) ?? "draft");
+
+  return {
+    ok: true,
+    summary: {
+      activeChampions: activeChampionIds.length,
+      createdProfiles,
+      generatedDraftProfiles: normalizedStatuses.filter((status) => status === "draft").length,
+      invalidStoredProfiles: invalidStoredProfileIds.size,
+      missingProfiles: activeChampionIds.length - completeProfileCount,
+      needsRevisionProfiles: normalizedStatuses.filter((status) => status === "needs_revision")
+        .length,
+      repairedProfiles,
+      reviewedProfiles: normalizedStatuses.filter((status) => status === "reviewed").length,
+      skippedProfiles,
+      totalProfiles: completeProfileCount,
+    },
+  };
+}
+
 export async function getCounterRankingV2MechanicalReviews({
   accessToken,
   enemyChampionId,
@@ -1197,14 +1411,9 @@ export async function saveCounterRankingV2ProfileReview(
     };
   }
 
-  const profile = getCounterRankingV2ChampionProfile(resolvedChampion.canonicalKey);
-
-  if (!profile) {
-    return {
-      error: "This champion does not have a Counter Ranking V2 mechanical profile yet.",
-      ok: false,
-    };
-  }
+  const profile =
+    getCounterRankingV2ChampionProfile(resolvedChampion.canonicalKey) ??
+    createCounterRankingV2GeneratedDraftChampionProfile(resolvedChampion.canonicalKey);
 
   const now = new Date().toISOString();
   const isReviewed = normalizedStatus === "reviewed";
@@ -1290,15 +1499,9 @@ export async function saveCounterRankingV2ProfileManagement(
     };
   }
 
-  const baseProfile = getCounterRankingV2ChampionProfile(resolvedChampion.canonicalKey);
-
-  if (!baseProfile) {
-    return {
-      error: "This champion does not have a Counter Ranking V2 mechanical profile yet.",
-      ok: false,
-    };
-  }
-
+  const baseProfile =
+    getCounterRankingV2ChampionProfile(resolvedChampion.canonicalKey) ??
+    createCounterRankingV2GeneratedDraftChampionProfile(resolvedChampion.canonicalKey);
   const nextVersion = baseProfile.version;
   const now = new Date().toISOString();
   const isReviewed = validation.status === "reviewed";
@@ -7914,6 +8117,52 @@ function toCounterRankingV2ProfileReview(
   };
 }
 
+function createCounterRankingV2GeneratedTraitProfileRow(championId: string, now: string) {
+  const profile = createCounterRankingV2GeneratedDraftChampionProfile(championId);
+
+  return {
+    champion_id: championId,
+    created_at: now,
+    identity_summary: profile.identitySummary,
+    known_strengths: profile.knownStrengths,
+    mastery_requirement: null,
+    notes: profile.notes,
+    profile_version: counterRankingV2GeneratedDraftProfileVersion,
+    strengths: profile.strengths,
+    updated_at: now,
+    updated_by: null,
+  };
+}
+
+function createCounterRankingV2GeneratedVulnerabilityProfileRow(championId: string, now: string) {
+  const profile = createCounterRankingV2GeneratedDraftChampionProfile(championId);
+
+  return {
+    champion_id: championId,
+    created_at: now,
+    known_weaknesses: profile.knownWeaknesses,
+    notes: profile.notes,
+    profile_version: counterRankingV2GeneratedDraftProfileVersion,
+    updated_at: now,
+    updated_by: null,
+    vulnerabilities: profile.vulnerabilities,
+  };
+}
+
+function createCounterRankingV2GeneratedReviewRow(championId: string, now: string) {
+  return {
+    champion_id: championId,
+    created_at: now,
+    notes: null,
+    reviewed_at: null,
+    reviewed_by: null,
+    status: "draft",
+    trait_profile_version: counterRankingV2GeneratedDraftProfileVersion,
+    updated_at: now,
+    vulnerability_profile_version: counterRankingV2GeneratedDraftProfileVersion,
+  };
+}
+
 function mergeCounterRankingV2EditableProfileRows({
   traitRows,
   vulnerabilityRows,
@@ -7933,34 +8182,33 @@ function mergeCounterRankingV2EditableProfileRows({
 
   for (const championId of championIds) {
       const baseProfile = getCounterRankingV2ChampionProfile(championId);
-
-      if (!baseProfile) {
-        continue;
-      }
+      const generatedProfile = createCounterRankingV2GeneratedDraftChampionProfile(championId);
+      const fallbackProfile = baseProfile ?? generatedProfile;
 
       const traitRow = traitRowsByChampionId.get(championId);
       const vulnerabilityRow = vulnerabilityRowsByChampionId.get(championId);
       const profile: CounterRankingV2ChampionProfile = {
-        ...baseProfile,
-        notes: traitRow?.identity_summary ?? traitRow?.notes ?? baseProfile.notes,
+        ...fallbackProfile,
+        notes: traitRow?.identity_summary ?? traitRow?.notes ?? fallbackProfile.notes,
         strengths:
-          normalizeCounterRankingV2ProfileTraits(traitRow?.strengths) ?? baseProfile.strengths,
+          normalizeCounterRankingV2ProfileTraits(traitRow?.strengths) ?? fallbackProfile.strengths,
         vulnerabilities:
           normalizeCounterRankingV2ProfileTraits(vulnerabilityRow?.vulnerabilities) ??
-          baseProfile.vulnerabilities,
+          fallbackProfile.vulnerabilities,
         version: Math.max(
-          baseProfile.version,
+          fallbackProfile.version,
           traitRow?.profile_version ?? 0,
           vulnerabilityRow?.profile_version ?? 0,
         ),
       };
-      const identitySummary = traitRow?.identity_summary ?? baseProfile.identitySummary;
-      const knownStrengths = normalizeTextList(traitRow?.known_strengths) ?? baseProfile.knownStrengths;
+      const identitySummary = traitRow?.identity_summary ?? fallbackProfile.identitySummary;
+      const knownStrengths =
+        normalizeTextList(traitRow?.known_strengths) ?? fallbackProfile.knownStrengths;
       const knownWeaknesses =
-        normalizeTextList(vulnerabilityRow?.known_weaknesses) ?? baseProfile.knownWeaknesses;
+        normalizeTextList(vulnerabilityRow?.known_weaknesses) ?? fallbackProfile.knownWeaknesses;
       const masteryRequirement =
         normalizeMasteryRequirement(traitRow?.mastery_requirement) ??
-        baseProfile.masteryRequirement;
+        fallbackProfile.masteryRequirement;
 
       if (identitySummary) {
         profile.identitySummary = identitySummary;

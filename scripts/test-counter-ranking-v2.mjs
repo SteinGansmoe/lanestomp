@@ -1718,6 +1718,66 @@ assert.match(
   "The admin Counter Profile Review page should render profile review controls.",
 );
 assert.match(
+  counterPickActionsSource,
+  /export async function backfillCounterRankingV2GeneratedDraftProfiles/,
+  "Profile management should expose an admin action that backfills generated draft profiles.",
+);
+assert.match(
+  counterPickActionsSource,
+  /\.from\("league_champions"\)[\s\S]*\.eq\("is_active", true\)/,
+  "Generated draft profile backfill should use the active champion registry.",
+);
+assert.match(
+  counterPickActionsSource,
+  /ignoreDuplicates: true, onConflict: "champion_id"/,
+  "Generated draft profile backfill should be idempotent and avoid duplicate profile rows.",
+);
+assert.match(
+  counterPickActionsSource,
+  /createdProfiles[\s\S]*repairedProfiles[\s\S]*skippedProfiles/,
+  "Generated draft profile backfill should report created, repaired, and skipped counts.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Create missing drafts/,
+  "Counter Profile Review should expose a backfill control for missing generated drafts.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Active champions/,
+  "Counter Profile Review should show total active champion coverage.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Missing profiles/,
+  "Counter Profile Review should show missing profile coverage.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Draft\/generated_draft/,
+  "Counter Profile Review should label draft rows as generated draft coverage.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /rowsByChampionId = new Map<string, CounterRankingV2ProfileReviewPanelRow>/,
+  "Counter Profile Review should dedupe profile rows by normalized champion id before rendering.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Counter Ranking V2 profile duplicates detected before rendering/,
+  "Counter Profile Review should warn when duplicate profile rows are detected.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /getPreferredCounterRankingV2ProfileRow/,
+  "Counter Profile Review should prefer the best current row when duplicates exist.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /key=\{normalizeCounterRankingV2ChampionId\(profile\.championId\)\}/,
+  "Counter Profile Review should render rows with a normalized stable champion key after dedupe.",
+);
+assert.match(
   counterPickProfileReviewPageSource,
   /section="counter-picks-profile-review"/,
   "Counter profile review should have its own admin page.",

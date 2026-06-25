@@ -304,6 +304,7 @@ export const counterRankingV2ManualAdjustmentMin = -30;
 export const counterRankingV2ManualAdjustmentMax = 30;
 export const counterRankingV2DefaultAdjustmentReason = "manual_review";
 export const counterRankingV2DefaultReviewStatus = "unreviewed";
+export const counterRankingV2GeneratedDraftProfileVersion = 1;
 export const useReviewedMechanicalCountersPublicly =
   process.env.NEXT_PUBLIC_USE_REVIEWED_MECHANICAL_COUNTERS_PUBLICLY === "true";
 
@@ -1177,13 +1178,26 @@ export function getCounterRankingV2ChampionProfile(
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
   profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId,
 ) {
-  const profile = counterRankingV2ChampionProfilesById.get(normalizeChampionId(championId)) ?? null;
+  const normalizedChampionId = normalizeChampionId(championId);
+  const profile = counterRankingV2ChampionProfilesById.get(normalizedChampionId) ?? null;
+  const profileOverride =
+    profileOverridesByChampionId?.get(profile?.championId ?? normalizedChampionId) ??
+    profileOverridesByChampionId?.get(normalizedChampionId) ??
+    profileOverridesByChampionId?.get(championId);
 
   if (!profile) {
-    return null;
+    if (!profileOverride) {
+      return null;
+    }
+
+    const reviewedStatus =
+      profileStatusesByChampionId?.get(normalizedChampionId) ??
+      profileStatusesByChampionId?.get(profileOverride.championId);
+    const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(profileOverride);
+
+    return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
   }
 
-  const profileOverride = profileOverridesByChampionId?.get(profile.championId);
   const reviewedStatus = profileStatusesByChampionId?.get(profile.championId);
   const mergedProfile = profileOverride
     ? {
@@ -1196,6 +1210,23 @@ export function getCounterRankingV2ChampionProfile(
   const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(mergedProfile);
 
   return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
+}
+
+export function createCounterRankingV2GeneratedDraftChampionProfile(
+  championId: string,
+): CounterRankingV2ChampionProfile {
+  return {
+    championId: championId.trim(),
+    identitySummary: "Generated draft mechanical profile awaiting admin review.",
+    knownStrengths: [],
+    knownWeaknesses: [],
+    notes: "Generated draft mechanical profile awaiting admin review.",
+    reviewStatus: "draft",
+    strengths: [],
+    supportedRoles: ["mid"],
+    vulnerabilities: [],
+    version: counterRankingV2GeneratedDraftProfileVersion,
+  };
 }
 
 function normalizeCounterRankingV2ChampionProfileTraits(
