@@ -10,47 +10,28 @@ import { AdminOverview } from "./admin-overview";
 import {
   emptyAdminData,
   emptyLeagueMatchupForm,
-  emptyResourceForm,
-  emptySeasonForm,
-  emptyTimelineEventForm,
   missingLeagueCounterPicksTableMessage,
   missingLeagueMatchupsTableMessage,
   missingLeagueFeedbackTableMessage,
-  missingResourcesTableMessage,
-  missingTimelineEventsTableMessage,
   sessionCheckTimeoutMs,
 } from "./constants";
 import {
   isMissingLeagueCounterPicksTableError,
   isMissingLeagueMatchupsTableError,
   isMissingLeagueFeedbackTableError,
-  isMissingGameResourcesTableError,
-  isMissingTimelineEventsTableError,
-  toDateTimeLocalValue,
-  toIsoDateTime,
-  toSlug,
 } from "./helpers";
 import { AdminLeagueCounterPicksSection } from "./league/league-counter-pick-section";
 import { AdminLeagueMatchupsSection } from "./league/league-matchup-section";
-import { AdminResourcesSection } from "./resources/resource-section";
-import { AdminSeasonsSection } from "./seasons/season-section";
-import { AdminTimelineSection } from "./timeline/timeline-section";
 import type {
   AdminData,
   AdminLeagueChampion,
   LeagueCounterPick,
   AdminLeagueMatchupFeedback,
   AdminLeagueMatchup,
-  AdminResource,
-  AdminSeason,
   AdminSection,
-  AdminTimelineEvent,
   LeagueMatchupBatchPlanItem,
   LeagueMatchupFormState,
   LeagueMatchupQueueItemResult,
-  ResourceFormState,
-  SeasonFormState,
-  TimelineEventFormState,
 } from "./types";
 import {
   deleteLeagueMatchupDraft,
@@ -199,51 +180,9 @@ let cachedAdminUser: User | null = null;
 
 export function AdminDashboard({ section }: { section: AdminSection }) {
   const [adminData, setAdminData] = useState<AdminData>(() => cachedAdminData ?? emptyAdminData);
-  const [createResourceForm, setCreateResourceForm] =
-    useState<ResourceFormState>(emptyResourceForm);
-  const [createResourceStatus, setCreateResourceStatus] = useState<{
-    error: string | null;
-    isLoading: boolean;
-    success: string | null;
-  }>({ error: null, isLoading: false, success: null });
-  const [createForm, setCreateForm] = useState<SeasonFormState>(emptySeasonForm);
-  const [createStatus, setCreateStatus] = useState<{
-    error: string | null;
-    isLoading: boolean;
-    success: string | null;
-  }>({ error: null, isLoading: false, success: null });
-  const [editForm, setEditForm] = useState<SeasonFormState>(emptySeasonForm);
-  const [editingSeasonId, setEditingSeasonId] = useState<string | null>(null);
-  const [editStatus, setEditStatus] = useState<{
-    error: string | null;
-    isLoading: boolean;
-    success: string | null;
-  }>({ error: null, isLoading: false, success: null });
-  const [editResourceForm, setEditResourceForm] = useState<ResourceFormState>(emptyResourceForm);
-  const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
-  const [editResourceStatus, setEditResourceStatus] = useState<{
-    error: string | null;
-    isLoading: boolean;
-    success: string | null;
-  }>({ error: null, isLoading: false, success: null });
-  const [createTimelineForm, setCreateTimelineForm] =
-    useState<TimelineEventFormState>(emptyTimelineEventForm);
-  const [createTimelineStatus, setCreateTimelineStatus] = useState<{
-    error: string | null;
-    isLoading: boolean;
-    success: string | null;
-  }>({ error: null, isLoading: false, success: null });
   const [createLeagueMatchupForm, setCreateLeagueMatchupForm] =
     useState<LeagueMatchupFormState>(emptyLeagueMatchupForm);
   const [createLeagueMatchupStatus, setCreateLeagueMatchupStatus] = useState<{
-    error: string | null;
-    isLoading: boolean;
-    success: string | null;
-  }>({ error: null, isLoading: false, success: null });
-  const [editTimelineForm, setEditTimelineForm] =
-    useState<TimelineEventFormState>(emptyTimelineEventForm);
-  const [editingTimelineEventId, setEditingTimelineEventId] = useState<string | null>(null);
-  const [editTimelineStatus, setEditTimelineStatus] = useState<{
     error: string | null;
     isLoading: boolean;
     success: string | null;
@@ -273,32 +212,24 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedAdminData);
   const [profile, setProfile] = useState<UserProfile | null>(() => cachedAdminProfile);
-  const [resourcesSetupMessage, setResourcesSetupMessage] = useState<string | null>(null);
-  const [timelineSetupMessage, setTimelineSetupMessage] = useState<string | null>(null);
   const [leagueMatchupsSetupMessage, setLeagueMatchupsSetupMessage] = useState<string | null>(null);
   const [leagueCounterPicksSetupMessage, setLeagueCounterPicksSetupMessage] = useState<
     string | null
   >(null);
   const [leagueFeedbackSetupMessage, setLeagueFeedbackSetupMessage] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(() => cachedAdminUser);
-  const shouldLoadResourceContent = section === "community" || section === "resources";
-  const shouldLoadSeasonContent = section === "seasons" || section === "timeline";
-  const shouldLoadTimelineContent = section === "timeline";
   const pageTitle =
-    section === "community"
-        ? "Community management"
-        : section === "league-matchups"
-          ? "League matchup management"
-          : section === "league-counter-picks"
-            ? "Counter Pick management"
-            : section === "resources"
-              ? "Resource management"
-              : section === "seasons"
-                ? "Season management"
-                : section === "timeline"
-                  ? "Timeline management"
-                  : "Admin dashboard";
-  const editableLinkSection = section === "community" ? "community" : "resources";
+    section === "league-matchups"
+      ? "League matchup management"
+      : section === "counter-picks-collect"
+        ? "Collect Counter Pick data"
+        : section === "counter-picks-profile-review"
+          ? "Counter Profile Review"
+        : section === "counter-picks-shadow-ranking"
+          ? "Counter Pick shadow ranking"
+          : section === "league-counter-picks" || section === "counter-picks-overview"
+        ? "Counter Pick management"
+        : "Admin dashboard";
 
   useEffect(() => {
     let isMounted = true;
@@ -359,41 +290,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       setProfile(profileResult.data);
 
       const [
-        resourcesResult,
-        seasonsResult,
-        timelineResult,
         leagueChampionsResult,
         leagueCounterPicksResult,
         leagueMatchupsResult,
         leagueFeedbackResult,
       ] = await Promise.all([
-        shouldLoadResourceContent
-          ? supabase
-              .from("game_resources")
-              .select(
-                "id, game_id, title, label, url, icon, sort_order, is_active, section, group_title",
-              )
-              .order("game_id", { ascending: true })
-              .order("sort_order", { ascending: true })
-              .order("created_at", { ascending: true })
-          : Promise.resolve({ data: [], error: null }),
-        shouldLoadSeasonContent
-          ? supabase
-              .from("seasons")
-              .select("id, game_id, name, slug, starts_at, ends_at, description")
-              .order("starts_at", { ascending: true })
-          : Promise.resolve({ data: [], error: null }),
-        shouldLoadTimelineContent
-          ? supabase
-              .from("timeline_events")
-              .select(
-                "id, game_id, season_id, title, description, event_date, event_type, is_pinned",
-              )
-              .order("game_id", { ascending: true })
-              .order("is_pinned", { ascending: false })
-              .order("event_date", { ascending: true })
-              .order("created_at", { ascending: true })
-          : Promise.resolve({ data: [], error: null }),
         supabase
           .from("league_champions")
           .select("id, name, title, image_url")
@@ -408,8 +309,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         return;
       }
 
-      const isMissingResourcesTable = isMissingGameResourcesTableError(resourcesResult.error);
-      const isMissingTimelineTable = isMissingTimelineEventsTableError(timelineResult.error);
       const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
         leagueMatchupsResult.error,
       );
@@ -422,18 +321,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
       if (
         leagueChampionsResult.error ||
-        (resourcesResult.error && !isMissingResourcesTable) ||
-        (seasonsResult.error && shouldLoadSeasonContent) ||
-        (timelineResult.error && !isMissingTimelineTable) ||
         (leagueCounterPicksResult.error && !isMissingLeagueCounterPicksTable) ||
         (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable) ||
         (leagueFeedbackResult.error && !isMissingLeagueFeedbackTable)
       ) {
         setError(
           leagueChampionsResult.error?.message ??
-            (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
-            (shouldLoadSeasonContent ? seasonsResult.error?.message : null) ??
-            (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
             (!isMissingLeagueCounterPicksTable ? leagueCounterPicksResult.error?.message : null) ??
             (!isMissingLeagueMatchupsTable ? leagueMatchupsResult.error?.message : null) ??
             (!isMissingLeagueFeedbackTable ? leagueFeedbackResult.error?.message : null) ??
@@ -443,8 +336,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         return;
       }
 
-      setResourcesSetupMessage(isMissingResourcesTable ? missingResourcesTableMessage : null);
-      setTimelineSetupMessage(isMissingTimelineTable ? missingTimelineEventsTableMessage : null);
       setLeagueMatchupsSetupMessage(
         isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null,
       );
@@ -456,7 +347,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       );
 
       const nextAdminData = {
-        games: [],
         leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
         leagueCounterPicks: isMissingLeagueCounterPicksTable
           ? []
@@ -467,11 +357,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         leagueMatchups: isMissingLeagueMatchupsTable
           ? []
           : ((leagueMatchupsResult.data ?? []) as AdminLeagueMatchup[]),
-        resources: isMissingResourcesTable ? [] : ((resourcesResult.data ?? []) as AdminResource[]),
-        seasons: (seasonsResult.data ?? []) as AdminSeason[],
-        timelineEvents: isMissingTimelineTable
-          ? []
-          : ((timelineResult.data ?? []) as AdminTimelineEvent[]),
       };
 
       cachedAdminData = nextAdminData;
@@ -485,36 +370,14 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       isMounted = false;
       window.clearTimeout(redirectTimeoutId);
     };
-  }, [shouldLoadResourceContent, shouldLoadSeasonContent, shouldLoadTimelineContent]);
+  }, []);
 
-  const gameNamesById = useMemo(
-    () => new Map(adminData.games.map((game) => [game.id, game.name] as const)),
-    [adminData.games],
-  );
-  const resourcesRows = useMemo(
-    () =>
-      adminData.resources.filter((resource) => (resource.section ?? "community") === "resources"),
-    [adminData.resources],
-  );
-  const communityRows = useMemo(
-    () =>
-      adminData.resources.filter((resource) => (resource.section ?? "community") === "community"),
-    [adminData.resources],
-  );
   const reviewedLeagueMatchupsCount = useMemo(
     () =>
       adminData.leagueMatchups.filter((matchup) => matchup.generation_status === "reviewed").length,
     [adminData.leagueMatchups],
   );
   const draftLeagueMatchupsCount = adminData.leagueMatchups.length - reviewedLeagueMatchupsCount;
-  const normalizedCreateResourceForm = normalizeResourceFormForSection(
-    createResourceForm,
-    editableLinkSection,
-  );
-  const normalizedEditResourceForm = normalizeResourceFormForSection(
-    editResourceForm,
-    editableLinkSection,
-  );
 
   async function reloadAdminData() {
     if (!supabase) {
@@ -523,39 +386,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     }
 
     const [
-      resourcesResult,
-      seasonsResult,
-      timelineResult,
       leagueChampionsResult,
       leagueCounterPicksResult,
       leagueMatchupsResult,
       leagueFeedbackResult,
     ] = await Promise.all([
-      shouldLoadResourceContent
-        ? supabase
-            .from("game_resources")
-            .select(
-              "id, game_id, title, label, url, icon, sort_order, is_active, section, group_title",
-            )
-            .order("game_id", { ascending: true })
-            .order("sort_order", { ascending: true })
-            .order("created_at", { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
-      shouldLoadSeasonContent
-        ? supabase
-            .from("seasons")
-            .select("id, game_id, name, slug, starts_at, ends_at, description")
-            .order("starts_at", { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
-      shouldLoadTimelineContent
-        ? supabase
-            .from("timeline_events")
-            .select("id, game_id, season_id, title, description, event_date, event_type, is_pinned")
-            .order("game_id", { ascending: true })
-            .order("is_pinned", { ascending: false })
-            .order("event_date", { ascending: true })
-            .order("created_at", { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
       supabase
         .from("league_champions")
         .select("id, name, title, image_url")
@@ -566,8 +401,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       fetchAllLeagueFeedback(),
     ]);
 
-    const isMissingResourcesTable = isMissingGameResourcesTableError(resourcesResult.error);
-    const isMissingTimelineTable = isMissingTimelineEventsTableError(timelineResult.error);
     const isMissingLeagueMatchupsTable = isMissingLeagueMatchupsTableError(
       leagueMatchupsResult.error,
     );
@@ -580,18 +413,12 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
 
     if (
       leagueChampionsResult.error ||
-      (resourcesResult.error && !isMissingResourcesTable) ||
-      (seasonsResult.error && shouldLoadSeasonContent) ||
-      (timelineResult.error && !isMissingTimelineTable) ||
       (leagueCounterPicksResult.error && !isMissingLeagueCounterPicksTable) ||
       (leagueMatchupsResult.error && !isMissingLeagueMatchupsTable) ||
       (leagueFeedbackResult.error && !isMissingLeagueFeedbackTable)
     ) {
       setError(
         leagueChampionsResult.error?.message ??
-          (!isMissingResourcesTable ? resourcesResult.error?.message : null) ??
-          (shouldLoadSeasonContent ? seasonsResult.error?.message : null) ??
-          (!isMissingTimelineTable ? timelineResult.error?.message : null) ??
           (!isMissingLeagueCounterPicksTable ? leagueCounterPicksResult.error?.message : null) ??
           (!isMissingLeagueMatchupsTable ? leagueMatchupsResult.error?.message : null) ??
           (!isMissingLeagueFeedbackTable ? leagueFeedbackResult.error?.message : null) ??
@@ -600,8 +427,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       return false;
     }
 
-    setResourcesSetupMessage(isMissingResourcesTable ? missingResourcesTableMessage : null);
-    setTimelineSetupMessage(isMissingTimelineTable ? missingTimelineEventsTableMessage : null);
     setLeagueMatchupsSetupMessage(
       isMissingLeagueMatchupsTable ? missingLeagueMatchupsTableMessage : null,
     );
@@ -613,7 +438,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     );
 
     const nextAdminData = {
-      games: [],
       leagueChampions: (leagueChampionsResult.data ?? []) as AdminLeagueChampion[],
       leagueCounterPicks: isMissingLeagueCounterPicksTable
         ? []
@@ -624,398 +448,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
       leagueMatchups: isMissingLeagueMatchupsTable
         ? []
         : ((leagueMatchupsResult.data ?? []) as AdminLeagueMatchup[]),
-      resources: isMissingResourcesTable ? [] : ((resourcesResult.data ?? []) as AdminResource[]),
-      seasons: (seasonsResult.data ?? []) as AdminSeason[],
-      timelineEvents: isMissingTimelineTable
-        ? []
-        : ((timelineResult.data ?? []) as AdminTimelineEvent[]),
     };
 
     cachedAdminData = nextAdminData;
     setAdminData(nextAdminData);
     return true;
-  }
-
-  function getResourceFormError(form: ResourceFormState) {
-    if (
-      !form.id.trim() ||
-      !form.game_id ||
-      !form.title.trim() ||
-      !form.label.trim() ||
-      !form.url.trim()
-    ) {
-      return "ID, game, title, label, and URL are required.";
-    }
-
-    if (form.section === "resources" && !form.group_title.trim()) {
-      return "Resource group is required.";
-    }
-
-    return null;
-  }
-
-  function getResourcePayload(form: ResourceFormState) {
-    return {
-      game_id: form.game_id,
-      group_title: form.section === "resources" ? form.group_title.trim() : null,
-      icon: form.icon,
-      id: form.id.trim(),
-      is_active: form.is_active,
-      label: form.label.trim(),
-      section: form.section,
-      sort_order: Number.parseInt(form.sort_order, 10) || 0,
-      title: form.title.trim(),
-      url: form.url.trim(),
-    };
-  }
-
-  async function handleCreateResource(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!supabase) {
-      setCreateResourceStatus({
-        error: "Supabase is not configured.",
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    const nextCreateResourceForm = {
-      ...normalizeResourceFormForSection(createResourceForm, editableLinkSection),
-    };
-    const validationError = getResourceFormError(nextCreateResourceForm);
-
-    if (validationError) {
-      setCreateResourceStatus({
-        error: validationError,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    setCreateResourceStatus({
-      error: null,
-      isLoading: true,
-      success: null,
-    });
-
-    const { error: createError } = await supabase
-      .from("game_resources")
-      .insert(getResourcePayload(nextCreateResourceForm));
-
-    if (createError) {
-      setCreateResourceStatus({
-        error: createError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    await reloadAdminData();
-    setCreateResourceForm({
-      ...emptyResourceForm,
-      game_id: nextCreateResourceForm.game_id,
-      icon: editableLinkSection === "community" ? "forum" : "builds",
-      section: editableLinkSection,
-    });
-    setCreateResourceStatus({
-      error: null,
-      isLoading: false,
-      success: "Resource created.",
-    });
-  }
-
-  function startEditingResource(resource: AdminResource) {
-    setEditingResourceId(resource.id);
-    setEditResourceStatus({ error: null, isLoading: false, success: null });
-    setEditResourceForm({
-      game_id: resource.game_id,
-      group_title: resource.group_title ?? "",
-      icon: resource.icon,
-      id: resource.id,
-      is_active: resource.is_active,
-      label: resource.label,
-      section: resource.section ?? "community",
-      sort_order: String(resource.sort_order),
-      title: resource.title,
-      url: resource.url,
-    });
-  }
-
-  function stopEditingResource() {
-    setEditingResourceId(null);
-    setEditResourceForm(emptyResourceForm);
-    setEditResourceStatus({ error: null, isLoading: false, success: null });
-  }
-
-  async function handleUpdateResource(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!supabase || !editingResourceId) {
-      return;
-    }
-
-    const nextEditResourceForm = normalizeResourceFormForSection(
-      editResourceForm,
-      editableLinkSection,
-    );
-    const validationError = getResourceFormError(nextEditResourceForm);
-
-    if (validationError) {
-      setEditResourceStatus({
-        error: validationError,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    setEditResourceStatus({ error: null, isLoading: true, success: null });
-
-    const payload = getResourcePayload(nextEditResourceForm);
-    const { error: updateError } = await supabase
-      .from("game_resources")
-      .update({
-        game_id: payload.game_id,
-        group_title: payload.group_title,
-        icon: payload.icon,
-        is_active: payload.is_active,
-        label: payload.label,
-        section: payload.section,
-        sort_order: payload.sort_order,
-        title: payload.title,
-        url: payload.url,
-      })
-      .eq("id", editingResourceId);
-
-    if (updateError) {
-      setEditResourceStatus({
-        error: updateError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    await reloadAdminData();
-    setEditingResourceId(null);
-    setEditResourceStatus({
-      error: null,
-      isLoading: false,
-      success: "Resource updated.",
-    });
-  }
-
-  async function handleDeleteResource(resource: AdminResource) {
-    if (!supabase || !window.confirm(`Delete "${resource.title}" from game resources?`)) {
-      return;
-    }
-
-    setEditResourceStatus({ error: null, isLoading: true, success: null });
-
-    const { error: deleteError } = await supabase
-      .from("game_resources")
-      .delete()
-      .eq("id", resource.id);
-
-    if (deleteError) {
-      setEditResourceStatus({
-        error: deleteError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    if (editingResourceId === resource.id) {
-      setEditingResourceId(null);
-      setEditResourceForm(emptyResourceForm);
-    }
-
-    await reloadAdminData();
-    setEditResourceStatus({
-      error: null,
-      isLoading: false,
-      success: "Resource deleted.",
-    });
-  }
-
-  function getTimelineFormError(form: TimelineEventFormState) {
-    if (!form.game_id || !form.title.trim() || !form.event_date) {
-      return "Game, title, and event date are required.";
-    }
-
-    return null;
-  }
-
-  function getTimelineEventPayload(form: TimelineEventFormState) {
-    return {
-      description: form.description.trim() || null,
-      event_date: toIsoDateTime(form.event_date),
-      event_type: form.event_type,
-      game_id: form.game_id,
-      is_pinned: form.is_pinned,
-      season_id: form.season_id || null,
-      title: form.title.trim(),
-    };
-  }
-
-  function getTimelineEventId(form: TimelineEventFormState) {
-    const datePart = form.event_date.slice(0, 10) || "event";
-    const titlePart = toSlug(form.title) || "event";
-
-    return `${form.game_id}-${datePart}-${titlePart}`;
-  }
-
-  async function handleCreateTimelineEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!supabase) {
-      setCreateTimelineStatus({
-        error: "Supabase is not configured.",
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    const validationError = getTimelineFormError(createTimelineForm);
-
-    if (validationError) {
-      setCreateTimelineStatus({
-        error: validationError,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    setCreateTimelineStatus({ error: null, isLoading: true, success: null });
-
-    const { error: createError } = await supabase.from("timeline_events").insert({
-      id: getTimelineEventId(createTimelineForm),
-      ...getTimelineEventPayload(createTimelineForm),
-    });
-
-    if (createError) {
-      setCreateTimelineStatus({
-        error: createError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    await reloadAdminData();
-    setCreateTimelineForm({
-      ...emptyTimelineEventForm,
-      game_id: createTimelineForm.game_id,
-    });
-    setCreateTimelineStatus({
-      error: null,
-      isLoading: false,
-      success: "Timeline event created.",
-    });
-  }
-
-  function startEditingTimelineEvent(event: AdminTimelineEvent) {
-    setEditingTimelineEventId(event.id);
-    setEditTimelineStatus({ error: null, isLoading: false, success: null });
-    setEditTimelineForm({
-      description: event.description ?? "",
-      event_date: toDateTimeLocalValue(event.event_date),
-      event_type: event.event_type,
-      game_id: event.game_id,
-      is_pinned: event.is_pinned,
-      season_id: event.season_id ?? "",
-      title: event.title,
-    });
-  }
-
-  function stopEditingTimelineEvent() {
-    setEditingTimelineEventId(null);
-    setEditTimelineForm(emptyTimelineEventForm);
-    setEditTimelineStatus({ error: null, isLoading: false, success: null });
-  }
-
-  async function handleUpdateTimelineEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!supabase || !editingTimelineEventId) {
-      return;
-    }
-
-    const validationError = getTimelineFormError(editTimelineForm);
-
-    if (validationError) {
-      setEditTimelineStatus({
-        error: validationError,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    setEditTimelineStatus({ error: null, isLoading: true, success: null });
-
-    const { error: updateError } = await supabase
-      .from("timeline_events")
-      .update(getTimelineEventPayload(editTimelineForm))
-      .eq("id", editingTimelineEventId);
-
-    if (updateError) {
-      setEditTimelineStatus({
-        error: updateError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    await reloadAdminData();
-    setEditingTimelineEventId(null);
-    setEditTimelineStatus({
-      error: null,
-      isLoading: false,
-      success: "Timeline event updated.",
-    });
-  }
-
-  async function handleDeleteTimelineEvent(event: AdminTimelineEvent) {
-    if (!supabase || !window.confirm(`Delete "${event.title}" from timeline events?`)) {
-      return;
-    }
-
-    setEditTimelineStatus({ error: null, isLoading: true, success: null });
-
-    const { error: deleteError } = await supabase
-      .from("timeline_events")
-      .delete()
-      .eq("id", event.id);
-
-    if (deleteError) {
-      setEditTimelineStatus({
-        error: deleteError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    if (editingTimelineEventId === event.id) {
-      setEditingTimelineEventId(null);
-      setEditTimelineForm(emptyTimelineEventForm);
-    }
-
-    await reloadAdminData();
-    setEditTimelineStatus({
-      error: null,
-      isLoading: false,
-      success: "Timeline event deleted.",
-    });
   }
 
   function getLeagueMatchupFormError(form: LeagueMatchupFormState) {
@@ -1932,167 +1369,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
     };
   }
 
-  function getSeasonFormError(form: SeasonFormState) {
-    if (!form.game_id || !form.name || !form.slug || !form.starts_at) {
-      return "Game, name, slug, and start date are required.";
-    }
-
-    return null;
-  }
-
-  function getSeasonPayload(form: SeasonFormState) {
-    return {
-      description: form.description.trim() || null,
-      ends_at: toIsoDateTime(form.ends_at || form.starts_at),
-      game_id: form.game_id,
-      name: form.name.trim(),
-      slug: form.slug.trim(),
-      starts_at: toIsoDateTime(form.starts_at),
-    };
-  }
-
-  async function handleCreateSeason(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!supabase) {
-      setCreateStatus({
-        error: "Supabase is not configured.",
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    const validationError = getSeasonFormError(createForm);
-
-    if (validationError) {
-      setCreateStatus({
-        error: validationError,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    setCreateStatus({ error: null, isLoading: true, success: null });
-
-    const payload = getSeasonPayload(createForm);
-    const { error: createError } = await supabase.from("seasons").insert({
-      id: `${payload.game_id}-${payload.slug}`,
-      ...payload,
-    });
-
-    if (createError) {
-      setCreateStatus({
-        error: createError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    await reloadAdminData();
-    setCreateForm({ ...emptySeasonForm, game_id: createForm.game_id });
-    setCreateStatus({
-      error: null,
-      isLoading: false,
-      success: "Season created.",
-    });
-  }
-
-  function startEditingSeason(season: AdminSeason) {
-    setEditingSeasonId(season.id);
-    setEditStatus({ error: null, isLoading: false, success: null });
-    setEditForm({
-      description: season.description ?? "",
-      ends_at: toDateTimeLocalValue(season.ends_at),
-      game_id: season.game_id,
-      name: season.name,
-      slug: season.slug,
-      starts_at: toDateTimeLocalValue(season.starts_at),
-    });
-  }
-
-  function stopEditingSeason() {
-    setEditingSeasonId(null);
-    setEditForm(emptySeasonForm);
-    setEditStatus({ error: null, isLoading: false, success: null });
-  }
-
-  async function handleUpdateSeason(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!supabase || !editingSeasonId) {
-      return;
-    }
-
-    const validationError = getSeasonFormError(editForm);
-
-    if (validationError) {
-      setEditStatus({
-        error: validationError,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    setEditStatus({ error: null, isLoading: true, success: null });
-
-    const { error: updateError } = await supabase
-      .from("seasons")
-      .update(getSeasonPayload(editForm))
-      .eq("id", editingSeasonId);
-
-    if (updateError) {
-      setEditStatus({
-        error: updateError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    await reloadAdminData();
-    setEditingSeasonId(null);
-    setEditStatus({
-      error: null,
-      isLoading: false,
-      success: "Season updated.",
-    });
-  }
-
-  async function handleDeleteSeason(season: AdminSeason) {
-    if (!supabase || !window.confirm(`Delete "${season.name}" from seasons?`)) {
-      return;
-    }
-
-    setEditStatus({ error: null, isLoading: true, success: null });
-
-    const { error: deleteError } = await supabase.from("seasons").delete().eq("id", season.id);
-
-    if (deleteError) {
-      setEditStatus({
-        error: deleteError.message,
-        isLoading: false,
-        success: null,
-      });
-      return;
-    }
-
-    if (editingSeasonId === season.id) {
-      setEditingSeasonId(null);
-      setEditForm(emptySeasonForm);
-    }
-
-    await reloadAdminData();
-    setEditStatus({
-      error: null,
-      isLoading: false,
-      success: "Season deleted.",
-    });
-  }
-
   return (
     <LaneStompPageShell>
         <SiteHeader />
@@ -2126,18 +1402,6 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
         {!isLoading && !error ? (
           <>
             <AdminNavigation activeSection={section} />
-
-            {resourcesSetupMessage ? (
-              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
-                {resourcesSetupMessage}
-              </Card>
-            ) : null}
-
-            {timelineSetupMessage ? (
-              <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
-                {timelineSetupMessage}
-              </Card>
-            ) : null}
 
             {leagueMatchupsSetupMessage ? (
               <Card className="border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-100">
@@ -2173,75 +1437,11 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
               <div className="contents">
                 {section === "overview" ? (
                   <AdminOverview
-                    communityContentCount={communityRows.length}
                     leagueChampionsCount={adminData.leagueChampions.length}
                     leagueCounterPicksCount={adminData.leagueCounterPicks.length}
                     leagueDraftMatchupsCount={draftLeagueMatchupsCount}
                     leagueMatchupsCount={adminData.leagueMatchups.length}
                     leagueReviewedMatchupsCount={reviewedLeagueMatchupsCount}
-                    resourcesCount={resourcesRows.length}
-                  />
-                ) : null}
-
-                {section === "resources" || section === "community" ? (
-                  <AdminResourcesSection
-                    createForm={normalizedCreateResourceForm}
-                    createStatus={createResourceStatus}
-                    editForm={normalizedEditResourceForm}
-                    editStatus={editResourceStatus}
-                    editingResourceId={editingResourceId}
-                    gameNamesById={gameNamesById}
-                    games={adminData.games}
-                    mode={editableLinkSection}
-                    onCancelEdit={stopEditingResource}
-                    onCreateChange={setCreateResourceForm}
-                    onCreateSubmit={handleCreateResource}
-                    onDelete={handleDeleteResource}
-                    onEditChange={setEditResourceForm}
-                    onEditSubmit={handleUpdateResource}
-                    onStartEdit={startEditingResource}
-                    resources={editableLinkSection === "community" ? communityRows : resourcesRows}
-                  />
-                ) : null}
-
-                {section === "seasons" ? (
-                  <AdminSeasonsSection
-                    createForm={createForm}
-                    createStatus={createStatus}
-                    editForm={editForm}
-                    editStatus={editStatus}
-                    editingSeasonId={editingSeasonId}
-                    gameNamesById={gameNamesById}
-                    games={adminData.games}
-                    onCancelEdit={stopEditingSeason}
-                    onCreateChange={setCreateForm}
-                    onCreateSubmit={handleCreateSeason}
-                    onDelete={handleDeleteSeason}
-                    onEditChange={setEditForm}
-                    onEditSubmit={handleUpdateSeason}
-                    onStartEdit={startEditingSeason}
-                    seasons={adminData.seasons}
-                  />
-                ) : null}
-
-                {section === "timeline" ? (
-                  <AdminTimelineSection
-                    createForm={createTimelineForm}
-                    createStatus={createTimelineStatus}
-                    editForm={editTimelineForm}
-                    editStatus={editTimelineStatus}
-                    editingEventId={editingTimelineEventId}
-                    gameNamesById={gameNamesById}
-                    games={adminData.games}
-                    onCancelEdit={stopEditingTimelineEvent}
-                    onCreateChange={setCreateTimelineForm}
-                    onCreateSubmit={handleCreateTimelineEvent}
-                    onDelete={handleDeleteTimelineEvent}
-                    onEditChange={setEditTimelineForm}
-                    onEditSubmit={handleUpdateTimelineEvent}
-                    onStartEdit={startEditingTimelineEvent}
-                    seasons={adminData.seasons}
-                    timelineEvents={adminData.timelineEvents}
                   />
                 ) : null}
 
@@ -2281,6 +1481,43 @@ export function AdminDashboard({ section }: { section: AdminSection }) {
                     champions={adminData.leagueChampions}
                     counterPicks={adminData.leagueCounterPicks}
                     onRefresh={reloadAdminData}
+                    view="editorial"
+                  />
+                ) : null}
+
+                {section === "counter-picks-overview" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="overview"
+                  />
+                ) : null}
+
+                {section === "counter-picks-collect" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="collect"
+                  />
+                ) : null}
+
+                {section === "counter-picks-shadow-ranking" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="shadow-ranking"
+                  />
+                ) : null}
+
+                {section === "counter-picks-profile-review" ? (
+                  <AdminLeagueCounterPicksSection
+                    champions={adminData.leagueChampions}
+                    counterPicks={adminData.leagueCounterPicks}
+                    onRefresh={reloadAdminData}
+                    view="profile-review"
                   />
                 ) : null}
               </div>
@@ -2398,23 +1635,6 @@ function getSessionWithTimeout(): Promise<SessionResult> {
       }, sessionCheckTimeoutMs);
     }),
   ]);
-}
-
-function normalizeResourceFormForSection(
-  form: ResourceFormState,
-  section: ResourceFormState["section"],
-): ResourceFormState {
-  const iconOptions =
-    section === "community"
-      ? ["discord", "forum", "reddit", "social", "video"]
-      : ["builds", "official", "patch-notes", "stats", "tier-list", "tools", "trade", "wiki"];
-
-  return {
-    ...form,
-    group_title: section === "community" ? "" : form.group_title,
-    icon: iconOptions.includes(form.icon) ? form.icon : iconOptions[0],
-    section,
-  };
 }
 
 function normalizeDraftForForm(

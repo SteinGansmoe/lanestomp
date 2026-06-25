@@ -20,7 +20,9 @@ const registryRows = [
   row("Nunu", "20", "Nunu & Willump", "nunu-willump"),
   row("Renata", "888", "Renata Glasc", "renata-glasc"),
   row("TwistedFate", "4", "Twisted Fate", "twisted-fate"),
+  row("Vex", "711", "Vex", "vex"),
   row("Yasuo", "157", "Yasuo", "yasuo"),
+  row("Yone", "777", "Yone", "yone"),
 ];
 const registry = buildChampionRegistry(registryRows);
 
@@ -30,6 +32,7 @@ testApostropheNames();
 testMultiWordNames();
 testRenamedDisplayNames();
 testNumericLookup();
+testCounterRankingV2LowercaseProfileIds();
 testConflictingParticipantIdentifiers();
 testUnknownChampion();
 testCaseAndWhitespace();
@@ -77,6 +80,11 @@ function testNumericLookup() {
     assert.equal(resolve(champion.riot_key), champion.id);
     assert.equal(resolve(Number(champion.riot_key)), champion.id);
   }
+}
+
+function testCounterRankingV2LowercaseProfileIds() {
+  assert.equal(resolve("vex"), "Vex");
+  assert.equal(resolve("yone"), "Yone");
 }
 
 function testConflictingParticipantIdentifiers() {

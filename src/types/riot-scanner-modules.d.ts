@@ -496,6 +496,23 @@ declare module "@/scripts/lib/league-champion-registry.mjs" {
       name: string;
     }>;
   }>;
+  export function syncLeagueChampionRegistry(options: {
+    dryRun?: boolean;
+    locale?: string;
+    supabase: unknown;
+    version?: string | null;
+  }): Promise<{
+    championsDeactivated: number;
+    championsInserted: number;
+    championsReceived: number;
+    championsUnchanged: number;
+    championsUpdated: number;
+    failed: number;
+    failures: string[];
+    ok: boolean;
+    sourceVersion: string;
+    status: string;
+  }>;
 }
 
 declare module "@/scripts/lib/league-champion-normalizer.mjs" {

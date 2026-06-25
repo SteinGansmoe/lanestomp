@@ -11,12 +11,6 @@ type AdminNavItem =
       status?: never;
     }
   | {
-      href?: never;
-      label: string;
-      section?: never;
-      status: "planned";
-    }
-  | {
       href: string;
       label: string;
       section?: never;
@@ -28,56 +22,48 @@ const adminNavGroups: Array<{
   label: string;
 }> = [
   {
-    label: "League",
+    label: "Matchups",
     items: [
       {
         href: "/admin/league/matchups",
-        label: "Matchups",
+        label: "Matchups overview",
         section: "league-matchups",
       },
       {
-        href: "/admin/league/counter-picks",
-        label: "Counter Picks",
-        section: "league-counter-picks",
-      },
-      { label: "Champions", status: "planned" },
-      {
-        href: "/admin/league/matchups",
+        href: "/admin/league/matchups#generation-queue",
         label: "Generation queue",
         status: "inside",
       },
       {
-        href: "/admin/league/matchups",
+        href: "/admin/league/matchups#coverage-review",
         label: "Coverage / Review",
         status: "inside",
       },
     ],
   },
   {
-    label: "Users",
+    label: "Counter Pick",
     items: [
-      { label: "Accounts", status: "planned" },
-      { label: "Riot connections", status: "planned" },
-    ],
-  },
-  {
-    label: "Content",
-    items: [
-      { href: "/admin/resources", label: "Resources", section: "resources" },
-      { label: "Guides", status: "planned" },
       {
-        href: "/admin/community",
-        label: "Community",
-        section: "community",
+        href: "/admin/counter-picks",
+        label: "Counter Pick overview",
+        section: "counter-picks-overview",
       },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { href: "/admin", label: "Overview", section: "overview" },
-      { href: "/admin/seasons", label: "Seasons", section: "seasons" },
-      { href: "/admin/timeline", label: "Timeline", section: "timeline" },
+      {
+        href: "/admin/counter-picks/collect",
+        label: "Collect data",
+        section: "counter-picks-collect",
+      },
+      {
+        href: "/admin/counter-picks/shadow-ranking",
+        label: "Shadow ranking",
+        section: "counter-picks-shadow-ranking",
+      },
+      {
+        href: "/admin/counter-picks/profile-review",
+        label: "Counter Profile Review",
+        section: "counter-picks-profile-review",
+      },
     ],
   },
 ];
@@ -93,21 +79,10 @@ export function AdminNavigation({ activeSection }: { activeSection: AdminSection
           <p className="px-1 text-xs font-semibold uppercase text-zinc-500">{group.label}</p>
           <div className="flex flex-wrap gap-2">
             {group.items.map((item) => {
-              if (item.status === "planned") {
-                return (
-                  <span
-                    aria-disabled="true"
-                    className="inline-flex items-center gap-2 rounded border border-cyan-100/10 bg-white/[0.025] px-3 py-2 text-sm text-zinc-600"
-                    key={`${group.label}-${item.label}`}
-                  >
-                    {item.label}
-                    <span className="text-[0.65rem] uppercase text-zinc-700">Future</span>
-                  </span>
-                );
-              }
-
               const isActive =
                 item.section === activeSection ||
+                (item.section === "counter-picks-overview" &&
+                  activeSection === "league-counter-picks") ||
                 (item.status === "inside" && activeSection === "league-matchups");
 
               return (

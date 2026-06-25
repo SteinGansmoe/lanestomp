@@ -142,6 +142,59 @@ export async function fetchCounterPickStatsByEnemyAndRole({
   };
 }
 
+export async function fetchCounterPickStatsByEnemyRoleAndCounters({
+  client = supabase,
+  counterChampionIds,
+  enemyChampionId,
+  patch = null,
+  rankBracket = "all",
+  role,
+}: FetchCounterPickStatsInput & {
+  counterChampionIds: string[];
+}): Promise<CounterPickStatsResult> {
+  if (counterChampionIds.length === 0) {
+    return {
+      error: null,
+      stats: [],
+    };
+  }
+
+  if (!client) {
+    return {
+      error: missingSupabaseConfigMessage,
+      stats: [],
+    };
+  }
+
+  let query = client
+    .from("counter_pick_stats")
+    .select(counterPickStatSelect)
+    .eq("enemy_champion_id", enemyChampionId)
+    .eq("rank_bracket", rankBracket)
+    .eq("role", role)
+    .in("counter_champion_id", counterChampionIds)
+    .order("patch", { ascending: false })
+    .order("games", { ascending: false });
+
+  if (patch) {
+    query = query.eq("patch", patch);
+  }
+
+  const { data, error } = await query.returns<CounterPickStat[]>();
+
+  if (error) {
+    return {
+      error: error.message,
+      stats: [],
+    };
+  }
+
+  return {
+    error: null,
+    stats: keepNewestCounterPickStatPerCounter(data ?? []),
+  };
+}
+
 export async function fetchCounterPickStatsByCounterAndRole({
   client = supabase,
   counterChampionId,

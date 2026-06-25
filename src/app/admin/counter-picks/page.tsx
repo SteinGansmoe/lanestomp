@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminDashboard } from "@/src/components/admin/admin-dashboard";
 
-export default function AdminCounterPicksPage() {
-  redirect("/admin/league/counter-picks");
+export default function AdminCounterPicksOverviewPage() {
+  return <AdminDashboard section="counter-picks-overview" />;
 }

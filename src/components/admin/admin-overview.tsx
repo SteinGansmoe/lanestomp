@@ -59,21 +59,17 @@ function AdminProductArea({
 }
 
 export function AdminOverview({
-  communityContentCount,
   leagueChampionsCount,
   leagueCounterPicksCount,
   leagueDraftMatchupsCount,
   leagueMatchupsCount,
   leagueReviewedMatchupsCount,
-  resourcesCount,
 }: {
-  communityContentCount: number;
   leagueChampionsCount: number;
   leagueCounterPicksCount: number;
   leagueDraftMatchupsCount: number;
   leagueMatchupsCount: number;
   leagueReviewedMatchupsCount: number;
-  resourcesCount: number;
 }) {
   return (
     <div className="space-y-10">
@@ -102,17 +98,10 @@ export function AdminOverview({
             actionLabel="Open counters"
             count={leagueCounterPicksCount}
             eyebrow="Active"
-            href="/admin/league/counter-picks"
+            href="/admin/counter-picks"
             label="Counter Picks"
-            summary="Create, edit, review, and publish counter pick recommendations."
+            summary="Review Counter Pick data coverage and open focused collection or shadow ranking tools."
             tag="records"
-          />
-          <AdminSectionCard
-            count={leagueChampionsCount}
-            eyebrow="Next"
-            label="Champions"
-            summary="Future home for champion coverage, metadata, and combat profile upkeep."
-            tag="loaded"
           />
           <AdminSectionCard
             count={leagueDraftMatchupsCount}
@@ -129,56 +118,6 @@ export function AdminOverview({
             label="Coverage / review"
             summary="Track reviewed coverage by champion and lane before new lane expansion."
             tag="reviewed"
-          />
-        </div>
-      </AdminProductArea>
-
-      <AdminProductArea
-        title="Users"
-        description="Account and Riot identity tooling will live here as the League experience becomes more personalized."
-      >
-        <div className="grid gap-6 md:grid-cols-2">
-          <AdminSectionCard
-            count={0}
-            label="Accounts"
-            muted
-            summary="Future admin view for user account support and moderation workflows."
-          />
-          <AdminSectionCard
-            count={0}
-            label="Riot connections"
-            muted
-            summary="Future workspace for linked Riot accounts, regions, and player-facing integrations."
-          />
-        </div>
-      </AdminProductArea>
-
-      <AdminProductArea
-        title="Content"
-        description="Editorial and community surfaces that support game detail pages and future League learning material."
-      >
-        <div className="grid gap-6 md:grid-cols-3">
-          <AdminSectionCard
-            count={resourcesCount}
-            href="/admin/resources"
-            label="Resources"
-            muted
-            summary="Maintain resource cards shown on game detail pages."
-            tag="active"
-          />
-          <AdminSectionCard
-            count={0}
-            label="Guides"
-            muted
-            summary="Future home for authored League guides and structured learning content."
-          />
-          <AdminSectionCard
-            count={communityContentCount}
-            href="/admin/community"
-            label="Community content"
-            muted
-            summary="Maintain community links without making them the dashboard focus."
-            tag="active"
           />
         </div>
       </AdminProductArea>
