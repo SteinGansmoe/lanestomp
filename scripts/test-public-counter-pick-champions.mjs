@@ -429,6 +429,83 @@ async function testPublicCounterPickDirectionMapping() {
     true,
   );
   assert.equal(
+    hasPublicCounterResultLabel(fizzBuckets.selectedChampionGoodInto[0].statistics, "low_sample"),
+    true,
+  );
+
+  const melAnnieSoftReview = reviewedMechanicalCounter({
+    counterChampionId: "Annie",
+    enemyChampionId: "Mel",
+    publicEligible: true,
+    reviewStatus: "verified_soft_counter",
+  });
+  const melSoftBuckets = getPublicCounterResultsForSelectedChampionStats([], "Mel", {
+    reviewedMechanicalCounters: [melAnnieSoftReview],
+    useReviewedMechanicalCounters: true,
+  });
+  const annieSoftInverseBuckets = getPublicCounterResultsForSelectedChampionStats([], "Annie", {
+    reviewedMechanicalCounters: [melAnnieSoftReview],
+    useReviewedMechanicalCounters: true,
+  });
+  const nonPublicSoftBuckets = getPublicCounterResultsForSelectedChampionStats([], "Mel", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Brand",
+        enemyChampionId: "Mel",
+        publicEligible: false,
+        reviewStatus: "verified_soft_counter",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
+  const incorrectSuggestionBuckets = getPublicCounterResultsForSelectedChampionStats([], "Mel", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Lux",
+        enemyChampionId: "Mel",
+        publicEligible: true,
+        reviewStatus: "incorrect_suggestion",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
+  const needsMoreDataBuckets = getPublicCounterResultsForSelectedChampionStats([], "Mel", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Orianna",
+        enemyChampionId: "Mel",
+        publicEligible: true,
+        reviewStatus: "needs_more_data",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
+
+  assert.deepEqual(
+    melSoftBuckets.countersIntoSelectedChampion.map((result) => result.listedChampionId),
+    ["Annie"],
+    "Verified soft public-eligible reviews should render in Best Counters.",
+  );
+  assert.equal(
+    hasPublicCounterResultLabel(melSoftBuckets.countersIntoSelectedChampion[0].statistics, "design_counter"),
+    true,
+  );
+  assert.deepEqual(
+    annieSoftInverseBuckets.selectedChampionGoodInto.map((result) => result.listedChampionId),
+    ["Mel"],
+    "Verified soft public-eligible reviews should render inversely in Bad Into.",
+  );
+  assert.equal(
+    hasPublicCounterResultLabel(
+      annieSoftInverseBuckets.selectedChampionGoodInto[0].statistics,
+      "mechanically_countered",
+    ),
+    true,
+  );
+  assert.deepEqual(nonPublicSoftBuckets.countersIntoSelectedChampion, []);
+  assert.deepEqual(incorrectSuggestionBuckets.countersIntoSelectedChampion, []);
+  assert.deepEqual(needsMoreDataBuckets.countersIntoSelectedChampion, []);
+  assert.equal(
     hasPublicCounterResultLabel(
       fizzBuckets.selectedChampionGoodInto[0].statistics,
       "strong_stats_design_counter",
@@ -671,9 +748,10 @@ async function testReviewedMechanicalCountersBypassPublicMinimumGames() {
   assert.match(statSource, /\.in\("counter_champion_id", counterChampionIds\)/);
   assert.match(selectorSource, /getMechanicalCounterPublicSortValue/);
   assert.match(selectorSource, /hasMechanicalCounterPublicLabel\(row\.stats\)/);
-  assert.match(selectorSource, /text: "Hard countered"/);
-  assert.match(selectorSource, /text: "Strong counter"/);
-  assert.match(selectorSource, /text: "Good counter"/);
+  assert.match(selectorSource, /text: "Hard Countered"/);
+  assert.match(selectorSource, /text: "Strong Counter"/);
+  assert.match(selectorSource, /text: "Counter"/);
+  assert.match(selectorSource, /text: "Countered"/);
   assert.doesNotMatch(selectorSource, /text: "Strong mechanical counter"/);
   assert.doesNotMatch(selectorSource, /text: "Mechanical counter"/);
   assert.match(selectorSource, /border-rose-300\/25 bg-rose-500\/10 text-rose-100/);

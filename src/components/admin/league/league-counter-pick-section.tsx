@@ -90,6 +90,7 @@ import {
   type CounterRankingV2ReviewProgressSummary,
   type CounterRankingV2ReviewStatus,
   type CounterRankingV2SuggestedStrength,
+  type CounterRankingV2TraitDefinition,
   type CounterRankingV2TraitId,
 } from "@/src/features/league/counter-ranking-v2";
 import { isChampionInRole, sortChampionsForRole } from "@/src/features/league/champion-roles";
@@ -257,6 +258,7 @@ export function AdminLeagueCounterPicksSection({
   const hasInitializedSelection = useRef(false);
   const isCounterRankingV2ProfileWorkspace =
     view === "profile-review" || view === "shadow-ranking";
+  const shouldDefaultCounterRankingV2Champion = view === "shadow-ranking";
 
   const championsById = useMemo(
     () => new Map(champions.map((champion) => [champion.id, champion] as const)),
@@ -307,7 +309,7 @@ export function AdminLeagueCounterPicksSection({
   );
   const defaultSelectedChampionId =
     isCounterRankingV2ProfileWorkspace
-      ? hasResolvedInitialSelection
+      ? shouldDefaultCounterRankingV2Champion && hasResolvedInitialSelection
         ? counterRankingV2DefaultChampionId
         : ""
       : (roleSortedChampions.find((champion) =>
@@ -444,7 +446,7 @@ export function AdminLeagueCounterPicksSection({
       }
     }
 
-    if (isCounterRankingV2ProfileWorkspace && counterRankingV2DefaultChampionId) {
+    if (shouldDefaultCounterRankingV2Champion && counterRankingV2DefaultChampionId) {
       setSelectedChampionId(counterRankingV2DefaultChampionId);
       setHasResolvedInitialSelection(true);
       return;
@@ -461,6 +463,7 @@ export function AdminLeagueCounterPicksSection({
     counterRankingV2DefaultChampionId,
     defaultSelectedChampionId,
     isCounterRankingV2ProfileWorkspace,
+    shouldDefaultCounterRankingV2Champion,
   ]);
 
   useEffect(() => {
@@ -1827,9 +1830,11 @@ function CombatProfileRelationshipList({
 }
 
 function CounterRankingV2TraitList({
+  labelContext,
   title,
   traits,
 }: {
+  labelContext: CounterRankingV2ProfileLabelContext;
   title: string;
   traits: { traitId: CounterRankingV2TraitId; weight: number }[];
 }) {
@@ -1837,12 +1842,12 @@ function CounterRankingV2TraitList({
     <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
       <p className="text-xs font-semibold uppercase text-zinc-500">{title}</p>
       {traits.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-400">No traits recorded.</p>
+        <p className="mt-3 text-sm text-zinc-400">No {title.toLowerCase()} recorded.</p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
           {traits.map((trait) => (
             <Badge className="border-white/10 bg-white/5 text-zinc-200" key={trait.traitId}>
-              {getTraitLabel(trait.traitId)} · {trait.weight}/10 ·{" "}
+              {getProfileTraitLabel(trait.traitId, labelContext)} · {trait.weight}/10 ·{" "}
               {getCounterRankingV2ProfileImpactLabel(trait.weight)}
             </Badge>
           ))}
@@ -2124,9 +2129,14 @@ function CounterRankingV2ProfileReviewPanel({
               ) : null}
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <CounterRankingV2TraitList title="Traits" traits={selectedProfile.strengths} />
                 <CounterRankingV2TraitList
-                  title="Vulnerabilities"
+                  labelContext="strength"
+                  title="Strengths"
+                  traits={selectedProfile.strengths}
+                />
+                <CounterRankingV2TraitList
+                  labelContext="weakness"
+                  title="Weaknesses"
                   traits={selectedProfile.vulnerabilities}
                 />
               </div>
@@ -2355,24 +2365,26 @@ function CounterRankingV2ProfileReviewEditor({
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <CounterRankingV2ProfileTraitEditor
           disabled={isCurrentProfileSaving}
+          labelContext="strength"
           onChange={(strengths) =>
             setForm((currentForm) => ({
               ...currentForm,
               strengths,
             }))
           }
-          title="Traits"
+          title="Strengths"
           traits={form.strengths}
         />
         <CounterRankingV2ProfileTraitEditor
           disabled={isCurrentProfileSaving}
+          labelContext="weakness"
           onChange={(vulnerabilities) =>
             setForm((currentForm) => ({
               ...currentForm,
               vulnerabilities,
             }))
           }
-          title="Vulnerabilities"
+          title="Weaknesses"
           traits={form.vulnerabilities}
         />
       </div>
@@ -2466,16 +2478,21 @@ function CounterRankingV2ProfileReviewEditor({
 
 function CounterRankingV2ProfileTraitEditor({
   disabled,
+  labelContext,
   onChange,
   title,
   traits,
 }: {
   disabled: boolean;
+  labelContext: CounterRankingV2ProfileLabelContext;
   onChange: (traits: CounterRankingV2ProfileTrait[]) => void;
   title: string;
   traits: CounterRankingV2ProfileTrait[];
 }) {
   const availableTraitIds: CounterRankingV2TraitId[] = counterRankingV2TraitVocabulary
+    .filter((traitDefinition) =>
+      isTraitDefinitionVisibleForProfileContext(traitDefinition, labelContext),
+    )
     .map((traitDefinition) => traitDefinition.id)
     .filter((traitId) => !traits.some((trait) => trait.traitId === traitId));
   const [selectedTraitId, setSelectedTraitId] = useState<CounterRankingV2TraitId>(
@@ -2513,7 +2530,7 @@ function CounterRankingV2ProfileTraitEditor({
         <div>
           <p className="text-sm font-semibold text-white">{title}</p>
           <p className="mt-1 text-xs leading-5 text-zinc-500">
-            0 = not present · 1–3 = low · 4–6 = medium · 7–8 = high · 9–10 =
+            0 = not present · 1-3 = low · 4-6 = medium · 7-8 = high · 9-10 =
             defining/extreme
           </p>
         </div>
@@ -2526,7 +2543,9 @@ function CounterRankingV2ProfileTraitEditor({
             key={trait.traitId}
           >
             <div>
-              <p className="text-sm font-semibold text-zinc-100">{getTraitLabel(trait.traitId)}</p>
+              <p className="text-sm font-semibold text-zinc-100">
+                {getProfileTraitLabel(trait.traitId, labelContext)}
+              </p>
               <p className="mt-1 text-xs text-zinc-500">
                 {trait.weight}/10 · {getCounterRankingV2ProfileImpactLabel(trait.weight)}
               </p>
@@ -2542,7 +2561,7 @@ function CounterRankingV2ProfileTraitEditor({
               value={String(trait.weight)}
             />
             <Button
-              aria-label={`Remove ${getTraitLabel(trait.traitId)}`}
+              aria-label={`Remove ${getProfileTraitLabel(trait.traitId, labelContext)}`}
               className="size-10 shrink-0 border-rose-300/20 bg-rose-500/10 p-0 text-rose-100 hover:bg-rose-500/15"
               disabled={disabled}
               onClick={() => removeTrait(trait.traitId)}
@@ -2564,7 +2583,7 @@ function CounterRankingV2ProfileTraitEditor({
         >
           {availableTraitIds.map((traitId) => (
             <option className={selectOptionClassName} key={traitId} value={traitId}>
-              {getTraitLabel(traitId)}
+              {getProfileTraitLabel(traitId, labelContext)}
             </option>
           ))}
         </select>
@@ -4446,6 +4465,29 @@ function normalizeRoleForAdmin(role: string | null) {
     : null;
 }
 
+type CounterRankingV2ProfileLabelContext = "strength" | "weakness";
+
+const strengthProfileTraitLabels: Partial<Record<CounterRankingV2TraitId, string>> = {
+  vulnerable_to_all_in: "Strong vs all-in",
+  weak_early: "Strong early",
+  weak_vs_poke: "Strong vs poke",
+  weak_vs_range: "Strong vs range",
+  weak_vs_roaming: "Strong vs roaming",
+  weak_vs_sustain: "Strong vs sustain",
+  weak_vs_waveclear: "Strong vs waveclear",
+};
+
+const weaknessProfileTraitLabels: Partial<Record<CounterRankingV2TraitId, string>> = {
+  vulnerable_to_all_in: "Vulnerable to all-in",
+  waveclear_weak: "Vulnerable to waveclear",
+  weak_early: "Weak early",
+  weak_vs_poke: "Vulnerable to poke",
+  weak_vs_range: "Vulnerable to range",
+  weak_vs_roaming: "Vulnerable to roaming",
+  weak_vs_sustain: "Vulnerable to sustain",
+  weak_vs_waveclear: "Vulnerable to waveclear",
+};
+
 function getTraitLabel(traitId: string) {
   const normalizedTraitId = normalizeCounterRankingV2TraitId(traitId);
 
@@ -4454,6 +4496,30 @@ function getTraitLabel(traitId: string) {
       ? counterRankingV2TraitDefinitionsById.get(normalizedTraitId)?.label
       : null) ?? traitId
   );
+}
+
+function getProfileTraitLabel(traitId: string, context: CounterRankingV2ProfileLabelContext) {
+  const normalizedTraitId = normalizeCounterRankingV2TraitId(traitId);
+
+  if (!normalizedTraitId) {
+    return traitId;
+  }
+
+  const contextualLabel =
+    context === "strength"
+      ? strengthProfileTraitLabels[normalizedTraitId]
+      : weaknessProfileTraitLabels[normalizedTraitId];
+
+  return contextualLabel ?? getTraitLabel(normalizedTraitId);
+}
+
+function isTraitDefinitionVisibleForProfileContext(
+  traitDefinition: CounterRankingV2TraitDefinition,
+  context: CounterRankingV2ProfileLabelContext,
+) {
+  return context === "weakness"
+    ? traitDefinition.category === "vulnerability"
+    : traitDefinition.category !== "vulnerability";
 }
 
 function splitProfileTextLines(value: string) {

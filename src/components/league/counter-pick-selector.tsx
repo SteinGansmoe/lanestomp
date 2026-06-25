@@ -2138,17 +2138,17 @@ function getCounterPickPublicLabelItems(labels: PublicCounterResultLabel[]) {
   return labels.map((label) => {
     switch (label) {
       case "design_counter":
-        return { text: "Good counter", tone: "emerald", value: label } as const;
+        return { text: "Counter", tone: "emerald", value: label } as const;
       case "hard_countered":
-        return { text: "Hard countered", tone: "danger", value: label } as const;
+        return { text: "Hard Countered", tone: "danger", value: label } as const;
       case "low_sample":
         return { text: "Low sample", tone: "amber", value: label } as const;
       case "mechanically_countered":
-        return { text: "Mechanically countered", tone: "danger", value: label } as const;
+        return { text: "Countered", tone: "danger", value: label } as const;
       case "strong_stats_design_counter":
-        return { text: "Strong counter", tone: "emerald", value: label } as const;
+        return { text: "Strong Counter", tone: "emerald", value: label } as const;
       case "verified_counter":
-        return { text: "Verified counter", tone: "emerald", value: label } as const;
+        return { text: "Verified Counter", tone: "emerald", value: label } as const;
     }
   });
 }

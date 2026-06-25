@@ -1784,6 +1784,11 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
+  /const shouldDefaultCounterRankingV2Champion = view === "shadow-ranking"/,
+  "Counter Profile Review should not default-select the first supported Counter Ranking V2 champion.",
+);
+assert.match(
+  counterPickAdminSectionSource,
   /Promote to Reviewed/,
   "The profile review panel should expose a direct promotion action.",
 );
@@ -1804,8 +1809,33 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
+  /title="Strengths"/,
+  "Counter Profile Review should label trait profile sections as Strengths.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /title="Weaknesses"/,
+  "Counter Profile Review should label vulnerability profile sections as Weaknesses.",
+);
+assert.match(
+  counterPickAdminSectionSource,
   /counterRankingV2TraitVocabulary/,
   "The profile management dropdown should be driven by the shared trait vocabulary.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /isTraitDefinitionVisibleForProfileContext\(traitDefinition, labelContext\)/,
+  "Profile management dropdowns should split strength and weakness vocabulary by context.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /weak_vs_range: "Strong vs range"/,
+  "Strength display labels should not show Weak vs wording.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /weak_vs_roaming: "Vulnerable to roaming"/,
+  "Weakness display labels should keep vulnerability wording.",
 );
 assert.match(
   counterPickAdminSectionSource,
@@ -1819,7 +1849,7 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /aria-label=\{`Remove \$\{getTraitLabel\(trait\.traitId\)\}`\}/,
+  /aria-label=\{`Remove \$\{getProfileTraitLabel\(trait\.traitId, labelContext\)\}`\}/,
   "The profile management page should allow removing traits and vulnerabilities with compact icon buttons.",
 );
 assert.match(
