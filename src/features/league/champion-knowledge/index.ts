@@ -55,6 +55,7 @@ import { kassadinCombatProfile } from "./kassadin";
 import { katarinaCombatProfile } from "./katarina";
 import { leblancCombatProfile } from "./leblanc";
 import { lissandraCombatProfile } from "./lissandra";
+import { lockeCombatProfile } from "./locke";
 import { lucianCombatProfile } from "./lucian";
 import { luxCombatProfile } from "./lux";
 import { malzaharCombatProfile } from "./malzahar";
@@ -232,6 +233,7 @@ export { kassadinCombatProfile } from "./kassadin";
 export { katarinaCombatProfile } from "./katarina";
 export { leblancCombatProfile } from "./leblanc";
 export { lissandraCombatProfile } from "./lissandra";
+export { lockeCombatProfile } from "./locke";
 export { lucianCombatProfile } from "./lucian";
 export { luxCombatProfile } from "./lux";
 export { malzaharCombatProfile } from "./malzahar";
@@ -417,6 +419,7 @@ export const leagueChampionKnowledgeProfiles = {
   Katarina: katarinaCombatProfile,
   Leblanc: leblancCombatProfile,
   Lissandra: lissandraCombatProfile,
+  Locke: lockeCombatProfile,
   Lucian: lucianCombatProfile,
   Lux: luxCombatProfile,
   Malzahar: malzaharCombatProfile,
