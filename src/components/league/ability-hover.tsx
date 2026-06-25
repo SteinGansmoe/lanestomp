@@ -2,40 +2,50 @@
 
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState } from "react";
 
 import {
   getLeagueAbilityIconPath,
   getLeagueChampionAbility,
   type LeagueChampionAbilityMetadata,
+  type LeagueAbilityTokenKey,
 } from "@/src/features/league/abilities";
-import {
-  parseAbilityHoverText,
-  type AbilityHoverTextPart,
-} from "@/src/features/league/ability-hover-tokens";
 import { cn } from "@/src/lib/utils";
 
-type AbilityHoverProps = {
-  token: Extract<AbilityHoverTextPart, { type: "ability" }>;
+export type AbilityHoverProps = {
+  abilityKey: LeagueAbilityTokenKey;
+  championId: string;
+  className?: string;
+  compact?: boolean;
+  label?: string;
 };
 
-export function AbilityHover({ token }: AbilityHoverProps) {
+export function AbilityHover({
+  abilityKey,
+  championId,
+  className,
+  compact = false,
+  label,
+}: AbilityHoverProps) {
   const tooltipId = useId();
   const [isOpen, setIsOpen] = useState(false);
-  const ability = token.abilityKey
-    ? getLeagueChampionAbility(token.championId, token.abilityKey)
-    : null;
+  const ability = getLeagueChampionAbility(championId, abilityKey);
 
   if (!ability) {
-    return <span className="text-zinc-200">{token.fallbackText}</span>;
+    return (
+      <span className={cn("text-zinc-200", className)}>
+        {label ?? `${championId} ${abilityKey}`}
+      </span>
+    );
   }
 
   const tooltipDescription = getShortAbilityDescription(ability);
   const abilityFacts = getAbilityFacts(ability);
+  const chipLabel = label ?? (compact ? ability.key : ability.name);
 
   return (
     <span
-      className="group/ability-hover relative inline-flex align-baseline"
+      className={cn("group/ability-hover relative inline-flex align-baseline", className)}
       onMouseLeave={() => setIsOpen(false)}
     >
       <button
@@ -55,7 +65,9 @@ export function AbilityHover({ token }: AbilityHoverProps) {
           src={getLeagueAbilityIconPath(ability)}
         />
         <span className="text-[#F4D88A]">{ability.key}</span>
-        <span className="max-w-[9rem] truncate text-cyan-50 normal-case">{ability.name}</span>
+        {chipLabel ? (
+          <span className="max-w-[9rem] truncate text-cyan-50 normal-case">{chipLabel}</span>
+        ) : null}
       </button>
 
       <span
@@ -78,7 +90,7 @@ export function AbilityHover({ token }: AbilityHoverProps) {
           />
           <span className="min-w-0">
             <span className="block font-mono text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100">
-              {token.championId} / {ability.key}
+              {championId} / {ability.key}
             </span>
             <span className="mt-1 block text-sm font-semibold leading-5 text-white">
               {ability.name}
@@ -109,16 +121,6 @@ export function AbilityHover({ token }: AbilityHoverProps) {
   );
 }
 
-export function renderAbilityHoverText(value: string): ReactNode[] {
-  return parseAbilityHoverText(value).map((part, index) => {
-    if (part.type === "text") {
-      return part.text;
-    }
-
-    return <AbilityHover key={`${part.rawToken}-${index}`} token={part} />;
-  });
-}
-
 function getShortAbilityDescription(ability: LeagueChampionAbilityMetadata) {
   const description = cleanDataDragonText(ability.description || ability.tooltip);
 
@@ -133,7 +135,9 @@ function getAbilityFacts(ability: LeagueChampionAbilityMetadata) {
   return [
     ability.cooldownBurn ? `CD ${ability.cooldownBurn}s` : null,
     ability.costBurn && ability.costBurn !== "0"
-      ? `Cost ${[ability.costBurn, cleanDataDragonText(ability.costType ?? "")].filter(Boolean).join(" ")}`
+      ? `Cost ${[ability.costBurn, cleanDataDragonText(ability.costType ?? "")]
+          .filter(Boolean)
+          .join(" ")}`
       : null,
   ].filter((fact): fact is string => Boolean(fact));
 }

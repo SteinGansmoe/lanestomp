@@ -1,6 +1,6 @@
 export type AbilityHoverTokenKey = "E" | "Passive" | "Q" | "R" | "W";
 
-export type AbilityHoverTextPart =
+export type LeagueHoverTextPart =
   | {
       text: string;
       type: "text";
@@ -12,15 +12,23 @@ export type AbilityHoverTextPart =
       fallbackText: string;
       rawToken: string;
       type: "ability";
+    }
+  | {
+      fallbackText: string;
+      itemId: string;
+      rawToken: string;
+      type: "item";
     };
 
-const abilityTokenPattern = /\{\{ability:([^:{}]+):([^:{}]+)\}\}/g;
+export type AbilityHoverTextPart = LeagueHoverTextPart;
 
-export function parseAbilityHoverText(value: string): AbilityHoverTextPart[] {
-  const parts: AbilityHoverTextPart[] = [];
+const leagueHoverTokenPattern = /\{\{(ability|item):([^:{}]+)(?::([^:{}]+))?\}\}/g;
+
+export function parseLeagueHoverText(value: string): LeagueHoverTextPart[] {
+  const parts: LeagueHoverTextPart[] = [];
   let lastIndex = 0;
 
-  for (const match of value.matchAll(abilityTokenPattern)) {
+  for (const match of value.matchAll(leagueHoverTokenPattern)) {
     const rawToken = match[0];
     const matchIndex = match.index ?? 0;
 
@@ -31,19 +39,32 @@ export function parseAbilityHoverText(value: string): AbilityHoverTextPart[] {
       });
     }
 
-    const championId = match[1]?.trim() ?? "";
-    const rawAbilityKey = match[2]?.trim() ?? "";
-    const abilityKey = normalizeAbilityHoverTokenKey(rawAbilityKey);
-    const abilityKeyLabel = abilityKey ?? rawAbilityKey;
+    const tokenType = match[1];
 
-    parts.push({
-      abilityKey,
-      abilityKeyLabel,
-      championId,
-      fallbackText: getAbilityHoverFallbackText(championId, abilityKeyLabel),
-      rawToken,
-      type: "ability",
-    });
+    if (tokenType === "item") {
+      const itemId = match[2]?.trim() ?? "";
+
+      parts.push({
+        fallbackText: getItemHoverFallbackText(itemId),
+        itemId,
+        rawToken,
+        type: "item",
+      });
+    } else {
+      const championId = match[2]?.trim() ?? "";
+      const rawAbilityKey = match[3]?.trim() ?? "";
+      const abilityKey = normalizeAbilityHoverTokenKey(rawAbilityKey);
+      const abilityKeyLabel = abilityKey ?? rawAbilityKey;
+
+      parts.push({
+        abilityKey,
+        abilityKeyLabel,
+        championId,
+        fallbackText: getAbilityHoverFallbackText(championId, abilityKeyLabel),
+        rawToken,
+        type: "ability",
+      });
+    }
 
     lastIndex = matchIndex + rawToken.length;
   }
@@ -56,6 +77,10 @@ export function parseAbilityHoverText(value: string): AbilityHoverTextPart[] {
   }
 
   return parts.length > 0 ? parts : [{ text: value, type: "text" }];
+}
+
+export function parseAbilityHoverText(value: string): AbilityHoverTextPart[] {
+  return parseLeagueHoverText(value);
 }
 
 export function normalizeAbilityHoverTokenKey(value: string): AbilityHoverTokenKey | null {
@@ -80,4 +105,8 @@ export function normalizeAbilityHoverTokenKey(value: string): AbilityHoverTokenK
 
 function getAbilityHoverFallbackText(championId: string, abilityKeyLabel: string) {
   return [championId, abilityKeyLabel].filter(Boolean).join(" ") || "unknown ability";
+}
+
+function getItemHoverFallbackText(itemId: string) {
+  return itemId ? `Item ${itemId}` : "unknown item";
 }
