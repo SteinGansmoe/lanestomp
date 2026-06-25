@@ -41,12 +41,28 @@ if (!shouldSkipIconDownload) {
     files: Array.from(
       new Set(
         Object.values(abilityCache.champions).flatMap((champion) =>
-          Object.values(champion.abilities).map((ability) => ability.icon.imageFile),
+          Object.values(champion.abilities)
+            .filter((ability) => ability.key !== "Passive")
+            .map((ability) => ability.icon.imageFile),
         ),
       ),
     ),
     outputDirectory: abilityIconOutputDirectory,
     remoteDirectory: "img/spell",
+    version,
+  });
+  await downloadDataDragonImages({
+    files: Array.from(
+      new Set(
+        Object.values(abilityCache.champions).flatMap((champion) =>
+          Object.values(champion.abilities)
+            .filter((ability) => ability.key === "Passive")
+            .map((ability) => ability.icon.imageFile),
+        ),
+      ),
+    ),
+    outputDirectory: abilityIconOutputDirectory,
+    remoteDirectory: "img/passive",
     version,
   });
 }
@@ -153,28 +169,51 @@ function toAbilityCache(payload, version) {
     Object.values(payload?.data ?? {})
       .map((champion) => {
         const spells = Array.isArray(champion?.spells) ? champion.spells : [];
+        const passive = champion?.passive ?? {};
+        const passiveImageFile = passive?.image?.full ?? `${champion?.id}Passive.png`;
         const abilities = Object.fromEntries(
-          ["Q", "W", "E", "R"].map((abilityKey, index) => {
-            const spell = spells[index] ?? {};
-            const imageFile = spell?.image?.full ?? `${champion?.id}${abilityKey}.png`;
-
-            return [
-              abilityKey,
+          [
+            [
+              "Passive",
               {
-                key: abilityKey,
-                id: String(spell?.id ?? `${champion?.id}${abilityKey}`),
-                name: String(spell?.name ?? abilityKey),
-                description: String(spell?.description ?? ""),
-                tooltip: String(spell?.tooltip ?? ""),
+                key: "Passive",
+                id: `${String(champion?.id ?? "")}Passive`,
+                name: String(passive?.name ?? "Passive"),
+                description: String(passive?.description ?? ""),
+                tooltip: String(passive?.description ?? ""),
                 icon: {
-                  imageFile,
-                  localPath: `/league/abilities/icons/${imageFile}`,
-                  dataDragonUrl: `${dataDragonBaseUrl}/cdn/${version}/img/spell/${imageFile}`,
+                  imageFile: passiveImageFile,
+                  localPath: `/league/abilities/icons/${passiveImageFile}`,
+                  dataDragonUrl: `${dataDragonBaseUrl}/cdn/${version}/img/passive/${passiveImageFile}`,
                 },
                 patch: version,
               },
-            ];
-          }),
+            ],
+            ...["Q", "W", "E", "R"].map((abilityKey, index) => {
+              const spell = spells[index] ?? {};
+              const imageFile = spell?.image?.full ?? `${champion?.id}${abilityKey}.png`;
+
+              return [
+                abilityKey,
+                {
+                  cooldownBurn: String(spell?.cooldownBurn ?? ""),
+                  costBurn: String(spell?.costBurn ?? ""),
+                  costType: String(spell?.costType ?? ""),
+                  key: abilityKey,
+                  id: String(spell?.id ?? `${champion?.id}${abilityKey}`),
+                  name: String(spell?.name ?? abilityKey),
+                  description: String(spell?.description ?? ""),
+                  tooltip: String(spell?.tooltip ?? ""),
+                  icon: {
+                    imageFile,
+                    localPath: `/league/abilities/icons/${imageFile}`,
+                    dataDragonUrl: `${dataDragonBaseUrl}/cdn/${version}/img/spell/${imageFile}`,
+                  },
+                  patch: version,
+                },
+              ];
+            }),
+          ],
         );
 
         return [

@@ -19,6 +19,7 @@ import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/src/components/ui/button";
 import { generateLeagueMatchupDraftSection } from "@/src/app/admin/league/matchups/actions";
+import { renderAbilityHoverText } from "@/src/components/league/ability-hover";
 import { MatchupFeedbackControls } from "@/src/components/league/matchup-feedback-controls";
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
@@ -639,7 +640,7 @@ function MatchupGuideCard({
                   section.accent,
                 )}`}
               />
-              <span>{line}</span>
+              <span>{renderAbilityHoverText(line)}</span>
             </li>
           ))}
         </ul>

@@ -20,6 +20,7 @@
     "sync:league-champions": "node scripts/import-lol-champions.mjs",
     "audit:stored-champion-identifiers": "node scripts/audit-stored-champion-identifiers.mjs",
     "attribute:matchup-rank-brackets": "node scripts/attribute-matchup-rank-brackets.mjs",
+    "test:ability-hover-tokens": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-ability-hover-tokens.mjs",
     "test:champion-knowledge-profiles": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-champion-knowledge-profiles.mjs",
     "test:champion-normalization": "node scripts/test-champion-normalization.mjs",
     "test:champion-focused-discovery": "node scripts/test-champion-focused-discovery.mjs",

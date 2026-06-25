@@ -1,6 +1,7 @@
 import abilityCache from "@/src/features/league/data-dragon/champion-abilities.json";
 
 export type LeagueAbilityKey = "E" | "Q" | "R" | "W";
+export type LeagueAbilityTokenKey = LeagueAbilityKey | "Passive";
 
 export type LeagueAbilityIconMetadata = {
   dataDragonUrl: string;
@@ -9,17 +10,21 @@ export type LeagueAbilityIconMetadata = {
 };
 
 export type LeagueChampionAbilityMetadata = {
+  cooldownBurn?: string;
+  costBurn?: string;
+  costType?: string;
   description: string;
   icon: LeagueAbilityIconMetadata;
   id: string;
-  key: LeagueAbilityKey;
+  key: LeagueAbilityTokenKey;
   name: string;
   patch: string;
   tooltip: string;
 };
 
 export type LeagueChampionAbilitySet = {
-  abilities: Record<LeagueAbilityKey, LeagueChampionAbilityMetadata>;
+  abilities: Record<LeagueAbilityKey, LeagueChampionAbilityMetadata> &
+    Partial<Record<"Passive", LeagueChampionAbilityMetadata>>;
   id: string;
   name: string;
   patch: string;
@@ -54,7 +59,7 @@ export function getLeagueChampionAbilitySet(championId: string) {
   return abilitySetsByChampionLookupKey.get(normalizeAbilityChampionLookupKey(championId)) ?? null;
 }
 
-export function getLeagueChampionAbility(championId: string, abilityKey: LeagueAbilityKey) {
+export function getLeagueChampionAbility(championId: string, abilityKey: LeagueAbilityTokenKey) {
   return getLeagueChampionAbilitySet(championId)?.abilities[abilityKey] ?? null;
 }
 
