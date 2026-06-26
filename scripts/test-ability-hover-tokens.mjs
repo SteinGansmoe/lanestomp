@@ -2,15 +2,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const tokenModule = await import("../src/features/league/ability-hover-tokens.ts");
+const tooltipFormattingModule = await import(
+  "../src/features/league/ability-tooltip-formatting.ts"
+);
 
 const { normalizeAbilityHoverTokenKey, parseAbilityHoverText, parseLeagueHoverText } = tokenModule;
+const { getCompactAbilityTooltip } = tooltipFormattingModule;
 
 testAbilityTokenKeyNormalization();
 testAbilityTokenFixtureParsing();
+testDenseAbilitySentenceParsing();
 testMalformedAbilityTokenFallback();
 testItemTokenFixtureParsing();
 testMixedLeagueHoverTokenParsing();
 testNormalTextWithoutTokens();
+testCompactAbilityTooltipFormatting();
 testAbilityHoverComponentBoundary();
 testItemHoverComponentBoundary();
 
@@ -38,6 +44,23 @@ function testAbilityTokenFixtureParsing() {
       ["Yone", "R", "Yone R"],
       ["Ahri", "E", "Ahri E"],
       ["Malzahar", "Passive", "Malzahar Passive"],
+    ],
+  );
+}
+
+function testDenseAbilitySentenceParsing() {
+  const parts = parseAbilityHoverText(
+    "Hold {{ability:Ahri:E}} when Yone has {{ability:Yone:Q}} stacked and {{ability:Yone:E}} ready.",
+  );
+  const abilityParts = parts.filter((part) => part.type === "ability");
+
+  assert.equal(abilityParts.length, 3);
+  assert.deepEqual(
+    abilityParts.map((part) => [part.championId, part.abilityKey, part.fallbackText]),
+    [
+      ["Ahri", "E", "Ahri E"],
+      ["Yone", "Q", "Yone Q"],
+      ["Yone", "E", "Yone E"],
     ],
   );
 }
@@ -84,6 +107,174 @@ function testNormalTextWithoutTokens() {
   ]);
 }
 
+function testCompactAbilityTooltipFormatting() {
+  const tooltip = getCompactAbilityTooltip(
+    {
+      cooldownBurn: "12",
+      costBurn: "60",
+      costType: "Mana",
+      description:
+        "Ahri blows a kiss that damages and charms an enemy it encounters, instantly stopping movement abilities and causing them to walk harmlessly towards her.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "AhriE.png",
+        localPath: "/league/abilities/icons/AhriE.png",
+      },
+      id: "AhriE",
+      key: "E",
+      name: "Charm",
+      patch: "16.12.1",
+      tooltip:
+        "Ahri blows a kiss that <status>Charms</status> the first enemy hit for {{ charmduration }} seconds and deals <magicDamage>{{ e1 }} (+{{ apratio*100 }}% AP) magic damage</magicDamage>.{{ spellmodifierdescriptionappend }}",
+      effectBurn: [null, "80 / 120 / 160 / 200 / 240"],
+      vars: [{ coeff: 0.85, key: "apratio", link: "spelldamage" }],
+    },
+    "Ahri",
+  );
+
+  assert.equal(tooltip.metaText, "12s / 60 Mana");
+  assert.equal(tooltip.description, "Charms the first enemy hit and deals magic damage.");
+  assert.deepEqual(tooltip.details, [
+    { label: "Damage breakdown", values: ["80 / 120 / 160 / 200 / 240 (+85% AP) magic damage"] },
+    { label: "Effect", values: ["Charm"] },
+  ]);
+  assert.doesNotMatch(tooltip.description, /walk harmlessly|blows a kiss/i);
+
+  const multiPartTooltip = getCompactAbilityTooltip(
+    {
+      description:
+        "Ahri sends out and pulls back her orb, dealing magic damage on the way out and true damage on the way back.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "AhriQ.png",
+        localPath: "/league/abilities/icons/AhriQ.png",
+      },
+      id: "AhriQ",
+      key: "Q",
+      name: "Orb of Deception",
+      patch: "16.12.1",
+      tooltip:
+        "Ahri throws then pulls back her orb, dealing <magicDamage>35 / 60 / 85 / 110 / 135 (+50% AP) magic damage</magicDamage> on the way out and <trueDamage>35 / 60 / 85 / 110 / 135 (+50% AP) true damage</trueDamage> on the way back.",
+    },
+    "Ahri",
+  );
+
+  assert.equal(
+    multiPartTooltip.description,
+    "Deals magic damage on the way out and true damage on the way back.",
+  );
+  assert.deepEqual(multiPartTooltip.details[0], {
+    label: "Damage breakdown",
+    values: ["Magic: 35 / 60 / 85 / 110 / 135 (+50% AP)", "True: 35 / 60 / 85 / 110 / 135 (+50% AP)"],
+  });
+
+  const shieldTooltip = getCompactAbilityTooltip(
+    {
+      description: "Gain a shield and damage nearby enemies.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "VexW.png",
+        localPath: "/league/abilities/icons/VexW.png",
+      },
+      id: "VexW",
+      key: "W",
+      name: "Personal Space",
+      patch: "16.12.1",
+      tooltip:
+        "Vex gains <shield>{{ shieldcalc }} Shield</shield> for {{ shieldduration }} seconds and emits a shockwave that deals <magicDamage>{{ wdamagecalc }} magic damage</magicDamage>.",
+    },
+    "Vex",
+  );
+
+  assert.equal(shieldTooltip.description, "Grants a shield and deals magic damage.");
+
+  const physicalTooltip = getCompactAbilityTooltip(
+    {
+      description: "Aatrox slams his greatsword down, dealing physical damage.",
+      effectBurn: [null, "10 / 25 / 40 / 55 / 70"],
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "AatroxQ.png",
+        localPath: "/league/abilities/icons/AatroxQ.png",
+      },
+      id: "AatroxQ",
+      key: "Q",
+      name: "The Darkin Blade",
+      patch: "16.12.1",
+      tooltip: "Aatrox slams his greatsword, dealing <physicalDamage>{{ e1 }} physical damage</physicalDamage>.",
+      vars: [{ coeff: 0.6, key: "bonusadratio", link: "bonusattackdamage" }],
+    },
+    "Aatrox",
+  );
+
+  assert.deepEqual(physicalTooltip.details[0], {
+    label: "Damage breakdown",
+    values: ["10 / 25 / 40 / 55 / 70 physical damage"],
+  });
+
+  const moveSpeedTooltip = getCompactAbilityTooltip(
+    {
+      description: "Aatrox unleashes his demonic form.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "AatroxR.png",
+        localPath: "/league/abilities/icons/AatroxR.png",
+      },
+      id: "AatroxR",
+      key: "R",
+      name: "World Ender",
+      patch: "16.12.1",
+      tooltip:
+        "Aatrox gains <speed>{{ rmovementspeedbonus*100 }}% Move Speed</speed> and <scaleAD>{{ rtotaladamp*100 }}% Attack Damage</scaleAD>.",
+    },
+    "Aatrox",
+  );
+
+  assert.equal(moveSpeedTooltip.description, "Grants move speed.");
+
+  const noDamageTooltip = getCompactAbilityTooltip(
+    {
+      description: "Akshan camouflages near terrain and gains movement speed.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "AkshanW.png",
+        localPath: "/league/abilities/icons/AkshanW.png",
+      },
+      id: "AkshanW",
+      key: "W",
+      name: "Going Rogue",
+      patch: "16.12.1",
+      tooltip: "Akshan becomes <status>Camouflaged</status> while near terrain.",
+    },
+    "Akshan",
+  );
+
+  assert.equal(noDamageTooltip.details.some((detail) => detail.label === "Damage breakdown"), false);
+
+  const fallbackTooltip = getCompactAbilityTooltip(
+    {
+      description: "Ahri throws an orb.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "AhriQ.png",
+        localPath: "/league/abilities/icons/AhriQ.png",
+      },
+      id: "AhriQ",
+      key: "Q",
+      name: "Orb of Deception",
+      patch: "16.12.1",
+      tooltip:
+        "Ahri throws then pulls back her orb, dealing <magicDamage>{{ missingvalue }} magic damage</magicDamage> and <trueDamage>{{ missingvalue }} true damage</trueDamage>.",
+    },
+    "Ahri",
+  );
+
+  assert.deepEqual(fallbackTooltip.details[0], {
+    label: "Damage breakdown",
+    values: ["Magic Damage", "True Damage"],
+  });
+}
+
 function testAbilityHoverComponentBoundary() {
   const abilityHoverSource = readFileSync("src/components/league/ability-hover.tsx", "utf8");
   const tokenRendererSource = readFileSync(
@@ -100,6 +291,15 @@ function testAbilityHoverComponentBoundary() {
   assert.match(abilityHoverSource, /abilityKey: LeagueAbilityTokenKey;/);
   assert.match(abilityHoverSource, /compact\?: boolean;/);
   assert.match(abilityHoverSource, /label\?: string;/);
+  assert.match(abilityHoverSource, /if \(!ability\)/);
+  assert.match(abilityHoverSource, /ability\.key\}<\/span> \{ability\.name\}/);
+  assert.match(abilityHoverSource, /getCompactAbilityTooltip/);
+  assert.match(abilityHoverSource, /bg-transparent/);
+  assert.match(abilityHoverSource, /decoration-dotted/);
+  assert.match(abilityHoverSource, /focus-visible:ring-2/);
+  assert.doesNotMatch(abilityHoverSource, /bg-cyan-400\/\[0\.08\]/);
+  assert.doesNotMatch(abilityHoverSource, /shadow-\[0_0_14px/);
+  assert.doesNotMatch(abilityHoverSource, /border border-cyan-300\/25/);
   assert.match(tokenRendererSource, /parseLeagueHoverText/);
   assert.match(tokenRendererSource, /<AbilityHover/);
   assert.match(tokenRendererSource, /abilityKey=\{part\.abilityKey\}/);

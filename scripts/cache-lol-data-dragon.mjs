@@ -203,7 +203,10 @@ function toAbilityCache(payload, version) {
                   id: String(spell?.id ?? `${champion?.id}${abilityKey}`),
                   name: String(spell?.name ?? abilityKey),
                   description: String(spell?.description ?? ""),
+                  effect: Array.isArray(spell?.effect) ? spell.effect : [],
+                  effectBurn: Array.isArray(spell?.effectBurn) ? spell.effectBurn : [],
                   tooltip: String(spell?.tooltip ?? ""),
+                  vars: Array.isArray(spell?.vars) ? spell.vars : [],
                   icon: {
                     imageFile,
                     localPath: `/league/abilities/icons/${imageFile}`,

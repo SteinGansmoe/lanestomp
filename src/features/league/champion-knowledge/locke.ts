@@ -1,7 +1,7 @@
 import type { LeagueChampionKnowledgeProfile } from "./types";
 
 export const lockeCombatProfile = {
-  profileQuality: "draft",
+  profileQuality: "reviewed",
   abilities: {
     Q: "Ritual Nails",
     W: "Soul Ignition",
@@ -71,13 +71,13 @@ export const lockeCombatProfile = {
     winLaneBy: [
       "Landing (Q) nails before trading.",
       "Managing (W) health cost so trades do not backfire.",
-      "Holding (E) until it can consume marks, dodge space, or reset after a takedown.",
+      "Holding (E) until it can consume marks, dodge abilities, or reset after a takedown.",
     ],
   },
   majorPowerSpikes: [
     "Level 3 with (Q), (W), and (E) available.",
     "Level 6 (R) execute mark.",
-    "First completed assassin or AP skirmish item.",
+    "First finished item (example: Lichbane)",
   ],
   masteryDifficulty: "medium",
   matchupPreferences: {

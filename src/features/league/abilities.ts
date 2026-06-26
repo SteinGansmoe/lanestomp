@@ -9,17 +9,26 @@ export type LeagueAbilityIconMetadata = {
   localPath: string;
 };
 
+export type LeagueAbilityVarMetadata = {
+  coeff?: number | number[];
+  key: string;
+  link?: string;
+};
+
 export type LeagueChampionAbilityMetadata = {
   cooldownBurn?: string;
   costBurn?: string;
   costType?: string;
   description: string;
+  effect?: Array<number | number[] | null>;
+  effectBurn?: Array<string | null>;
   icon: LeagueAbilityIconMetadata;
   id: string;
   key: LeagueAbilityTokenKey;
   name: string;
   patch: string;
   tooltip: string;
+  vars?: LeagueAbilityVarMetadata[];
 };
 
 export type LeagueChampionAbilitySet = {

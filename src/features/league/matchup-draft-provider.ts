@@ -10,6 +10,13 @@ import {
   type MatchupDraftSections,
 } from "./matchup-draft-prompt";
 import type { LeagueChampionKnowledgeProfile } from "./champion-knowledge/types";
+import {
+  getLeagueChampionAbility,
+  getLeagueChampionAbilitySet,
+  type LeagueAbilityTokenKey,
+} from "./abilities";
+import { getLeagueItemById } from "./items";
+import { parseLeagueHoverText } from "./ability-hover-tokens";
 
 export type LeagueMatchupDraftProvider = "openai" | "placeholder";
 
@@ -1001,12 +1008,76 @@ const promptLeakagePatterns: readonly PromptLeakagePattern[] = [
 
 const promptLanguageWarningPatterns: readonly PromptLeakagePattern[] = [
   {
+    label: "vague vulnerable positions phrasing",
+    pattern: /\bvulnerable positions\b/i,
+  },
+  {
+    label: "vague all-in combo ready phrasing",
+    pattern: /\ball-?in combo is ready\b/i,
+  },
+  {
+    label: "generic engage setup phrasing",
+    pattern: /\bengage setup\b/i,
+  },
+  {
+    label: "unnatural safe scaling phrasing",
+    pattern: /\bsafe scaling\b/i,
+  },
+  {
+    label: "unnatural free scaling phrasing",
+    pattern: /\bfree scaling\b/i,
+  },
+  {
+    label: "generic control wave tempo phrasing",
+    pattern: /\bcontrol wave tempo\b/i,
+  },
+  {
+    label: "generic create roam pressure phrasing",
+    pattern: /\bcreate roam pressure\b/i,
+  },
+  {
+    label: "awkward post-level phrasing",
+    pattern: /\bpost-level\s*\d+\b/i,
+  },
+  {
+    label: "bad Ahri Q waveclear restriction",
+    pattern:
+      /\b(?:do not|don't|never)\s+use\s+\{\{ability:Ahri:Q\}\}\s+on\s+(?:the\s+)?wave\b.*\b(?:without|unless|when)\s+\{\{ability:Ahri:R\}\}(?:\s+(?:is\s+)?ready)?\b/i,
+  },
+  {
+    label: "bad plain Ahri Q waveclear restriction",
+    pattern:
+      /\b(?:do not|don't)\s+use\s+(?:Ahri\s+)?Q\s+on\s+(?:the\s+)?wave\b.*\b(?:without|unless|when)\s+R(?:\s+(?:is\s+)?ready)?\b/i,
+  },
+  {
+    label: "bad never Ahri Q waveclear restriction",
+    pattern: /\bnever\s+use\s+(?:Ahri\s+)?Q\s+on\s+(?:the\s+)?wave\b/i,
+  },
+  {
+    label: "bad only Ahri Q waveclear restriction",
+    pattern:
+      /\bonly\s+use\s+(?:\{\{ability:Ahri:Q\}\}|Ahri\s+Q|Q)\s+on\s+(?:the\s+)?wave\s+when\s+(?:\{\{ability:Ahri:R\}\}|R|ultimate|ult)\s+is\s+ready\b/i,
+  },
+  {
+    label: "bad never Q waveclear restriction",
+    pattern: /\bnever\s+use\s+(?:\{\{ability:[^:{}]+:Q\}\}|Q)\s+on\s+the\s+wave\b/i,
+  },
+  {
+    label: "bad ultimate-only waveclear restriction",
+    pattern: /\bonly\s+use\s+waveclear\s+when\s+(?:ultimate|ult|R)\s+is\s+available\b/i,
+  },
+  {
     label: "instruction-like bullet opening",
     pattern: /(^|\n)-\s*(identify|build|choose|respect|treat|explain|list|keep|convert)\b/i,
   },
   {
     label: "generic cross-map phrasing",
     pattern: /\bcross-map trades?\s+when\s+direct\s+river\s+fights\b/i,
+  },
+  {
+    label: "third-person champion coaching phrasing",
+    pattern:
+      /\b(?!you\b|opponent\b|enemy\b|player\b|champion\b)[A-Z][A-Za-z'.-]*(?:\s+[A-Z][A-Za-z'.-]*)?\s+(?:wants|should|needs)\s+to\b/,
   },
   {
     label: "soft power-spike process wording",
@@ -1037,6 +1108,90 @@ const supportFarmingLanguagePatterns: readonly PromptLeakagePattern[] = [
       /\b(?:CS|farm(?:s|ed|ing)?|free farm|deny farm|last[-\s]?hit(?:s|ting)?|last hitting)\b/i,
   },
 ];
+
+const genericAdviceWithoutAnchorPatterns: ReadonlyArray<{
+  label: string;
+  pattern: RegExp;
+}> = [
+  {
+    label: "generic play around cooldowns without anchor",
+    pattern: /\bplay around cooldowns\b/i,
+  },
+  {
+    label: "generic respect engage without anchor",
+    pattern: /\brespect (?:(?:their|the enemy|enemy)\s+)?engage\b/i,
+  },
+  {
+    label: "generic short trades without anchor",
+    pattern: /\blook for short trades\b/i,
+  },
+  {
+    label: "generic avoid fights without anchor",
+    pattern: /\bavoid unnecessary fights\b/i,
+  },
+  {
+    label: "generic wave control without anchor",
+    pattern: /\bcontrol (?:the )?wave(?: tempo)?\b/i,
+  },
+  {
+    label: "generic jungle pressure without anchor",
+    pattern: /\bwait for jungle pressure\b/i,
+  },
+  {
+    label: "generic smart trades without anchor",
+    pattern: /\btake smart trades\b/i,
+  },
+  {
+    label: "generic careful positioning without anchor",
+    pattern: /\bposition carefully\b/i,
+  },
+];
+
+const concreteAdviceAnchorPattern =
+  /\{\{ability:[^:{}]+:[^:{}]+\}\}|\{\{item:\d+\}\}|\([QWER]\)|\bpassive\b|\blevel\s*\d+\b|\b(?:cooldown|cooldowns?|window|spike|first recall|first item|item|zhonya|sorcerer|rylai|crash|freeze|slow push|thin(?: the)? wave|cannon|caster|minion|all-in|all in|dash|root|stun|charm|shield|peel|trade pattern|defensive response|punish window)\b/i;
+
+const vagueAdviceWarningPatterns: readonly PromptLeakagePattern[] = [
+  {
+    label: "safe scaling",
+    pattern: /\bsafe scaling\b/i,
+  },
+  {
+    label: "free scaling",
+    pattern: /\bfree scaling\b/i,
+  },
+  {
+    label: "vulnerable positions",
+    pattern: /\bvulnerable positions\b/i,
+  },
+  {
+    label: "all-in combo is ready",
+    pattern: /\ball-?in combo is ready\b/i,
+  },
+  {
+    label: "control wave tempo",
+    pattern: /\bcontrol wave tempo\b/i,
+  },
+  {
+    label: "create roam pressure",
+    pattern: /\bcreate roam pressure\b/i,
+  },
+  {
+    label: "post-level 6",
+    pattern: /\bpost-level\s*6\b/i,
+  },
+];
+
+const waveAdvicePattern =
+  /\b(?:control (?:the )?wave(?: tempo)?|wave advice|wave control|manage (?:the )?wave|roam pressure|create roam pressure)\b/i;
+
+const concreteWaveStatePattern =
+  /\b(?:push|thin|freeze|slow push|crash|hold (?:the )?wave|farm under tower|bounce|recall timing|roam timing|minion wave size|wave size|dash(?:es)? through minions|dash-through-minions|through minions|stack(?:ed|ing)? waves?|large wave|small wave|cannon wave|caster minions?)\b/i;
+
+const abilityAdviceSpecificityPattern =
+  /\b(?:engage|all-?in|combo|punish window|defensive cooldown|mobility)\b/i;
+
+const concreteAbilityAdvicePattern =
+  /\{\{ability:[^:{}]+:[^:{}]+\}\}|\([QWER]\)|\blevel\s*\d+\b|\b(?:stacked|available|down|cooldown|window|ready|after (?:he|she|they|enemy|opponent) (?:uses|misses)|before (?:level|he|she|they|enemy|opponent)|dash(?:es)? through minions|commit(?:s|ted)?|charm|root|stun|knockup|knock up)\b/i;
 
 type PromptLeakageSectionRejection = {
   phrases: string[];
@@ -1069,7 +1224,24 @@ function findPromptLanguageWarningsInSection(
   sectionKey: MatchupDraftSectionKey,
   content: string,
 ): PromptLanguageSectionWarning | null {
-  return findPromptPatternMatch(sectionKey, content, promptLanguageWarningPatterns);
+  const warnings = [
+    findPromptPatternMatch(sectionKey, content, promptLanguageWarningPatterns),
+    findGenericAdviceWarningInSection(sectionKey, content),
+    findVagueAdviceWarningInSection(sectionKey, content),
+    findWaveSpecificityWarningInSection(sectionKey, content),
+    findAbilityAdviceSpecificityWarningInSection(sectionKey, content),
+    findInvalidHoverTokenWarningInSection(sectionKey, content),
+  ].filter((warning): warning is PromptLanguageSectionWarning => Boolean(warning));
+
+  if (warnings.length === 0) {
+    return null;
+  }
+
+  return {
+    phrases: warnings.flatMap((warning) => warning.phrases),
+    sample: warnings[0]?.sample ?? content.trim().slice(0, 180),
+    sectionKey,
+  };
 }
 
 function findSupportFarmingLanguageInDraft(draft: MatchupDraftSections) {
@@ -1083,6 +1255,137 @@ function findSupportFarmingLanguageInSection(
   content: string,
 ): PromptLeakageSectionRejection | null {
   return findPromptPatternMatch(sectionKey, content, supportFarmingLanguagePatterns);
+}
+
+function findGenericAdviceWarningInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+): PromptLanguageSectionWarning | null {
+  const genericLine = content.split("\n").find((line) => {
+    const hasGenericPhrase = genericAdviceWithoutAnchorPatterns.some(({ pattern }) =>
+      pattern.test(line),
+    );
+
+    return hasGenericPhrase && !concreteAdviceAnchorPattern.test(line);
+  });
+
+  if (!genericLine) {
+    return null;
+  }
+
+  return {
+    phrases: genericAdviceWithoutAnchorPatterns
+      .filter(({ pattern }) => pattern.test(genericLine))
+      .map(({ label }) => label),
+    sample: genericLine.trim().slice(0, 180),
+    sectionKey,
+  };
+}
+
+function findVagueAdviceWarningInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+): PromptLanguageSectionWarning | null {
+  const vagueLine = content.split("\n").find((line) =>
+    vagueAdviceWarningPatterns.some(({ pattern }) => pattern.test(line)),
+  );
+
+  if (!vagueLine) {
+    return null;
+  }
+
+  return {
+    phrases: vagueAdviceWarningPatterns
+      .filter(({ pattern }) => pattern.test(vagueLine))
+      .map(({ label }) => `vague phrase: ${label}`),
+    sample: vagueLine.trim().slice(0, 180),
+    sectionKey,
+  };
+}
+
+function findWaveSpecificityWarningInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+): PromptLanguageSectionWarning | null {
+  const vagueWaveLine = content.split("\n").find((line) => {
+    if (!waveAdvicePattern.test(line)) {
+      return false;
+    }
+
+    return !concreteWaveStatePattern.test(line);
+  });
+
+  if (!vagueWaveLine) {
+    return null;
+  }
+
+  return {
+    phrases: ["wave advice without concrete wave-state term"],
+    sample: vagueWaveLine.trim().slice(0, 180),
+    sectionKey,
+  };
+}
+
+function findAbilityAdviceSpecificityWarningInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+): PromptLanguageSectionWarning | null {
+  const vagueAbilityLine = content.split("\n").find((line) => {
+    if (!abilityAdviceSpecificityPattern.test(line)) {
+      return false;
+    }
+
+    return !concreteAbilityAdvicePattern.test(line);
+  });
+
+  if (!vagueAbilityLine) {
+    return null;
+  }
+
+  return {
+    phrases: ["ability advice without concrete ability token or condition"],
+    sample: vagueAbilityLine.trim().slice(0, 180),
+    sectionKey,
+  };
+}
+
+function findInvalidHoverTokenWarningInSection(
+  sectionKey: MatchupDraftSectionKey,
+  content: string,
+): PromptLanguageSectionWarning | null {
+  const invalidTokenReasons = parseLeagueHoverText(content)
+    .filter((part) => part.type !== "text")
+    .flatMap((part) => {
+      if (part.type === "item") {
+        return getLeagueItemById(part.itemId)
+          ? []
+          : [`invalid item token ${part.rawToken}: item id was not found`];
+      }
+
+      if (!part.abilityKey) {
+        return [`invalid ability token ${part.rawToken}: ability key is invalid`];
+      }
+
+      const championAbilitySet = getLeagueChampionAbilitySet(part.championId);
+
+      if (!championAbilitySet) {
+        return [`invalid ability token ${part.rawToken}: champion id was not found`];
+      }
+
+      return getLeagueChampionAbility(part.championId, part.abilityKey as LeagueAbilityTokenKey)
+        ? []
+        : [`invalid ability token ${part.rawToken}: ability data was not found`];
+    });
+
+  if (invalidTokenReasons.length === 0) {
+    return null;
+  }
+
+  return {
+    phrases: invalidTokenReasons,
+    sample: getFirstHoverTokenLine(content),
+    sectionKey,
+  };
 }
 
 function findPromptPatternMatch(
@@ -1127,6 +1430,16 @@ function getPromptPatternSample(
       ) ?? content;
 
   return matchingLine.trim().slice(0, 180);
+}
+
+function getFirstHoverTokenLine(content: string) {
+  return (
+    content
+      .split("\n")
+      .find((line) => /\{\{(?:ability|item):/.test(line))
+      ?.trim()
+      .slice(0, 180) ?? content.trim().slice(0, 180)
+  );
 }
 
 function formatPromptLeakageError(rejectedSections: PromptLeakageSectionRejection[]) {
@@ -1321,7 +1634,7 @@ function normalizeSectionAbilityReferences(
 
     return (Object.entries(abilities) as Array<[keyof typeof abilities, string]>).reduce(
       (currentText, [abilityKey, abilityName]) => {
-        const replacement = `(${abilityKey})`;
+        const replacement = `{{ability:${getAbilityTokenChampionId(champion)}:${abilityKey}}}`;
         const aliases = [
           `${champion.championName}'s (${champion.championName}'s (${abilityKey}))`,
           `${champion.championName}'s ${champion.championName}'s (${abilityKey})`,
@@ -1356,11 +1669,26 @@ function normalizeSectionAbilityReferences(
           replacement,
         );
 
-        return normalizeAbilityOwnerReferences(nextText, champion.championName, abilityKey);
+        return normalizeAbilityOwnerReferences(
+          nextText,
+          champion.championName,
+          abilityKey,
+          replacement,
+        );
       },
       currentSection,
     );
   }, section);
+}
+
+function getAbilityTokenChampionId({
+  championName,
+  profile,
+}: {
+  championName: string;
+  profile?: LeagueChampionKnowledgeProfile | null;
+}) {
+  return profile?.id ?? championName;
 }
 
 function replaceChampionOwnedAbilityAlias(
@@ -1383,24 +1711,29 @@ function replaceBareAbilityKey(text: string, abilityKey: string, replacement: st
   return text.replace(getBareAbilityKeyPattern(abilityKey), `$1${replacement}`);
 }
 
-function normalizeAbilityOwnerReferences(text: string, championName: string, abilityKey: string) {
+function normalizeAbilityOwnerReferences(
+  text: string,
+  championName: string,
+  abilityKey: string,
+  replacement: string,
+) {
   return text
     .replace(
       getAbilityAliasPattern(`${championName}'s (${championName}'s (${abilityKey}))`),
-      `$1(${abilityKey})`,
+      `$1${replacement}`,
     )
     .replace(
       getAbilityAliasPattern(`${championName}'s ${championName}'s (${abilityKey})`),
-      `$1(${abilityKey})`,
+      `$1${replacement}`,
     )
     .replace(
       getAbilityAliasPattern(`${championName} ${championName}'s (${abilityKey})`),
-      `$1${championName} (${abilityKey})`,
+      `$1${replacement}`,
     )
-    .replace(getAbilityAliasPattern(`${championName}'s (${abilityKey})`), `$1(${abilityKey})`)
-    .replace(getAbilityAliasPattern(`${championName} (${abilityKey})`), `$1(${abilityKey})`)
-    .replace(getAbilityAliasPattern(`((${abilityKey}))`), `$1(${abilityKey})`)
-    .replace(getAbilityAliasPattern(`(${abilityKey}) (${abilityKey})`), `$1(${abilityKey})`);
+    .replace(getAbilityAliasPattern(`${championName}'s (${abilityKey})`), `$1${replacement}`)
+    .replace(getAbilityAliasPattern(`${championName} (${abilityKey})`), `$1${replacement}`)
+    .replace(getAbilityAliasPattern(`((${abilityKey}))`), `$1${replacement}`)
+    .replace(getAbilityAliasPattern(`(${abilityKey}) (${abilityKey})`), `$1${replacement}`);
 }
 
 function getAbilityAliasPattern(alias: string) {
@@ -1408,7 +1741,7 @@ function getAbilityAliasPattern(alias: string) {
 }
 
 function getBareAbilityKeyPattern(abilityKey: string) {
-  return new RegExp(`(^|[^A-Za-z0-9(])${escapeRegex(abilityKey)}(?![A-Za-z0-9)])`, "gi");
+  return new RegExp(`(^|[^A-Za-z0-9(:])${escapeRegex(abilityKey)}(?![A-Za-z0-9)])`, "gi");
 }
 
 function escapeRegex(value: string) {

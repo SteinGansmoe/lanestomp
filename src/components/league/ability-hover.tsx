@@ -7,9 +7,9 @@ import { useId, useState } from "react";
 import {
   getLeagueAbilityIconPath,
   getLeagueChampionAbility,
-  type LeagueChampionAbilityMetadata,
   type LeagueAbilityTokenKey,
 } from "@/src/features/league/abilities";
+import { getCompactAbilityTooltip } from "@/src/features/league/ability-tooltip-formatting";
 import { cn } from "@/src/lib/utils";
 
 export type AbilityHoverProps = {
@@ -39,8 +39,7 @@ export function AbilityHover({
     );
   }
 
-  const tooltipDescription = getShortAbilityDescription(ability);
-  const abilityFacts = getAbilityFacts(ability);
+  const tooltip = getCompactAbilityTooltip(ability, championId);
   const chipLabel = label ?? (compact ? ability.key : ability.name);
 
   return (
@@ -51,7 +50,7 @@ export function AbilityHover({
       <button
         aria-describedby={tooltipId}
         aria-expanded={isOpen}
-        className="mx-0.5 inline-flex max-w-full translate-y-[0.12em] items-center gap-1.5 border border-cyan-300/25 bg-cyan-400/[0.08] px-1.5 py-0.5 font-mono text-[0.72rem] font-semibold uppercase leading-5 text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.08)] outline-none transition hover:border-cyan-200/55 hover:bg-cyan-300/15 focus-visible:border-cyan-200/70 focus-visible:ring-2 focus-visible:ring-cyan-200/30"
+        className="mx-0.5 inline-flex max-w-full appearance-none items-center gap-1 border-0 bg-transparent px-0.5 py-0 align-baseline text-[0.95em] font-semibold leading-[inherit] text-cyan-100 underline decoration-cyan-300/35 decoration-dotted underline-offset-[3px] outline-none transition hover:text-cyan-50 hover:decoration-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-200/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06111f]"
         onBlur={() => setIsOpen(false)}
         onClick={() => setIsOpen((current) => !current)}
         type="button"
@@ -59,12 +58,12 @@ export function AbilityHover({
         <img
           alt=""
           aria-hidden="true"
-          className="size-4 shrink-0 rounded-sm object-cover"
+          className="size-3.5 shrink-0 rounded-sm object-cover"
           decoding="async"
           loading="lazy"
           src={getLeagueAbilityIconPath(ability)}
         />
-        <span className="text-[#F4D88A]">{ability.key}</span>
+        <span className="font-mono text-[0.85em] text-[#F4D88A]">{ability.key}</span>
         {chipLabel ? (
           <span className="max-w-[9rem] truncate text-cyan-50 normal-case">{chipLabel}</span>
         ) : null}
@@ -72,46 +71,54 @@ export function AbilityHover({
 
       <span
         className={cn(
-          "pointer-events-none absolute bottom-full left-0 z-40 mb-2 hidden w-72 border border-cyan-300/20 bg-[#06111f]/98 p-3 text-left shadow-2xl shadow-black/45 backdrop-blur sm:left-1/2 sm:-translate-x-1/2",
+          "pointer-events-none absolute bottom-full left-0 z-40 mb-2 hidden w-80 max-w-[min(20rem,calc(100vw-2rem))] border border-cyan-300/20 bg-[#06111f]/98 p-2.5 text-left shadow-2xl shadow-black/45 backdrop-blur sm:left-1/2 sm:-translate-x-1/2",
           "group-hover/ability-hover:block group-focus-within/ability-hover:block",
           isOpen ? "block" : null,
         )}
         id={tooltipId}
         role="tooltip"
       >
-        <span className="flex items-start gap-3">
+        <span className="flex items-start gap-2.5">
           <img
             alt=""
             aria-hidden="true"
-            className="size-10 shrink-0 rounded-md border border-white/10 object-cover"
+            className="size-9 shrink-0 rounded-md border border-white/10 object-cover"
             decoding="async"
             loading="lazy"
             src={getLeagueAbilityIconPath(ability)}
           />
           <span className="min-w-0">
-            <span className="block font-mono text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100">
-              {championId} / {ability.key}
+            <span className="block text-sm font-semibold leading-5 text-white">
+              <span className="font-mono text-[#F4D88A]">{ability.key}</span> {ability.name}
             </span>
-            <span className="mt-1 block text-sm font-semibold leading-5 text-white">
-              {ability.name}
-            </span>
+            {tooltip.metaText ? (
+              <span className="mt-0.5 block font-mono text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-cyan-100/90">
+                {tooltip.metaText}
+              </span>
+            ) : null}
           </span>
         </span>
 
-        {tooltipDescription ? (
-          <span className="mt-3 block text-sm leading-6 text-zinc-300">
-            {tooltipDescription}
+        {tooltip.description ? (
+          <span className="mt-2.5 block text-sm leading-5 text-zinc-300">
+            {tooltip.description}
           </span>
         ) : null}
 
-        {abilityFacts.length > 0 ? (
-          <span className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
-            {abilityFacts.map((fact) => (
-              <span
-                className="border border-white/10 bg-white/[0.04] px-2 py-1 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-zinc-300"
-                key={fact}
-              >
-                {fact}
+        {tooltip.details.length > 0 ? (
+          <span className="mt-2.5 grid gap-2 border-t border-white/10 pt-2.5">
+            {tooltip.details.map((detail) => (
+              <span className="grid gap-1 text-xs" key={detail.label}>
+                <span className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-zinc-500">
+                  {detail.label}
+                </span>
+                <span className="grid gap-0.5">
+                  {detail.values.map((value) => (
+                    <span className="font-medium text-zinc-200" key={value}>
+                      {value}
+                    </span>
+                  ))}
+                </span>
               </span>
             ))}
           </span>
@@ -119,38 +126,4 @@ export function AbilityHover({
       </span>
     </span>
   );
-}
-
-function getShortAbilityDescription(ability: LeagueChampionAbilityMetadata) {
-  const description = cleanDataDragonText(ability.description || ability.tooltip);
-
-  if (description.length <= 220) {
-    return description;
-  }
-
-  return `${description.slice(0, 217).trimEnd()}...`;
-}
-
-function getAbilityFacts(ability: LeagueChampionAbilityMetadata) {
-  return [
-    ability.cooldownBurn ? `CD ${ability.cooldownBurn}s` : null,
-    ability.costBurn && ability.costBurn !== "0"
-      ? `Cost ${[ability.costBurn, cleanDataDragonText(ability.costType ?? "")]
-          .filter(Boolean)
-          .join(" ")}`
-      : null,
-  ].filter((fact): fact is string => Boolean(fact));
-}
-
-function cleanDataDragonText(value: string) {
-  return value
-    .replace(/<br\s*\/?>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\{\{[^}]+\}\}/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, " ")
-    .trim();
 }
