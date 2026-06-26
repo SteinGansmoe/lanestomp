@@ -323,6 +323,7 @@ declare module "@/scripts/lib/riot-seed-candidates.mjs" {
     existingCandidatesUpdated: number;
     newCandidatesCreated: number;
     participantPuuidsObserved: number;
+    seedCandidatesCreatedOrUpdated: number;
     uniqueCandidatesEncountered: number;
   }>;
   export function rebuildSeedCandidateProfiles(options: {
@@ -393,6 +394,7 @@ declare module "@/scripts/lib/riot-counter-pick-aggregation.mjs" {
     matchupRankAttributionsUnknown: number;
     matchupRankParticipantsNotFound: number;
     matchupRankSnapshotTooOld: number;
+    observationsAggregated: number;
     observationsFound: number;
     insertedObservationKeys: string[];
     duplicateObservationKeys: string[];
@@ -430,6 +432,7 @@ declare module "@/scripts/lib/riot-counter-pick-aggregation.mjs" {
     counterPickAggregateUnresolvedBatchFailures: number;
     counterPickAggregatePersistenceFailureSamples: RiotPersistenceFailureSample[];
     counterPickAggregatePersistenceErrorGroups: RiotPersistenceErrorGroup[];
+    observationsAggregated: number;
     statsRowsUpdated: number;
     updatedStats: unknown[];
   }>;

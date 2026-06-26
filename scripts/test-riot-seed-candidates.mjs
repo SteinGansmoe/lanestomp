@@ -4,7 +4,9 @@ import { buildChampionRegistry } from "./lib/league-champion-normalizer.mjs";
 import { createObservationValidationContext } from "./lib/riot-observation-validation.mjs";
 import {
   createCandidateIdentityKey,
+  getCandidateProfilePatch,
   persistSeedCandidatesFromObservations as persistSeedCandidatesFromObservationsBase,
+  seedCandidateQualityFilters,
 } from "./lib/riot-seed-candidates.mjs";
 
 const testValidationContext = createObservationValidationContext({
@@ -147,6 +149,21 @@ async function testNewCandidateSameScan() {
   assert.equal(candidate.observed_games, 1);
   assert.equal(candidate.estimated_primary_role, null);
   assert.equal(candidate.primary_champion, null);
+}
+
+function testSeedCandidateQualityFiltersStaySeparateFromObservations() {
+  const profile = getCandidateProfilePatch([
+    makeObservation({
+      index: 0,
+      matchId: "single-observation-profile",
+      puuid: "single-observation-candidate",
+    }),
+  ]);
+
+  assert.equal(seedCandidateQualityFilters.minimumObservedGamesForProfile, 3);
+  assert.equal(profile.observed_games, 1);
+  assert.equal(profile.estimated_primary_role, null);
+  assert.equal(profile.primary_champion, null);
 }
 
 async function testRerunRecovery() {
@@ -735,6 +752,7 @@ await testMostlyNewCandidates();
 await testManyExistingCandidates();
 await testManyNewCandidates();
 await testNewCandidateSameScan();
+testSeedCandidateQualityFiltersStaySeparateFromObservations();
 await testRerunRecovery();
 await testDuplicateScan();
 await testMixedNewAndExisting();

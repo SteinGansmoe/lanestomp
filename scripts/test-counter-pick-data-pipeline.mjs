@@ -31,6 +31,7 @@ async function testDuplicateObservationIsNotCountedTwice() {
   assert.equal(result.observationsFound, 1, "duplicate match/role observations are deduped first");
   assert.equal(result.insertedObservations, 1);
   assert.equal(result.duplicateObservationsSkipped, 0);
+  assert.equal(result.observationsAggregated, 1);
   assert.equal(supabase.tables.riot_matchup_observations.length, 1);
   assert.equal(getCounterPickStat(supabase, "ahri", "zed", "all").games, 1);
 }
@@ -120,6 +121,53 @@ function testDirectedAggregateRowsIncludeStoredObservation() {
   assert.equal(getAggregateRow(rows, "ahri", "zed", "gold-emerald").games, 1);
 }
 
+async function testValidOneOffChampionGameCountsAsObservation() {
+  const supabase = new FakeSupabaseClient();
+  const result = await persistObservationsAndRebuildStats({
+    observations: [
+      createObservation({
+        champion_a: "ahri",
+        champion_a_won: false,
+        champion_b: "zed",
+        match_id: "EUW1_104",
+        winner_champion: "zed",
+      }),
+    ],
+    scanJobId: 246,
+    supabase,
+    validationContext,
+  });
+
+  assert.equal(result.insertedObservations, 1);
+  assert.equal(result.observationsAggregated, 1);
+  assert.equal(getCounterPickStat(supabase, "ahri", "zed", "all").games, 1);
+}
+
+async function testResolvedNonMainRoleGameCountsAsObservation() {
+  const supabase = new FakeSupabaseClient();
+  const result = await persistObservationsAndRebuildStats({
+    observations: [
+      createObservation({
+        champion_a: "ahri",
+        champion_a_won: true,
+        champion_b: "zed",
+        match_id: "EUW1_105",
+        role: "top",
+        winner_champion: "ahri",
+      }),
+    ],
+    scanJobId: 246,
+    supabase,
+    validationContext,
+  });
+  const stat = getCounterPickStat(supabase, "zed", "ahri", "all");
+
+  assert.equal(result.insertedObservations, 1);
+  assert.equal(result.observationsAggregated, 1);
+  assert.equal(stat.games, 1);
+  assert.equal(stat.role, "top");
+}
+
 async function testPublicCounterPickQueryReadsExpectedRow() {
   const supabase = new FakeSupabaseClient();
 
@@ -129,7 +177,7 @@ async function testPublicCounterPickQueryReadsExpectedRow() {
         champion_a: "ahri",
         champion_a_won: false,
         champion_b: "zed",
-        match_id: "EUW1_104",
+        match_id: "EUW1_106",
         winner_champion: "zed",
       }),
     ],
@@ -160,7 +208,7 @@ async function testFailedAggregationIsVisible() {
           champion_a: "ahri",
           champion_a_won: false,
           champion_b: "zed",
-          match_id: "EUW1_105",
+          match_id: "EUW1_107",
           winner_champion: "zed",
         }),
       ],
@@ -532,6 +580,8 @@ await testDuplicateObservationIsNotCountedTwice();
 await testInvalidObservationIsNotAggregated();
 testExpectedRankBracketAttribution();
 testDirectedAggregateRowsIncludeStoredObservation();
+await testValidOneOffChampionGameCountsAsObservation();
+await testResolvedNonMainRoleGameCountsAsObservation();
 await testPublicCounterPickQueryReadsExpectedRow();
 await testFailedAggregationIsVisible();
 

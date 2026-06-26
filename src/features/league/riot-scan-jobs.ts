@@ -133,7 +133,10 @@ export type RiotScanSummary = {
   riotApiFailureStatus?: number | null;
   riotRateLimitTotalWaitMs?: number;
   matchesTotal?: number;
+  matchesFetched?: number;
   matchesScanned?: number;
+  matchesSkippedInvalidData?: number;
+  matchesSkippedUnsupportedRoleChampion?: number;
   matchupPairsDiscovered?: number;
   maxDisplayedResults?: number;
   newCandidatesCreated?: number;
@@ -146,6 +149,8 @@ export type RiotScanSummary = {
   participantPuuidsObserved?: number;
   observationDuplicatesSkipped?: number;
   observationInsertFailures?: number;
+  observationsAggregated?: number;
+  observationsCreated?: number;
   observationsFound?: number;
   observationsInserted?: number;
   matchupObservationBatchAttempts?: number;
@@ -168,6 +173,7 @@ export type RiotScanSummary = {
   matchupRankAttributionsUnknown?: number;
   matchupRankParticipantsNotFound?: number;
   matchupRankSnapshotTooOld?: number;
+  seedCandidatesCreatedOrUpdated?: number;
   statsRowsUpdated?: number;
   targetMatches?: number;
   uniqueCandidatesEncountered?: number;

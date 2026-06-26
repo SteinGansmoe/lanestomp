@@ -4,6 +4,7 @@ import { buildChampionRegistry } from "./lib/league-champion-normalizer.mjs";
 import {
   createObservationValidationContext,
   exceedsValidationFailureRate,
+  observationValidityRules,
   partitionValidatedRows,
   summarizeValidationFailures,
   validateCounterPickAggregate,
@@ -37,6 +38,8 @@ testInvalidRole();
 testRoutingMismatch();
 testWinnerConflict();
 testSameChampionMatchup();
+testObservationValidityRulesStayBroad();
+testInvalidMatchupObservationRoleAndChampion();
 testRankBracketValidation();
 testAggregateMismatch();
 testBatchPartitioning();
@@ -141,6 +144,28 @@ function testSameChampionMatchup() {
   );
 
   assertCodes(result, ["SAME_CHAMPION_MATCHUP"]);
+}
+
+function testObservationValidityRulesStayBroad() {
+  assert.ok(observationValidityRules.required.includes("supported role"));
+  assert.ok(observationValidityRules.required.includes("winner and loser can be determined"));
+  assert.ok(observationValidityRules.intentionallyNotRequired.includes("seed candidate main role"));
+  assert.ok(
+    observationValidityRules.intentionallyNotRequired.includes("multiple historical matchup games"),
+  );
+}
+
+function testInvalidMatchupObservationRoleAndChampion() {
+  const result = validateMatchupObservation(
+    {
+      ...validMatchupObservation(),
+      champion_b: "DefinitelyNotAChampion",
+      role: "middle",
+    },
+    context,
+  );
+
+  assertCodes(result, ["INVALID_ROLE", "UNKNOWN_CHAMPION"]);
 }
 
 function testRankBracketValidation() {

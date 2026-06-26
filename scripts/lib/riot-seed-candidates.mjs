@@ -18,6 +18,14 @@ const observationBatchSize = 250;
 const profileRebuildBatchSize = 100;
 const topChampionLimit = 5;
 
+export const seedCandidateQualityFilters = {
+  minimumObservedGamesForProfile: 3,
+  minimumPrimaryChampionGames: 3,
+  minimumPrimaryRoleGames: 3,
+  minimumSecondaryRoleGames: 2,
+  topChampionLimit,
+};
+
 export async function persistSeedCandidatesFromObservations({
   championRegistry = null,
   observations,
@@ -131,6 +139,8 @@ export async function persistSeedCandidatesFromObservations({
     existingCandidatesUpdated: candidateResult.existingCandidatesUpdated,
     newCandidatesCreated: candidateResult.newCandidatesCreated,
     participantPuuidsObserved: validParticipantObservations.length,
+    seedCandidatesCreatedOrUpdated:
+      candidateResult.newCandidatesCreated + candidateResult.existingCandidatesUpdated,
     uniqueCandidatesEncountered: candidateInputs.length,
   };
 }
@@ -224,6 +234,8 @@ export async function rebuildSeedCandidateProfiles({
 
 export function getCandidateProfilePatch(observations) {
   const observedGames = observations.length;
+  const profileHasEnoughGames =
+    observedGames >= seedCandidateQualityFilters.minimumObservedGamesForProfile;
   const latestMatchSeenAt = getLatestTimestamp(
     observations.map((observation) => observation.game_start_at),
   );
@@ -239,38 +251,32 @@ export function getCandidateProfilePatch(observations) {
   const secondaryRole = roleEntries[1];
   const topChampions = getTopChampions(observations);
   const primaryChampion = topChampions[0] ?? null;
+  const primaryRoleQualified =
+    profileHasEnoughGames &&
+    primaryRole &&
+    primaryRole[1].games >= seedCandidateQualityFilters.minimumPrimaryRoleGames;
+  const secondaryRoleQualified =
+    profileHasEnoughGames &&
+    secondaryRole &&
+    secondaryRole[1].games >= seedCandidateQualityFilters.minimumSecondaryRoleGames;
+  const primaryChampionQualified =
+    profileHasEnoughGames &&
+    primaryChampion &&
+    primaryChampion.games >= seedCandidateQualityFilters.minimumPrimaryChampionGames;
 
   return {
-    estimated_primary_role:
-      observedGames >= 3 && primaryRole && primaryRole[1].games >= 3 ? primaryRole[0] : null,
-    estimated_secondary_role:
-      observedGames >= 3 && secondaryRole && secondaryRole[1].games >= 2 ? secondaryRole[0] : null,
+    estimated_primary_role: primaryRoleQualified ? primaryRole[0] : null,
+    estimated_secondary_role: secondaryRoleQualified ? secondaryRole[0] : null,
     latest_match_seen_at: latestMatchSeenAt,
     last_profiled_at: new Date().toISOString(),
     observed_games: observedGames,
-    primary_champion:
-      observedGames >= 3 && primaryChampion && primaryChampion.games >= 3
-        ? primaryChampion.champion
-        : null,
-    primary_champion_games:
-      observedGames >= 3 && primaryChampion && primaryChampion.games >= 3
-        ? primaryChampion.games
-        : 0,
-    primary_champion_role:
-      observedGames >= 3 && primaryChampion && primaryChampion.games >= 3
-        ? primaryChampion.role
-        : null,
-    primary_champion_share:
-      observedGames >= 3 && primaryChampion && primaryChampion.games >= 3
-        ? primaryChampion.share
-        : null,
-    primary_role_share:
-      observedGames >= 3 && primaryRole && primaryRole[1].games >= 3 ? primaryRole[1].share : null,
+    primary_champion: primaryChampionQualified ? primaryChampion.champion : null,
+    primary_champion_games: primaryChampionQualified ? primaryChampion.games : 0,
+    primary_champion_role: primaryChampionQualified ? primaryChampion.role : null,
+    primary_champion_share: primaryChampionQualified ? primaryChampion.share : null,
+    primary_role_share: primaryRoleQualified ? primaryRole[1].share : null,
     role_distribution: roleDistribution,
-    secondary_role_share:
-      observedGames >= 3 && secondaryRole && secondaryRole[1].games >= 2
-        ? secondaryRole[1].share
-        : null,
+    secondary_role_share: secondaryRoleQualified ? secondaryRole[1].share : null,
     top_champions: topChampions,
   };
 }
@@ -762,6 +768,7 @@ function emptyCandidatePersistenceResult() {
     existingCandidatesUpdated: 0,
     newCandidatesCreated: 0,
     participantPuuidsObserved: 0,
+    seedCandidatesCreatedOrUpdated: 0,
     uniqueCandidatesEncountered: 0,
   };
 }

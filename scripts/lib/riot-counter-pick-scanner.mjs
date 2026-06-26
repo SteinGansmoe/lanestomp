@@ -141,7 +141,11 @@ export async function scanRiotCounterPickMatchups({
     focusMatchupPairsDiscovered: 0,
     games: 0,
     losses: 0,
+    matchesFetched: 0,
     matchesScanned: completedMatchIds.size,
+    matchesSkippedInvalidData: 0,
+    matchesSkippedUnsupportedRoleChampion: 0,
+    observationsCreated: 0,
     patch,
     patchSkipped: 0,
     queueSkipped: 0,
@@ -182,6 +186,7 @@ export async function scanRiotCounterPickMatchups({
     });
     const match = await riot.fetchMatch(matchId);
     completedMatchIds.add(matchId);
+    aggregate.matchesFetched += 1;
     aggregate.matchesScanned += 1;
 
     if (patch && getPatchFromMatch(match) !== patch) {
@@ -195,6 +200,15 @@ export async function scanRiotCounterPickMatchups({
 
     if (Number(match?.info?.queueId) !== queue) {
       aggregate.queueSkipped += 1;
+      await emitProgress(
+        onProgress,
+        createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
+      );
+      continue;
+    }
+
+    if (!Array.isArray(match?.info?.participants)) {
+      aggregate.matchesSkippedInvalidData += 1;
       await emitProgress(
         onProgress,
         createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
@@ -226,6 +240,7 @@ export async function scanRiotCounterPickMatchups({
 
     if (roleMatchups.length === 0) {
       aggregate.roleSkipped += 1;
+      aggregate.matchesSkippedUnsupportedRoleChampion += 1;
       await emitProgress(
         onProgress,
         createLiveScanProgress(aggregate, matchId, matchIndex, matchIds),
@@ -247,6 +262,7 @@ export async function scanRiotCounterPickMatchups({
         observations.push(observation);
       }
     }
+    aggregate.observationsCreated = observations.length;
 
     if (discover) {
       roleMatchups.forEach((matchup) =>
@@ -958,7 +974,11 @@ function getSummary(aggregate) {
     focus_matchup_pairs_discovered: aggregate.focusMatchupPairsDiscovered ?? 0,
     games: aggregate.games,
     losses: aggregate.losses,
+    matchesFetched: aggregate.matchesFetched,
     matchesScanned: aggregate.matchesScanned,
+    matchesSkippedInvalidData: aggregate.matchesSkippedInvalidData,
+    matchesSkippedUnsupportedRoleChampion: aggregate.matchesSkippedUnsupportedRoleChampion,
+    observationsCreated: aggregate.observationsCreated ?? 0,
     patch: aggregate.patch,
     patchSkipped: aggregate.patchSkipped,
     queueSkipped: aggregate.queueSkipped,

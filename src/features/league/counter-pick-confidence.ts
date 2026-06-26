@@ -44,6 +44,12 @@ export const developingCounterPickConfidenceGames = 50;
 export const moderateCounterPickConfidenceGames = 100;
 export const strongCounterPickConfidenceGames = 250;
 
+export const publicDisplayConfidenceRules = {
+  lowSampleWarningBelowGames: lowCounterPickConfidenceGames,
+  minimumGamesForPublicResult: minimumPublicCounterPickGames,
+  tierHiddenBelowGames: lowCounterPickConfidenceGames,
+};
+
 export const counterPickConfidenceThresholds = [
   {
     description: "Fewer than five stored Riot matches is not enough to rank this matchup publicly.",
@@ -120,8 +126,8 @@ export function calculateCounterPickConfidence(
     games,
     label: resolvedThreshold.label,
     level: resolvedThreshold.level,
-    minimumGamesForPublicResult: minimumPublicCounterPickGames,
-    publiclyRanked: games >= minimumPublicCounterPickGames,
+    minimumGamesForPublicResult: publicDisplayConfidenceRules.minimumGamesForPublicResult,
+    publiclyRanked: games >= publicDisplayConfidenceRules.minimumGamesForPublicResult,
     shortLabel: resolvedThreshold.shortLabel,
     tierVisible: resolvedThreshold.tierVisible,
     warningVisible: resolvedThreshold.warningVisible,

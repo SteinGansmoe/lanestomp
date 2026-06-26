@@ -90,6 +90,20 @@ function testCounterPickSourceGuards() {
     "Result rendering should guard against stale route data.",
   );
   assert.match(
+    selectorSource,
+    /<MatchupSnapshotSidebar[\s\S]*selectedRole=\{selectedRole\}/,
+    "Matchup snapshot should receive the selected role.",
+  );
+  assert.match(selectorSource, /function getMatchupSnapshotLabels\(role: LeagueRole\)/);
+  assert.match(selectorSource, /role === "jungle"/);
+  for (const label of ["Early Jungle Advantage", "Skirmish Advantage", "Objective Control"]) {
+    assert.match(
+      selectorSource,
+      new RegExp(label),
+      "Matchup snapshot labels should use jungle-specific terminology.",
+    );
+  }
+  assert.match(
     startFormSource,
     /buildCounterPickUrl\(\{ champion: selectedChampion, role: selectedRole \}\)/,
     "Homepage Counter Pick entry should use the shared URL builder.",

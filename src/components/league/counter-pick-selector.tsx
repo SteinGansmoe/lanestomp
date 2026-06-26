@@ -770,6 +770,7 @@ export function CounterPickSelector({
               <MatchupSnapshotSidebar
                 selectedChampion={selectedChampion}
                 selectedCounter={selectedCounter}
+                selectedRole={selectedRole}
               />
             </div>
           </div>
@@ -1739,9 +1740,11 @@ function CounterPreparationSection({
 function MatchupSnapshotSidebar({
   selectedChampion,
   selectedCounter,
+  selectedRole,
 }: {
   selectedChampion: LeagueChampion;
   selectedCounter: CounterRowModel | null;
+  selectedRole: LeagueRole;
 }) {
   if (!selectedCounter) {
     return (
@@ -1774,6 +1777,7 @@ function MatchupSnapshotSidebar({
     selectedChampion,
     selectedProfile,
   });
+  const snapshotLabels = getMatchupSnapshotLabels(selectedRole);
 
   return (
     <aside className="grid gap-4 xl:sticky xl:top-6 xl:self-start">
@@ -1789,9 +1793,12 @@ function MatchupSnapshotSidebar({
 
         <div className="divide-y divide-white/10">
           <SnapshotRow label="Counter Type" value={snapshot.counterType} />
-          <SnapshotRow label="Lane Phase Winner" value={snapshot.lanePhaseWinner} />
-          <SnapshotRow label="Mid Game Advantage" value={snapshot.midGameAdvantage} />
-          <SnapshotRow label="Late Game Advantage" value={snapshot.lateGameAdvantage} />
+          <SnapshotRow label={snapshotLabels.earlyAdvantage} value={snapshot.lanePhaseWinner} />
+          <SnapshotRow label={snapshotLabels.midGameAdvantage} value={snapshot.midGameAdvantage} />
+          <SnapshotRow
+            label={snapshotLabels.lateGameAdvantage}
+            value={snapshot.lateGameAdvantage}
+          />
           <SnapshotRow label="Difficulty" value={snapshot.difficulty} />
         </div>
 
@@ -1808,6 +1815,22 @@ function MatchupSnapshotSidebar({
       <ReservedAdContainer />
     </aside>
   );
+}
+
+function getMatchupSnapshotLabels(role: LeagueRole) {
+  if (role === "jungle") {
+    return {
+      earlyAdvantage: "Early Jungle Advantage",
+      lateGameAdvantage: "Objective Control",
+      midGameAdvantage: "Skirmish Advantage",
+    };
+  }
+
+  return {
+    earlyAdvantage: "Lane Phase Winner",
+    lateGameAdvantage: "Late Game Advantage",
+    midGameAdvantage: "Mid Game Advantage",
+  };
 }
 
 function SnapshotRow({ label, value }: { label: string; value: string }) {

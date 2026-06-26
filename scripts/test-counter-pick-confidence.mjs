@@ -7,6 +7,7 @@ const {
   calculateCounterPickConfidence,
   lowCounterPickConfidenceGames,
   minimumPublicCounterPickGames,
+  publicDisplayConfidenceRules,
   strongCounterPickConfidenceGames,
 } = confidenceModule;
 const {
@@ -38,6 +39,10 @@ for (const [games, expectedLevel, publiclyRanked, tierVisible] of [
 }
 
 assert.equal(publicCounterPickMinimumRankedGames, 5);
+assert.equal(publicDisplayConfidenceRules.minimumGamesForPublicResult, 5);
+assert.equal(publicDisplayConfidenceRules.lowSampleWarningBelowGames, 20);
+assert.equal(stat({ games: 5, tier: "S+", winRate: 60 }).sampleConfidence, "low_sample");
+assert.equal(stat({ games: 5, tier: "S+", winRate: 60 }).confidence.warningVisible, true);
 
 assert.equal(
   getCounterPickPublicTierLabel(stat({ games: 0, tier: "S+", winRate: 100 })),

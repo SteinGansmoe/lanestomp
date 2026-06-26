@@ -8,6 +8,25 @@ export const allowedLeagueRoles = ["top", "jungle", "mid", "adc", "support"];
 export const supportedQueueIds = [420];
 export const validationFailureRateThreshold = 0.05;
 
+export const observationValidityRules = {
+  required: [
+    "valid match id",
+    "valid patch",
+    "supported queue",
+    "supported role",
+    "active canonical champions",
+    "winner and loser can be determined",
+    "valid rank bracket metadata",
+  ],
+  intentionallyNotRequired: [
+    "seed candidate minimum games",
+    "seed candidate main role",
+    "primary role share",
+    "primary champion share",
+    "multiple historical matchup games",
+  ],
+};
+
 export const platformRegionalRouting = {
   BR1: "AMERICAS",
   EUN1: "EUROPE",
@@ -110,6 +129,8 @@ export function validateSeedCandidateObservation(input, context) {
 }
 
 export function validateMatchupObservation(input, context) {
+  // Matchup observations are intentionally broader than seed candidate qualification.
+  // A one-off valid ranked game should aggregate even if the player is not a known main.
   const issues = [];
   const value = {
     champion_a: stringValue(input?.champion_a),

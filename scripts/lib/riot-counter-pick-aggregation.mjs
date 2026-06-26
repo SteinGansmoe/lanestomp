@@ -83,6 +83,7 @@ export async function persistObservationsAndRebuildStats({
       matchupRankAttributionFailures: 0,
       matchupRankSnapshotTooOld: 0,
       matchupRankParticipantsNotFound: 0,
+      observationsAggregated: 0,
       statsRowsUpdated: 0,
       insertedObservationKeys: [],
       duplicateObservationKeys: [],
@@ -130,6 +131,7 @@ export async function persistObservationsAndRebuildStats({
       matchupRankAttributionFailures: 0,
       matchupRankSnapshotTooOld: 0,
       matchupRankParticipantsNotFound: 0,
+      observationsAggregated: 0,
       statsRowsUpdated: 0,
       insertedObservationKeys: [],
       duplicateObservationKeys: [],
@@ -241,6 +243,7 @@ export async function persistObservationsAndRebuildStats({
     matchupRankAttributionFailures: rankAttributionSummary.failures,
     matchupRankSnapshotTooOld: rankAttributionSummary.snapshotTooOld,
     matchupRankParticipantsNotFound: rankAttributionSummary.participantsNotFound,
+    observationsAggregated: rebuildResult.observationsAggregated,
     statsRowsUpdated: rebuildResult.statsRowsUpdated,
     updatedStats: rebuildResult.updatedStats,
   };
@@ -306,6 +309,7 @@ export async function rebuildCounterPickStatsForGroups({
   let counterPickAggregateUnresolvedBatchFailures = 0;
   let counterPickAggregateInsertFailures = 0;
   let counterPickAggregatesValidated = 0;
+  let observationsAggregated = 0;
   let statsRowsUpdated = 0;
 
   for (const group of groups) {
@@ -323,6 +327,7 @@ export async function rebuildCounterPickStatsForGroups({
     }
 
     const aggregateRows = getDirectedAggregateRows(observations ?? []);
+    observationsAggregated += observations?.length ?? 0;
 
     if (aggregateRows.length === 0) {
       continue;
@@ -418,6 +423,7 @@ export async function rebuildCounterPickStatsForGroups({
     counterPickAggregateUnresolvedBatchFailures,
     counterPickAggregatePersistenceFailureSamples: aggregatePersistenceFailures.slice(0, 20),
     counterPickAggregatePersistenceErrorGroups: mergeErrorGroups(aggregatePersistenceErrorGroups),
+    observationsAggregated,
     statsRowsUpdated,
     updatedStats,
   };
@@ -428,6 +434,8 @@ export function getDirectedAggregateRows(observations) {
     return [];
   }
 
+  // Aggregation consumes every valid matchup observation in the group. Seed quality filters such
+  // as main-role or primary-champion share do not belong in this path.
   const observationsByBracket = new Map();
 
   for (const observation of observations) {

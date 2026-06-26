@@ -3075,6 +3075,7 @@ async function runRiotScanJob({
       matchupRankAttributionsUnknown: persistenceResult.matchupRankAttributionsUnknown,
       matchupRankParticipantsNotFound: persistenceResult.matchupRankParticipantsNotFound,
       matchupRankSnapshotTooOld: persistenceResult.matchupRankSnapshotTooOld,
+      observationsAggregated: persistenceResult.observationsAggregated,
       counterPickAggregateValidationFailures:
         persistenceResult.counterPickAggregateValidationFailures,
       counterPickAggregateValidationSummary:
@@ -3096,6 +3097,7 @@ async function runRiotScanJob({
       counterPickAggregatePersistenceErrorGroups:
         persistenceResult.counterPickAggregatePersistenceErrorGroups,
       participantPuuidsObserved: candidatePersistenceResult.participantPuuidsObserved,
+      seedCandidatesCreatedOrUpdated: candidatePersistenceResult.seedCandidatesCreatedOrUpdated,
       statsRowsUpdated: persistenceResult.statsRowsUpdated,
       uniqueCandidatesEncountered: candidatePersistenceResult.uniqueCandidatesEncountered,
       workerHeartbeatAt: new Date().toISOString(),
@@ -3836,8 +3838,15 @@ function createRiotCounterPickScanLogPayload({
     duplicateObservations: getNumberMetric(summary.observationDuplicatesSkipped),
     errorMessage,
     matchIdsFetched: getNumberMetric(summary.fetchedMatchIds),
+    matchesFetched: getNumberMetric(summary.matchesFetched),
     matchesFailed: 0,
     matchesLoaded: getNumberMetric(summary.matchesScanned),
+    matchesSkippedInvalidData: getNumberMetric(summary.matchesSkippedInvalidData),
+    matchesSkippedUnsupportedRoleChampion: getNumberMetric(
+      summary.matchesSkippedUnsupportedRoleChampion,
+    ),
+    observationsAggregated: getNumberMetric(summary.observationsAggregated),
+    observationsCreated: getNumberMetric(summary.observationsCreated),
     observationsGenerated: getNumberMetric(summary.observationsFound),
     observationsInserted: getNumberMetric(summary.observationsInserted),
     observationsRejected: getNumberMetric(summary.matchupObservationsRejected),
@@ -3846,6 +3855,7 @@ function createRiotCounterPickScanLogPayload({
     rankBrackets,
     scanJobId: jobId,
     seedCount: getNumberMetric(summary.seedCount),
+    seedCandidatesCreatedOrUpdated: getNumberMetric(summary.seedCandidatesCreatedOrUpdated),
     statsRows: getNumberMetric(summary.statsRowsUpdated),
     status: didPersistenceFail ? "failed" : "completed",
     uniqueMatchIds: getNumberMetric(summary.uniqueMatchIds),
