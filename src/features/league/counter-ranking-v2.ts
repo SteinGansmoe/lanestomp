@@ -21,13 +21,17 @@ export type CounterRankingV2TraitId =
   | "anti_shield"
   | "all_in_threat"
   | "burst_damage"
+  | "can_contest_crab"
+  | "can_gank_early"
   | "cooldown_reliant"
   | "dash_reliant"
+  | "difficult_to_contest_crab"
   | "disengage"
   | "early_weakness"
   | "falls_off_late"
   | "fragile"
   | "gap_closing"
+  | "good_ganks"
   | "immobile"
   | "late_scaling"
   | "melee_commit"
@@ -40,6 +44,8 @@ export type CounterRankingV2TraitId =
   | "scaling"
   | "short_range"
   | "skillshot_reliant"
+  | "slow_first_clear"
+  | "strong_clear"
   | "suppression"
   | "strong_early"
   | "sustained_damage"
@@ -52,7 +58,8 @@ export type CounterRankingV2TraitId =
   | "weak_vs_range"
   | "weak_vs_roaming"
   | "weak_vs_sustain"
-  | "weak_vs_waveclear";
+  | "weak_vs_waveclear"
+  | "weak_ganks_pre_6";
 
 export type CounterRankingV2ProfileStatus = "draft" | "needs_revision" | "reviewed";
 
@@ -60,7 +67,9 @@ export type CounterRankingV2TraitDefinition = {
   category: CounterRankingV2TraitCategory;
   description: string;
   id: CounterRankingV2TraitId;
+  isShared?: boolean;
   label: string;
+  roles?: readonly LeagueRole[];
 };
 
 export type CounterRankingV2ProfileTrait = {
@@ -76,6 +85,7 @@ export type CounterRankingV2ChampionProfile = {
   masteryRequirement?: ChampionMasteryRequirementLevel;
   notes?: string;
   reviewStatus: CounterRankingV2ProfileStatus;
+  role: LeagueRole;
   strengths: CounterRankingV2ProfileTrait[];
   supportedRoles: LeagueRole[];
   vulnerabilities: CounterRankingV2ProfileTrait[];
@@ -88,6 +98,7 @@ export type CounterRankingV2ProfileReview = {
   reviewNote: string | null;
   reviewedAt: string | null;
   reviewedBy: string | null;
+  role: LeagueRole;
   status: CounterRankingV2ProfileStatus;
   traitProfileVersion: number;
   updatedAt: string | null;
@@ -99,6 +110,13 @@ export type CounterRankingV2ProfileStatusByChampionId = Map<
   CounterRankingV2ProfileStatus
 >;
 export type CounterRankingV2ProfileByChampionId = Map<string, CounterRankingV2ChampionProfile>;
+
+export function getCounterRankingV2ProfileKey(
+  championId: string,
+  role: LeagueRole | null | undefined,
+) {
+  return `${normalizeChampionId(championId)}::${role ?? "mid"}`;
+}
 
 export type CounterRankingV2Factor = {
   candidateStrength: CounterRankingV2TraitId;
@@ -424,6 +442,20 @@ export const counterRankingV2TraitVocabulary = [
     label: "Burst damage",
   },
   {
+    category: "utility",
+    description: "Can create useful gank pressure before level 6.",
+    id: "can_gank_early",
+    label: "Can gank early",
+    roles: ["jungle"],
+  },
+  {
+    category: "utility",
+    description: "Can fight or pressure early river crab contests.",
+    id: "can_contest_crab",
+    label: "Can contest crab",
+    roles: ["jungle"],
+  },
+  {
     category: "vulnerability",
     description: "Has meaningful downtime after key spells are used.",
     id: "cooldown_reliant",
@@ -434,6 +466,14 @@ export const counterRankingV2TraitVocabulary = [
     description: "Needs dash access to trade, escape, or finish fights.",
     id: "dash_reliant",
     label: "Dash-reliant",
+  },
+  {
+    category: "vulnerability",
+    description:
+      "Struggles to fight or secure early river crab against stronger early junglers.",
+    id: "difficult_to_contest_crab",
+    label: "Difficult to contest crab",
+    roles: ["jungle"],
   },
   {
     category: "defensive_shape",
@@ -466,6 +506,14 @@ export const counterRankingV2TraitVocabulary = [
       "Vulnerable to enemies that can quickly close distance and force trades or all-ins.",
     id: "gap_closing",
     label: "Gap closing",
+  },
+  {
+    category: "target_access",
+    description:
+      "Has reliable gank tools such as CC, gap close, burst, or strong lane follow-up setup.",
+    id: "good_ganks",
+    label: "Good ganks",
+    roles: ["jungle"],
   },
   {
     category: "vulnerability",
@@ -534,6 +582,20 @@ export const counterRankingV2TraitVocabulary = [
       "Loses reliability when enemies can dodge, dash, become untargetable, or otherwise avoid key spells.",
     id: "skillshot_reliant",
     label: "Skillshot-reliant",
+  },
+  {
+    category: "vulnerability",
+    description: "Loses early tempo because first clear is slow or unhealthy.",
+    id: "slow_first_clear",
+    label: "Slow first clear",
+    roles: ["jungle"],
+  },
+  {
+    category: "utility",
+    description: "Clears camps efficiently and can keep tempo.",
+    id: "strong_clear",
+    label: "Strong clear",
+    roles: ["jungle"],
   },
   {
     category: "utility",
@@ -616,6 +678,13 @@ export const counterRankingV2TraitVocabulary = [
     id: "weak_vs_waveclear",
     label: "Weak vs waveclear",
   },
+  {
+    category: "vulnerability",
+    description: "Has weak or unreliable ganks before ultimate or key level 6 tools.",
+    id: "weak_ganks_pre_6",
+    label: "Not good ganks pre 6",
+    roles: ["jungle"],
+  },
 ] as const satisfies readonly CounterRankingV2TraitDefinition[];
 
 export const counterRankingV2TraitDefinitionsById: ReadonlyMap<
@@ -636,6 +705,13 @@ export function normalizeCounterRankingV2TraitId(
   const normalizedTraitId = counterRankingV2TraitAliases[rawTraitId] ?? rawTraitId;
 
   return counterRankingV2TraitDefinitionsById.has(normalizedTraitId) ? normalizedTraitId : null;
+}
+
+export function isCounterRankingV2TraitDefinitionVisibleForRole(
+  traitDefinition: CounterRankingV2TraitDefinition,
+  role: LeagueRole,
+) {
+  return !traitDefinition.roles || traitDefinition.roles.includes(role) || traitDefinition.isShared;
 }
 
 const counterRankingV2TraitInteractions = [
@@ -1177,10 +1253,13 @@ export function getCounterRankingV2ChampionProfile(
   championId: string,
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
   profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId,
+  role: LeagueRole = "mid",
 ) {
   const normalizedChampionId = normalizeChampionId(championId);
+  const profileKey = getCounterRankingV2ProfileKey(normalizedChampionId, role);
   const profile = counterRankingV2ChampionProfilesById.get(normalizedChampionId) ?? null;
   const profileOverride =
+    profileOverridesByChampionId?.get(profileKey) ??
     profileOverridesByChampionId?.get(profile?.championId ?? normalizedChampionId) ??
     profileOverridesByChampionId?.get(normalizedChampionId) ??
     profileOverridesByChampionId?.get(championId);
@@ -1191,6 +1270,7 @@ export function getCounterRankingV2ChampionProfile(
     }
 
     const reviewedStatus =
+      profileStatusesByChampionId?.get(profileKey) ??
       profileStatusesByChampionId?.get(normalizedChampionId) ??
       profileStatusesByChampionId?.get(profileOverride.championId);
     const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(profileOverride);
@@ -1198,15 +1278,17 @@ export function getCounterRankingV2ChampionProfile(
     return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
   }
 
-  const reviewedStatus = profileStatusesByChampionId?.get(profile.championId);
+  const reviewedStatus =
+    profileStatusesByChampionId?.get(profileKey) ?? profileStatusesByChampionId?.get(profile.championId);
   const mergedProfile = profileOverride
     ? {
         ...profile,
         ...profileOverride,
         championId: profile.championId,
+        role,
         supportedRoles: profileOverride.supportedRoles.length > 0 ? profileOverride.supportedRoles : profile.supportedRoles,
       }
-    : profile;
+    : { ...profile, role };
   const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(mergedProfile);
 
   return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
@@ -1214,6 +1296,7 @@ export function getCounterRankingV2ChampionProfile(
 
 export function createCounterRankingV2GeneratedDraftChampionProfile(
   championId: string,
+  role: LeagueRole = "mid",
 ): CounterRankingV2ChampionProfile {
   return {
     championId: championId.trim(),
@@ -1222,8 +1305,9 @@ export function createCounterRankingV2GeneratedDraftChampionProfile(
     knownWeaknesses: [],
     notes: "Generated draft mechanical profile awaiting admin review.",
     reviewStatus: "draft",
+    role,
     strengths: [],
-    supportedRoles: ["mid"],
+    supportedRoles: [role],
     vulnerabilities: [],
     version: counterRankingV2GeneratedDraftProfileVersion,
   };
@@ -1292,11 +1376,13 @@ export function calculateMechanicalMatchupFit({
     normalizedCandidateId,
     profileStatusesByChampionId,
     profileOverridesByChampionId,
+    role ?? "mid",
   );
   const enemyProfile = getCounterRankingV2ChampionProfile(
     normalizedEnemyId,
     profileStatusesByChampionId,
     profileOverridesByChampionId,
+    role ?? "mid",
   );
 
   if (!candidateProfile) {
@@ -1447,10 +1533,18 @@ export function generateCounterRankingV2MechanicalSuggestionsForRole({
   role: LeagueRole;
 }): CounterRankingV2ComparisonRow[] {
   const normalizedEnemyChampionId = normalizeChampionId(enemyChampionId);
-  const candidateChampionIds = counterRankingV2ChampionProfiles
-    .filter((profile) => profile.championId !== normalizedEnemyChampionId)
-    .filter((profile) => profile.supportedRoles.includes(role))
-    .map((profile) => profile.championId);
+  const candidateChampionIds = Array.from(
+    new Set([
+      ...counterRankingV2ChampionProfiles
+        .filter((profile) => profile.championId !== normalizedEnemyChampionId)
+        .filter((profile) => profile.supportedRoles.includes(role))
+        .map((profile) => profile.championId),
+      ...Array.from(profileOverridesByChampionId?.values() ?? [])
+        .filter((profile) => profile.championId !== normalizedEnemyChampionId)
+        .filter((profile) => profile.role === role || profile.supportedRoles.includes(role))
+        .map((profile) => profile.championId),
+    ]),
+  );
 
   return getCounterRankingV2ComparisonRows({
     candidateChampionIds,
@@ -1833,11 +1927,13 @@ export function generateCounterRankingV2MechanicalSuggestion({
     mechanicalResult.candidateChampionId,
     profileStatusesByChampionId,
     profileOverridesByChampionId,
+    mechanicalResult.role ?? "mid",
   );
   const enemyProfile = getCounterRankingV2ChampionProfile(
     mechanicalResult.enemyChampionId,
     profileStatusesByChampionId,
     profileOverridesByChampionId,
+    mechanicalResult.role ?? "mid",
   );
 
   if (!candidateProfile || !enemyProfile) {
@@ -2474,6 +2570,7 @@ function profile(
   return {
     championId,
     reviewStatus,
+    role: "mid",
     supportedRoles: ["mid"],
     version,
     ...traits,

@@ -15,6 +15,7 @@ const {
   counterRankingV2SupportedChampionIds,
   counterRankingV2TraitVocabulary,
   createCounterRankingV2MechanicalReview,
+  createCounterRankingV2GeneratedDraftChampionProfile,
   createObservedCounterRankingV2Snapshot,
   filterCounterRankingV2RowsByReviewFilter,
   generateCounterRankingV2MechanicalSuggestion,
@@ -26,6 +27,7 @@ const {
   getCounterRankingV2FactorImpactLevel,
   getCounterRankingV2MechanicalReasons,
   getCounterRankingV2PublicPreviewRows,
+  getCounterRankingV2ProfileKey,
   getCounterRankingV2ProfileImpactLabel,
   getCounterRankingV2ReviewProgressSummary,
   hasCounterRankingV2WeakMechanicalSignal,
@@ -36,6 +38,7 @@ const {
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2ShadowCandidateEligible,
   isCounterRankingV2ProfileValueInBounds,
+  isCounterRankingV2TraitDefinitionVisibleForRole,
   normalizeCounterRankingV2TraitId,
   normalizeCounterRankingV2PublicEligible,
   sortCounterRankingV2RowsByReviewPriority,
@@ -133,6 +136,17 @@ const expectedNewVulnerabilityLabels = {
   weak_vs_sustain: "Weak vs sustain",
   weak_vs_waveclear: "Weak vs waveclear",
 };
+const expectedJungleStrengthLabels = {
+  can_contest_crab: "Can contest crab",
+  can_gank_early: "Can gank early",
+  good_ganks: "Good ganks",
+  strong_clear: "Strong clear",
+};
+const expectedJungleWeaknessLabels = {
+  difficult_to_contest_crab: "Difficult to contest crab",
+  slow_first_clear: "Slow first clear",
+  weak_ganks_pre_6: "Not good ganks pre 6",
+};
 
 for (const [traitId, label] of Object.entries(expectedNewTraitLabels)) {
   assert.equal(traitLabelsById.get(traitId), label, `${traitId} should be available as a trait.`);
@@ -146,6 +160,82 @@ for (const [traitId, label] of Object.entries(expectedNewVulnerabilityLabels)) {
   );
 }
 
+for (const [traitId, label] of Object.entries(expectedJungleStrengthLabels)) {
+  assert.equal(
+    traitLabelsById.get(traitId),
+    label,
+    `${traitId} should be available as a jungle strength.`,
+  );
+}
+
+for (const [traitId, label] of Object.entries(expectedJungleWeaknessLabels)) {
+  assert.equal(
+    traitLabelsById.get(traitId),
+    label,
+    `${traitId} should be available as a jungle weakness.`,
+  );
+}
+
+const visibleStrengthIdsByRole = (role) =>
+  counterRankingV2TraitVocabulary
+    .filter((trait) => trait.category !== "vulnerability")
+    .filter((trait) => isCounterRankingV2TraitDefinitionVisibleForRole(trait, role))
+    .map((trait) => trait.id);
+const visibleWeaknessIdsByRole = (role) =>
+  counterRankingV2TraitVocabulary
+    .filter((trait) => trait.category === "vulnerability")
+    .filter((trait) => isCounterRankingV2TraitDefinitionVisibleForRole(trait, role))
+    .map((trait) => trait.id);
+const visibleMidStrengthIds = new Set(visibleStrengthIdsByRole("mid"));
+const visibleMidWeaknessIds = new Set(visibleWeaknessIdsByRole("mid"));
+const visibleTopWeaknessIds = new Set(visibleWeaknessIdsByRole("top"));
+const visibleJungleStrengthIds = new Set(visibleStrengthIdsByRole("jungle"));
+const visibleJungleWeaknessIds = new Set(visibleWeaknessIdsByRole("jungle"));
+
+for (const traitId of Object.keys(expectedJungleStrengthLabels)) {
+  assert.equal(
+    visibleMidStrengthIds.has(traitId),
+    false,
+    `${traitId} should not appear for Ahri/Yasuo Mid strength profiles.`,
+  );
+  assert.equal(
+    visibleJungleStrengthIds.has(traitId),
+    true,
+    `${traitId} should appear for Diana Jungle strength profiles.`,
+  );
+}
+
+for (const traitId of Object.keys(expectedJungleWeaknessLabels)) {
+  assert.equal(
+    visibleMidWeaknessIds.has(traitId),
+    false,
+    `${traitId} should not appear for Ahri/Yasuo Mid weakness profiles.`,
+  );
+  assert.equal(
+    visibleTopWeaknessIds.has(traitId),
+    false,
+    `${traitId} should not appear for Top weakness profiles.`,
+  );
+  assert.equal(
+    visibleJungleWeaknessIds.has(traitId),
+    true,
+    `${traitId} should appear for Diana Jungle weakness profiles.`,
+  );
+}
+
+for (const sharedTraitId of ["mobility", "reliable_cc", "burst_damage", "sustain", "scaling"]) {
+  assert.equal(
+    visibleMidStrengthIds.has(sharedTraitId),
+    true,
+    `${sharedTraitId} should remain visible for Mid strength profiles.`,
+  );
+  assert.equal(
+    visibleJungleStrengthIds.has(sharedTraitId),
+    true,
+    `${sharedTraitId} should remain visible for Jungle strength profiles.`,
+  );
+}
+
 assert.equal(traitIds.has("mana_reliant"), false, "Mana reliance should not be added.");
 assert.equal(
   traitIds.has("late_scaling"),
@@ -156,6 +246,11 @@ assert.equal(
   normalizeCounterRankingV2TraitId("late_scaling"),
   "scaling",
   "Legacy late_scaling values should alias to scaling.",
+);
+assert.equal(
+  normalizeCounterRankingV2TraitId("strong_clear"),
+  "strong_clear",
+  "Jungle profile saves should accept strong_clear as a valid profile trait.",
 );
 const championRegistry = buildChampionRegistry([
   championRegistryRow("Ahri", "103", "Ahri", "ahri"),
@@ -252,6 +347,8 @@ for (const championId of counterRankingV2SupportedChampionIds) {
 
 const baseVexProfile = getCounterRankingV2ChampionProfile("vex");
 assert.ok(baseVexProfile, "Vex should have a base profile for alias tests.");
+assert.equal(baseVexProfile.role, "mid", "Base profiles should resolve as mid by default.");
+assert.equal(getCounterRankingV2ProfileKey("Vex", "mid"), "vex::mid");
 
 const legacyScalingOverride = {
   ...baseVexProfile,
@@ -308,6 +405,54 @@ assert.equal(
   roamingReloadProfile?.reviewStatus,
   baseVexProfile.reviewStatus,
   "Editing trait values should not automatically change profile review status.",
+);
+
+const outOfRoleReloadProfile = getCounterRankingV2ChampionProfile(
+  "vex",
+  undefined,
+  new Map([
+    [
+      "vex",
+      {
+        ...baseVexProfile,
+        strengths: [{ traitId: "strong_clear", weight: 5 }],
+      },
+    ],
+  ]),
+  "mid",
+);
+
+assert.deepEqual(
+  outOfRoleReloadProfile?.strengths,
+  [{ traitId: "strong_clear", weight: 5 }],
+  "Existing out-of-role profile values should still load instead of being hidden or rewritten.",
+);
+assert.equal(
+  outOfRoleReloadProfile?.reviewStatus,
+  baseVexProfile.reviewStatus,
+  "Loading out-of-role legacy values should not change profile review status.",
+);
+
+const dianaJungleOverride = {
+  ...createCounterRankingV2GeneratedDraftChampionProfile("diana", "jungle"),
+  strengths: [{ traitId: "strong_clear", weight: 6 }],
+  vulnerabilities: [{ traitId: "cooldown_reliant", weight: 4 }],
+};
+const dianaRoleScopedProfiles = new Map([[getCounterRankingV2ProfileKey("diana", "jungle"), dianaJungleOverride]]);
+const dianaMidProfile = getCounterRankingV2ChampionProfile("diana", undefined, dianaRoleScopedProfiles, "mid");
+const dianaJungleProfile = getCounterRankingV2ChampionProfile(
+  "diana",
+  undefined,
+  dianaRoleScopedProfiles,
+  "jungle",
+);
+
+assert.equal(dianaMidProfile?.role, "mid", "Diana Mid should keep the mid profile scope.");
+assert.equal(dianaJungleProfile?.role, "jungle", "Diana Jungle should load the jungle profile scope.");
+assert.notDeepEqual(
+  dianaMidProfile?.strengths,
+  dianaJungleProfile?.strengths,
+  "Diana Mid and Diana Jungle profiles should be able to coexist.",
 );
 
 const scalingIntoLateFalloff = calculateMechanicalMatchupFit({
@@ -818,6 +963,71 @@ assert.equal(
   reviewedDraftProfileAutoApprovalCandidate?.automationStatus,
   "auto_approval_candidate",
   "Persisted reviewed profile reviews should allow safe high-score suggestions to become auto-approval candidates.",
+);
+
+const roleScopedProfileOverrides = new Map([
+  [
+    getCounterRankingV2ProfileKey("ahri", "jungle"),
+    {
+      ...getCounterRankingV2ChampionProfile("ahri"),
+      role: "jungle",
+      supportedRoles: ["jungle"],
+    },
+  ],
+  [
+    getCounterRankingV2ProfileKey("yone", "jungle"),
+    {
+      ...getCounterRankingV2ChampionProfile("yone"),
+      role: "jungle",
+      supportedRoles: ["jungle"],
+    },
+  ],
+]);
+const roleScopedProfileStatuses = new Map([
+  [getCounterRankingV2ProfileKey("ahri", "mid"), "reviewed"],
+  [getCounterRankingV2ProfileKey("yone", "mid"), "reviewed"],
+  [getCounterRankingV2ProfileKey("ahri", "jungle"), "draft"],
+  [getCounterRankingV2ProfileKey("yone", "jungle"), "reviewed"],
+]);
+const midReviewedSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({
+      candidateChampionId: "ahri",
+      enemyChampionId: "yone",
+      profileStatusesByChampionId: roleScopedProfileStatuses,
+      role: "mid",
+    }),
+    score: 88,
+  },
+  observed: null,
+  profileStatusesByChampionId: roleScopedProfileStatuses,
+});
+const jungleDraftSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...calculateMechanicalMatchupFit({
+      candidateChampionId: "ahri",
+      enemyChampionId: "yone",
+      profileOverridesByChampionId: roleScopedProfileOverrides,
+      profileStatusesByChampionId: roleScopedProfileStatuses,
+      role: "jungle",
+    }),
+    score: 88,
+  },
+  observed: null,
+  profileOverridesByChampionId: roleScopedProfileOverrides,
+  profileStatusesByChampionId: roleScopedProfileStatuses,
+});
+
+assert.equal(
+  midReviewedSuggestion?.automationStatus,
+  "auto_approval_candidate",
+  "Reviewed Ahri Mid should not be blocked by a separate Ahri Jungle draft profile.",
+);
+assert.ok(
+  jungleDraftSuggestion?.blockers.some(
+    (blocker) => blocker.id === "candidate_profile_generated_draft",
+  ),
+  "Draft Ahri Jungle should block only the jungle-scoped automation suggestion.",
 );
 
 const highMasterySuggestion = generateCounterRankingV2MechanicalSuggestion({
@@ -1514,6 +1724,13 @@ const autoApprovalAuditMigration = readFileSync(
   ),
   "utf8",
 );
+const roleAwareProfileMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260627010000_make_counter_ranking_v2_profiles_role_aware.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const counterPickActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
@@ -1551,6 +1768,16 @@ assert.match(
   profileManagementServiceRoleGrantMigration,
   /grant select, insert, update\s+on table\s+public\.counter_ranking_v2_profile_reviews,\s+public\.counter_ranking_v2_champion_trait_profiles,\s+public\.counter_ranking_v2_champion_vulnerability_profiles\s+to service_role;/,
   "The service-role profile management action should be granted profile review, trait, and vulnerability table load/save privileges.",
+);
+assert.match(
+  roleAwareProfileMigration,
+  /add column if not exists role text not null default 'mid'/,
+  "Role-aware profile migration should safely assign existing profiles to Mid.",
+);
+assert.match(
+  roleAwareProfileMigration,
+  /primary key \(champion_id, role\)/,
+  "Role-aware profile migration should enforce one current profile row per champion and role.",
 );
 assert.match(
   publicMechanicalReviewPolicyMigration,
@@ -1729,12 +1956,17 @@ assert.match(
 );
 assert.match(
   counterPickActionsSource,
-  /ignoreDuplicates: true, onConflict: "champion_id"/,
-  "Generated draft profile backfill should be idempotent and avoid duplicate profile rows.",
+  /ignoreDuplicates: true, onConflict: "champion_id,role"/,
+  "Generated draft profile backfill should be idempotent and avoid duplicate champion-role profile rows.",
 );
 assert.match(
   counterPickActionsSource,
-  /createdProfiles[\s\S]*repairedProfiles[\s\S]*skippedProfiles/,
+  /getSupportedCounterRankingV2ProfileTargets\(activeChampionIds\)/,
+  "Generated draft profile backfill should use supported champion-role targets.",
+);
+assert.match(
+  counterPickActionsSource,
+  /createdProfiles[\s\S]*repairedProfiles[\s\S]*skippedProfiles[\s\S]*supportedChampionRoleProfiles/,
   "Generated draft profile backfill should report created, repaired, and skipped counts.",
 );
 assert.match(
@@ -1744,8 +1976,8 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /Active champions/,
-  "Counter Profile Review should show total active champion coverage.",
+  /Expected role profiles/,
+  "Counter Profile Review should show total supported champion-role profile coverage.",
 );
 assert.match(
   counterPickAdminSectionSource,
@@ -1759,8 +1991,8 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /rowsByChampionId = new Map<string, CounterRankingV2ProfileReviewPanelRow>/,
-  "Counter Profile Review should dedupe profile rows by normalized champion id before rendering.",
+  /rowsByProfileKey = new Map<string, CounterRankingV2ProfileReviewPanelRow>/,
+  "Counter Profile Review should dedupe profile rows by normalized champion-role key before rendering.",
 );
 assert.match(
   counterPickAdminSectionSource,
@@ -1774,8 +2006,18 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /key=\{normalizeCounterRankingV2ChampionId\(profile\.championId\)\}/,
-  "Counter Profile Review should render rows with a normalized stable champion key after dedupe.",
+  /key=\{getCounterRankingV2ProfileKey\(profile\.championId, profile\.role\)\}/,
+  "Counter Profile Review should render rows with a normalized stable champion-role key after dedupe.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /onSelectProfile\(profile\.championId, profile\.role\)/,
+  "Counter Profile Review row selection should preserve the profile role.",
+);
+assert.match(
+  counterPickActionsSource,
+  /onConflict: "champion_id,role"/,
+  "Profile management saves should preserve role instead of overwriting other role profiles.",
 );
 assert.match(
   counterPickProfileReviewPageSource,
@@ -1824,8 +2066,23 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /isTraitDefinitionVisibleForProfileContext\(traitDefinition, labelContext\)/,
+  /isTraitDefinitionVisibleForProfileContext\(traitDefinition, labelContext, profileRole\)/,
   "Profile management dropdowns should split strength and weakness vocabulary by context.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /isCounterRankingV2TraitDefinitionVisibleForRole/,
+  "Profile management dropdowns should filter strength and weakness vocabulary by selected profile role.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /profileRole=\{profile\.role\}/,
+  "Counter Profile Review trait editors should receive the selected profile role.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Out-of-role/,
+  "Counter Profile Review should keep existing out-of-role values visible with a small marker.",
 );
 assert.match(
   counterPickAdminSectionSource,

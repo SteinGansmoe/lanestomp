@@ -57,12 +57,14 @@ import {
   generateCounterRankingV2MechanicalSuggestionsForRole,
   getCounterRankingV2MechanicalReasons,
   getCounterRankingV2ChampionProfile,
+  getCounterRankingV2ProfileKey,
   getCounterRankingV2ProfileImpactLabel,
   getCounterRankingV2AutomationBlockerSummary,
   getCounterRankingV2AutomationSummary,
   getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
   hasCounterRankingV2WeakMechanicalSignal,
+  isCounterRankingV2TraitDefinitionVisibleForRole,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
   isCounterRankingV2SupportedChampion,
@@ -278,7 +280,7 @@ export function AdminLeagueCounterPicksSection({
     () =>
       new Map(
         Array.from(counterRankingV2ProfileReviewsByChampionId.values()).map((review) => [
-          normalizeCounterRankingV2ChampionId(review.championId),
+          getCounterRankingV2ProfileKey(review.championId, review.role),
           review.status,
         ] as const),
       ) satisfies CounterRankingV2ProfileStatusByChampionId,
@@ -657,7 +659,7 @@ export function AdminLeagueCounterPicksSection({
     setCounterRankingV2ProfileReviewsByChampionId(
       new Map(
         result.reviews.map((review) => [
-          normalizeCounterRankingV2ChampionId(review.championId),
+          getCounterRankingV2ProfileKey(review.championId, review.role),
           review,
         ] as const),
       ),
@@ -702,7 +704,7 @@ export function AdminLeagueCounterPicksSection({
     setCounterRankingV2ProfileOverridesByChampionId(
       new Map(
         result.profiles.map((profile) => [
-          normalizeCounterRankingV2ChampionId(profile.championId),
+          getCounterRankingV2ProfileKey(profile.championId, profile.role),
           profile,
         ] as const),
       ),
@@ -748,9 +750,11 @@ export function AdminLeagueCounterPicksSection({
   async function saveCounterRankingV2ProfileReviewForm({
     championId,
     form,
+    role,
   }: {
     championId: string;
     form: CounterRankingV2ProfileReviewForm;
+    role: LeagueRole;
   }) {
     const tokenResult = await getAccessToken();
 
@@ -763,7 +767,7 @@ export function AdminLeagueCounterPicksSection({
       return;
     }
 
-    setSavingCounterRankingV2ProfileReviewId(championId);
+    setSavingCounterRankingV2ProfileReviewId(getCounterRankingV2ProfileKey(championId, role));
     setCounterRankingV2ProfileReviewStatus({ error: null, isLoading: true, success: null });
 
     const canonicalChampionId =
@@ -780,6 +784,7 @@ export function AdminLeagueCounterPicksSection({
           ? null
           : (form.masteryRequirement as ChampionMasteryRequirementLevel),
       reviewNote: form.reviewNote,
+      role,
       status: form.status,
       strengths: form.strengths,
       vulnerabilities: form.vulnerabilities,
@@ -799,13 +804,13 @@ export function AdminLeagueCounterPicksSection({
     setCounterRankingV2ProfileReviewsByChampionId((currentReviews) => {
       const nextReviews = new Map(currentReviews);
 
-      nextReviews.set(normalizeCounterRankingV2ChampionId(result.review.championId), result.review);
+      nextReviews.set(getCounterRankingV2ProfileKey(result.review.championId, result.review.role), result.review);
       return nextReviews;
     });
     setCounterRankingV2ProfileOverridesByChampionId((currentProfiles) => {
       const nextProfiles = new Map(currentProfiles);
 
-      nextProfiles.set(normalizeCounterRankingV2ChampionId(result.profile.championId), result.profile);
+      nextProfiles.set(getCounterRankingV2ProfileKey(result.profile.championId, result.profile.role), result.profile);
       return nextProfiles;
     });
     setCounterRankingV2ProfileReviewStatus({
@@ -1222,15 +1227,16 @@ export function AdminLeagueCounterPicksSection({
             void loadCounterRankingV2ProfileReviews();
             void loadCounterRankingV2EditableProfiles();
           }}
-          onSaveReview={(championId, form) =>
-            void saveCounterRankingV2ProfileReviewForm({ championId, form })
+          onSaveReview={(championId, role, form) =>
+            void saveCounterRankingV2ProfileReviewForm({ championId, form, role })
           }
-          onSelectChampion={(championId) => {
+          onSelectProfile={(championId, role) => {
             const champion = counterRankingV2ChampionsById.get(
               normalizeCounterRankingV2ChampionId(championId),
             );
 
             setSelectedChampionId(champion?.id ?? championId);
+            setSelectedRole(role);
             setChampionSearch(champion?.name ?? championId);
           }}
           profileReviewsByChampionId={counterRankingV2ProfileReviewsByChampionId}
@@ -1295,6 +1301,7 @@ export function AdminLeagueCounterPicksSection({
                       {formatCounterRankingV2ProfileAvailability(
                         champion.id,
                         counterRankingV2ProfileStatusesByChampionId,
+                        selectedRole,
                       )}
                       )
                     </option>
@@ -1869,7 +1876,7 @@ function CounterRankingV2ProfileReviewPanel({
   onBackfillDrafts,
   onRefresh,
   onSaveReview,
-  onSelectChampion,
+  onSelectProfile,
   profileOverridesByChampionId,
   profileReviewsByChampionId,
   profileStatusesByChampionId,
@@ -1882,8 +1889,12 @@ function CounterRankingV2ProfileReviewPanel({
   isSaving: boolean;
   onBackfillDrafts: () => void;
   onRefresh: () => void;
-  onSaveReview: (championId: string, form: CounterRankingV2ProfileReviewForm) => void;
-  onSelectChampion: (championId: string) => void;
+  onSaveReview: (
+    championId: string,
+    role: LeagueRole,
+    form: CounterRankingV2ProfileReviewForm,
+  ) => void;
+  onSelectProfile: (championId: string, role: LeagueRole) => void;
   profileOverridesByChampionId: CounterRankingV2ProfileByChampionId;
   profileReviewsByChampionId: Map<string, CounterRankingV2ProfileReview>;
   profileStatusesByChampionId: CounterRankingV2ProfileStatusByChampionId;
@@ -1899,31 +1910,46 @@ function CounterRankingV2ProfileReviewPanel({
         selectedChampionId,
         profileStatusesByChampionId,
         profileOverridesByChampionId,
+        selectedRole,
       )
     : null;
+  const selectedProfileKey = selectedChampionId
+    ? getCounterRankingV2ProfileKey(selectedChampionId, selectedRole)
+    : null;
   const selectedProfileReview = selectedChampionId
-    ? profileReviewsByChampionId.get(normalizeCounterRankingV2ChampionId(selectedChampionId)) ?? null
+    ? profileReviewsByChampionId.get(selectedProfileKey ?? "") ?? null
     : null;
   const profileRows = useMemo(
     () => {
-      const championIds = new Set<string>([
-        ...Array.from(championsById.values()).map((champion) => champion.id),
-        ...counterRankingV2ChampionProfiles.map((profile) => profile.championId),
-        ...Array.from(profileOverridesByChampionId.values()).map((profile) => profile.championId),
-      ]);
-      const rowsByChampionId = new Map<string, CounterRankingV2ProfileReviewPanelRow>();
-      const duplicateRowsByChampionId = new Map<string, CounterRankingV2ProfileReviewPanelRow[]>();
+      const profileTargets = [
+        ...counterRankingV2ChampionProfiles.map((profile) => ({
+          championId: profile.championId,
+          role: profile.role,
+        })),
+        ...Array.from(profileOverridesByChampionId.values()).map((profile) => ({
+          championId: profile.championId,
+          role: profile.role,
+        })),
+        ...Array.from(profileReviewsByChampionId.values()).map((review) => ({
+          championId: review.championId,
+          role: review.role,
+        })),
+      ];
+      const rowsByProfileKey = new Map<string, CounterRankingV2ProfileReviewPanelRow>();
+      const duplicateRowsByProfileKey = new Map<string, CounterRankingV2ProfileReviewPanelRow[]>();
 
-      for (const championId of championIds) {
+      for (const { championId, role } of profileTargets) {
         const normalizedChampionId = normalizeCounterRankingV2ChampionId(championId);
+        const profileKey = getCounterRankingV2ProfileKey(championId, role);
         const champion = championsById.get(normalizedChampionId) ?? null;
         const profile =
           getCounterRankingV2ChampionProfile(
             champion?.id ?? championId,
             profileStatusesByChampionId,
             profileOverridesByChampionId,
+            role,
           ) ??
-          profileOverridesByChampionId.get(normalizedChampionId) ??
+          profileOverridesByChampionId.get(profileKey) ??
           null;
 
         if (!profile) {
@@ -1933,42 +1959,42 @@ function CounterRankingV2ProfileReviewPanel({
         const row = {
           champion,
           profile,
-          review: profileReviewsByChampionId.get(normalizedChampionId) ?? null,
+          review: profileReviewsByChampionId.get(profileKey) ?? null,
         };
-        const existingRow = rowsByChampionId.get(normalizedChampionId);
+        const existingRow = rowsByProfileKey.get(profileKey);
 
         if (!existingRow) {
-          rowsByChampionId.set(normalizedChampionId, row);
+          rowsByProfileKey.set(profileKey, row);
           continue;
         }
 
-        duplicateRowsByChampionId.set(normalizedChampionId, [
-          ...(duplicateRowsByChampionId.get(normalizedChampionId) ?? [existingRow]),
+        duplicateRowsByProfileKey.set(profileKey, [
+          ...(duplicateRowsByProfileKey.get(profileKey) ?? [existingRow]),
           row,
         ]);
-        rowsByChampionId.set(
-          normalizedChampionId,
+        rowsByProfileKey.set(
+          profileKey,
           getPreferredCounterRankingV2ProfileRow(existingRow, row),
         );
       }
 
-      if (duplicateRowsByChampionId.size > 0) {
+      if (duplicateRowsByProfileKey.size > 0) {
         console.warn(
-          "Counter Ranking V2 profile duplicates detected before rendering; using one row per normalized champion id.",
-          Array.from(duplicateRowsByChampionId.entries()).map(([normalizedChampionId, rows]) => ({
+          "Counter Ranking V2 profile duplicates detected before rendering; using one row per normalized champion-role key.",
+          Array.from(duplicateRowsByProfileKey.entries()).map(([profileKey, rows]) => ({
             duplicateRowIds: rows.map((row) => row.profile.championId),
-            normalizedChampionId,
+            profileKey,
             statuses: rows.map((row) => row.profile.reviewStatus),
             updatedAtValues: rows.map((row) => row.review?.updatedAt ?? null),
           })),
         );
       }
 
-      return Array.from(rowsByChampionId.values()).sort((rowA, rowB) => {
+      return Array.from(rowsByProfileKey.values()).sort((rowA, rowB) => {
         const nameA = rowA.champion?.name ?? rowA.profile.championId;
         const nameB = rowB.champion?.name ?? rowB.profile.championId;
 
-        return nameA.localeCompare(nameB);
+        return nameA.localeCompare(nameB) || rowA.profile.role.localeCompare(rowB.profile.role);
       });
     },
     [
@@ -1982,15 +2008,19 @@ function CounterRankingV2ProfileReviewPanel({
     () =>
       getCounterRankingV2ProfileCoverageSummary(
         profileRows.map((row) => row.profile),
-        championsById.size,
+        Array.from(championsById.values()).reduce(
+          (total, champion) =>
+            total + leagueRoles.filter((role) => isChampionInRole(champion, role)).length,
+          0,
+        ),
       ),
-    [championsById.size, profileRows],
+    [championsById, profileRows],
   );
   const filteredProfileRows = useMemo(
     () =>
       profileRows.filter(({ profile }) => {
         const matchesStatus = statusFilter === "all" || profile.reviewStatus === statusFilter;
-        const matchesRole = roleFilter === "all" || profile.supportedRoles.includes(roleFilter);
+        const matchesRole = roleFilter === "all" || profile.role === roleFilter;
 
         return matchesStatus && matchesRole;
       }),
@@ -2005,7 +2035,7 @@ function CounterRankingV2ProfileReviewPanel({
     : null;
   const isCurrentProfileSaving =
     selectedProfile !== null &&
-    savingChampionId === normalizeCounterRankingV2ChampionId(selectedProfile.championId);
+    savingChampionId === getCounterRankingV2ProfileKey(selectedProfile.championId, selectedProfile.role);
 
   return (
     <Card className="border-emerald-300/15 bg-[#071321]/95 text-white shadow-xl shadow-black/15">
@@ -2055,7 +2085,7 @@ function CounterRankingV2ProfileReviewPanel({
 
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
           <CounterRankingV2MetaCell
-            label="Active champions"
+            label="Expected role profiles"
             value={String(profileCoverageSummary.activeChampions)}
           />
           <CounterRankingV2MetaCell label="Total profiles" value={String(profileCoverageSummary.total)} />
@@ -2145,8 +2175,8 @@ function CounterRankingV2ProfileReviewPanel({
             <CounterRankingV2ProfileReviewEditor
               isCurrentProfileSaving={isCurrentProfileSaving}
               isSaving={isSaving}
-              key={`${selectedProfile.championId}-${selectedProfile.reviewStatus}-${selectedProfileReview?.updatedAt ?? "new"}`}
-              onSaveReview={(form) => onSaveReview(selectedProfile.championId, form)}
+              key={`${selectedProfile.championId}-${selectedProfile.role}-${selectedProfile.reviewStatus}-${selectedProfileReview?.updatedAt ?? "new"}`}
+              onSaveReview={(form) => onSaveReview(selectedProfile.championId, selectedProfile.role, form)}
               profile={selectedProfile}
               review={selectedProfileReview}
             />
@@ -2208,18 +2238,19 @@ function CounterRankingV2ProfileReviewPanel({
               className={cn(
                 "rounded-lg border p-3 text-left transition-colors",
                 normalizeCounterRankingV2ChampionId(profile.championId) ===
-                  normalizeCounterRankingV2ChampionId(selectedChampionId)
+                  normalizeCounterRankingV2ChampionId(selectedChampionId) &&
+                  profile.role === selectedRole
                   ? "border-emerald-300/30 bg-emerald-500/10"
                   : "border-white/10 bg-white/[0.03] hover:border-emerald-300/20 hover:bg-white/[0.06]",
               )}
-              key={normalizeCounterRankingV2ChampionId(profile.championId)}
-              onClick={() => onSelectChampion(profile.championId)}
+              key={getCounterRankingV2ProfileKey(profile.championId, profile.role)}
+              onClick={() => onSelectProfile(profile.championId, profile.role)}
               type="button"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-white">
-                    {champion?.name ?? profile.championId}
+                    {champion?.name ?? profile.championId} {getRoleLabel(profile.role)}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
                     v{profile.version} · {formatProfileStatus(profile.reviewStatus)}
@@ -2372,6 +2403,7 @@ function CounterRankingV2ProfileReviewEditor({
               strengths,
             }))
           }
+          profileRole={profile.role}
           title="Strengths"
           traits={form.strengths}
         />
@@ -2384,6 +2416,7 @@ function CounterRankingV2ProfileReviewEditor({
               vulnerabilities,
             }))
           }
+          profileRole={profile.role}
           title="Weaknesses"
           traits={form.vulnerabilities}
         />
@@ -2480,18 +2513,20 @@ function CounterRankingV2ProfileTraitEditor({
   disabled,
   labelContext,
   onChange,
+  profileRole,
   title,
   traits,
 }: {
   disabled: boolean;
   labelContext: CounterRankingV2ProfileLabelContext;
   onChange: (traits: CounterRankingV2ProfileTrait[]) => void;
+  profileRole: LeagueRole;
   title: string;
   traits: CounterRankingV2ProfileTrait[];
 }) {
   const availableTraitIds: CounterRankingV2TraitId[] = counterRankingV2TraitVocabulary
     .filter((traitDefinition) =>
-      isTraitDefinitionVisibleForProfileContext(traitDefinition, labelContext),
+      isTraitDefinitionVisibleForProfileContext(traitDefinition, labelContext, profileRole),
     )
     .map((traitDefinition) => traitDefinition.id)
     .filter((traitId) => !traits.some((trait) => trait.traitId === traitId));
@@ -2537,15 +2572,29 @@ function CounterRankingV2ProfileTraitEditor({
       </div>
 
       <div className="mt-3 space-y-2">
-        {traits.map((trait) => (
+        {traits.map((trait) => {
+          const isOutOfRoleTrait = !isTraitIdVisibleForProfileContext(
+            trait.traitId,
+            labelContext,
+            profileRole,
+          );
+
+          return (
           <div
             className="grid gap-2 rounded-md border border-white/10 bg-black/15 p-3 md:grid-cols-[1fr_120px_auto]"
             key={trait.traitId}
           >
             <div>
-              <p className="text-sm font-semibold text-zinc-100">
-                {getProfileTraitLabel(trait.traitId, labelContext)}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-zinc-100">
+                  {getProfileTraitLabel(trait.traitId, labelContext)}
+                </p>
+                {isOutOfRoleTrait ? (
+                  <Badge className="border-amber-300/20 bg-amber-500/10 text-[0.65rem] text-amber-100">
+                    Out-of-role
+                  </Badge>
+                ) : null}
+              </div>
               <p className="mt-1 text-xs text-zinc-500">
                 {trait.weight}/10 · {getCounterRankingV2ProfileImpactLabel(trait.weight)}
               </p>
@@ -2571,7 +2620,8 @@ function CounterRankingV2ProfileTraitEditor({
               <Trash2 className="size-4" aria-hidden="true" />
             </Button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -2644,6 +2694,7 @@ function CounterRankingV2ShadowPanel({
         enemyChampionId,
         profileStatusesByChampionId,
         profileOverridesByChampionId,
+        selectedRole,
       )
     : null;
   const hasSupportedEnemy = enemyChampionId
@@ -3336,6 +3387,7 @@ function CounterRankingV2ShadowRow({
     row.candidateChampionId,
     profileStatusesByChampionId,
     profileOverridesByChampionId,
+    row.mechanicalResult.role ?? "mid",
   );
   const automationSuggestion = row.automationSuggestion;
   const topReasons = getCounterRankingV2MechanicalReasons(result.factors);
@@ -4516,10 +4568,35 @@ function getProfileTraitLabel(traitId: string, context: CounterRankingV2ProfileL
 function isTraitDefinitionVisibleForProfileContext(
   traitDefinition: CounterRankingV2TraitDefinition,
   context: CounterRankingV2ProfileLabelContext,
+  profileRole: LeagueRole,
 ) {
+  const isVisibleForRole = isCounterRankingV2TraitDefinitionVisibleForRole(
+    traitDefinition,
+    profileRole,
+  );
+
+  if (!isVisibleForRole) {
+    return false;
+  }
+
   return context === "weakness"
     ? traitDefinition.category === "vulnerability"
     : traitDefinition.category !== "vulnerability";
+}
+
+function isTraitIdVisibleForProfileContext(
+  traitId: string,
+  context: CounterRankingV2ProfileLabelContext,
+  profileRole: LeagueRole,
+) {
+  const normalizedTraitId = normalizeCounterRankingV2TraitId(traitId);
+  const traitDefinition = normalizedTraitId
+    ? counterRankingV2TraitDefinitionsById.get(normalizedTraitId)
+    : null;
+
+  return traitDefinition
+    ? isTraitDefinitionVisibleForProfileContext(traitDefinition, context, profileRole)
+    : false;
 }
 
 function splitProfileTextLines(value: string) {
@@ -4532,8 +4609,14 @@ function splitProfileTextLines(value: string) {
 function formatCounterRankingV2ProfileAvailability(
   championId: string,
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
+  role: LeagueRole = "mid",
 ) {
-  const profile = getCounterRankingV2ChampionProfile(championId, profileStatusesByChampionId);
+  const profile = getCounterRankingV2ChampionProfile(
+    championId,
+    profileStatusesByChampionId,
+    undefined,
+    role,
+  );
 
   if (!profile) {
     return "No V2 profile";
@@ -4617,12 +4700,10 @@ function getCounterRankingV2ProfileCoverageSummary(
 
   return profiles.reduce(
     (summary, profile) => {
-      for (const role of profile.supportedRoles) {
-        reviewedByRole[role].total += 1;
+      reviewedByRole[profile.role].total += 1;
 
-        if (profile.reviewStatus === "reviewed") {
-          reviewedByRole[role].reviewed += 1;
-        }
+      if (profile.reviewStatus === "reviewed") {
+        reviewedByRole[profile.role].reviewed += 1;
       }
 
       return {
