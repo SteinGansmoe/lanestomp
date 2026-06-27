@@ -2131,7 +2131,7 @@ function CounterRankingV2ProfileReviewPanel({
                     {selectedChampion?.name ?? selectedProfile.championId} {getRoleLabel(selectedRole)}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    Profile v{selectedProfile.version} · {formatProfileStatus(selectedProfile.reviewStatus)}
+                    {formatMechanicalProfileStatusLabel(selectedProfile)}
                   </p>
                 </div>
                 <Badge className={getProfileStatusBadgeClassName(selectedProfile.reviewStatus)}>
@@ -2139,10 +2139,15 @@ function CounterRankingV2ProfileReviewPanel({
                 </Badge>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <CounterRankingV2MetaCell
                   label="Mastery requirement"
                   value={formatMasteryRequirement(masteryRequirement)}
+                />
+                <CounterRankingV2MetaCell
+                  label="Profile revision"
+                  title={counterRankingV2ProfileRevisionHelpText}
+                  value={String(selectedProfile.version)}
                 />
                 <CounterRankingV2MetaCell
                   label="Reviewed by"
@@ -2184,7 +2189,7 @@ function CounterRankingV2ProfileReviewPanel({
             />
           </div>
         ) : (
-          <EmptyState text="Select a champion with a Counter Ranking V2 profile to review." />
+          <EmptyState text="Select a champion with a mechanical profile to review." />
         )}
 
         <div className="rounded-lg border border-white/10 bg-black/15 p-3">
@@ -2255,7 +2260,13 @@ function CounterRankingV2ProfileReviewPanel({
                     {champion?.name ?? profile.championId} {getRoleLabel(profile.role)}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    v{profile.version} · {formatProfileStatus(profile.reviewStatus)}
+                    {formatMechanicalProfileStatusLabel(profile)}
+                  </p>
+                  <p
+                    className="mt-1 text-[0.7rem] text-zinc-600"
+                    title={counterRankingV2ProfileRevisionHelpText}
+                  >
+                    {formatMechanicalProfileRevisionLabel(profile)}
                   </p>
                 </div>
                 <Badge className={getProfileStatusBadgeClassName(profile.reviewStatus)}>
@@ -2866,7 +2877,7 @@ function CounterRankingV2ShadowPanel({
         {!hasSupportedEnemy ? (
           <EmptyState
             tone="warning"
-            text="This champion does not have a Counter Ranking V2 profile yet."
+            text="This champion does not have a mechanical profile yet."
           />
         ) : rows.length === 0 ? (
           <EmptyState text="No Counter Ranking V2 mechanical candidates into this target are available for this selection." />
@@ -3033,9 +3044,17 @@ function CounterRankingV2ShadowRows({
   );
 }
 
-function CounterRankingV2MetaCell({ label, value }: { label: string; value: string }) {
+function CounterRankingV2MetaCell({
+  label,
+  title,
+  value,
+}: {
+  label: string;
+  title?: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3" title={title}>
       <p className="text-xs uppercase text-zinc-500">{label}</p>
       <p className="mt-1 text-sm font-semibold text-zinc-100">{value}</p>
     </div>
@@ -3560,10 +3579,16 @@ function CounterRankingV2ShadowRow({
                 {candidate?.name ?? row.candidateChampionId} into {targetLabel}
               </p>
               <p className="mt-1 text-xs text-zinc-500">
-                {profile
-                  ? `${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}`
-                  : "No profile"}
+                {profile ? formatMechanicalProfileStatusLabel(profile) : "No profile"}
               </p>
+              {profile ? (
+                <p
+                  className="mt-1 text-[0.7rem] text-zinc-600"
+                  title={counterRankingV2ProfileRevisionHelpText}
+                >
+                  {formatMechanicalProfileRevisionLabel(profile)}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -4599,6 +4624,9 @@ function normalizeRoleForAdmin(role: string | null) {
 
 type CounterRankingV2ProfileLabelContext = "strength" | "weakness";
 
+const counterRankingV2ProfileRevisionHelpText =
+  "Profile revision is the mechanical profile data version, not the Counter Ranking system version.";
+
 const strengthProfileTraitLabels: Partial<Record<CounterRankingV2TraitId, string>> = {
   vulnerable_to_all_in: "Strong vs all-in",
   weak_early: "Strong early",
@@ -4699,12 +4727,20 @@ function formatCounterRankingV2ProfileAvailability(
   );
 
   if (!profile) {
-    return "No V2 profile";
+    return "No mechanical profile";
   }
 
-  return profile.reviewStatus === "reviewed"
-    ? `Reviewed v${profile.version}`
-    : `${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}`;
+  return `${formatMechanicalProfileStatusLabel(profile)} (${formatMechanicalProfileRevisionLabel(
+    profile,
+  )})`;
+}
+
+function formatMechanicalProfileStatusLabel(profile: Pick<CounterRankingV2ChampionProfile, "reviewStatus">) {
+  return `Mechanical profile · ${formatProfileStatus(profile.reviewStatus)}`;
+}
+
+function formatMechanicalProfileRevisionLabel(profile: Pick<CounterRankingV2ChampionProfile, "version">) {
+  return `Profile revision ${profile.version}`;
 }
 
 function formatProfileStatus(status: CounterRankingV2ProfileStatus) {

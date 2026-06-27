@@ -5,6 +5,7 @@
 import { useId, useState } from "react";
 
 import {
+  getLeagueAbilityDataDiagnostics,
   getLeagueAbilityIconPath,
   getLeagueChampionAbility,
   type LeagueAbilityTokenKey,
@@ -32,6 +33,15 @@ export function AbilityHover({
   const ability = getLeagueChampionAbility(championId, abilityKey);
 
   if (!ability) {
+    const diagnostics = getLeagueAbilityDataDiagnostics(championId, abilityKey);
+
+    if (
+      process.env.NODE_ENV !== "production" &&
+      (diagnostics.championRegistryEntryExists || diagnostics.spellDataExists)
+    ) {
+      console.warn("Missing League ability hover data", diagnostics);
+    }
+
     return (
       <span className={cn("text-zinc-200", className)}>
         {label ?? `${championId} ${abilityKey}`}

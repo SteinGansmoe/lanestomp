@@ -141,7 +141,7 @@ function testCounterRankingV2ShadowProfileSelection() {
   );
   assert.equal(
     counterPickSectionSource.includes(
-      'text="This champion does not have a Counter Ranking V2 profile yet."',
+      'text="This champion does not have a mechanical profile yet."',
     ),
     true,
   );
@@ -156,12 +156,15 @@ function testCounterRankingV2ShadowProfileSelection() {
     "Missing V2 profiles should clear observed state without fetching observed stats.",
   );
   assert.equal(counterPickSectionSource.includes("formatCounterRankingV2ProfileAvailability"), true);
-  assert.equal(counterPickSectionSource.includes("No V2 profile"), true);
-  assert.equal(counterPickSectionSource.includes("Reviewed v${profile.version}"), true);
+  assert.equal(counterPickSectionSource.includes("No mechanical profile"), true);
+  assert.equal(counterPickSectionSource.includes("Mechanical profile · ${formatProfileStatus"), true);
+  assert.equal(counterPickSectionSource.includes("Profile revision ${profile.version}"), true);
   assert.equal(
-    counterPickSectionSource.includes("${formatProfileStatus(profile.reviewStatus)} profile v${profile.version}"),
+    counterPickSectionSource.includes("Profile revision is the mechanical profile data version"),
     true,
   );
+  assert.equal(counterPickSectionSource.includes("Reviewed v${profile.version}"), false);
+  assert.equal(counterPickSectionSource.includes("profile v${profile.version}"), false);
   assert.equal(counterPickSectionSource.includes("Counter Profile Review"), true);
   assert.equal(counterPickSectionSource.includes("Promote to Reviewed"), true);
   assert.match(

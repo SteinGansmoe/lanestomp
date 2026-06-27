@@ -5,6 +5,9 @@ const tokenModule = await import("../src/features/league/ability-hover-tokens.ts
 const tooltipFormattingModule = await import(
   "../src/features/league/ability-tooltip-formatting.ts"
 );
+const abilityCache = JSON.parse(
+  readFileSync("src/features/league/data-dragon/champion-abilities.json", "utf8"),
+);
 
 const { normalizeAbilityHoverTokenKey, parseAbilityHoverText, parseLeagueHoverText } = tokenModule;
 const { getCompactAbilityTooltip } = tooltipFormattingModule;
@@ -12,6 +15,9 @@ const { getCompactAbilityTooltip } = tooltipFormattingModule;
 testAbilityTokenKeyNormalization();
 testAbilityTokenFixtureParsing();
 testDenseAbilitySentenceParsing();
+testLockeAbilityTokenValidation();
+testInvalidLockeAbilityKeyFallback();
+testLockeAbilityCacheData();
 testMalformedAbilityTokenFallback();
 testItemTokenFixtureParsing();
 testMixedLeagueHoverTokenParsing();
@@ -63,6 +69,58 @@ function testDenseAbilitySentenceParsing() {
       ["Yone", "E", "Yone E"],
     ],
   );
+}
+
+function testLockeAbilityTokenValidation() {
+  const parts = parseLeagueHoverText(
+    "{{ability:Locke:Passive}} {{ability:Locke:Q}} {{ability:Locke:W}} {{ability:Locke:E}} {{ability:Locke:R}}",
+  );
+  const abilityParts = parts.filter((part) => part.type === "ability");
+
+  assert.equal(abilityParts.length, 5);
+  assert.deepEqual(
+    abilityParts.map((part) => [part.championId, part.abilityKey, part.fallbackText]),
+    [
+      ["Locke", "Passive", "Locke Passive"],
+      ["Locke", "Q", "Locke Q"],
+      ["Locke", "W", "Locke W"],
+      ["Locke", "E", "Locke E"],
+      ["Locke", "R", "Locke R"],
+    ],
+  );
+}
+
+function testInvalidLockeAbilityKeyFallback() {
+  const parts = parseLeagueHoverText("Bad Locke token {{ability:Locke:Z}} should stay safe.");
+  const abilityPart = parts.find((part) => part.type === "ability");
+
+  assert.equal(abilityPart?.championId, "Locke");
+  assert.equal(abilityPart?.abilityKey, null);
+  assert.equal(abilityPart?.fallbackText, "Locke Z");
+}
+
+function testLockeAbilityCacheData() {
+  const locke = abilityCache.champions.Locke;
+
+  assert.equal(abilityCache.patch, "16.13.1");
+  assert.ok(locke, "Locke should be included in the generated Data Dragon ability cache.");
+  assert.equal(locke.id, "Locke");
+  assert.equal(locke.name, "Locke");
+  assert.equal(locke.abilities.Passive.name, "Silver Stake");
+  assert.equal(locke.abilities.Q.name, "Ritual Nails");
+  assert.equal(locke.abilities.W.name, "Soul Ignition");
+  assert.equal(locke.abilities.E.name, "Ashen Pursuit");
+  assert.equal(locke.abilities.R.name, "Purgatory");
+  assert.equal(locke.abilities.Q.icon.localPath, "/league/abilities/icons/LockeQ.png");
+  assert.equal(locke.abilities.W.icon.localPath, "/league/abilities/icons/LockeW.png");
+  assert.equal(locke.abilities.E.icon.localPath, "/league/abilities/icons/LockeE.png");
+  assert.equal(locke.abilities.R.icon.localPath, "/league/abilities/icons/LockeR.png");
+  assert.equal(
+    locke.abilities.Passive.icon.localPath,
+    "/league/abilities/icons/Locke_Passive.Locke.png",
+  );
+  assert.match(locke.abilities.Q.cooldownBurn, /10\/9\/8\/7\/6/);
+  assert.match(locke.abilities.R.tooltip, /execution threshold/i);
 }
 
 function testMalformedAbilityTokenFallback() {
@@ -277,6 +335,7 @@ function testCompactAbilityTooltipFormatting() {
 
 function testAbilityHoverComponentBoundary() {
   const abilityHoverSource = readFileSync("src/components/league/ability-hover.tsx", "utf8");
+  const abilitiesSource = readFileSync("src/features/league/abilities.ts", "utf8");
   const tokenRendererSource = readFileSync(
     "src/components/league/ability-hover-token-text.tsx",
     "utf8",
@@ -292,6 +351,8 @@ function testAbilityHoverComponentBoundary() {
   assert.match(abilityHoverSource, /compact\?: boolean;/);
   assert.match(abilityHoverSource, /label\?: string;/);
   assert.match(abilityHoverSource, /if \(!ability\)/);
+  assert.match(abilityHoverSource, /getLeagueAbilityDataDiagnostics/);
+  assert.match(abilityHoverSource, /Missing League ability hover data/);
   assert.match(abilityHoverSource, /ability\.key\}<\/span> \{ability\.name\}/);
   assert.match(abilityHoverSource, /getCompactAbilityTooltip/);
   assert.match(abilityHoverSource, /bg-transparent/);
@@ -304,6 +365,10 @@ function testAbilityHoverComponentBoundary() {
   assert.match(tokenRendererSource, /<AbilityHover/);
   assert.match(tokenRendererSource, /abilityKey=\{part\.abilityKey\}/);
   assert.match(tokenRendererSource, /championId=\{part\.championId\}/);
+  assert.match(abilitiesSource, /addAbilitySetLookup\(lookupMap, champion\.id, champion\)/);
+  assert.match(abilitiesSource, /addAbilitySetLookup\(lookupMap, champion\.name, champion\)/);
+  assert.match(abilitiesSource, /championRegistryEntryExists/);
+  assert.match(abilitiesSource, /data-dragon-champion-abilities-cache/);
 }
 
 function testItemHoverComponentBoundary() {
