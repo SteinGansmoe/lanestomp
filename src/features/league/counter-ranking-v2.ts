@@ -5,7 +5,7 @@ import {
   type ChampionMasteryRequirementLevel,
 } from "./champion-mastery-requirements.ts";
 import { isChampionIdSupportedInRole } from "./champion-role-registry.ts";
-import type { LeagueRole } from "./roles.ts";
+import { leagueRoles, type LeagueRole } from "./roles.ts";
 
 export type CounterRankingV2TraitCategory =
   | "damage_pattern"
@@ -28,6 +28,7 @@ export type CounterRankingV2TraitId =
   | "dash_reliant"
   | "difficult_to_contest_crab"
   | "disengage"
+  | "engage"
   | "early_weakness"
   | "falls_off_late"
   | "fragile"
@@ -38,6 +39,8 @@ export type CounterRankingV2TraitId =
   | "melee_commit"
   | "mobility"
   | "mobility_reliant"
+  | "no_disengage"
+  | "no_engage"
   | "point_and_click_cc"
   | "poke"
   | "reliable_cc"
@@ -63,6 +66,10 @@ export type CounterRankingV2TraitId =
   | "weak_ganks_pre_6";
 
 export type CounterRankingV2ProfileStatus = "draft" | "needs_revision" | "reviewed";
+export type CounterRankingV2DraftProfileConfidence =
+  | "high_draft_confidence"
+  | "medium_draft_confidence"
+  | "low_draft_confidence";
 
 export type CounterRankingV2TraitDefinition = {
   category: CounterRankingV2TraitCategory;
@@ -93,6 +100,64 @@ export type CounterRankingV2ChampionProfile = {
   version: number;
 };
 
+export type CounterRankingV2DraftProfileKnowledgeInput = {
+  abilities?: Record<string, string> | null;
+  archetype?: readonly string[] | null;
+  commonWeaknesses?: readonly string[] | null;
+  damageType?: string | null;
+  dangerAbilities?: readonly string[] | null;
+  hardCrowdControl?: readonly string[] | null;
+  identityText?: string | null;
+  isCommonRole?: boolean;
+  jungleProfile?: {
+    clearSpeed?: { rating?: string | null } | null;
+    dueling?: { rating?: string | null } | null;
+    earlyGamePressure?: { rating?: string | null } | null;
+    gankThreat?: { rating?: string | null } | null;
+    objectiveControl?: { rating?: string | null } | null;
+    scaling?: { rating?: string | null } | null;
+  } | null;
+  mobilityLevel?: string | null;
+  name?: string | null;
+  primaryTradingPattern?: string | null;
+  primaryWinCondition?: readonly string[] | null;
+  shields?: readonly string[] | null;
+  strategicIdentity?: {
+    laneGoal?: string | null;
+    preferredGameLength?: string | null;
+    scalingProfile?: string | null;
+    winMethod?: readonly string[] | null;
+  } | null;
+  sustain?: readonly string[] | null;
+};
+
+export type CounterRankingV2DraftProfileSuggestion = {
+  changes: {
+    addedStrengths: CounterRankingV2TraitId[];
+    addedWeaknesses: CounterRankingV2TraitId[];
+    changedStrengths: CounterRankingV2TraitId[];
+    changedWeaknesses: CounterRankingV2TraitId[];
+    removedStrengths: CounterRankingV2TraitId[];
+    removedWeaknesses: CounterRankingV2TraitId[];
+  };
+  championId: string;
+  confidence: CounterRankingV2DraftProfileConfidence;
+  explanation: string[];
+  knownStrengths: string[];
+  knownWeaknesses: string[];
+  proposedStatus: CounterRankingV2ProfileStatus;
+  role: LeagueRole;
+  similarReviewedProfiles: Array<{
+    championId: string;
+    overlap: CounterRankingV2TraitId[];
+    role: LeagueRole;
+  }>;
+  summary: string;
+  strengths: CounterRankingV2ProfileTrait[];
+  uncertaintyNotes: string[];
+  vulnerabilities: CounterRankingV2ProfileTrait[];
+};
+
 export type CounterRankingV2ProfileReview = {
   championId: string;
   createdAt: string | null;
@@ -114,9 +179,9 @@ export type CounterRankingV2ProfileByChampionId = Map<string, CounterRankingV2Ch
 
 export function getCounterRankingV2ProfileKey(
   championId: string,
-  role: LeagueRole | null | undefined,
+  role: LeagueRole | string | null | undefined,
 ) {
-  return `${normalizeChampionId(championId)}::${role ?? "mid"}`;
+  return `${normalizeChampionId(championId)}::${normalizeCounterRankingV2ProfileRole(role)}`;
 }
 
 export type CounterRankingV2Factor = {
@@ -494,6 +559,12 @@ export const counterRankingV2TraitVocabulary = [
     label: "Disengage",
   },
   {
+    category: "target_access",
+    description: "Can start fights, force commits, or create reliable initiation windows.",
+    id: "engage",
+    label: "Engage",
+  },
+  {
     category: "vulnerability",
     description: "Can be punished before levels, items, or core scaling breakpoints.",
     id: "early_weakness",
@@ -555,6 +626,18 @@ export const counterRankingV2TraitVocabulary = [
     description: "Loses much of its plan if movement is interrupted or constrained.",
     id: "mobility_reliant",
     label: "Mobility-reliant",
+  },
+  {
+    category: "vulnerability",
+    description: "Lacks reliable tools to reset, peel, or stop enemy commitment.",
+    id: "no_disengage",
+    label: "No disengage",
+  },
+  {
+    category: "vulnerability",
+    description: "Lacks reliable tools to start fights or force decisive commitment.",
+    id: "no_engage",
+    label: "No engage",
   },
   {
     category: "utility",
@@ -1324,42 +1407,35 @@ export function getCounterRankingV2ChampionProfile(
   championId: string,
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
   profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId,
-  role: LeagueRole = "mid",
+  role: LeagueRole | string = "mid",
 ) {
   const normalizedChampionId = normalizeChampionId(championId);
-  const profileKey = getCounterRankingV2ProfileKey(normalizedChampionId, role);
+  const normalizedRole = normalizeCounterRankingV2ProfileRole(role);
+  const profileKey = getCounterRankingV2ProfileKey(normalizedChampionId, normalizedRole);
   const profile = counterRankingV2ChampionProfilesById.get(normalizedChampionId) ?? null;
-  const profileOverride =
-    profileOverridesByChampionId?.get(profileKey) ??
-    profileOverridesByChampionId?.get(profile?.championId ?? normalizedChampionId) ??
-    profileOverridesByChampionId?.get(normalizedChampionId) ??
-    profileOverridesByChampionId?.get(championId);
+  const profileOverride = profileOverridesByChampionId?.get(profileKey);
 
   if (!profile) {
     if (!profileOverride) {
       return null;
     }
 
-    const reviewedStatus =
-      profileStatusesByChampionId?.get(profileKey) ??
-      profileStatusesByChampionId?.get(normalizedChampionId) ??
-      profileStatusesByChampionId?.get(profileOverride.championId);
+    const reviewedStatus = profileStatusesByChampionId?.get(profileKey);
     const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(profileOverride);
 
     return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
   }
 
-  const reviewedStatus =
-    profileStatusesByChampionId?.get(profileKey) ?? profileStatusesByChampionId?.get(profile.championId);
+  const reviewedStatus = profileStatusesByChampionId?.get(profileKey);
   const mergedProfile = profileOverride
     ? {
         ...profile,
         ...profileOverride,
         championId: profile.championId,
-        role,
+        role: normalizedRole,
         supportedRoles: profileOverride.supportedRoles.length > 0 ? profileOverride.supportedRoles : profile.supportedRoles,
       }
-    : { ...profile, role };
+    : { ...profile, role: normalizedRole };
   const normalizedProfile = normalizeCounterRankingV2ChampionProfileTraits(mergedProfile);
 
   return reviewedStatus ? { ...normalizedProfile, reviewStatus: reviewedStatus } : normalizedProfile;
@@ -1381,6 +1457,336 @@ export function createCounterRankingV2GeneratedDraftChampionProfile(
     supportedRoles: [role],
     vulnerabilities: [],
     version: counterRankingV2GeneratedDraftProfileVersion,
+  };
+}
+
+export function isCounterRankingV2ProfileEligibleForDraftImprovement({
+  hasAdminNote = false,
+  profile,
+}: {
+  hasAdminNote?: boolean;
+  profile: CounterRankingV2ChampionProfile;
+}) {
+  if (profile.reviewStatus === "reviewed" || hasAdminNote) {
+    return false;
+  }
+
+  return (
+    profile.reviewStatus === "draft" ||
+    (profile.reviewStatus === "needs_revision" &&
+      profile.strengths.length === 0 &&
+      profile.vulnerabilities.length === 0)
+  );
+}
+
+export function createCounterRankingV2ImprovedDraftProfileSuggestion({
+  currentProfile,
+  knowledge = null,
+  reviewedProfiles = [],
+}: {
+  currentProfile: CounterRankingV2ChampionProfile;
+  knowledge?: CounterRankingV2DraftProfileKnowledgeInput | null;
+  reviewedProfiles?: readonly CounterRankingV2ChampionProfile[];
+}): CounterRankingV2DraftProfileSuggestion {
+  const normalizedCurrentProfile = normalizeCounterRankingV2ChampionProfileTraits(currentProfile);
+  const championName = knowledge?.name?.trim() || normalizedCurrentProfile.championId;
+  const sourceText = getCounterRankingV2DraftKnowledgeText(knowledge);
+  const strengthScores = new Map<CounterRankingV2TraitId, number>();
+  const weaknessScores = new Map<CounterRankingV2TraitId, number>();
+  const explanation: string[] = [];
+  const uncertaintyNotes: string[] = [];
+
+  addCounterRankingV2DraftTrait(strengthScores, "reliable_cc", 5, {
+    explanation,
+    isStrength: true,
+    reason: "Hard crowd control or pick setup appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:stun|root|knockup|knock up|suppress|taunt|charm|hook|pull|cc|crowd control|lockdown)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "point_and_click_cc", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Point-and-click or unavoidable lockdown language appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:point-and-click|targeted|suppression|suppress)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "engage", 5, {
+    explanation,
+    isStrength: true,
+    reason: "Engage or initiation is part of the champion identity.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:engage|initiat|dive|flank|hook|pick setup|start fights?)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "disengage", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Peel, reset, or disengage tools are present in the champion identity.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:disengage|peel|reset fights?|interrupt|knock away|protect)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "all_in_threat", 5, {
+    explanation,
+    isStrength: true,
+    reason: "All-in, burst, dive, or kill-window language appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:all-in|all in|kill window|burst combo|assassin|dive)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "burst_damage", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Burst damage is part of the champion pattern.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:burst|execute|one-shot|oneshot|combo)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "poke", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Poke, long-range chip, or harassment appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:poke|harass|long-range|long range|artillery|chip)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "waveclear", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Waveclear or fast wave control appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:waveclear|wave clear|clear waves?|push waves?|lane pressure)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "roaming", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Roam, map movement, or side-lane impact appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:roam|map movement|side lanes?|global|rotate)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "sustain", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Healing, shielding, or extended-trade recovery appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:sustain|heal|healing|shield|lifesteal|life steal|durability)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "scaling", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Scaling or late-game payoff is part of the champion identity.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:scaling|late game|late-game|stack|scale)\b/i,
+  });
+  addCounterRankingV2DraftTrait(strengthScores, "strong_early", 4, {
+    explanation,
+    isStrength: true,
+    reason: "Early pressure or snowball language appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:early pressure|strong early|snowball|lane bully|early skirmish)\b/i,
+  });
+
+  if (knowledge?.mobilityLevel === "high" || knowledge?.mobilityLevel === "very_high") {
+    setCounterRankingV2DraftTraitScore(strengthScores, "mobility", 5, normalizedCurrentProfile.role);
+    explanation.push("Mobility rating suggests Mobility as a key strength.");
+  }
+
+  if (knowledge?.hardCrowdControl && knowledge.hardCrowdControl.length > 0) {
+    setCounterRankingV2DraftTraitScore(strengthScores, "reliable_cc", 5, normalizedCurrentProfile.role);
+  }
+
+  if (knowledge?.sustain?.some((item) => item.trim())) {
+    setCounterRankingV2DraftTraitScore(strengthScores, "sustain", 4, normalizedCurrentProfile.role);
+  }
+
+  addCounterRankingV2DraftTrait(weaknessScores, "immobile", 5, {
+    explanation,
+    isStrength: false,
+    reason: "Low mobility or no-dash language appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:immobile|no dash|no mobility|limited mobility|low mobility)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "fragile", 4, {
+    explanation,
+    isStrength: false,
+    reason: "Fragile, squishy, or burst-vulnerable wording appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:fragile|squishy|low durability|burst down|vulnerable to burst)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "cooldown_reliant", 4, {
+    explanation,
+    isStrength: false,
+    reason: "The profile calls out downtime or key cooldown dependency.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:cooldown|downtime|when .* down|misses key|key ability)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "short_range", 4, {
+    explanation,
+    isStrength: false,
+    reason: "Short range or needing to stand close appears in the champion profile.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:short range|short-range|melee range|low range)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "vulnerable_to_all_in", 4, {
+    explanation,
+    isStrength: false,
+    reason: "The profile mentions being punishable by direct commits or all-ins.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:vulnerable to all-in|weak to all-in|direct engage|hard engage|fast engage)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "weak_vs_poke", 4, {
+    explanation,
+    isStrength: false,
+    reason: "Poke pressure is listed as a weakness.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:poked out|weak .* poke|long-range poke|vulnerable to poke)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "weak_vs_waveclear", 3, {
+    explanation,
+    isStrength: false,
+    reason: "Waveclear or wave pressure is listed as a weakness.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:weak waveclear|poor waveclear|wave pressure|pushed in)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "no_engage", 3, {
+    explanation,
+    isStrength: false,
+    reason: "The profile points to limited engage access.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:no engage|limited engage|low engage|cannot start fights?)\b/i,
+  });
+  addCounterRankingV2DraftTrait(weaknessScores, "no_disengage", 3, {
+    explanation,
+    isStrength: false,
+    reason: "The profile points to limited peel, reset, or disengage access.",
+    role: normalizedCurrentProfile.role,
+    sourceText,
+    tokenPattern: /\b(?:no disengage|limited disengage|no peel|cannot reset)\b/i,
+  });
+
+  if (knowledge?.mobilityLevel === "none" || knowledge?.mobilityLevel === "low") {
+    setCounterRankingV2DraftTraitScore(weaknessScores, "immobile", 5, normalizedCurrentProfile.role);
+    explanation.push("Mobility rating suggests Immobile as a key weakness.");
+  }
+
+  if (normalizedCurrentProfile.role === "jungle") {
+    applyCounterRankingV2JungleDraftSignals({
+      explanation,
+      jungleProfile: knowledge?.jungleProfile ?? null,
+      strengthScores,
+      weaknessScores,
+    });
+  }
+
+  const similarReviewedProfiles = getSimilarCounterRankingV2ReviewedProfiles({
+    reviewedProfiles,
+    role: normalizedCurrentProfile.role,
+    strengthScores,
+    weaknessScores,
+  });
+
+  for (const example of similarReviewedProfiles.slice(0, 2)) {
+    for (const strength of example.profile.strengths.slice(0, 2)) {
+      setCounterRankingV2DraftTraitScore(strengthScores, strength.traitId, Math.min(5, strength.weight), normalizedCurrentProfile.role);
+    }
+    for (const vulnerability of example.profile.vulnerabilities.slice(0, 2)) {
+      setCounterRankingV2DraftTraitScore(weaknessScores, vulnerability.traitId, Math.min(5, vulnerability.weight), normalizedCurrentProfile.role);
+    }
+  }
+
+  const strengths = mergeCounterRankingV2DraftTraits(
+    normalizedCurrentProfile.strengths,
+    strengthScores,
+    "strength",
+    normalizedCurrentProfile.role,
+    4,
+  );
+  const vulnerabilities = mergeCounterRankingV2DraftTraits(
+    normalizedCurrentProfile.vulnerabilities,
+    weaknessScores,
+    "weakness",
+    normalizedCurrentProfile.role,
+    4,
+  );
+
+  if (strengths.length === 0) {
+    uncertaintyNotes.push("No strong profile signals were found for strengths.");
+  }
+
+  if (vulnerabilities.length === 0) {
+    uncertaintyNotes.push("No strong profile signals were found for weaknesses.");
+  }
+
+  if (!knowledge) {
+    uncertaintyNotes.push("Champion knowledge profile was unavailable.");
+  }
+
+  if (!knowledge?.abilities || Object.keys(knowledge.abilities).length === 0) {
+    uncertaintyNotes.push("Ability kit metadata was unavailable or incomplete.");
+  }
+
+  if (similarReviewedProfiles.length === 0) {
+    uncertaintyNotes.push("No reviewed profile examples were available for this role.");
+  }
+
+  if (knowledge?.isCommonRole === false) {
+    uncertaintyNotes.push("Selected role is not a primary/secondary champion role.");
+  }
+
+  const confidence = getCounterRankingV2DraftProfileConfidence({
+    hasAbilityKit: Boolean(knowledge?.abilities && Object.keys(knowledge.abilities).length > 0),
+    hasKnowledge: Boolean(knowledge),
+    hasRoleMatch: knowledge?.isCommonRole !== false,
+    similarReviewedProfileCount: similarReviewedProfiles.length,
+    strengths,
+    vulnerabilities,
+  });
+  const summary = `${championName} ${normalizedCurrentProfile.role} improved draft from champion knowledge, role context, and ${similarReviewedProfiles.length} reviewed example${similarReviewedProfiles.length === 1 ? "" : "s"}.`;
+  const changes = getCounterRankingV2DraftProfileChanges({
+    currentStrengths: normalizedCurrentProfile.strengths,
+    currentWeaknesses: normalizedCurrentProfile.vulnerabilities,
+    nextStrengths: strengths,
+    nextWeaknesses: vulnerabilities,
+  });
+
+  return {
+    changes,
+    championId: normalizedCurrentProfile.championId,
+    confidence,
+    explanation: explanation.slice(0, 8),
+    knownStrengths: getCounterRankingV2DraftKnownLines(knowledge, "strength", sourceText, strengths),
+    knownWeaknesses: getCounterRankingV2DraftKnownLines(
+      knowledge,
+      "weakness",
+      sourceText,
+      vulnerabilities,
+    ),
+    proposedStatus: confidence === "low_draft_confidence" ? "needs_revision" : "draft",
+    role: normalizedCurrentProfile.role,
+    similarReviewedProfiles: similarReviewedProfiles.slice(0, 3).map(({ overlap, profile }) => ({
+      championId: profile.championId,
+      overlap,
+      role: profile.role,
+    })),
+    summary,
+    strengths,
+    uncertaintyNotes,
+    vulnerabilities,
   };
 }
 
@@ -1422,6 +1828,356 @@ function normalizeCounterRankingV2ProfileTraitList(
   }
 
   return Array.from(traitsById.values());
+}
+
+function getCounterRankingV2DraftKnowledgeText(
+  knowledge: CounterRankingV2DraftProfileKnowledgeInput | null | undefined,
+) {
+  if (!knowledge) {
+    return "";
+  }
+
+  return [
+    knowledge.name,
+    knowledge.identityText,
+    knowledge.primaryTradingPattern,
+    knowledge.mobilityLevel,
+    knowledge.damageType,
+    ...(knowledge.archetype ?? []),
+    ...(knowledge.commonWeaknesses ?? []),
+    ...(knowledge.dangerAbilities ?? []),
+    ...(knowledge.hardCrowdControl ?? []),
+    ...(knowledge.primaryWinCondition ?? []),
+    ...(knowledge.shields ?? []),
+    ...(knowledge.sustain ?? []),
+    knowledge.strategicIdentity?.laneGoal,
+    knowledge.strategicIdentity?.preferredGameLength,
+    knowledge.strategicIdentity?.scalingProfile,
+    ...(knowledge.strategicIdentity?.winMethod ?? []),
+    ...Object.values(knowledge.abilities ?? {}),
+  ]
+    .filter((item): item is string => Boolean(item?.trim()))
+    .join(" ");
+}
+
+function addCounterRankingV2DraftTrait(
+  scores: Map<CounterRankingV2TraitId, number>,
+  traitId: CounterRankingV2TraitId,
+  weight: number,
+  {
+    explanation,
+    isStrength,
+    reason,
+    role,
+    sourceText,
+    tokenPattern,
+  }: {
+    explanation: string[];
+    isStrength: boolean;
+    reason: string;
+    role: LeagueRole;
+    sourceText: string;
+    tokenPattern: RegExp;
+  },
+) {
+  if (!tokenPattern.test(sourceText)) {
+    return;
+  }
+
+  if (!setCounterRankingV2DraftTraitScore(scores, traitId, weight, role)) {
+    return;
+  }
+
+  explanation.push(
+    `${isStrength ? "Strength" : "Weakness"} ${getCounterRankingV2TraitLabel(traitId)}: ${reason}`,
+  );
+}
+
+function setCounterRankingV2DraftTraitScore(
+  scores: Map<CounterRankingV2TraitId, number>,
+  traitId: CounterRankingV2TraitId,
+  weight: number,
+  role: LeagueRole,
+) {
+  const definition = counterRankingV2TraitDefinitionsById.get(traitId);
+
+  if (!definition || !isCounterRankingV2TraitDefinitionVisibleForRole(definition, role)) {
+    return false;
+  }
+
+  scores.set(traitId, Math.max(scores.get(traitId) ?? 0, weight));
+  return true;
+}
+
+function applyCounterRankingV2JungleDraftSignals({
+  explanation,
+  jungleProfile,
+  strengthScores,
+  weaknessScores,
+}: {
+  explanation: string[];
+  jungleProfile: CounterRankingV2DraftProfileKnowledgeInput["jungleProfile"];
+  strengthScores: Map<CounterRankingV2TraitId, number>;
+  weaknessScores: Map<CounterRankingV2TraitId, number>;
+}) {
+  const clearRating = jungleProfile?.clearSpeed?.rating ?? null;
+  const gankRating = jungleProfile?.gankThreat?.rating ?? null;
+  const earlyRating = jungleProfile?.earlyGamePressure?.rating ?? null;
+  const duelRating = jungleProfile?.dueling?.rating ?? null;
+  const objectiveRating = jungleProfile?.objectiveControl?.rating ?? null;
+
+  if (isHighCounterRankingV2JungleRating(clearRating)) {
+    setCounterRankingV2DraftTraitScore(strengthScores, "strong_clear", 6, "jungle");
+    explanation.push("Strength Strong clear: jungle clear speed is rated highly.");
+  } else if (isLowCounterRankingV2JungleRating(clearRating)) {
+    setCounterRankingV2DraftTraitScore(weaknessScores, "slow_first_clear", 4, "jungle");
+    explanation.push("Weakness Slow first clear: jungle clear speed is rated low.");
+  }
+
+  if (isHighCounterRankingV2JungleRating(gankRating)) {
+    setCounterRankingV2DraftTraitScore(strengthScores, "good_ganks", 6, "jungle");
+    explanation.push("Strength Good ganks: jungle gank threat is rated highly.");
+  } else if (isLowCounterRankingV2JungleRating(gankRating)) {
+    setCounterRankingV2DraftTraitScore(weaknessScores, "weak_ganks_pre_6", 4, "jungle");
+    explanation.push("Weakness Not good ganks pre 6: jungle gank threat is rated low.");
+  }
+
+  if (isHighCounterRankingV2JungleRating(earlyRating)) {
+    setCounterRankingV2DraftTraitScore(strengthScores, "can_gank_early", 5, "jungle");
+    explanation.push("Strength Can gank early: early jungle pressure is rated highly.");
+  }
+
+  if (
+    isHighCounterRankingV2JungleRating(duelRating) ||
+    isHighCounterRankingV2JungleRating(objectiveRating)
+  ) {
+    setCounterRankingV2DraftTraitScore(strengthScores, "can_contest_crab", 5, "jungle");
+    explanation.push("Strength Can contest crab: duel/objective control supports river contests.");
+  } else if (
+    isLowCounterRankingV2JungleRating(duelRating) ||
+    isLowCounterRankingV2JungleRating(objectiveRating)
+  ) {
+    setCounterRankingV2DraftTraitScore(weaknessScores, "difficult_to_contest_crab", 4, "jungle");
+    explanation.push("Weakness Difficult to contest crab: duel/objective control is rated low.");
+  }
+}
+
+function isHighCounterRankingV2JungleRating(value: string | null) {
+  return value === "high" || value === "very_high";
+}
+
+function isLowCounterRankingV2JungleRating(value: string | null) {
+  return value === "low" || value === "very_low";
+}
+
+function mergeCounterRankingV2DraftTraits(
+  currentTraits: readonly CounterRankingV2ProfileTrait[],
+  scores: Map<CounterRankingV2TraitId, number>,
+  context: "strength" | "weakness",
+  role: LeagueRole,
+  maxTraits: number,
+) {
+  const traitsById = new Map<CounterRankingV2TraitId, CounterRankingV2ProfileTrait>();
+
+  for (const traitValue of currentTraits) {
+    const traitId = normalizeCounterRankingV2TraitId(traitValue.traitId);
+
+    if (!traitId) {
+      continue;
+    }
+
+    traitsById.set(traitId, {
+      traitId,
+      weight: Math.max(0, Math.min(10, Math.round(Number(traitValue.weight) || 0))),
+    });
+  }
+
+  for (const [traitId, weight] of scores.entries()) {
+    const definition = counterRankingV2TraitDefinitionsById.get(traitId);
+    const isCorrectContext =
+      context === "weakness"
+        ? definition?.category === "vulnerability"
+        : definition?.category !== "vulnerability";
+
+    if (
+      !definition ||
+      !isCorrectContext ||
+      !isCounterRankingV2TraitDefinitionVisibleForRole(definition, role)
+    ) {
+      continue;
+    }
+
+    const currentTrait = traitsById.get(traitId);
+    traitsById.set(traitId, {
+      traitId,
+      weight: Math.max(currentTrait?.weight ?? 0, Math.round(weight)),
+    });
+  }
+
+  return Array.from(traitsById.values())
+    .filter((trait) => isTraitVisibleForDraftRole(trait.traitId, context, role))
+    .sort((left, right) => right.weight - left.weight || left.traitId.localeCompare(right.traitId))
+    .slice(0, maxTraits);
+}
+
+function isTraitVisibleForDraftRole(
+  traitId: CounterRankingV2TraitId,
+  context: "strength" | "weakness",
+  role: LeagueRole,
+) {
+  const definition = counterRankingV2TraitDefinitionsById.get(traitId);
+
+  if (!definition) {
+    return false;
+  }
+
+  if (context === "weakness" && definition.category !== "vulnerability") {
+    return false;
+  }
+
+  if (context === "strength" && definition.category === "vulnerability") {
+    return false;
+  }
+
+  return isCounterRankingV2TraitDefinitionVisibleForRole(definition, role);
+}
+
+function getSimilarCounterRankingV2ReviewedProfiles({
+  reviewedProfiles,
+  role,
+  strengthScores,
+  weaknessScores,
+}: {
+  reviewedProfiles: readonly CounterRankingV2ChampionProfile[];
+  role: LeagueRole;
+  strengthScores: Map<CounterRankingV2TraitId, number>;
+  weaknessScores: Map<CounterRankingV2TraitId, number>;
+}) {
+  const suggestedTraitIds = new Set([...strengthScores.keys(), ...weaknessScores.keys()]);
+
+  return reviewedProfiles
+    .filter((profile) => profile.reviewStatus === "reviewed" && profile.role === role)
+    .map((profile) => {
+      const overlap = [...profile.strengths, ...profile.vulnerabilities]
+        .map((traitValue) => traitValue.traitId)
+        .filter((traitId) => suggestedTraitIds.has(traitId));
+
+      return {
+        overlap,
+        profile,
+        score: overlap.length * 3 + profile.strengths.length + profile.vulnerabilities.length,
+      };
+    })
+    .filter((example) => example.score > 0)
+    .sort((left, right) => right.score - left.score || left.profile.championId.localeCompare(right.profile.championId));
+}
+
+function getCounterRankingV2DraftProfileConfidence({
+  hasAbilityKit,
+  hasKnowledge,
+  hasRoleMatch,
+  similarReviewedProfileCount,
+  strengths,
+  vulnerabilities,
+}: {
+  hasAbilityKit: boolean;
+  hasKnowledge: boolean;
+  hasRoleMatch: boolean;
+  similarReviewedProfileCount: number;
+  strengths: readonly CounterRankingV2ProfileTrait[];
+  vulnerabilities: readonly CounterRankingV2ProfileTrait[];
+}): CounterRankingV2DraftProfileConfidence {
+  const score =
+    (hasKnowledge ? 2 : 0) +
+    (hasAbilityKit ? 1 : 0) +
+    (hasRoleMatch ? 1 : 0) +
+    Math.min(2, similarReviewedProfileCount) +
+    (strengths.length >= 2 ? 1 : 0) +
+    (vulnerabilities.length >= 2 ? 1 : 0);
+
+  if (score >= 7) {
+    return "high_draft_confidence";
+  }
+
+  if (score >= 4) {
+    return "medium_draft_confidence";
+  }
+
+  return "low_draft_confidence";
+}
+
+function getCounterRankingV2DraftProfileChanges({
+  currentStrengths,
+  currentWeaknesses,
+  nextStrengths,
+  nextWeaknesses,
+}: {
+  currentStrengths: readonly CounterRankingV2ProfileTrait[];
+  currentWeaknesses: readonly CounterRankingV2ProfileTrait[];
+  nextStrengths: readonly CounterRankingV2ProfileTrait[];
+  nextWeaknesses: readonly CounterRankingV2ProfileTrait[];
+}): CounterRankingV2DraftProfileSuggestion["changes"] {
+  const strengthChanges = getCounterRankingV2DraftTraitChanges(currentStrengths, nextStrengths);
+  const weaknessChanges = getCounterRankingV2DraftTraitChanges(currentWeaknesses, nextWeaknesses);
+
+  return {
+    addedStrengths: strengthChanges.added,
+    addedWeaknesses: weaknessChanges.added,
+    changedStrengths: strengthChanges.changed,
+    changedWeaknesses: weaknessChanges.changed,
+    removedStrengths: strengthChanges.removed,
+    removedWeaknesses: weaknessChanges.removed,
+  };
+}
+
+function getCounterRankingV2DraftTraitChanges(
+  currentTraits: readonly CounterRankingV2ProfileTrait[],
+  nextTraits: readonly CounterRankingV2ProfileTrait[],
+) {
+  const currentById = new Map(currentTraits.map((traitValue) => [traitValue.traitId, traitValue]));
+  const nextById = new Map(nextTraits.map((traitValue) => [traitValue.traitId, traitValue]));
+  const added = nextTraits
+    .filter((traitValue) => !currentById.has(traitValue.traitId))
+    .map((traitValue) => traitValue.traitId);
+  const removed = currentTraits
+    .filter((traitValue) => !nextById.has(traitValue.traitId))
+    .map((traitValue) => traitValue.traitId);
+  const changed = nextTraits
+    .filter((traitValue) => currentById.get(traitValue.traitId)?.weight !== undefined)
+    .filter((traitValue) => currentById.get(traitValue.traitId)?.weight !== traitValue.weight)
+    .map((traitValue) => traitValue.traitId);
+
+  return {
+    added,
+    changed,
+    removed,
+  };
+}
+
+function getCounterRankingV2DraftKnownLines(
+  knowledge: CounterRankingV2DraftProfileKnowledgeInput | null | undefined,
+  context: "strength" | "weakness",
+  sourceText: string,
+  traits: readonly CounterRankingV2ProfileTrait[],
+) {
+  const sourceLines =
+    context === "strength"
+      ? [
+          ...(knowledge?.archetype ?? []),
+          ...(knowledge?.primaryWinCondition ?? []),
+          ...(knowledge?.strategicIdentity?.winMethod ?? []),
+        ]
+      : [...(knowledge?.commonWeaknesses ?? [])];
+  const traitLines = traits.map((traitValue) => getCounterRankingV2TraitLabel(traitValue.traitId));
+  const fallbackLine =
+    context === "strength"
+      ? "Generated from champion identity and role-aware mechanical vocabulary."
+      : "Generated from champion weaknesses and role-aware mechanical vocabulary.";
+
+  return Array.from(new Set([...sourceLines, ...traitLines, sourceText ? fallbackLine : ""]))
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 6);
 }
 
 export function isCounterRankingV2SupportedChampion(championId: string) {
@@ -2676,4 +3432,18 @@ function clampTraitWeight(weight: number) {
 
 function normalizeChampionId(championId: string) {
   return championId.trim().toLowerCase();
+}
+
+function normalizeCounterRankingV2ProfileRole(
+  role: LeagueRole | string | null | undefined,
+): LeagueRole {
+  const normalizedRole = String(role ?? "mid").trim().toLowerCase();
+  const roleAliases: Record<string, LeagueRole> = {
+    bot: "adc",
+    bottom: "adc",
+    middle: "mid",
+  };
+  const aliasedRole = roleAliases[normalizedRole] ?? normalizedRole;
+
+  return leagueRoles.includes(aliasedRole as LeagueRole) ? (aliasedRole as LeagueRole) : "mid";
 }

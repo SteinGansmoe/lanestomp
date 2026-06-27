@@ -177,13 +177,17 @@ function toAbilityCache(payload, version) {
               "Passive",
               {
                 key: "Passive",
-                id: `${String(champion?.id ?? "")}Passive`,
-                name: String(passive?.name ?? "Passive"),
+                  id: `${String(champion?.id ?? "")}Passive`,
+                  name: String(passive?.name ?? "Passive"),
                 description: String(passive?.description ?? ""),
                 tooltip: String(passive?.description ?? ""),
+                datavalues: {},
+                leveltip: null,
+                maxrank: 1,
+                resourceType: String(champion?.partype ?? ""),
                 icon: {
-                  imageFile: passiveImageFile,
-                  localPath: `/league/abilities/icons/${passiveImageFile}`,
+                    imageFile: passiveImageFile,
+                    localPath: `/league/abilities/icons/${passiveImageFile}`,
                   dataDragonUrl: `${dataDragonBaseUrl}/cdn/${version}/img/passive/${passiveImageFile}`,
                 },
                 patch: version,
@@ -203,8 +207,14 @@ function toAbilityCache(payload, version) {
                   id: String(spell?.id ?? `${champion?.id}${abilityKey}`),
                   name: String(spell?.name ?? abilityKey),
                   description: String(spell?.description ?? ""),
+                  datavalues:
+                    spell?.datavalues && typeof spell.datavalues === "object" ? spell.datavalues : {},
                   effect: Array.isArray(spell?.effect) ? spell.effect : [],
                   effectBurn: Array.isArray(spell?.effectBurn) ? spell.effectBurn : [],
+                  leveltip:
+                    spell?.leveltip && typeof spell.leveltip === "object" ? spell.leveltip : null,
+                  maxrank: Number(spell?.maxrank ?? 0),
+                  resourceType: String(champion?.partype ?? ""),
                   tooltip: String(spell?.tooltip ?? ""),
                   vars: Array.isArray(spell?.vars) ? spell.vars : [],
                   icon: {

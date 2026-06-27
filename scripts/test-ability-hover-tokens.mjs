@@ -23,6 +23,8 @@ testItemTokenFixtureParsing();
 testMixedLeagueHoverTokenParsing();
 testNormalTextWithoutTokens();
 testCompactAbilityTooltipFormatting();
+testTotaldamageFormulaResolution();
+testLocalDataDragonAbilityTooltipFormatting();
 testAbilityHoverComponentBoundary();
 testItemHoverComponentBoundary();
 
@@ -190,13 +192,49 @@ function testCompactAbilityTooltipFormatting() {
     "Ahri",
   );
 
-  assert.equal(tooltip.metaText, "12s / 60 Mana");
+  assert.equal(tooltip.metaText, "Cooldown: 12s / Cost: 60 Mana");
+  assert.deepEqual(tooltip.stats, [
+    { label: "Cooldown", value: "12s" },
+    { label: "Cost", value: "60 Mana" },
+  ]);
   assert.equal(tooltip.description, "Charms the first enemy hit and deals magic damage.");
   assert.deepEqual(tooltip.details, [
-    { label: "Damage breakdown", values: ["80 / 120 / 160 / 200 / 240 (+85% AP) magic damage"] },
+    { label: "Damage", values: ["80 / 120 / 160 / 200 / 240 (+85% AP) magic damage"] },
     { label: "Effect", values: ["Charm"] },
   ]);
   assert.doesNotMatch(tooltip.description, /walk harmlessly|blows a kiss/i);
+
+  const rankedCostTooltip = getCompactAbilityTooltip(
+    {
+      cooldownBurn: "1.5",
+      costBurn: "110/100/90/80/70",
+      costType: "Mana",
+      description: "Diana dashes to an enemy and deals magic damage.",
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "DianaE.png",
+        localPath: "/league/abilities/icons/DianaE.png",
+      },
+      id: "DianaE",
+      key: "E",
+      name: "Lunar Rush",
+      patch: "16.12.1",
+      tooltip:
+        "Diana dashes to an enemy and deals <magicDamage>{{ e1 }} (+{{ apratio*100 }}% AP) magic damage</magicDamage>.",
+      effectBurn: [null, "50 / 70 / 90 / 110 / 130"],
+      vars: [{ coeff: 0.6, key: "apratio", link: "spelldamage" }],
+    },
+    "Diana",
+  );
+
+  assert.deepEqual(rankedCostTooltip.stats, [
+    { label: "Cooldown", value: "1.5s" },
+    { label: "Cost", value: "110 / 100 / 90 / 80 / 70 Mana" },
+  ]);
+  assert.deepEqual(rankedCostTooltip.details[0], {
+    label: "Damage",
+    values: ["50 / 70 / 90 / 110 / 130 (+60% AP) magic damage"],
+  });
 
   const multiPartTooltip = getCompactAbilityTooltip(
     {
@@ -222,8 +260,11 @@ function testCompactAbilityTooltipFormatting() {
     "Deals magic damage on the way out and true damage on the way back.",
   );
   assert.deepEqual(multiPartTooltip.details[0], {
-    label: "Damage breakdown",
-    values: ["Magic: 35 / 60 / 85 / 110 / 135 (+50% AP)", "True: 35 / 60 / 85 / 110 / 135 (+50% AP)"],
+    label: "Damage",
+    values: [
+      "Outgoing: 35 / 60 / 85 / 110 / 135 (+50% AP) magic damage",
+      "Return: 35 / 60 / 85 / 110 / 135 (+50% AP) true damage",
+    ],
   });
 
   const shieldTooltip = getCompactAbilityTooltip(
@@ -266,7 +307,7 @@ function testCompactAbilityTooltipFormatting() {
   );
 
   assert.deepEqual(physicalTooltip.details[0], {
-    label: "Damage breakdown",
+    label: "Damage",
     values: ["10 / 25 / 40 / 55 / 70 physical damage"],
   });
 
@@ -292,6 +333,9 @@ function testCompactAbilityTooltipFormatting() {
 
   const noDamageTooltip = getCompactAbilityTooltip(
     {
+      cooldownBurn: "18",
+      costBurn: "0",
+      costType: "No Cost",
       description: "Akshan camouflages near terrain and gains movement speed.",
       icon: {
         dataDragonUrl: "",
@@ -307,7 +351,11 @@ function testCompactAbilityTooltipFormatting() {
     "Akshan",
   );
 
-  assert.equal(noDamageTooltip.details.some((detail) => detail.label === "Damage breakdown"), false);
+  assert.deepEqual(noDamageTooltip.stats, [
+    { label: "Cooldown", value: "18s" },
+    { label: "Cost", value: "No cost" },
+  ]);
+  assert.equal(noDamageTooltip.details.some((detail) => detail.label === "Damage"), false);
 
   const fallbackTooltip = getCompactAbilityTooltip(
     {
@@ -328,9 +376,203 @@ function testCompactAbilityTooltipFormatting() {
   );
 
   assert.deepEqual(fallbackTooltip.details[0], {
-    label: "Damage breakdown",
-    values: ["Magic Damage", "True Damage"],
+    label: "Damage",
+    values: ["magic damage", "true damage"],
   });
+}
+
+function testTotaldamageFormulaResolution() {
+  const apTooltip = getCompactAbilityTooltip(
+    {
+      description: "Deals magic damage.",
+      effectBurn: [null, "60 / 90 / 120 / 150 / 180"],
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "TestQ.png",
+        localPath: "/league/abilities/icons/TestQ.png",
+      },
+      id: "TestApTotaldamage",
+      key: "Q",
+      maxrank: 5,
+      name: "AP Totaldamage",
+      patch: "16.13.1",
+      tooltip:
+        "The spell deals <magicDamage>{{ totaldamage }} magic damage</magicDamage>.{{ spellmodifierdescriptionappend }}",
+      vars: [{ coeff: 0.5, key: "apratio", link: "spelldamage" }],
+    },
+    "Test",
+  );
+
+  assert.deepEqual(apTooltip.details[0], {
+    label: "Damage",
+    values: ["60 / 90 / 120 / 150 / 180 (+50% AP) magic damage"],
+  });
+
+  const bonusAdTooltip = getCompactAbilityTooltip(
+    {
+      description: "Deals physical damage.",
+      effectBurn: [null, "30 / 55 / 80 / 105 / 130"],
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "TestW.png",
+        localPath: "/league/abilities/icons/TestW.png",
+      },
+      id: "TestBonusAdTotaldamage",
+      key: "W",
+      maxrank: 5,
+      name: "Bonus AD Totaldamage",
+      patch: "16.13.1",
+      tooltip:
+        "The spell deals <physicalDamage>{{ totaldamage }} physical damage</physicalDamage>.{{ spellmodifierdescriptionappend }}",
+      vars: [{ coeff: 0.65, key: "bonusadratio", link: "bonusattackdamage" }],
+    },
+    "Test",
+  );
+
+  assert.deepEqual(bonusAdTooltip.details[0], {
+    label: "Damage",
+    values: ["30 / 55 / 80 / 105 / 130 (+65% bonus AD) physical damage"],
+  });
+
+  const baseOnlyTooltip = getCompactAbilityTooltip(
+    {
+      description: "Deals magic damage.",
+      effectBurn: [null, "70 / 95 / 120 / 145 / 170"],
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "TestE.png",
+        localPath: "/league/abilities/icons/TestE.png",
+      },
+      id: "TestBaseTotaldamage",
+      key: "E",
+      maxrank: 5,
+      name: "Base Totaldamage",
+      patch: "16.13.1",
+      tooltip:
+        "The spell deals <magicDamage>{{ totaldamage }} magic damage</magicDamage>.{{ spellmodifierdescriptionappend }}",
+    },
+    "Test",
+  );
+
+  assert.deepEqual(baseOnlyTooltip.details[0], {
+    label: "Damage",
+    values: ["70 / 95 / 120 / 145 / 170 magic damage"],
+  });
+
+  const unresolvedTooltip = getCompactAbilityTooltip(
+    {
+      description: "Deals magic damage.",
+      effectBurn: [null, "1", "900"],
+      icon: {
+        dataDragonUrl: "",
+        imageFile: "TestR.png",
+        localPath: "/league/abilities/icons/TestR.png",
+      },
+      id: "TestUnresolvedTotaldamage",
+      key: "R",
+      maxrank: 5,
+      name: "Unresolved Totaldamage",
+      patch: "16.13.1",
+      tooltip:
+        "The spell deals <magicDamage>{{ totaldamage }} magic damage</magicDamage>.{{ spellmodifierdescriptionappend }}",
+    },
+    "Test",
+  );
+
+  assert.deepEqual(unresolvedTooltip.details[0], {
+    label: "Damage",
+    values: ["magic damage"],
+  });
+}
+
+function testLocalDataDragonAbilityTooltipFormatting() {
+  const ahriQTooltip = getCompactAbilityTooltip(abilityCache.champions.Ahri.abilities.Q, "Ahri");
+
+  assert.deepEqual(ahriQTooltip.stats, [
+    { label: "Cooldown", value: "7s" },
+    { label: "Cost", value: "55 / 65 / 75 / 85 / 95 Mana" },
+  ]);
+  assert.deepEqual(ahriQTooltip.details[0], {
+    label: "Damage",
+    values: [
+      "Outgoing: 35 / 60 / 85 / 110 / 135 (+50% AP) magic damage",
+      "Return: 35 / 60 / 85 / 110 / 135 (+50% AP) true damage",
+    ],
+  });
+
+  const ahriETooltip = getCompactAbilityTooltip(abilityCache.champions.Ahri.abilities.E, "Ahri");
+
+  assert.deepEqual(ahriETooltip.details[0], {
+    label: "Damage",
+    values: ["80 / 110 / 140 / 170 / 200 (+60% AP) magic damage"],
+  });
+
+  const ahriWTooltip = getCompactAbilityTooltip(abilityCache.champions.Ahri.abilities.W, "Ahri");
+
+  assert.deepEqual(ahriWTooltip.details[0], {
+    label: "Damage",
+    values: ["magic damage"],
+  });
+
+  const ahriRTooltip = getCompactAbilityTooltip(abilityCache.champions.Ahri.abilities.R, "Ahri");
+
+  assert.deepEqual(ahriRTooltip.details[0], {
+    label: "Damage",
+    values: ["magic damage"],
+  });
+
+  const dianaETooltip = getCompactAbilityTooltip(abilityCache.champions.Diana.abilities.E, "Diana");
+
+  assert.deepEqual(dianaETooltip.stats, [
+    { label: "Cooldown", value: "22 / 20 / 18 / 16 / 14s" },
+    { label: "Cost", value: "40 / 45 / 50 / 55 / 60 Mana" },
+  ]);
+  assert.deepEqual(dianaETooltip.details[0], {
+    label: "Damage",
+    values: ["40 / 60 / 80 / 100 / 120 magic damage"],
+  });
+
+  const akaliQTooltip = getCompactAbilityTooltip(abilityCache.champions.Akali.abilities.Q, "Akali");
+
+  assert.deepEqual(akaliQTooltip.stats, [
+    { label: "Cooldown", value: "1.5s" },
+    { label: "Cost", value: "110 / 100 / 90 / 80 / 70 Energy" },
+  ]);
+  assert.deepEqual(akaliQTooltip.details[0], {
+    label: "Damage",
+    values: ["magic damage"],
+  });
+
+  const fizzQTooltip = getCompactAbilityTooltip(abilityCache.champions.Fizz.abilities.Q, "Fizz");
+
+  assert.deepEqual(fizzQTooltip.details[0], {
+    label: "Damage",
+    values: ["physical damage", "magic damage"],
+  });
+
+  const luxETooltip = getCompactAbilityTooltip(abilityCache.champions.Lux.abilities.E, "Lux");
+
+  assert.deepEqual(luxETooltip.details[0], {
+    label: "Damage",
+    values: ["65 / 115 / 165 / 215 / 265 magic damage"],
+  });
+
+  const malzaharRTooltip = getCompactAbilityTooltip(
+    abilityCache.champions.Malzahar.abilities.R,
+    "Malzahar",
+  );
+
+  assert.deepEqual(malzaharRTooltip.details[0], {
+    label: "Damage",
+    values: ["magic damage"],
+  });
+
+  const lockeWTooltip = getCompactAbilityTooltip(abilityCache.champions.Locke.abilities.W, "Locke");
+
+  assert.deepEqual(lockeWTooltip.stats, [
+    { label: "Cooldown", value: "18 / 17 / 16 / 15 / 14s" },
+    { label: "Cost", value: "50 / 55 / 60 / 65 / 70 Mana" },
+  ]);
 }
 
 function testAbilityHoverComponentBoundary() {

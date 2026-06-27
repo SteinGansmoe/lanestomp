@@ -101,9 +101,14 @@ export function AbilityHover({
             <span className="block text-sm font-semibold leading-5 text-white">
               <span className="font-mono text-[#F4D88A]">{ability.key}</span> {ability.name}
             </span>
-            {tooltip.metaText ? (
-              <span className="mt-0.5 block font-mono text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-cyan-100/90">
-                {tooltip.metaText}
+            {tooltip.stats.length > 0 ? (
+              <span className="mt-1 grid gap-0.5 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-cyan-100/90">
+                {tooltip.stats.map((stat) => (
+                  <span key={stat.label}>
+                    <span className="text-zinc-500">{stat.label}: </span>
+                    {stat.value}
+                  </span>
+                ))}
               </span>
             ) : null}
           </span>

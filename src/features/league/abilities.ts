@@ -20,14 +20,21 @@ export type LeagueChampionAbilityMetadata = {
   cooldownBurn?: string;
   costBurn?: string;
   costType?: string;
+  datavalues?: Record<string, unknown>;
   description: string;
   effect?: Array<number | number[] | null>;
   effectBurn?: Array<string | null>;
   icon: LeagueAbilityIconMetadata;
   id: string;
   key: LeagueAbilityTokenKey;
+  leveltip?: {
+    effect?: string[];
+    label?: string[];
+  } | null;
+  maxrank?: number;
   name: string;
   patch: string;
+  resourceType?: string;
   tooltip: string;
   vars?: LeagueAbilityVarMetadata[];
 };

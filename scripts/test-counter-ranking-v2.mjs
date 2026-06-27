@@ -16,6 +16,7 @@ const {
   counterRankingV2TraitVocabulary,
   createCounterRankingV2MechanicalReview,
   createCounterRankingV2GeneratedDraftChampionProfile,
+  createCounterRankingV2ImprovedDraftProfileSuggestion,
   createObservedCounterRankingV2Snapshot,
   filterCounterRankingV2RowsByReviewFilter,
   generateCounterRankingV2MechanicalSuggestion,
@@ -34,6 +35,7 @@ const {
   hasCounterRankingV2WeakMechanicalSignal,
   isCounterRankingV2ApprovedReviewPublicEligible,
   isCounterRankingV2ManualAdjustmentInBounds,
+  isCounterRankingV2ProfileEligibleForDraftImprovement,
   isCounterRankingV2PublicCandidateEligible,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
@@ -121,6 +123,7 @@ const expectedNewTraitLabels = {
   anti_heal: "Anti-heal",
   anti_shield: "Anti-shield",
   disengage: "Disengage",
+  engage: "Engage",
   roaming: "Roaming",
   scaling: "Scaling",
   strong_early: "Strong early",
@@ -129,6 +132,8 @@ const expectedNewTraitLabels = {
 const expectedNewVulnerabilityLabels = {
   falls_off_late: "Falls off late",
   gap_closing: "Gap closing",
+  no_disengage: "No disengage",
+  no_engage: "No engage",
   skillshot_reliant: "Skillshot-reliant",
   vulnerable_to_all_in: "Weak to all-in",
   weak_early: "Weak early",
@@ -254,6 +259,144 @@ assert.equal(
   "strong_clear",
   "Jungle profile saves should accept strong_clear as a valid profile trait.",
 );
+
+const generatedDianaJungleDraft = createCounterRankingV2GeneratedDraftChampionProfile(
+  "diana",
+  "jungle",
+);
+assert.equal(
+  isCounterRankingV2ProfileEligibleForDraftImprovement({
+    profile: generatedDianaJungleDraft,
+  }),
+  true,
+  "Generated draft profiles should be eligible for draft improvement.",
+);
+assert.equal(
+  isCounterRankingV2ProfileEligibleForDraftImprovement({
+    hasAdminNote: true,
+    profile: generatedDianaJungleDraft,
+  }),
+  false,
+  "Draft improvement should preserve profiles with admin notes.",
+);
+assert.equal(
+  isCounterRankingV2ProfileEligibleForDraftImprovement({
+    profile: { ...generatedDianaJungleDraft, reviewStatus: "reviewed" },
+  }),
+  false,
+  "Draft improvement should not overwrite reviewed profiles.",
+);
+
+const reviewedLeonaSupportProfile = {
+  ...createCounterRankingV2GeneratedDraftChampionProfile("leona", "support"),
+  reviewStatus: "reviewed",
+  strengths: [
+    { traitId: "engage", weight: 5 },
+    { traitId: "reliable_cc", weight: 5 },
+  ],
+  vulnerabilities: [
+    { traitId: "cooldown_reliant", weight: 3 },
+    { traitId: "short_range", weight: 3 },
+  ],
+};
+const dianaJungleDraftSuggestion = createCounterRankingV2ImprovedDraftProfileSuggestion({
+  currentProfile: generatedDianaJungleDraft,
+  knowledge: {
+    abilities: { Q: "Crescent Strike", W: "Pale Cascade", E: "Lunar Rush", R: "Moonfall" },
+    archetype: ["diver", "engage", "burst"],
+    commonWeaknesses: ["Can be punished when engage cooldowns are down."],
+    hardCrowdControl: ["R pull"],
+    isCommonRole: true,
+    jungleProfile: {
+      clearSpeed: { rating: "high" },
+      dueling: { rating: "high" },
+      earlyGamePressure: { rating: "medium" },
+      gankThreat: { rating: "high" },
+      objectiveControl: { rating: "high" },
+      scaling: { rating: "medium" },
+    },
+    mobilityLevel: "high",
+    name: "Diana",
+    strategicIdentity: {
+      laneGoal: "snowball",
+      preferredGameLength: "medium",
+      scalingProfile: "mid",
+      winMethod: ["engage", "burst"],
+    },
+  },
+  reviewedProfiles: [reviewedLeonaSupportProfile],
+});
+assert.equal(
+  dianaJungleDraftSuggestion.strengths.some((trait) => trait.traitId === "strong_clear"),
+  true,
+  "Jungle draft improvement should suggest jungle-specific strengths when profile data supports them.",
+);
+assert.equal(
+  dianaJungleDraftSuggestion.strengths.some((trait) => trait.traitId === "good_ganks"),
+  true,
+  "Jungle draft improvement should suggest gank vocabulary when jungle data supports it.",
+);
+assert.notEqual(
+  dianaJungleDraftSuggestion.proposedStatus,
+  "reviewed",
+  "Draft improvement should never automatically mark generated profiles reviewed.",
+);
+
+const dianaMidDraftSuggestion = createCounterRankingV2ImprovedDraftProfileSuggestion({
+  currentProfile: createCounterRankingV2GeneratedDraftChampionProfile("diana", "mid"),
+  knowledge: {
+    abilities: { Q: "Crescent Strike", W: "Pale Cascade", E: "Lunar Rush", R: "Moonfall" },
+    archetype: ["diver", "engage", "burst"],
+    isCommonRole: true,
+    jungleProfile: {
+      clearSpeed: { rating: "high" },
+      gankThreat: { rating: "high" },
+    },
+    mobilityLevel: "high",
+    name: "Diana",
+  },
+});
+assert.equal(
+  dianaMidDraftSuggestion.strengths.some((trait) => trait.traitId === "strong_clear"),
+  false,
+  "Mid draft improvement should not suggest jungle-only vocabulary.",
+);
+
+const alistarSupportDraftSuggestion = createCounterRankingV2ImprovedDraftProfileSuggestion({
+  currentProfile: createCounterRankingV2GeneratedDraftChampionProfile("alistar", "support"),
+  knowledge: {
+    abilities: { Q: "Pulverize", W: "Headbutt", E: "Trample", R: "Unbreakable Will" },
+    archetype: ["support", "tank", "engage", "peel"],
+    hardCrowdControl: ["knockup", "displacement"],
+    isCommonRole: true,
+    mobilityLevel: "medium",
+    name: "Alistar",
+  },
+  reviewedProfiles: [reviewedLeonaSupportProfile],
+});
+assert.equal(
+  alistarSupportDraftSuggestion.similarReviewedProfiles.some(
+    (example) => example.championId === "leona",
+  ),
+  true,
+  "Draft improvement should include similar reviewed profiles as examples when available.",
+);
+
+const lowConfidenceDraftSuggestion = createCounterRankingV2ImprovedDraftProfileSuggestion({
+  currentProfile: createCounterRankingV2GeneratedDraftChampionProfile("unknown", "mid"),
+  knowledge: null,
+  reviewedProfiles: [],
+});
+assert.equal(
+  lowConfidenceDraftSuggestion.confidence,
+  "low_draft_confidence",
+  "Draft improvement should classify missing-data suggestions as low confidence.",
+);
+assert.equal(
+  lowConfidenceDraftSuggestion.proposedStatus,
+  "needs_revision",
+  "Low-confidence draft improvements should remain unreviewed and require revision.",
+);
 const championRegistry = buildChampionRegistry([
   championRegistryRow("Ahri", "103", "Ahri", "ahri"),
   championRegistryRow("Syndra", "134", "Syndra", "syndra"),
@@ -359,7 +502,7 @@ const legacyScalingOverride = {
 const legacyScalingProfile = getCounterRankingV2ChampionProfile(
   "vex",
   undefined,
-  new Map([["vex", legacyScalingOverride]]),
+  new Map([[getCounterRankingV2ProfileKey("vex", "mid"), legacyScalingOverride]]),
 );
 
 assert.equal(
@@ -383,7 +526,7 @@ const roamingReloadProfile = getCounterRankingV2ChampionProfile(
   undefined,
   new Map([
     [
-      "vex",
+      getCounterRankingV2ProfileKey("vex", "mid"),
       {
         ...baseVexProfile,
         strengths: [{ traitId: "roaming", weight: 8 }],
@@ -414,7 +557,7 @@ const outOfRoleReloadProfile = getCounterRankingV2ChampionProfile(
   undefined,
   new Map([
     [
-      "vex",
+      getCounterRankingV2ProfileKey("vex", "mid"),
       {
         ...baseVexProfile,
         strengths: [{ traitId: "strong_clear", weight: 5 }],
@@ -457,19 +600,93 @@ assert.notDeepEqual(
   "Diana Mid and Diana Jungle profiles should be able to coexist.",
 );
 
+const lockeMidProfileKey = getCounterRankingV2ProfileKey("Locke", "Mid");
+const lockeMidOverride = {
+  ...createCounterRankingV2GeneratedDraftChampionProfile("Locke", "mid"),
+  strengths: [{ traitId: "poke", weight: 6 }],
+  vulnerabilities: [{ traitId: "immobile", weight: 4 }],
+};
+const lockeMidProfileOverrides = new Map([[lockeMidProfileKey, lockeMidOverride]]);
+const lockeMidProfileStatuses = new Map([[lockeMidProfileKey, "reviewed"]]);
+const lockeMidProfile = getCounterRankingV2ChampionProfile(
+  "locke",
+  lockeMidProfileStatuses,
+  lockeMidProfileOverrides,
+  "mid",
+);
+const lockeMidUppercaseRoleProfile = getCounterRankingV2ChampionProfile(
+  "LOCKE",
+  lockeMidProfileStatuses,
+  lockeMidProfileOverrides,
+  "MID",
+);
+const lockeMidAliasRoleProfile = getCounterRankingV2ChampionProfile(
+  "Locke",
+  lockeMidProfileStatuses,
+  lockeMidProfileOverrides,
+  "Middle",
+);
+const lockeJungleProfile = getCounterRankingV2ChampionProfile(
+  "locke",
+  lockeMidProfileStatuses,
+  lockeMidProfileOverrides,
+  "jungle",
+);
+
+assert.equal(lockeMidProfileKey, "locke::mid", "Locke Mid should use a canonical champion-role profile key.");
+assert.equal(
+  lockeMidProfile?.reviewStatus,
+  "reviewed",
+  "Locke Mid should load reviewed status from a role-scoped editable profile.",
+);
+assert.equal(
+  lockeMidUppercaseRoleProfile?.reviewStatus,
+  "reviewed",
+  "Profile lookup should tolerate champion and role casing mismatches.",
+);
+assert.equal(
+  lockeMidAliasRoleProfile?.role,
+  "mid",
+  "Profile lookup should normalize Middle to the mid profile role.",
+);
+assert.equal(
+  lockeJungleProfile,
+  null,
+  "A Locke Mid profile should not falsely resolve as a different role.",
+);
+
+const ahriMidProfileKey = getCounterRankingV2ProfileKey("Ahri", "mid");
+const ahriMidReviewedProfile = getCounterRankingV2ChampionProfile(
+  "ahri",
+  new Map([[ahriMidProfileKey, "reviewed"]]),
+  undefined,
+  "mid",
+);
+
+assert.equal(
+  ahriMidReviewedProfile?.reviewStatus,
+  "reviewed",
+  "Ahri Mid should keep resolving reviewed status through champion_id and role.",
+);
+assert.equal(
+  getCounterRankingV2ChampionProfile("not-a-real-champion", new Map(), new Map(), "mid"),
+  null,
+  "Missing profile rows should stay missing instead of resolving to a fallback champion.",
+);
+
 const scalingIntoLateFalloff = calculateMechanicalMatchupFit({
   candidateChampionId: "vex",
   enemyChampionId: "yone",
   profileOverridesByChampionId: new Map([
     [
-      "vex",
+      getCounterRankingV2ProfileKey("vex", "mid"),
       {
         ...baseVexProfile,
         strengths: [{ traitId: "late_scaling", weight: 7 }],
       },
     ],
     [
-      "yone",
+      getCounterRankingV2ProfileKey("yone", "mid"),
       {
         ...getCounterRankingV2ChampionProfile("yone"),
         vulnerabilities: [{ traitId: "falls_off_late", weight: 6 }],
@@ -560,6 +777,26 @@ assert.equal(
   isChampionSupportedInRole("Alistar", "support"),
   true,
   "Alistar should remain available in the Support candidate pool.",
+);
+assert.equal(
+  isChampionSupportedInRole("Thresh", "mid"),
+  false,
+  "Thresh Mid should not be included in supported Mid profiles.",
+);
+assert.equal(
+  isChampionSupportedInRole("Thresh", "support"),
+  true,
+  "Thresh Support should remain a supported Support profile.",
+);
+assert.equal(
+  isChampionSupportedInRole("TwistedFate", "support"),
+  false,
+  "Twisted Fate Support should not be included in supported Support profiles.",
+);
+assert.equal(
+  isChampionSupportedInRole("TwistedFate", "mid"),
+  true,
+  "Twisted Fate Mid should remain a supported Mid profile.",
 );
 
 const ahriMidRoleSpecificRows = getCounterRankingV2ComparisonRows({
@@ -660,6 +897,16 @@ assert.deepEqual(
   }),
   [],
   "Unsupported-role candidates should be excluded before they become normal automation blockers.",
+);
+assert.deepEqual(
+  getCounterRankingV2ComparisonRows({
+    candidateChampionIds: ["twistedfate"],
+    enemyChampionId: "lux",
+    observedByChampionId: new Map(),
+    role: "support",
+  }),
+  [],
+  "Twisted Fate Support should not appear as a Shadow Ranking support candidate.",
 );
 
 const vexIntoYone = calculateMechanicalMatchupFit({
@@ -1054,7 +1301,7 @@ const savedDraftProfileSuggestion = generateCounterRankingV2MechanicalSuggestion
     score: 88,
   },
   observed: null,
-  profileStatusesByChampionId: new Map([["vex", "draft"]]),
+  profileStatusesByChampionId: new Map([[getCounterRankingV2ProfileKey("vex", "mid"), "draft"]]),
 });
 
 assert.equal(
@@ -1069,7 +1316,7 @@ const reviewedDraftProfileAutoSuggested = generateCounterRankingV2MechanicalSugg
     score: 75,
   },
   observed: null,
-  profileStatusesByChampionId: new Map([["ahri", "reviewed"]]),
+  profileStatusesByChampionId: new Map([[getCounterRankingV2ProfileKey("ahri", "mid"), "reviewed"]]),
 });
 
 assert.equal(
@@ -1084,7 +1331,7 @@ const reviewedDraftProfileAutoApprovalCandidate = generateCounterRankingV2Mechan
     score: 88,
   },
   observed: null,
-  profileStatusesByChampionId: new Map([["ahri", "reviewed"]]),
+  profileStatusesByChampionId: new Map([[getCounterRankingV2ProfileKey("ahri", "mid"), "reviewed"]]),
 });
 
 assert.equal(
@@ -1907,6 +2154,14 @@ const counterPickProfileReviewPageSource = readFileSync(
   new URL("../src/app/admin/counter-picks/profile-review/page.tsx", import.meta.url),
   "utf8",
 );
+const championRolesSource = readFileSync(
+  new URL("../src/features/league/champion-roles.ts", import.meta.url),
+  "utf8",
+);
+const counterRankingV2Source = readFileSync(
+  new URL("../src/features/league/counter-ranking-v2.ts", import.meta.url),
+  "utf8",
+);
 const counterPickStatisticsProviderSource = readFileSync(
   new URL("../src/features/league/counter-pick-statistics-provider.ts", import.meta.url),
   "utf8",
@@ -2074,6 +2329,36 @@ assert.match(
 );
 assert.match(
   counterPickActionsSource,
+  /export async function markCounterRankingV2ProfilesReviewed/,
+  "The admin action layer should expose batch profile approval.",
+);
+assert.match(
+  counterPickActionsSource,
+  /validateCounterRankingV2ProfileCanBeReviewed/,
+  "Profile approval should validate current profile data before marking reviewed.",
+);
+assert.match(
+  counterPickActionsSource,
+  /reviewed_at: now/,
+  "Profile approval should stamp reviewed_at metadata.",
+);
+assert.match(
+  counterPickActionsSource,
+  /reviewed_by: authResult\.userId/,
+  "Profile approval should stamp reviewed_by metadata when an admin user is available.",
+);
+assert.match(
+  counterPickActionsSource,
+  /notes: currentReview\?\.notes \?\? null/,
+  "Profile approval should preserve existing admin notes.",
+);
+assert.match(
+  counterPickActionsSource,
+  /trait_profile_version: profile\.version[\s\S]*vulnerability_profile_version: profile\.version/,
+  "Profile approval should preserve the current profile revision.",
+);
+assert.match(
+  counterPickActionsSource,
   /counter_ranking_v2_champion_trait_profiles/,
   "Trait edits should save to the Counter Ranking V2 trait profile table.",
 );
@@ -2109,8 +2394,38 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
+  /getCounterRankingV2ChampionProfile\(\s*effectiveSelectedChampionId,\s*counterRankingV2ProfileStatusesByChampionId,\s*counterRankingV2ProfileOverridesByChampionId,\s*selectedRole/s,
+  "Shadow Ranking should use the same role-aware editable profile lookup as Counter Profile Review.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /formatCounterRankingV2ProfileAvailability\(\s*champion\.id,\s*counterRankingV2ProfileStatusesByChampionId,\s*counterRankingV2ProfileOverridesByChampionId,\s*selectedRole/s,
+  "Shadow Ranking selector labels should include editable role-aware profiles such as Locke Mid.",
+);
+assert.match(
+  counterRankingV2Source,
+  /getCounterRankingV2ProfileKey[\s\S]*normalizeCounterRankingV2ProfileRole\(role\)/,
+  "Counter Ranking V2 profile keys should normalize role values before lookup.",
+);
+assert.doesNotMatch(
+  counterRankingV2Source,
+  /profileStatusesByChampionId\?\.get\(normalizedChampionId\)/,
+  "Profile status lookup should not fall back from champion-role keys to champion-only keys.",
+);
+assert.match(
+  counterPickAdminSectionSource,
   /CounterRankingV2ProfileReviewPanel/,
   "The admin Counter Profile Review page should render profile review controls.",
+);
+assert.match(
+  championRolesSource,
+  /export function getChampionRoles[\s\S]*return getSupportedChampionRoles\(champion\);/,
+  "Default champion role lookup should return supported roles only.",
+);
+assert.match(
+  championRolesSource,
+  /export function getOffMetaChampionRoles/,
+  "Off-meta champion roles should remain available through an explicit helper.",
 );
 assert.match(
   counterPickActionsSource,
@@ -2134,6 +2449,16 @@ assert.match(
 );
 assert.match(
   counterPickActionsSource,
+  /getSupportedChampionRoles\(\{ id: championId \}\)/,
+  "Generated draft profile backfill should create only supported champion-role profiles.",
+);
+assert.doesNotMatch(
+  counterPickActionsSource,
+  /getChampionRoles\(\{ id: championId \}\)/,
+  "Generated draft profile backfill should not use the broad/off-meta role list.",
+);
+assert.match(
+  counterPickActionsSource,
   /createdProfiles[\s\S]*repairedProfiles[\s\S]*skippedProfiles[\s\S]*supportedChampionRoleProfiles/,
   "Generated draft profile backfill should report created, repaired, and skipped counts.",
 );
@@ -2141,6 +2466,56 @@ assert.match(
   counterPickAdminSectionSource,
   /Create missing drafts/,
   "Counter Profile Review should expose a backfill control for missing generated drafts.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Improve draft profiles/,
+  "Counter Profile Review should expose the draft profile improvement workflow.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /createCounterRankingV2ImprovedDraftProfileSuggestion/,
+  "Counter Profile Review should generate draft improvement previews from the shared profile generator.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /isCounterRankingV2ProfileEligibleForDraftImprovement/,
+  "Counter Profile Review should preserve reviewed and admin-noted profiles during draft improvement.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /selectedDraftImprovementKeys/,
+  "Counter Profile Review should apply only selected draft improvement suggestions.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /formatDraftProfileImprovementReviewNote/,
+  "Counter Profile Review should store the generated draft explanation when applying suggestions.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /const supportedProfileRows = useMemo/,
+  "Counter Profile Review should separate supported profile rows from unsupported/off-meta rows.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /const unsupportedProfileRows = useMemo/,
+  "Counter Profile Review should keep unsupported/off-meta stored profiles visible as an excluded warning.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /draftImprovementOnlyFiltered \? filteredProfileRows : supportedProfileRows/,
+  "Auto-draft improvement should skip unsupported/off-meta profile rows by default.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Unsupported\/off-meta/,
+  "Counter Profile Review should summarize unsupported/off-meta stored profiles.",
+);
+assert.match(
+  counterPickActionsSource,
+  /Unsupported or off-meta role/,
+  "Profile approval should skip unsupported/off-meta profile rows server-side.",
 );
 assert.match(
   counterPickAdminSectionSource,
@@ -2174,7 +2549,7 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
-  /key=\{getCounterRankingV2ProfileKey\(profile\.championId, profile\.role\)\}/,
+  /key=\{profileKey\}/,
   "Counter Profile Review should render rows with a normalized stable champion-role key after dedupe.",
 );
 assert.match(
@@ -2201,6 +2576,31 @@ assert.match(
   counterPickAdminSectionSource,
   /Promote to Reviewed/,
   "The profile review panel should expose a direct promotion action.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Mark reviewed/,
+  "Counter Profile Review cards should expose a single-profile Mark reviewed action.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Mark selected as reviewed/,
+  "Counter Profile Review should expose batch approval for selected profiles.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /isCounterRankingV2ProfileEligibleForReviewedApproval/,
+  "Counter Profile Review approval controls should only target draft or needs-revision profiles.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Improved drafts/,
+  "Counter Profile Review should allow filtering improved draft profiles.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /markCounterRankingV2ProfileTargetsReviewed/,
+  "Counter Profile Review approval should update local review state after server approval.",
 );
 assert.match(
   counterPickAdminSectionSource,

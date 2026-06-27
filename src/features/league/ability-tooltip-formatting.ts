@@ -1,20 +1,44 @@
 import type { LeagueAbilityVarMetadata, LeagueChampionAbilityMetadata } from "./abilities";
 
 export type CompactAbilityTooltipDetail = {
-  label: "Damage breakdown" | "Effect";
+  label: "Damage" | "Effect";
   values: string[];
+};
+
+export type CompactAbilityTooltipStat = {
+  label: "Cooldown" | "Cost";
+  value: string;
 };
 
 export type CompactAbilityTooltip = {
   description: string;
   details: CompactAbilityTooltipDetail[];
   metaText: string;
+  stats: CompactAbilityTooltipStat[];
 };
 
 const damageTagLabels: Record<string, string> = {
   magicdamage: "Magic",
   physicaldamage: "Physical",
   truedamage: "True",
+};
+
+const genericDamagePlaceholders = new Set([
+  "damage",
+  "tooltipdamage",
+  "tooltiptotaldamage",
+  "totaldamage",
+  "totaldamagetooltip",
+  "totaldamagett",
+]);
+
+const damageValueOverrides: Record<string, Record<string, string>> = {
+  AhriE: {
+    totaldamage: "80 / 110 / 140 / 170 / 200 (+60% AP)",
+  },
+  AhriQ: {
+    totaldamage: "35 / 60 / 85 / 110 / 135 (+50% AP)",
+  },
 };
 
 const effectTagLabels: Record<string, string> = {
@@ -58,11 +82,12 @@ export function getCompactAbilityTooltip(
     description,
     details: [
       damageBreakdown.lines.length > 0
-        ? { label: "Damage breakdown", values: damageBreakdown.lines }
+        ? { label: "Damage", values: damageBreakdown.lines }
         : null,
       effectSummary ? { label: "Effect", values: [effectSummary] } : null,
     ].filter((detail): detail is CompactAbilityTooltipDetail => Boolean(detail)),
     metaText: getAbilityMetaText(ability),
+    stats: getAbilityStats(ability),
   };
 }
 
@@ -75,14 +100,33 @@ export function cleanDataDragonText(value: string) {
 }
 
 function getAbilityMetaText(ability: LeagueChampionAbilityMetadata) {
-  return [
-    ability.cooldownBurn ? `${ability.cooldownBurn}s` : null,
-    ability.costBurn && ability.costBurn !== "0"
-      ? [ability.costBurn, cleanDataDragonText(ability.costType ?? "")].filter(Boolean).join(" ")
-      : null,
-  ]
-    .filter(Boolean)
+  return getAbilityStats(ability)
+    .map((stat) => `${stat.label}: ${stat.value}`)
     .join(" / ");
+}
+
+function getAbilityStats(ability: LeagueChampionAbilityMetadata): CompactAbilityTooltipStat[] {
+  return [
+    ability.cooldownBurn
+      ? { label: "Cooldown" as const, value: formatCooldown(ability.cooldownBurn) }
+      : null,
+    { label: "Cost" as const, value: formatCost(ability) },
+  ].filter((stat): stat is CompactAbilityTooltipStat => Boolean(stat?.value));
+}
+
+function formatCooldown(value: string) {
+  return `${formatRankedNumberText(value)}s`;
+}
+
+function formatCost(ability: LeagueChampionAbilityMetadata) {
+  const cleanedCost = formatRankedNumberText(cleanDataDragonText(ability.costBurn ?? ""));
+  const cleanedCostType = getAbilityResourceType(ability);
+
+  if (!cleanedCost || cleanedCost === "0") {
+    return cleanedCostType && /no\s*cost/i.test(cleanedCostType) ? "No cost" : "";
+  }
+
+  return [cleanedCost, cleanedCostType].filter(Boolean).join(" ");
 }
 
 function getGameplayDescription({
@@ -149,22 +193,34 @@ function getGameplayDescription({
 }
 
 function getDamageBreakdown(rawTooltip: string, ability: LeagueChampionAbilityMetadata) {
-  const components = getTaggedValues(rawTooltip)
-    .filter(({ tag }) => damageTagLabels[tag])
-    .map(({ tag, text }) => ({
-      breakdown: getResolvedDamageText(text, ability),
-      type: damageTagLabels[tag],
-    }))
+  const damageTaggedValues = getTaggedValues(rawTooltip).filter(({ tag }) => damageTagLabels[tag]);
+  const shouldAllowGenericEffectBurnMatch = damageTaggedValues.length === 1;
+  const components = damageTaggedValues
+    .map(({ afterText, tag, text }) => {
+      const breakdown = getResolvedDamageText(text, ability, {
+        allowGenericEffectBurnMatch: shouldAllowGenericEffectBurnMatch,
+      });
+
+      return {
+        breakdown,
+        componentLabel: getDamageComponentLabel(afterText),
+        text,
+        type: damageTagLabels[tag],
+      };
+    })
     .filter(({ type }) => Boolean(type));
 
   const resolvedComponents = components.filter(({ breakdown }) => breakdown);
 
   if (resolvedComponents.length > 0) {
     const lines = unique(
-      resolvedComponents.map(({ breakdown, type }) =>
-        resolvedComponents.length > 1
-          ? `${type}: ${breakdown}`
-          : `${breakdown} ${type.toLowerCase()} damage`,
+      resolvedComponents.map(({ breakdown, componentLabel, type }) =>
+        formatDamageLine({
+          breakdown,
+          componentLabel,
+          includeComponentLabel: resolvedComponents.length > 1,
+          type,
+        }),
       ),
     );
 
@@ -174,7 +230,9 @@ function getDamageBreakdown(rawTooltip: string, ability: LeagueChampionAbilityMe
     };
   }
 
-  const fallbackTypes = unique(components.map(({ type }) => `${type} Damage`));
+  const fallbackTypes = unique(components.map(({ type }) => `${type.toLowerCase()} damage`));
+
+  warnAboutMissingDamageExtraction(ability, components);
 
   return {
     lines: fallbackTypes,
@@ -192,7 +250,13 @@ function getEffectSummary(rawTooltip: string) {
 }
 
 function getTaggedValues(rawTooltip: string) {
-  return Array.from(rawTooltip.matchAll(/<([a-zA-Z]+)>(.*?)<\/\1>/g), (match) => ({
+  const matches = Array.from(rawTooltip.matchAll(/<([a-zA-Z]+)>(.*?)<\/\1>/g));
+
+  return matches.map((match) => ({
+    afterText: rawTooltip.slice(
+      (match.index ?? 0) + match[0].length,
+      matches.find((candidate) => (candidate.index ?? 0) > (match.index ?? 0))?.index,
+    ),
     tag: match[1]?.toLowerCase() ?? "",
     text: cleanDataDragonMarkup(match[2] ?? "")
       .replace(/\s+/g, " ")
@@ -200,8 +264,12 @@ function getTaggedValues(rawTooltip: string) {
   }));
 }
 
-function getResolvedDamageText(text: string, ability: LeagueChampionAbilityMetadata) {
-  const resolvedText = resolveDataDragonPlaceholders(text, ability);
+function getResolvedDamageText(
+  text: string,
+  ability: LeagueChampionAbilityMetadata,
+  options: { allowGenericEffectBurnMatch: boolean },
+) {
+  const resolvedText = resolveDataDragonPlaceholders(text, ability, options);
   const numericBreakdown = getNumericBreakdown(resolvedText);
 
   if (numericBreakdown) {
@@ -211,11 +279,15 @@ function getResolvedDamageText(text: string, ability: LeagueChampionAbilityMetad
   return "";
 }
 
-function resolveDataDragonPlaceholders(value: string, ability: LeagueChampionAbilityMetadata) {
+function resolveDataDragonPlaceholders(
+  value: string,
+  ability: LeagueChampionAbilityMetadata,
+  options: { allowGenericEffectBurnMatch: boolean },
+) {
   return cleanDataDragonMarkup(value).replace(
     /\{\{\s*([^}]+?)\s*\}\}/g,
     (_match, rawExpression) => {
-      const resolvedValue = resolveDataDragonExpression(String(rawExpression), ability);
+      const resolvedValue = resolveDataDragonExpression(String(rawExpression), ability, options);
 
       return resolvedValue || "";
     },
@@ -225,12 +297,20 @@ function resolveDataDragonPlaceholders(value: string, ability: LeagueChampionAbi
 function resolveDataDragonExpression(
   rawExpression: string,
   ability: LeagueChampionAbilityMetadata,
+  options: { allowGenericEffectBurnMatch: boolean },
 ) {
   const expression = rawExpression.trim();
+  const normalizedExpression = expression.toLowerCase();
   const variableValue = resolveDataDragonVariable(expression, ability);
 
   if (variableValue) {
     return variableValue;
+  }
+
+  const overrideValue = damageValueOverrides[ability.id]?.[normalizedExpression];
+
+  if (overrideValue) {
+    return overrideValue;
   }
 
   const multipliedExpression = expression.match(/^([a-zA-Z0-9_]+)\s*\*\s*(\d+(?:\.\d+)?)$/);
@@ -248,6 +328,10 @@ function resolveDataDragonExpression(
     return multiplyFormattedNumbers(baseValue, multiplier);
   }
 
+  if (options.allowGenericEffectBurnMatch && genericDamagePlaceholders.has(normalizedExpression)) {
+    return getBestGenericDamageValue(ability, normalizedExpression);
+  }
+
   return "";
 }
 
@@ -263,7 +347,17 @@ function resolveDataDragonVariable(
     return variableValue;
   }
 
-  const effectIndex = normalizedKey.match(/^(?:e|effect)(\d+)$/)?.[1];
+  const dataValue = ability.datavalues?.[normalizedKey];
+
+  if (typeof dataValue === "number") {
+    return formatNumber(dataValue);
+  }
+
+  if (typeof dataValue === "string") {
+    return formatRankedNumberText(dataValue);
+  }
+
+  const effectIndex = normalizedKey.match(/^(?:e|effect)(\d+)(?:amount)?$/)?.[1];
 
   if (effectIndex) {
     return getEffectBurnValue(ability, Number(effectIndex));
@@ -332,6 +426,8 @@ function getNumericBreakdown(value: string) {
 
   return cleanedValue
     .replace(/\b(?:magic|physical|true|mixed)?\s*damage\b/gi, "")
+    .replace(/\s*\/\s*/g, " / ")
+    .replace(/\(\s*\+/g, "(+")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -342,6 +438,164 @@ function cleanDamageText(value: string) {
     .replace(/\)\s*\)/g, ")")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function formatDamageLine({
+  breakdown,
+  componentLabel,
+  includeComponentLabel,
+  type,
+}: {
+  breakdown: string;
+  componentLabel: string;
+  includeComponentLabel: boolean;
+  type: string;
+}) {
+  const damageText = `${breakdown} ${type.toLowerCase()} damage`;
+
+  return includeComponentLabel ? `${componentLabel || type}: ${damageText}` : damageText;
+}
+
+function getDamageComponentLabel(afterText: string) {
+  const cleanContext = cleanDataDragonText(afterText).toLowerCase();
+
+  if (/\bon the way out\b|\boutgoing\b/.test(cleanContext)) {
+    return "Outgoing";
+  }
+
+  if (/\bon the way back\b|\breturn(?:ing)?\b/.test(cleanContext)) {
+    return "Return";
+  }
+
+  if (/\bper second\b|\beach second\b/.test(cleanContext)) {
+    return "Per second";
+  }
+
+  if (/\bon arrival\b|\bupon arrival\b/.test(cleanContext)) {
+    return "On arrival";
+  }
+
+  return "";
+}
+
+function getBestGenericDamageValue(ability: LeagueChampionAbilityMetadata, placeholder: string) {
+  const baseDamage = getBestNumericEffectBurnValue(ability, placeholder);
+
+  if (!baseDamage) {
+    return "";
+  }
+
+  const scalingText = getDamageScalingText(ability);
+
+  return [baseDamage, scalingText ? `(${scalingText})` : null].filter(Boolean).join(" ");
+}
+
+function getBestNumericEffectBurnValue(ability: LeagueChampionAbilityMetadata, placeholder: string) {
+  const candidates = (ability.effectBurn ?? [])
+    .map((value) => ({
+      value: typeof value === "string" ? formatRankedNumberText(value) : "",
+    }))
+    .filter(({ value }) => isPlausibleDamageEffectBurnValue(value, ability.maxrank))
+    .map((value) => ({
+      score: getRankedNumberScore(value.value, placeholder),
+      value: value.value,
+    }))
+    .filter(({ score }) => score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  return candidates[0]?.value ?? "";
+}
+
+function isPlausibleDamageEffectBurnValue(value: string, maxrank = 0) {
+  if (!value || value === "0" || !/\d/.test(value) || /-/.test(value)) {
+    return false;
+  }
+
+  const numbers = value.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+  const expectedRankCount = maxrank > 0 ? maxrank : numbers.length;
+
+  if (numbers.length < 3 || numbers.length !== expectedRankCount) {
+    return false;
+  }
+
+  const highestValue = Math.max(...numbers);
+  const averageValue = numbers.reduce((sum, number) => sum + number, 0) / numbers.length;
+
+  return highestValue <= 500 && (highestValue >= 20 || averageValue >= 10);
+}
+
+function getRankedNumberScore(value: string, placeholder: string) {
+  const numbers = value.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+
+  if (numbers.length === 0 || numbers.every((number) => number === 0)) {
+    return 0;
+  }
+
+  const placeholderBonus = /damage|dmg/.test(placeholder) ? 1000 : 0;
+
+  return placeholderBonus + numbers.reduce((sum, number) => sum + number, 0);
+}
+
+function getDamageScalingText(ability: LeagueChampionAbilityMetadata) {
+  const scalingValues = unique(
+    (ability.vars ?? [])
+      .map((variable) =>
+        typeof variable.coeff === "number" && getScalingLabel(variable.link)
+          ? formatDataDragonVariable(variable)
+          : "",
+      )
+      .filter(Boolean),
+  );
+
+  return scalingValues.join(" + ");
+}
+
+function warnAboutMissingDamageExtraction(
+  ability: LeagueChampionAbilityMetadata,
+  components: Array<{ breakdown: string; text: string; type: string }>,
+) {
+  if (process.env.NODE_ENV === "production" || components.length === 0) {
+    return;
+  }
+
+  const unresolvedComponents = components.filter(({ breakdown }) => !breakdown);
+
+  if (unresolvedComponents.length === 0) {
+    return;
+  }
+
+  const effectBurnCandidates = (ability.effectBurn ?? []).filter(
+    (value): value is string => Boolean(value && value !== "0" && /\d/.test(value)),
+  );
+  const vars = ability.vars ?? [];
+
+  console.warn("AbilityHover could not extract numeric damage values", {
+    abilityId: ability.id,
+    abilityName: ability.name,
+    damageTypes: unique(unresolvedComponents.map(({ type }) => `${type.toLowerCase()} damage`)),
+    effectBurnCandidates,
+    unresolvedText: unresolvedComponents.map(({ text }) => text),
+    vars,
+  });
+}
+
+function formatRankedNumberText(value: string) {
+  return value.replace(/\s*\/\s*/g, " / ").trim();
+}
+
+function getAbilityResourceType(ability: LeagueChampionAbilityMetadata) {
+  const costType = ability.costType ?? "";
+  const cleanedCostType = cleanDataDragonText(costType);
+
+  if (!cleanedCostType || /\{\{\s*abilityresourcename\s*\}\}/i.test(costType)) {
+    return cleanDataDragonText(ability.resourceType ?? "");
+  }
+
+  if (/\{\{/.test(costType) && /%/.test(cleanedCostType)) {
+    return cleanDataDragonText(ability.resourceType ?? "") || cleanedCostType.replace(/\s*%\s*/g, " ");
+  }
+
+  return cleanedCostType;
 }
 
 function multiplyFormattedNumbers(value: string, multiplier: number) {

@@ -244,17 +244,24 @@ export function getChampionRoleTier(
 }
 
 export function getChampionRoles(champion: Pick<LeagueChampion, "id">) {
+  return getSupportedChampionRoles(champion);
+}
+
+export function getSupportedChampionRoles(champion: Pick<LeagueChampion, "id">) {
   const profile = getChampionCombatProfile(champion.id);
 
   if (profile) {
     return [
       ...(profile.primaryRoles ?? []),
       ...(profile.secondaryRoles ?? []),
-      ...(profile.offMetaRoles ?? []),
     ];
   }
 
   return championRolesById.get(champion.id) ?? [];
+}
+
+export function getOffMetaChampionRoles(champion: Pick<LeagueChampion, "id">) {
+  return getChampionCombatProfile(champion.id)?.offMetaRoles ?? [];
 }
 
 export function isChampionInRole(

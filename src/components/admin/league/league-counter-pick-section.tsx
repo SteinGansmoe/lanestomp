@@ -25,6 +25,7 @@ import {
   getCounterRankingV2EditableProfiles,
   getCounterRankingV2MechanicalReviews,
   getCounterRankingV2ProfileReviews,
+  markCounterRankingV2ProfilesReviewed,
   saveCounterRankingV2ProfileManagement,
   saveCounterRankingV2MechanicalReview,
   type BatchCounterRankingV2MechanicalReviewAction,
@@ -48,6 +49,7 @@ import {
   counterRankingV2ReviewStatuses,
   counterRankingV2TraitDefinitionsById,
   counterRankingV2TraitVocabulary,
+  createCounterRankingV2ImprovedDraftProfileSuggestion,
   createObservedCounterRankingV2Snapshot,
   calculateCounterRankingV2FinalMechanicalScore,
   counterRankingV2DefaultAdjustmentReason,
@@ -65,6 +67,8 @@ import {
   getCounterRankingV2PublicPreviewRows,
   getCounterRankingV2ReviewProgressSummary,
   hasCounterRankingV2WeakMechanicalSignal,
+  isCounterRankingV2ProfileEligibleForDraftImprovement,
+  isChampionSupportedInRole,
   isCounterRankingV2TraitDefinitionVisibleForRole,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
@@ -80,6 +84,7 @@ import {
   type CounterRankingV2CandidatePoolSummary,
   type CounterRankingV2ChampionProfile,
   type CounterRankingV2ComparisonRow,
+  type CounterRankingV2DraftProfileSuggestion,
   type CounterRankingV2FitStatus,
   type CounterRankingV2FactorImpactLevel,
   type CounterRankingV2MechanicalReview,
@@ -147,7 +152,10 @@ type CounterRankingV2ProfileReviewForm = {
   strengths: CounterRankingV2ProfileTrait[];
   vulnerabilities: CounterRankingV2ProfileTrait[];
 };
-type CounterRankingV2ProfileStatusFilter = CounterRankingV2ProfileStatus | "all";
+type CounterRankingV2ProfileStatusFilter =
+  | CounterRankingV2ProfileStatus
+  | "all"
+  | "improved_draft";
 type CounterRankingV2ProfileRoleFilter = LeagueRole | "all";
 type CounterRankingV2ShadowReviewFilterOption = {
   filter: CounterRankingV2ReviewFilter;
@@ -294,6 +302,7 @@ export function AdminLeagueCounterPicksSection({
   );
   const championOptions = useMemo(() => {
     const query = championSearch.trim().toLowerCase();
+    const includeOffMeta = !isCounterRankingV2ProfileWorkspace;
 
     return roleSortedChampions.filter((champion) => {
       const matchesQuery =
@@ -301,9 +310,9 @@ export function AdminLeagueCounterPicksSection({
         champion.name.toLowerCase().includes(query) ||
         champion.id.toLowerCase().includes(query);
 
-      return matchesQuery && isChampionInRole(champion, selectedRole, { includeOffMeta: true });
+      return matchesQuery && isChampionInRole(champion, selectedRole, { includeOffMeta });
     });
-  }, [championSearch, roleSortedChampions, selectedRole]);
+  }, [championSearch, isCounterRankingV2ProfileWorkspace, roleSortedChampions, selectedRole]);
   const counterRankingV2DefaultChampionId = useMemo(
     () =>
       counterRankingV2SupportedChampionIds.find((championId) =>
@@ -317,7 +326,9 @@ export function AdminLeagueCounterPicksSection({
         ? counterRankingV2DefaultChampionId
         : ""
       : (roleSortedChampions.find((champion) =>
-          isChampionInRole(champion, selectedRole, { includeOffMeta: true }),
+          isChampionInRole(champion, selectedRole, {
+            includeOffMeta: !isCounterRankingV2ProfileWorkspace,
+          }),
         )?.id ?? "");
   const effectiveSelectedChampionId = selectedChampionId
     ? (getChampionIdFromOptionMap(counterRankingV2ChampionsById, selectedChampionId) ??
@@ -330,9 +341,24 @@ export function AdminLeagueCounterPicksSection({
     () => includeSelectedChampionOption(championOptions, selectedChampion),
     [championOptions, selectedChampion],
   );
-  const hasSelectedCounterRankingV2Profile = effectiveSelectedChampionId
-    ? isCounterRankingV2SupportedChampion(effectiveSelectedChampionId)
-    : false;
+  const selectedCounterRankingV2Profile = useMemo(
+    () =>
+      effectiveSelectedChampionId
+        ? getCounterRankingV2ChampionProfile(
+            effectiveSelectedChampionId,
+            counterRankingV2ProfileStatusesByChampionId,
+            counterRankingV2ProfileOverridesByChampionId,
+            selectedRole,
+          )
+        : null,
+    [
+      counterRankingV2ProfileOverridesByChampionId,
+      counterRankingV2ProfileStatusesByChampionId,
+      effectiveSelectedChampionId,
+      selectedRole,
+    ],
+  );
+  const hasSelectedCounterRankingV2Profile = selectedCounterRankingV2Profile !== null;
   const selectedChampionCombatProfile = useMemo(
     () =>
       effectiveSelectedChampionId ? getChampionCombatProfile(effectiveSelectedChampionId) : null,
@@ -746,6 +772,145 @@ export function AdminLeagueCounterPicksSection({
       error: null,
       isLoading: false,
       success: `Generated draft profile backfill complete: ${result.summary.createdProfiles} created, ${result.summary.repairedProfiles} repaired, ${result.summary.skippedProfiles} skipped, ${result.summary.missingProfiles} missing.`,
+    });
+  }
+
+  async function applyCounterRankingV2DraftProfileImprovements(
+    suggestions: CounterRankingV2DraftProfileSuggestion[],
+  ) {
+    if (suggestions.length === 0) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: "Select at least one draft profile suggestion to apply.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: tokenResult.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCounterRankingV2ProfileReviewStatus({ error: null, isLoading: true, success: null });
+
+    const savedProfiles: CounterRankingV2ChampionProfile[] = [];
+    const savedReviews: CounterRankingV2ProfileReview[] = [];
+
+    for (const suggestion of suggestions) {
+      const canonicalChampionId =
+        counterRankingV2ChampionsById.get(normalizeCounterRankingV2ChampionId(suggestion.championId))
+          ?.id ?? suggestion.championId;
+      const result = await saveCounterRankingV2ProfileManagement({
+        accessToken: tokenResult.accessToken,
+        championId: canonicalChampionId,
+        identitySummary: suggestion.summary,
+        knownStrengths: suggestion.knownStrengths,
+        knownWeaknesses: suggestion.knownWeaknesses,
+        masteryRequirement: null,
+        reviewNote: formatDraftProfileImprovementReviewNote(suggestion),
+        role: suggestion.role,
+        status: suggestion.proposedStatus,
+        strengths: suggestion.strengths,
+        vulnerabilities: suggestion.vulnerabilities,
+      });
+
+      if (!result.ok) {
+        setCounterRankingV2ProfileReviewStatus({
+          error: `Draft profile improvement stopped at ${canonicalChampionId} ${getRoleLabel(suggestion.role)}: ${result.error}`,
+          isLoading: false,
+          success: null,
+        });
+        return;
+      }
+
+      savedProfiles.push(result.profile);
+      savedReviews.push(result.review);
+    }
+
+    setCounterRankingV2ProfileOverridesByChampionId((currentProfiles) => {
+      const nextProfiles = new Map(currentProfiles);
+
+      for (const profile of savedProfiles) {
+        nextProfiles.set(getCounterRankingV2ProfileKey(profile.championId, profile.role), profile);
+      }
+
+      return nextProfiles;
+    });
+    setCounterRankingV2ProfileReviewsByChampionId((currentReviews) => {
+      const nextReviews = new Map(currentReviews);
+
+      for (const review of savedReviews) {
+        nextReviews.set(getCounterRankingV2ProfileKey(review.championId, review.role), review);
+      }
+
+      return nextReviews;
+    });
+    setCounterRankingV2ProfileReviewStatus({
+      error: null,
+      isLoading: false,
+      success: `Applied ${savedProfiles.length} draft profile improvement${savedProfiles.length === 1 ? "" : "s"}.`,
+    });
+  }
+
+  async function markCounterRankingV2ProfileTargetsReviewed(
+    targets: Array<{ championId: string; role: LeagueRole }>,
+  ) {
+    if (targets.length === 0) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: "Select at least one eligible mechanical profile to mark reviewed.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    const tokenResult = await getAccessToken();
+
+    if (!tokenResult.ok) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: tokenResult.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCounterRankingV2ProfileReviewStatus({ error: null, isLoading: true, success: null });
+
+    const result = await markCounterRankingV2ProfilesReviewed({
+      accessToken: tokenResult.accessToken,
+      profiles: targets,
+    });
+
+    if (!result.ok) {
+      setCounterRankingV2ProfileReviewStatus({
+        error: result.error,
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
+
+    setCounterRankingV2ProfileReviewsByChampionId((currentReviews) => {
+      const nextReviews = new Map(currentReviews);
+
+      for (const review of result.reviews) {
+        nextReviews.set(getCounterRankingV2ProfileKey(review.championId, review.role), review);
+      }
+
+      return nextReviews;
+    });
+    setCounterRankingV2ProfileReviewStatus({
+      error: null,
+      isLoading: false,
+      success: `Marked ${result.reviews.length} mechanical profile${result.reviews.length === 1 ? "" : "s"} reviewed${result.skipped.length > 0 ? `; skipped ${result.skipped.length}.` : "."}`,
     });
   }
 
@@ -1224,7 +1389,13 @@ export function AdminLeagueCounterPicksSection({
         <CounterRankingV2ProfileReviewPanel
           championsById={counterRankingV2ChampionsById}
           isSaving={savingCounterRankingV2ProfileReviewId !== null}
+          onApplyDraftImprovements={(suggestions) =>
+            void applyCounterRankingV2DraftProfileImprovements(suggestions)
+          }
           onBackfillDrafts={() => void backfillCounterRankingV2ProfileDrafts()}
+          onMarkProfilesReviewed={(targets) =>
+            void markCounterRankingV2ProfileTargetsReviewed(targets)
+          }
           onRefresh={() => {
             void loadCounterRankingV2ProfileReviews();
             void loadCounterRankingV2EditableProfiles();
@@ -1303,6 +1474,7 @@ export function AdminLeagueCounterPicksSection({
                       {formatCounterRankingV2ProfileAvailability(
                         champion.id,
                         counterRankingV2ProfileStatusesByChampionId,
+                        counterRankingV2ProfileOverridesByChampionId,
                         selectedRole,
                       )}
                       )
@@ -1875,7 +2047,9 @@ type CounterRankingV2ProfileReviewPanelRow = {
 function CounterRankingV2ProfileReviewPanel({
   championsById,
   isSaving,
+  onApplyDraftImprovements,
   onBackfillDrafts,
+  onMarkProfilesReviewed,
   onRefresh,
   onSaveReview,
   onSelectProfile,
@@ -1889,7 +2063,9 @@ function CounterRankingV2ProfileReviewPanel({
 }: {
   championsById: Map<string, AdminLeagueChampion>;
   isSaving: boolean;
+  onApplyDraftImprovements: (suggestions: CounterRankingV2DraftProfileSuggestion[]) => void;
   onBackfillDrafts: () => void;
+  onMarkProfilesReviewed: (targets: Array<{ championId: string; role: LeagueRole }>) => void;
   onRefresh: () => void;
   onSaveReview: (
     championId: string,
@@ -1907,6 +2083,17 @@ function CounterRankingV2ProfileReviewPanel({
 }) {
   const [statusFilter, setStatusFilter] = useState<CounterRankingV2ProfileStatusFilter>("all");
   const [roleFilter, setRoleFilter] = useState<CounterRankingV2ProfileRoleFilter>("all");
+  const [draftImprovementMaxProfiles, setDraftImprovementMaxProfiles] = useState("10");
+  const [draftImprovementOnlyFiltered, setDraftImprovementOnlyFiltered] = useState(true);
+  const [draftImprovementSuggestions, setDraftImprovementSuggestions] = useState<
+    CounterRankingV2DraftProfileSuggestion[]
+  >([]);
+  const [selectedDraftImprovementKeys, setSelectedDraftImprovementKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [selectedProfileApprovalKeys, setSelectedProfileApprovalKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
   const selectedProfile = selectedChampionId
     ? getCounterRankingV2ChampionProfile(
         selectedChampionId,
@@ -2006,27 +2193,61 @@ function CounterRankingV2ProfileReviewPanel({
       profileStatusesByChampionId,
     ],
   );
+  const supportedProfileRows = useMemo(
+    () =>
+      profileRows.filter(({ profile }) =>
+        isChampionSupportedInRole(profile.championId, profile.role),
+      ),
+    [profileRows],
+  );
+  const unsupportedProfileRows = useMemo(
+    () =>
+      profileRows.filter(
+        ({ profile }) => !isChampionSupportedInRole(profile.championId, profile.role),
+      ),
+    [profileRows],
+  );
   const profileCoverageSummary = useMemo(
     () =>
       getCounterRankingV2ProfileCoverageSummary(
-        profileRows.map((row) => row.profile),
+        supportedProfileRows.map((row) => row.profile),
         Array.from(championsById.values()).reduce(
           (total, champion) =>
-            total + leagueRoles.filter((role) => isChampionInRole(champion, role)).length,
+            total + leagueRoles.filter((role) => isChampionSupportedInRole(champion.id, role)).length,
           0,
         ),
       ),
-    [championsById, profileRows],
+    [championsById, supportedProfileRows],
   );
   const filteredProfileRows = useMemo(
     () =>
-      profileRows.filter(({ profile }) => {
-        const matchesStatus = statusFilter === "all" || profile.reviewStatus === statusFilter;
+      supportedProfileRows.filter(({ profile, review }) => {
+        const matchesStatus =
+          statusFilter === "all" ||
+          (statusFilter === "improved_draft"
+            ? profile.reviewStatus !== "reviewed" && isImprovedCounterRankingV2DraftReview(review)
+            : profile.reviewStatus === statusFilter);
         const matchesRole = roleFilter === "all" || profile.role === roleFilter;
 
         return matchesStatus && matchesRole;
       }),
-    [profileRows, roleFilter, statusFilter],
+    [roleFilter, statusFilter, supportedProfileRows],
+  );
+  const reviewedExampleProfiles = useMemo(
+    () =>
+      supportedProfileRows
+        .map((row) => row.profile)
+        .filter((profile) => profile.reviewStatus === "reviewed"),
+    [supportedProfileRows],
+  );
+  const selectedDraftImprovementCount = draftImprovementSuggestions.filter((suggestion) =>
+    selectedDraftImprovementKeys.has(getCounterRankingV2ProfileKey(suggestion.championId, suggestion.role)),
+  ).length;
+  const visibleApprovalRows = filteredProfileRows.filter(({ profile }) =>
+    isCounterRankingV2ProfileEligibleForReviewedApproval(profile),
+  );
+  const selectedApprovalRows = visibleApprovalRows.filter(({ profile }) =>
+    selectedProfileApprovalKeys.has(getCounterRankingV2ProfileKey(profile.championId, profile.role)),
   );
 
   const selectedChampion = selectedProfile
@@ -2038,6 +2259,89 @@ function CounterRankingV2ProfileReviewPanel({
   const isCurrentProfileSaving =
     selectedProfile !== null &&
     savingChampionId === getCounterRankingV2ProfileKey(selectedProfile.championId, selectedProfile.role);
+
+  function previewDraftProfileImprovements() {
+    const maxProfiles = Math.max(1, Math.min(25, Number(draftImprovementMaxProfiles) || 10));
+    const candidateRows = (draftImprovementOnlyFiltered ? filteredProfileRows : supportedProfileRows)
+      .filter(({ profile, review }) =>
+        isCounterRankingV2ProfileEligibleForDraftImprovement({
+          hasAdminNote: Boolean(review?.reviewNote?.trim()),
+          profile,
+        }),
+      )
+      .slice(0, maxProfiles);
+    const suggestions = candidateRows
+      .map(({ champion, profile }) =>
+        createCounterRankingV2ImprovedDraftProfileSuggestion({
+          currentProfile: profile,
+          knowledge: toCounterRankingV2DraftProfileKnowledge({
+            champion,
+            isCommonRole: champion ? isChampionInRole(champion, profile.role) : true,
+            profile,
+          }),
+          reviewedProfiles: reviewedExampleProfiles,
+        }),
+      )
+      .filter(
+        (suggestion) =>
+          suggestion.strengths.length > 0 ||
+          suggestion.vulnerabilities.length > 0 ||
+          suggestion.knownStrengths.length > 0 ||
+          suggestion.knownWeaknesses.length > 0,
+      );
+
+    setDraftImprovementSuggestions(suggestions);
+    setSelectedDraftImprovementKeys(
+      new Set(
+        suggestions
+          .filter((suggestion) => suggestion.confidence !== "low_draft_confidence")
+          .map((suggestion) => getCounterRankingV2ProfileKey(suggestion.championId, suggestion.role)),
+      ),
+    );
+  }
+
+  function applySelectedDraftProfileImprovements() {
+    const selectedSuggestions = draftImprovementSuggestions.filter((suggestion) =>
+      selectedDraftImprovementKeys.has(getCounterRankingV2ProfileKey(suggestion.championId, suggestion.role)),
+    );
+
+    onApplyDraftImprovements(selectedSuggestions);
+  }
+
+  function markSingleProfileReviewed(profile: CounterRankingV2ChampionProfile) {
+    const confirmed = window.confirm(
+      "Mark this mechanical profile as reviewed? This will allow it to be trusted by Counter Ranking V2 automation.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    onMarkProfilesReviewed([{ championId: profile.championId, role: profile.role }]);
+  }
+
+  function markSelectedProfilesReviewed() {
+    if (selectedApprovalRows.length === 0) {
+      onMarkProfilesReviewed([]);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Mark ${selectedApprovalRows.length} mechanical profile${selectedApprovalRows.length === 1 ? "" : "s"} as reviewed? This will allow them to be trusted by Counter Ranking V2 automation.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    onMarkProfilesReviewed(
+      selectedApprovalRows.map(({ profile }) => ({
+        championId: profile.championId,
+        role: profile.role,
+      })),
+    );
+    setSelectedProfileApprovalKeys(new Set());
+  }
 
   return (
     <Card className="border-emerald-300/15 bg-[#071321]/95 text-white shadow-xl shadow-black/15">
@@ -2107,7 +2411,19 @@ function CounterRankingV2ProfileReviewPanel({
             label="Reviewed"
             value={String(profileCoverageSummary.reviewed)}
           />
+          <CounterRankingV2MetaCell
+            label="Unsupported/off-meta"
+            value={String(unsupportedProfileRows.length)}
+          />
         </div>
+
+        {unsupportedProfileRows.length > 0 ? (
+          <p className="rounded-md border border-amber-300/20 bg-amber-500/10 p-3 text-sm leading-6 text-amber-100">
+            {unsupportedProfileRows.length} stored mechanical profile
+            {unsupportedProfileRows.length === 1 ? "" : "s"} are excluded from normal review because
+            their champion-role pair is unsupported or off-meta.
+          </p>
+        ) : null}
 
         <div className="rounded-lg border border-white/10 bg-black/15 p-3">
           <p className="text-sm font-semibold text-zinc-100">Reviewed coverage by role</p>
@@ -2120,6 +2436,151 @@ function CounterRankingV2ProfileReviewPanel({
               />
             ))}
           </div>
+        </div>
+
+        <div className="rounded-lg border border-emerald-300/15 bg-emerald-500/[0.04] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-100">Improve draft profiles</p>
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-400">
+                Builds role-aware draft suggestions from champion knowledge and reviewed examples.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-xs text-zinc-300">
+                <input
+                  checked={draftImprovementOnlyFiltered}
+                  className="size-4 accent-emerald-300"
+                  onChange={(event) => setDraftImprovementOnlyFiltered(event.target.checked)}
+                  type="checkbox"
+                />
+                Current filters
+              </label>
+              <label className="flex items-center gap-2 text-xs text-zinc-300">
+                Max
+                <Input
+                  className="h-9 w-20 border-white/10 bg-white/5 text-zinc-100"
+                  max={25}
+                  min={1}
+                  onChange={(event) => setDraftImprovementMaxProfiles(event.target.value)}
+                  type="number"
+                  value={draftImprovementMaxProfiles}
+                />
+              </label>
+              <Button
+                className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
+                disabled={reviewStatus.isLoading}
+                onClick={previewDraftProfileImprovements}
+                type="button"
+                variant="outline"
+              >
+                <RefreshCw className="mr-2 size-4" aria-hidden="true" />
+                Improve draft profiles
+              </Button>
+            </div>
+          </div>
+
+          {draftImprovementSuggestions.length > 0 ? (
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-zinc-400">
+                  {draftImprovementSuggestions.length} previews · {selectedDraftImprovementCount} selected
+                </p>
+                <Button
+                  className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                  disabled={reviewStatus.isLoading || selectedDraftImprovementCount === 0}
+                  onClick={applySelectedDraftProfileImprovements}
+                  type="button"
+                >
+                  <CheckSquare className="mr-2 size-4" aria-hidden="true" />
+                  Apply selected
+                </Button>
+              </div>
+              <div className="grid gap-3 xl:grid-cols-2">
+                {draftImprovementSuggestions.map((suggestion) => {
+                  const suggestionKey = getCounterRankingV2ProfileKey(
+                    suggestion.championId,
+                    suggestion.role,
+                  );
+                  const champion =
+                    championsById.get(normalizeCounterRankingV2ChampionId(suggestion.championId)) ??
+                    null;
+                  const isSelected = selectedDraftImprovementKeys.has(suggestionKey);
+
+                  return (
+                    <div
+                      className="rounded-md border border-white/10 bg-black/20 p-3"
+                      key={suggestionKey}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <button
+                          className="flex items-start gap-2 text-left"
+                          onClick={() =>
+                            setSelectedDraftImprovementKeys((currentKeys) => {
+                              const nextKeys = new Set(currentKeys);
+
+                              if (nextKeys.has(suggestionKey)) {
+                                nextKeys.delete(suggestionKey);
+                              } else {
+                                nextKeys.add(suggestionKey);
+                              }
+
+                              return nextKeys;
+                            })
+                          }
+                          type="button"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="mt-0.5 size-4 text-emerald-200" aria-hidden="true" />
+                          ) : (
+                            <Square className="mt-0.5 size-4 text-zinc-500" aria-hidden="true" />
+                          )}
+                          <span>
+                            <span className="block text-sm font-semibold text-white">
+                              {champion?.name ?? suggestion.championId} {getRoleLabel(suggestion.role)}
+                            </span>
+                            <span className="mt-1 block text-xs text-zinc-500">
+                              {formatDraftProfileConfidence(suggestion.confidence)}
+                            </span>
+                          </span>
+                        </button>
+                        <Badge className={getProfileStatusBadgeClassName(suggestion.proposedStatus)}>
+                          {formatProfileStatus(suggestion.proposedStatus)}
+                        </Badge>
+                      </div>
+                      <p className="mt-3 text-xs leading-5 text-zinc-400">{suggestion.summary}</p>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        <CounterRankingV2TraitList
+                          labelContext="strength"
+                          title="Proposed strengths"
+                          traits={suggestion.strengths}
+                        />
+                        <CounterRankingV2TraitList
+                          labelContext="weakness"
+                          title="Proposed weaknesses"
+                          traits={suggestion.vulnerabilities}
+                        />
+                      </div>
+                      <p className="mt-3 text-xs leading-5 text-zinc-500">
+                        Added: {formatDraftProfileChangedTraitIds([
+                          ...suggestion.changes.addedStrengths,
+                          ...suggestion.changes.addedWeaknesses,
+                        ])}
+                      </p>
+                      {suggestion.similarReviewedProfiles.length > 0 ? (
+                        <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          Examples:{" "}
+                          {suggestion.similarReviewedProfiles
+                            .map((example) => `${example.championId} ${getRoleLabel(example.role)}`)
+                            .join(", ")}
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {selectedProfile ? (
@@ -2196,11 +2657,11 @@ function CounterRankingV2ProfileReviewPanel({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-semibold text-zinc-100">Profile filters</p>
             <p className="text-xs text-zinc-500">
-              {filteredProfileRows.length} of {profileRows.length} mechanical profiles
+              {filteredProfileRows.length} of {supportedProfileRows.length} supported mechanical profiles
             </p>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {(["all", ...counterRankingV2ProfileStatuses] as const).map((status) => {
+            {(["all", "improved_draft", ...counterRankingV2ProfileStatuses] as const).map((status) => {
               const isActive = statusFilter === status;
 
               return (
@@ -2216,7 +2677,11 @@ function CounterRankingV2ProfileReviewPanel({
                   onClick={() => setStatusFilter(status)}
                   type="button"
                 >
-                  {status === "all" ? "All" : formatProfileStatus(status)}
+                  {status === "all"
+                    ? "All"
+                    : status === "improved_draft"
+                      ? "Improved drafts"
+                      : formatProfileStatus(status)}
                 </button>
               );
             })}
@@ -2236,48 +2701,126 @@ function CounterRankingV2ProfileReviewPanel({
                 </option>
               ))}
             </select>
+            <Button
+              className="border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10"
+              disabled={visibleApprovalRows.length === 0}
+              onClick={() =>
+                setSelectedProfileApprovalKeys(
+                  new Set(
+                    visibleApprovalRows.map(({ profile }) =>
+                      getCounterRankingV2ProfileKey(profile.championId, profile.role),
+                    ),
+                  ),
+                )
+              }
+              type="button"
+              variant="outline"
+            >
+              <CheckSquare className="mr-2 size-4" aria-hidden="true" />
+              Select visible eligible
+            </Button>
+            <Button
+              className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+              disabled={reviewStatus.isLoading || selectedApprovalRows.length === 0}
+              onClick={markSelectedProfilesReviewed}
+              type="button"
+            >
+              <CheckCircle2 className="mr-2 size-4" aria-hidden="true" />
+              Mark selected as reviewed
+            </Button>
           </div>
+          <p className="mt-2 text-xs text-zinc-500">
+            {selectedApprovalRows.length} selected · {visibleApprovalRows.length} visible eligible
+          </p>
         </div>
 
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {filteredProfileRows.map(({ champion, profile, review }) => (
-            <button
-              className={cn(
-                "rounded-lg border p-3 text-left transition-colors",
-                normalizeCounterRankingV2ChampionId(profile.championId) ===
-                  normalizeCounterRankingV2ChampionId(selectedChampionId) &&
-                  profile.role === selectedRole
-                  ? "border-emerald-300/30 bg-emerald-500/10"
-                  : "border-white/10 bg-white/[0.03] hover:border-emerald-300/20 hover:bg-white/[0.06]",
-              )}
-              key={getCounterRankingV2ProfileKey(profile.championId, profile.role)}
-              onClick={() => onSelectProfile(profile.championId, profile.role)}
-              type="button"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    {champion?.name ?? profile.championId} {getRoleLabel(profile.role)}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    {formatMechanicalProfileStatusLabel(profile)}
-                  </p>
-                  <p
-                    className="mt-1 text-[0.7rem] text-zinc-600"
-                    title={counterRankingV2ProfileRevisionHelpText}
+          {filteredProfileRows.map(({ champion, profile, review }) => {
+            const profileKey = getCounterRankingV2ProfileKey(profile.championId, profile.role);
+            const isProfileSelected = selectedProfileApprovalKeys.has(profileKey);
+            const isApprovalEligible = isCounterRankingV2ProfileEligibleForReviewedApproval(profile);
+
+            return (
+              <div
+                className={cn(
+                  "rounded-lg border p-3 text-left transition-colors",
+                  normalizeCounterRankingV2ChampionId(profile.championId) ===
+                    normalizeCounterRankingV2ChampionId(selectedChampionId) &&
+                    profile.role === selectedRole
+                    ? "border-emerald-300/30 bg-emerald-500/10"
+                    : "border-white/10 bg-white/[0.03] hover:border-emerald-300/20 hover:bg-white/[0.06]",
+                )}
+                key={profileKey}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <button
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => onSelectProfile(profile.championId, profile.role)}
+                    type="button"
                   >
-                    {formatMechanicalProfileRevisionLabel(profile)}
-                  </p>
+                    <p className="text-sm font-semibold text-white">
+                      {champion?.name ?? profile.championId} {getRoleLabel(profile.role)}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {formatMechanicalProfileStatusLabel(profile)}
+                    </p>
+                    <p
+                      className="mt-1 text-[0.7rem] text-zinc-600"
+                      title={counterRankingV2ProfileRevisionHelpText}
+                    >
+                      {formatMechanicalProfileRevisionLabel(profile)}
+                    </p>
+                  </button>
+                  <Badge className={getProfileStatusBadgeClassName(profile.reviewStatus)}>
+                    {formatProfileStatus(profile.reviewStatus)}
+                  </Badge>
                 </div>
-                <Badge className={getProfileStatusBadgeClassName(profile.reviewStatus)}>
-                  {formatProfileStatus(profile.reviewStatus)}
-                </Badge>
+                <p className="mt-3 line-clamp-2 text-xs leading-5 text-zinc-400">
+                  {review?.reviewNote ?? profile.notes ?? "No profile notes yet."}
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {isApprovalEligible ? (
+                    <button
+                      className="flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+                      onClick={() =>
+                        setSelectedProfileApprovalKeys((currentKeys) => {
+                          const nextKeys = new Set(currentKeys);
+
+                          if (nextKeys.has(profileKey)) {
+                            nextKeys.delete(profileKey);
+                          } else {
+                            nextKeys.add(profileKey);
+                          }
+
+                          return nextKeys;
+                        })
+                      }
+                      type="button"
+                    >
+                      {isProfileSelected ? (
+                        <CheckSquare className="size-4 text-emerald-200" aria-hidden="true" />
+                      ) : (
+                        <Square className="size-4 text-zinc-500" aria-hidden="true" />
+                      )}
+                      Select
+                    </button>
+                  ) : null}
+                  {isApprovalEligible ? (
+                    <Button
+                      className="border-emerald-300/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
+                      disabled={reviewStatus.isLoading}
+                      onClick={() => markSingleProfileReviewed(profile)}
+                      type="button"
+                      variant="outline"
+                    >
+                      <CheckCircle2 className="mr-2 size-4" aria-hidden="true" />
+                      Mark reviewed
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-              <p className="mt-3 line-clamp-2 text-xs leading-5 text-zinc-400">
-                {review?.reviewNote ?? profile.notes ?? "No profile notes yet."}
-              </p>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
@@ -4714,15 +5257,103 @@ function splitProfileTextLines(value: string) {
     .filter(Boolean);
 }
 
+function toCounterRankingV2DraftProfileKnowledge({
+  champion,
+  isCommonRole,
+  profile,
+}: {
+  champion: AdminLeagueChampion | null;
+  isCommonRole: boolean;
+  profile: CounterRankingV2ChampionProfile;
+}) {
+  const combatProfile = getChampionCombatProfile(champion?.id ?? profile.championId);
+  const laneIdentity =
+    typeof combatProfile?.laneIdentity === "string"
+      ? combatProfile.laneIdentity
+      : [
+          combatProfile?.laneIdentity?.lanePressure,
+          combatProfile?.laneIdentity?.earlyGameAgency,
+          combatProfile?.laneIdentity?.scalingPriority,
+          ...(combatProfile?.laneIdentity?.preferredGameState ?? []),
+          ...(combatProfile?.laneIdentity?.winLaneBy ?? []),
+        ].filter(Boolean).join(" ");
+
+  return {
+    abilities: combatProfile?.abilities ?? null,
+    archetype: combatProfile?.archetype ?? null,
+    commonWeaknesses: combatProfile?.commonWeaknesses ?? null,
+    damageType: combatProfile?.damageType ?? null,
+    dangerAbilities: combatProfile?.dangerAbilities ?? null,
+    hardCrowdControl: combatProfile?.hardCrowdControl ?? null,
+    identityText: [
+      profile.identitySummary,
+      profile.notes,
+      combatProfile?.primaryTradingPattern,
+      combatProfile?.primaryWinCondition?.join(" "),
+      laneIdentity,
+    ].filter(Boolean).join(" "),
+    isCommonRole,
+    jungleProfile: combatProfile?.jungleProfile ?? null,
+    mobilityLevel: combatProfile?.mobilityLevel ?? null,
+    name: champion?.name ?? combatProfile?.name ?? profile.championId,
+    primaryTradingPattern: combatProfile?.primaryTradingPattern ?? null,
+    primaryWinCondition: combatProfile?.primaryWinCondition ?? null,
+    shields: combatProfile?.shields ?? null,
+    strategicIdentity: combatProfile?.strategicIdentity ?? null,
+    sustain: combatProfile?.sustain ?? null,
+  };
+}
+
+function formatDraftProfileImprovementReviewNote(
+  suggestion: CounterRankingV2DraftProfileSuggestion,
+) {
+  return [
+    `Auto-improved draft confidence: ${formatDraftProfileConfidence(suggestion.confidence)}.`,
+    suggestion.summary,
+    ...suggestion.explanation.map((line) => `- ${line}`),
+    ...suggestion.uncertaintyNotes.map((line) => `- Uncertainty: ${line}`),
+  ].join("\n");
+}
+
+function formatDraftProfileConfidence(confidence: CounterRankingV2DraftProfileSuggestion["confidence"]) {
+  switch (confidence) {
+    case "high_draft_confidence":
+      return "High draft confidence";
+    case "medium_draft_confidence":
+      return "Medium draft confidence";
+    case "low_draft_confidence":
+      return "Low draft confidence";
+  }
+}
+
+function formatDraftProfileChangedTraitIds(traitIds: CounterRankingV2TraitId[]) {
+  if (traitIds.length === 0) {
+    return "None";
+  }
+
+  return traitIds.map((traitId) => getTraitLabel(traitId)).join(", ");
+}
+
+function isCounterRankingV2ProfileEligibleForReviewedApproval(
+  profile: CounterRankingV2ChampionProfile,
+) {
+  return profile.reviewStatus === "draft" || profile.reviewStatus === "needs_revision";
+}
+
+function isImprovedCounterRankingV2DraftReview(review: CounterRankingV2ProfileReview | null) {
+  return Boolean(review?.reviewNote?.includes("Auto-improved draft confidence:"));
+}
+
 function formatCounterRankingV2ProfileAvailability(
   championId: string,
   profileStatusesByChampionId?: CounterRankingV2ProfileStatusByChampionId,
+  profileOverridesByChampionId?: CounterRankingV2ProfileByChampionId,
   role: LeagueRole = "mid",
 ) {
   const profile = getCounterRankingV2ChampionProfile(
     championId,
     profileStatusesByChampionId,
-    undefined,
+    profileOverridesByChampionId,
     role,
   );
 
