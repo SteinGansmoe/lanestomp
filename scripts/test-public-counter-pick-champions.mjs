@@ -330,6 +330,12 @@ async function testPublicCounterPickDirectionMapping() {
           publicEligible: true,
           reviewStatus: "high_mastery_required",
         }),
+        reviewedMechanicalCounter({
+          counterChampionId: "Syndra",
+          enemyChampionId: "Ahri",
+          publicEligible: true,
+          reviewStatus: "not_a_counter",
+        }),
       ],
       useReviewedMechanicalCounters: true,
     },
@@ -376,6 +382,7 @@ async function testPublicCounterPickDirectionMapping() {
   assert.equal(enabledDesignIds.includes("Orianna"), false);
   assert.equal(enabledDesignIds.includes("Viktor"), false);
   assert.equal(enabledDesignIds.includes("Akali"), false);
+  assert.equal(enabledDesignIds.includes("Syndra"), false);
   assert.equal("calculatedMechanicalScore" in enabledAnnie, false);
   assert.equal("manualAdjustment" in enabledAnnie, false);
   assert.equal("finalReviewedScore" in enabledAnnie, false);
@@ -480,6 +487,28 @@ async function testPublicCounterPickDirectionMapping() {
     ],
     useReviewedMechanicalCounters: true,
   });
+  const notCounterBuckets = getPublicCounterResultsForSelectedChampionStats([], "Mel", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Syndra",
+        enemyChampionId: "Mel",
+        publicEligible: true,
+        reviewStatus: "not_a_counter",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
+  const notCounterInverseBuckets = getPublicCounterResultsForSelectedChampionStats([], "Syndra", {
+    reviewedMechanicalCounters: [
+      reviewedMechanicalCounter({
+        counterChampionId: "Syndra",
+        enemyChampionId: "Mel",
+        publicEligible: true,
+        reviewStatus: "not_a_counter",
+      }),
+    ],
+    useReviewedMechanicalCounters: true,
+  });
 
   assert.deepEqual(
     melSoftBuckets.countersIntoSelectedChampion.map((result) => result.listedChampionId),
@@ -505,6 +534,16 @@ async function testPublicCounterPickDirectionMapping() {
   assert.deepEqual(nonPublicSoftBuckets.countersIntoSelectedChampion, []);
   assert.deepEqual(incorrectSuggestionBuckets.countersIntoSelectedChampion, []);
   assert.deepEqual(needsMoreDataBuckets.countersIntoSelectedChampion, []);
+  assert.deepEqual(
+    notCounterBuckets.countersIntoSelectedChampion,
+    [],
+    "Not-a-counter public-eligible rows should not render in Best Counters.",
+  );
+  assert.deepEqual(
+    notCounterInverseBuckets.selectedChampionGoodInto,
+    [],
+    "Not-a-counter public-eligible rows should not render inversely in Bad Into.",
+  );
   assert.equal(
     hasPublicCounterResultLabel(
       fizzBuckets.selectedChampionGoodInto[0].statistics,

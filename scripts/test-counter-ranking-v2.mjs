@@ -39,6 +39,7 @@ const {
   isCounterRankingV2PublicCandidateEligible,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
+  isCounterRankingV2ReviewStatus,
   isCounterRankingV2ShadowCandidateEligible,
   isCounterRankingV2ProfileValueInBounds,
   isCounterRankingV2TraitDefinitionVisibleForRole,
@@ -654,6 +655,16 @@ assert.equal(
   null,
   "A Locke Mid profile should not falsely resolve as a different role.",
 );
+assert.equal(
+  lockeMidProfile === null,
+  false,
+  "Locke Mid reviewed profile should not trigger the Shadow Ranking missing-profile warning.",
+);
+assert.equal(
+  lockeJungleProfile === null,
+  true,
+  "A wrong-role Locke profile should still trigger the Shadow Ranking missing-profile warning.",
+);
 
 const ahriMidProfileKey = getCounterRankingV2ProfileKey("Ahri", "mid");
 const ahriMidReviewedProfile = getCounterRankingV2ChampionProfile(
@@ -669,9 +680,25 @@ assert.equal(
   "Ahri Mid should keep resolving reviewed status through champion_id and role.",
 );
 assert.equal(
-  getCounterRankingV2ChampionProfile("not-a-real-champion", new Map(), new Map(), "mid"),
+  ahriMidReviewedProfile === null,
+  false,
+  "Ahri Mid reviewed profile should not trigger the Shadow Ranking missing-profile warning.",
+);
+const missingProfileLookup = getCounterRankingV2ChampionProfile(
+  "not-a-real-champion",
+  new Map(),
+  new Map(),
+  "mid",
+);
+assert.equal(
+  missingProfileLookup,
   null,
   "Missing profile rows should stay missing instead of resolving to a fallback champion.",
+);
+assert.equal(
+  missingProfileLookup === null,
+  true,
+  "A truly missing profile should trigger the Shadow Ranking missing-profile warning.",
 );
 
 const scalingIntoLateFalloff = calculateMechanicalMatchupFit({
@@ -1119,6 +1146,11 @@ assert.equal(
   "Review saves should reject adjustments above the upper bound.",
 );
 assert.equal(
+  isCounterRankingV2ReviewStatus("not_a_counter"),
+  true,
+  "Review saves should accept not_a_counter as a valid mechanical review status.",
+);
+assert.equal(
   calculateCounterRankingV2FinalMechanicalScore({
     calculatedMechanicalScore: 78,
     manualAdjustment: 10,
@@ -1491,6 +1523,38 @@ assert.ok(
   "Manual rejections should expose a manually rejected blocker.",
 );
 
+const notCounterReview = createCounterRankingV2MechanicalReview({
+  calculatedMechanicalScore: 88,
+  counterChampionId: "vex",
+  enemyChampionId: "yone",
+  publicEligible: true,
+  reviewStatus: "not_a_counter",
+  role: "mid",
+});
+const notCounterSuggestion = generateCounterRankingV2MechanicalSuggestion({
+  mechanicalResult: {
+    ...vexIntoYone,
+    score: 88,
+  },
+  observed: null,
+  review: notCounterReview,
+});
+
+assert.equal(
+  notCounterReview.publicEligible,
+  false,
+  "Not-a-counter reviews should clear stored public eligibility.",
+);
+assert.equal(
+  notCounterSuggestion?.automationStatus,
+  "manual_rejected",
+  "Not-a-counter reviews should override automation as a manual rejection.",
+);
+assert.ok(
+  notCounterSuggestion?.blockers.some((blocker) => blocker.id === "manually_rejected"),
+  "Not-a-counter reviews should expose a manual rejection blocker.",
+);
+
 const blockerSummary = getCounterRankingV2AutomationBlockerSummary([
   {
     automationSuggestion: mediumScoreSuggestion,
@@ -1685,7 +1749,16 @@ assert.equal(
 );
 
 const reviewFilterRows = getCounterRankingV2ComparisonRows({
-  candidateChampionIds: ["vex", "kassadin", "malzahar", "annie", "lissandra", "akali", "yasuo"],
+  candidateChampionIds: [
+    "vex",
+    "kassadin",
+    "malzahar",
+    "annie",
+    "lissandra",
+    "syndra",
+    "akali",
+    "yasuo",
+  ],
   enemyChampionId: "yone",
   observedByChampionId: new Map([
     [
@@ -1737,6 +1810,17 @@ const reviewFilterRows = getCounterRankingV2ComparisonRows({
         enemyChampionId: "yone",
         publicEligible: true,
         reviewStatus: "incorrect_suggestion",
+        role: "mid",
+      }),
+    ],
+    [
+      "syndra",
+      createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 78,
+        counterChampionId: "syndra",
+        enemyChampionId: "yone",
+        publicEligible: true,
+        reviewStatus: "not_a_counter",
         role: "mid",
       }),
     ],
@@ -1801,12 +1885,21 @@ assert.deepEqual(
 );
 assert.deepEqual(
   filterCounterRankingV2RowsByReviewFilter({
+    filter: "not_a_counter",
+    minimumGames: 5,
+    rows: reviewFilterRows,
+  }).map((row) => row.candidateChampionId),
+  ["syndra"],
+  "The not-a-counter filter should only include not-a-counter review rows.",
+);
+assert.deepEqual(
+  filterCounterRankingV2RowsByReviewFilter({
     filter: "public_eligible",
     minimumGames: 5,
     rows: reviewFilterRows,
   }).map((row) => row.candidateChampionId),
   ["vex"],
-  "The public-eligible filter should exclude incorrect suggestions even if marked public eligible.",
+  "The public-eligible filter should exclude rejected and not-a-counter rows even if marked public eligible.",
 );
 assert.deepEqual(
   filterCounterRankingV2RowsByReviewFilter({
@@ -1843,8 +1936,8 @@ assert.deepEqual(
     minimumGames: 5,
     rows: reviewFilterRows,
   }).map((row) => row.candidateChampionId),
-  ["annie"],
-  "The manual-rejected automation filter should include rejected manual review rows.",
+  ["annie", "syndra"],
+  "The manual-rejected automation filter should include rejected and not-a-counter manual review rows.",
 );
 assert.deepEqual(
   getCounterRankingV2AutomationSummary(reviewFilterRows),
@@ -1852,9 +1945,9 @@ assert.deepEqual(
     autoApprovalCandidates: 0,
     autoApproved: 0,
     autoSuggested: 0,
-    generatedSuggestions: 7,
+    generatedSuggestions: 8,
     manualApproved: 2,
-    manualRejected: 1,
+    manualRejected: 2,
     needsReview: 4,
   },
   "Automation summary should count generated and manual-priority automation states.",
@@ -1865,9 +1958,10 @@ assert.deepEqual(
   {
     incorrectSuggestions: 1,
     needsMoreData: 1,
+    notCounters: 1,
     publicEligible: 1,
-    reviewed: 4,
-    total: 7,
+    reviewed: 5,
+    total: 8,
     unreviewed: 3,
     verifiedSoftCounters: 1,
     verifiedStrongCounters: 1,
@@ -2016,6 +2110,16 @@ assert.equal(
   "Incorrect suggestions should be normalized away from persisted public eligibility.",
 );
 assert.equal(
+  isCounterRankingV2ReviewPublicEligible(notCounterReview),
+  false,
+  "Not-a-counter reviews should not be public eligible.",
+);
+assert.equal(
+  isCounterRankingV2ApprovedReviewPublicEligible(notCounterReview),
+  false,
+  "Not-a-counter reviews should never be approved for public Counter Pick output.",
+);
+assert.equal(
   isCounterRankingV2ApprovedReviewPublicEligible(highMasteryReview),
   false,
   "Only verified strong/soft mechanical reviews should be approved for public Counter Pick output.",
@@ -2041,6 +2145,14 @@ assert.equal(
 assert.equal(
   normalizeCounterRankingV2PublicEligible({
     publicEligible: true,
+    reviewStatus: "not_a_counter",
+  }),
+  false,
+  "Public eligibility normalization should reject not-a-counter rows.",
+);
+assert.equal(
+  normalizeCounterRankingV2PublicEligible({
+    publicEligible: true,
     reviewStatus: "unreviewed",
   }),
   false,
@@ -2050,6 +2162,11 @@ assert.equal(
   isCounterRankingV2ReviewStatusPublicEligible("verified_strong_counter"),
   true,
   "Verified statuses can be marked public eligible for future reviewed mechanical counters.",
+);
+assert.equal(
+  isCounterRankingV2ReviewStatusPublicEligible("not_a_counter"),
+  false,
+  "Not-a-counter status should disable public eligibility.",
 );
 assert.equal(
   isCounterRankingV2ReviewStatusPublicEligible("unreviewed"),
@@ -2142,6 +2259,13 @@ const roleAwareProfileMigration = readFileSync(
   ),
   "utf8",
 );
+const notCounterReviewStatusMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260628010000_add_counter_ranking_v2_not_a_counter_status.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const counterPickActionsSource = readFileSync(
   new URL("../src/app/admin/league/counter-picks/actions.ts", import.meta.url),
   "utf8",
@@ -2226,6 +2350,16 @@ assert.match(
   autoApprovalAuditMigration,
   /'auto_generated'/,
   "Auto-approval audit migration should allow auto_generated adjustment reasons.",
+);
+assert.match(
+  notCounterReviewStatusMigration,
+  /drop constraint if exists counter_ranking_v2_mechanical_review_status_check/,
+  "Not-a-counter migration should safely replace the existing review status check constraint.",
+);
+assert.match(
+  notCounterReviewStatusMigration,
+  /'not_a_counter'/,
+  "Not-a-counter migration should allow the new review status in the database constraint.",
 );
 assert.doesNotMatch(
   mechanicalReviewMigration,
@@ -2401,6 +2535,36 @@ assert.match(
   counterPickAdminSectionSource,
   /formatCounterRankingV2ProfileAvailability\(\s*champion\.id,\s*counterRankingV2ProfileStatusesByChampionId,\s*counterRankingV2ProfileOverridesByChampionId,\s*selectedRole/s,
   "Shadow Ranking selector labels should include editable role-aware profiles such as Locke Mid.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /\{ filter: "not_a_counter", label: "Not a counter" \}/,
+  "Shadow Ranking review filters should include Not a counter.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /case "not_a_counter":\s*return "Not a counter";/,
+  "Shadow Ranking review badges and dropdown labels should render Not a counter.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /event\.target\.value === "not_a_counter"/,
+  "Changing a review to Not a counter should clear public eligibility in the form.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /const hasEnemyProfile = enemyProfile !== null;/,
+  "Shadow Ranking missing-profile warning should be based on the resolved role-aware enemy profile.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /!hasEnemyProfile \? \(\s*<EmptyState\s+tone="warning"\s+text="This champion does not have a mechanical profile yet\."/s,
+  "Shadow Ranking should only show the missing mechanical profile warning when the resolved enemy profile is missing.",
+);
+assert.doesNotMatch(
+  counterPickAdminSectionSource,
+  /isCounterRankingV2SupportedChampion\(enemyChampionId\)/,
+  "Shadow Ranking should not use the static built-in profile list for missing-profile warnings.",
 );
 assert.match(
   counterRankingV2Source,

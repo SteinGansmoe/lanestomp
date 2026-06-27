@@ -72,7 +72,6 @@ import {
   isCounterRankingV2TraitDefinitionVisibleForRole,
   isCounterRankingV2ReviewPublicEligible,
   isCounterRankingV2ReviewStatusPublicEligible,
-  isCounterRankingV2SupportedChampion,
   normalizeCounterRankingV2TraitId,
   sortCounterRankingV2RowsByReviewPriority,
   useReviewedMechanicalCountersPublicly,
@@ -179,6 +178,7 @@ const counterRankingV2ShadowReviewFilterOptions = [
   { filter: "unreviewed", label: "Unreviewed" },
   { filter: "verified_strong_counter", label: "Verified strong counter" },
   { filter: "verified_soft_counter", label: "Verified soft counter" },
+  { filter: "not_a_counter", label: "Not a counter" },
   { filter: "needs_more_data", label: "Needs more data" },
   { filter: "incorrect_suggestion", label: "Incorrect suggestion" },
   { filter: "public_eligible", label: "Public eligible" },
@@ -3253,9 +3253,7 @@ function CounterRankingV2ShadowPanel({
         selectedRole,
       )
     : null;
-  const hasSupportedEnemy = enemyChampionId
-    ? isCounterRankingV2SupportedChampion(enemyChampionId)
-    : false;
+  const hasEnemyProfile = enemyProfile !== null;
   const reviewTargetLabel = enemyChampion
     ? `${enemyChampion.name} ${getRoleLabel(selectedRole)}`
     : `selected target ${getRoleLabel(selectedRole)}`;
@@ -3368,7 +3366,7 @@ function CounterRankingV2ShadowPanel({
           <CounterRankingV2MetaCell
             label="Observed data"
             value={
-              !hasSupportedEnemy
+              !hasEnemyProfile
                 ? "Not loaded"
                 : isLoading
                   ? "Loading"
@@ -3382,7 +3380,7 @@ function CounterRankingV2ShadowPanel({
           <CounterRankingV2MetaCell
             label="Review layer"
             value={
-              !hasSupportedEnemy
+              !hasEnemyProfile
                 ? "Not loaded"
                 : reviewStatus.isLoading
                 ? "Loading"
@@ -3417,7 +3415,7 @@ function CounterRankingV2ShadowPanel({
 
         <CounterRankingV2CandidatePoolSummaryPanel summary={candidatePoolSummary} />
 
-        {!hasSupportedEnemy ? (
+        {!hasEnemyProfile ? (
           <EmptyState
             tone="warning"
             text="This champion does not have a mechanical profile yet."
@@ -3615,6 +3613,7 @@ function CounterRankingV2ReviewProgressSummaryPanel({
     { label: "Unreviewed counter candidates", value: summary.unreviewed },
     { label: "Verified strong counters", value: summary.verifiedStrongCounters },
     { label: "Verified soft counters", value: summary.verifiedSoftCounters },
+    { label: "Not counters", value: summary.notCounters },
     { label: "Needs more data", value: summary.needsMoreData },
     { label: "Incorrect suggestions", value: summary.incorrectSuggestions },
     { label: "Public eligible", value: summary.publicEligible },
@@ -4060,8 +4059,9 @@ function CounterRankingV2ShadowRow({
   const publicEligibilityHelperText =
     reviewForm.reviewStatus === "unreviewed"
       ? "Choose a reviewed status before enabling public eligibility."
-      : reviewForm.reviewStatus === "incorrect_suggestion"
-        ? "Incorrect suggestions cannot be public eligible."
+      : reviewForm.reviewStatus === "incorrect_suggestion" ||
+          reviewForm.reviewStatus === "not_a_counter"
+        ? `${formatCounterRankingV2ReviewStatus(reviewForm.reviewStatus)} rows cannot be public eligible.`
         : isPublicEligibleChecked && hasLowObservedSample
           ? "This will be treated as a low-sample mechanical counter."
           : "Stored for shadow review. Public use requires the reviewed-counter feature flag.";
@@ -4318,6 +4318,7 @@ function CounterRankingV2ShadowRow({
                     ...currentForm,
                     publicEligible:
                       event.target.value === "incorrect_suggestion" ||
+                      event.target.value === "not_a_counter" ||
                       event.target.value === "unreviewed"
                         ? false
                         : currentForm.publicEligible,
@@ -5588,6 +5589,8 @@ function formatCounterRankingV2ReviewStatus(status: CounterRankingV2ReviewStatus
       return "Verified strong counter";
     case "verified_soft_counter":
       return "Verified soft counter";
+    case "not_a_counter":
+      return "Not a counter";
     case "incorrect_suggestion":
       return "Incorrect suggestion";
     case "high_mastery_required":

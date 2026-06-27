@@ -231,6 +231,7 @@ function testCounterRankingV2ShadowReviewFilters() {
   assert.equal(counterPickSectionSource.includes('label: "Unreviewed"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Verified strong counter"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Verified soft counter"'), true);
+  assert.equal(counterPickSectionSource.includes('label: "Not a counter"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Needs more data"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Incorrect suggestion"'), true);
   assert.equal(counterPickSectionSource.includes('label: "Public eligible"'), true);
@@ -255,7 +256,7 @@ function testCounterRankingV2PublicEligibilityControls() {
     true,
   );
   assert.equal(
-    counterPickSectionSource.includes("Incorrect suggestions cannot be public eligible."),
+    counterPickSectionSource.includes("${formatCounterRankingV2ReviewStatus(reviewForm.reviewStatus)} rows cannot be public eligible."),
     true,
   );
   assert.equal(
@@ -264,8 +265,8 @@ function testCounterRankingV2PublicEligibilityControls() {
   );
   assert.match(
     counterPickSectionSource,
-    /event\.target\.value === "incorrect_suggestion" \|\|\s+event\.target\.value === "unreviewed"/,
-    "Changing to unreviewed or incorrect suggestion should clear public eligibility.",
+    /event\.target\.value === "incorrect_suggestion" \|\|[\s\S]*event\.target\.value === "not_a_counter" \|\|[\s\S]*event\.target\.value === "unreviewed"/,
+    "Changing to unreviewed, not a counter, or incorrect suggestion should clear public eligibility.",
   );
   assert.equal(actionsSource.includes("normalizeCounterRankingV2PublicEligible"), true);
   assert.equal(actionsSource.includes("public_eligible: validation.publicEligible"), true);

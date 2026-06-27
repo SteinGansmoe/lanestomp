@@ -239,6 +239,7 @@ export type CounterRankingV2ReviewStatus =
   | "high_mastery_required"
   | "incorrect_suggestion"
   | "needs_more_data"
+  | "not_a_counter"
   | "unreviewed"
   | "verified_soft_counter"
   | "verified_strong_counter";
@@ -254,6 +255,7 @@ export type CounterRankingV2ReviewFilter =
   | "manual_rejected"
   | "needs_more_data"
   | "needs_review"
+  | "not_a_counter"
   | "public_eligible"
   | "unreviewed"
   | "verified_soft_counter"
@@ -354,6 +356,7 @@ export type CounterRankingV2AutomationBlockerSummary = Record<
 export type CounterRankingV2ReviewProgressSummary = {
   incorrectSuggestions: number;
   needsMoreData: number;
+  notCounters: number;
   publicEligible: number;
   reviewed: number;
   total: number;
@@ -423,9 +426,10 @@ export const counterRankingV2ReviewStatuses = [
   "unreviewed",
   "verified_strong_counter",
   "verified_soft_counter",
-  "incorrect_suggestion",
+  "not_a_counter",
   "high_mastery_required",
   "needs_more_data",
+  "incorrect_suggestion",
 ] as const satisfies readonly CounterRankingV2ReviewStatus[];
 export const counterRankingV2PublicApprovedReviewStatuses = [
   "verified_strong_counter",
@@ -2560,7 +2564,7 @@ function getCounterRankingV2ManualAutomationStatus(
     return "manual_approved";
   }
 
-  if (review.reviewStatus === "incorrect_suggestion") {
+  if (review.reviewStatus === "incorrect_suggestion" || review.reviewStatus === "not_a_counter") {
     return "manual_rejected";
   }
 
@@ -2572,6 +2576,7 @@ function isCounterRankingV2AutoApprovalBlockedByReview(
 ) {
   return (
     review?.reviewStatus === "incorrect_suggestion" ||
+    review?.reviewStatus === "not_a_counter" ||
     review?.reviewStatus === "needs_more_data"
   );
 }
@@ -2796,10 +2801,13 @@ export function generateCounterRankingV2MechanicalSuggestion({
       message: "Existing manual review overrides automation.",
     });
 
-    if (review?.reviewStatus === "incorrect_suggestion") {
+    if (review?.reviewStatus === "incorrect_suggestion" || review?.reviewStatus === "not_a_counter") {
       blockers.push({
         id: "manually_rejected",
-        message: "Manually rejected review row blocks automation.",
+        message:
+          review.reviewStatus === "not_a_counter"
+            ? "Not a counter review row blocks automation."
+            : "Manually rejected review row blocks automation.",
       });
     }
 
@@ -3009,6 +3017,7 @@ export function getCounterRankingV2ReviewProgressSummary(
         incorrectSuggestions:
           summary.incorrectSuggestions + (reviewStatus === "incorrect_suggestion" ? 1 : 0),
         needsMoreData: summary.needsMoreData + (reviewStatus === "needs_more_data" ? 1 : 0),
+        notCounters: summary.notCounters + (reviewStatus === "not_a_counter" ? 1 : 0),
         publicEligible:
           summary.publicEligible + (isCounterRankingV2ReviewPublicEligible(row.review) ? 1 : 0),
         reviewed: summary.reviewed + (isUnreviewed ? 0 : 1),
@@ -3023,6 +3032,7 @@ export function getCounterRankingV2ReviewProgressSummary(
     {
       incorrectSuggestions: 0,
       needsMoreData: 0,
+      notCounters: 0,
       publicEligible: 0,
       reviewed: 0,
       total: 0,
@@ -3223,7 +3233,11 @@ export function getCounterRankingV2ProfileImpactLabel(value: number) {
 export function isCounterRankingV2ReviewStatusPublicEligible(
   reviewStatus: CounterRankingV2ReviewStatus,
 ) {
-  return reviewStatus !== "incorrect_suggestion" && reviewStatus !== "unreviewed";
+  return (
+    reviewStatus !== "incorrect_suggestion" &&
+    reviewStatus !== "not_a_counter" &&
+    reviewStatus !== "unreviewed"
+  );
 }
 
 export function normalizeCounterRankingV2PublicEligible({
