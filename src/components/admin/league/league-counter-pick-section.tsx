@@ -57,6 +57,7 @@ import {
   generateCounterRankingV2MechanicalSuggestionsForRole,
   getCounterRankingV2MechanicalReasons,
   getCounterRankingV2ChampionProfile,
+  getCounterRankingV2CandidatePoolSummary,
   getCounterRankingV2ProfileKey,
   getCounterRankingV2ProfileImpactLabel,
   getCounterRankingV2AutomationBlockerSummary,
@@ -76,6 +77,7 @@ import {
   type CounterRankingV2AutomationConfidence,
   type CounterRankingV2AutomationStatus,
   type CounterRankingV2AutomationSummary,
+  type CounterRankingV2CandidatePoolSummary,
   type CounterRankingV2ChampionProfile,
   type CounterRankingV2ComparisonRow,
   type CounterRankingV2FitStatus,
@@ -2735,6 +2737,16 @@ function CounterRankingV2ShadowPanel({
       }),
     [reviewFilter, rows],
   );
+  const candidatePoolSummary = useMemo(
+    () =>
+      getCounterRankingV2CandidatePoolSummary({
+        candidateChampionIds: Array.from(championsById.values()).map((champion) => champion.id),
+        candidatesDisplayed: filteredRows.length,
+        candidatesEvaluated: rows.length,
+        role: selectedRole,
+      }),
+    [championsById, filteredRows.length, rows.length, selectedRole],
+  );
   const activeFilterLabel =
     counterRankingV2ShadowReviewFilterOptions.find((option) => option.filter === reviewFilter)
       ?.label ?? "All";
@@ -2848,6 +2860,8 @@ function CounterRankingV2ShadowPanel({
             {reviewStatus.success}
           </p>
         ) : null}
+
+        <CounterRankingV2CandidatePoolSummaryPanel summary={candidatePoolSummary} />
 
         {!hasSupportedEnemy ? (
           <EmptyState
@@ -3122,6 +3136,10 @@ function CounterRankingV2AutomationBlockerSummaryPanel({
       label: "Existing manual review overrides automation",
       value: summary.existing_manual_review_override,
     },
+    {
+      label: "Excluded unsupported candidate role",
+      value: summary.excluded_unsupported_candidate_role,
+    },
     { label: "Manually rejected", value: summary.manually_rejected },
     { label: "Missing profile", value: summary.missing_profile },
     { label: "Other", value: summary.other },
@@ -3156,6 +3174,68 @@ function CounterRankingV2AutomationBlockerSummaryPanel({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CounterRankingV2CandidatePoolSummaryPanel({
+  summary,
+}: {
+  summary: CounterRankingV2CandidatePoolSummary;
+}) {
+  const roleLabel = getRoleLabel(summary.role);
+
+  return (
+    <div className="rounded-lg border border-cyan-300/15 bg-cyan-500/[0.05] p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-cyan-100">
+            {roleLabel} candidate pool
+          </p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">
+            {roleLabel} candidates: {summary.includedForSelectedRole} included,{" "}
+            {summary.excludedUnsupportedCandidateRole} excluded by role support.
+          </p>
+        </div>
+        <p className="text-xs text-zinc-500">Selected target role</p>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <CounterRankingV2CompactMetric
+          label="Total active champions"
+          value={summary.totalActiveChampions}
+        />
+        <CounterRankingV2CompactMetric
+          label="Included for role"
+          value={summary.includedForSelectedRole}
+        />
+        <CounterRankingV2CompactMetric
+          label="Excluded by role"
+          value={summary.excludedUnsupportedCandidateRole}
+        />
+        <CounterRankingV2CompactMetric
+          label="Evaluated"
+          value={summary.candidatesEvaluated}
+        />
+        <CounterRankingV2CompactMetric
+          label="Displayed"
+          value={summary.candidatesDisplayed}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CounterRankingV2CompactMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-md border border-white/10 bg-black/15 p-3">
+      <p className="text-xs uppercase text-zinc-500">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-zinc-100">{value}</p>
     </div>
   );
 }

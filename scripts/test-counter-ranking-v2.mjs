@@ -22,6 +22,7 @@ const {
   generateCounterRankingV2MechanicalSuggestionsForRole,
   getCounterRankingV2AutomationBlockerSummary,
   getCounterRankingV2AutomationSummary,
+  getCounterRankingV2CandidatePoolSummary,
   getCounterRankingV2ChampionProfile,
   getCounterRankingV2ComparisonRows,
   getCounterRankingV2FactorImpactLevel,
@@ -39,6 +40,7 @@ const {
   isCounterRankingV2ShadowCandidateEligible,
   isCounterRankingV2ProfileValueInBounds,
   isCounterRankingV2TraitDefinitionVisibleForRole,
+  isChampionSupportedInRole,
   normalizeCounterRankingV2TraitId,
   normalizeCounterRankingV2PublicEligible,
   sortCounterRankingV2RowsByReviewPriority,
@@ -533,6 +535,132 @@ for (const championId of finalMidCoverageChampionIds) {
     `${championId} should appear as a Shadow Ranking candidate when Yone Mid is selected.`,
   );
 }
+
+assert.equal(
+  isChampionSupportedInRole("Alistar", "mid"),
+  false,
+  "Alistar should not be treated as a Mid-supported Shadow Ranking candidate.",
+);
+assert.equal(
+  isChampionSupportedInRole("Bard", "mid"),
+  false,
+  "Bard should not be treated as a Mid-supported Shadow Ranking candidate.",
+);
+assert.equal(
+  isChampionSupportedInRole("Diana", "mid"),
+  true,
+  "Diana should remain a Mid-supported Shadow Ranking candidate.",
+);
+assert.equal(
+  isChampionSupportedInRole("Yasuo", "mid"),
+  true,
+  "Yasuo should remain a Mid-supported Shadow Ranking candidate.",
+);
+assert.equal(
+  isChampionSupportedInRole("Alistar", "support"),
+  true,
+  "Alistar should remain available in the Support candidate pool.",
+);
+
+const ahriMidRoleSpecificRows = getCounterRankingV2ComparisonRows({
+  candidateChampionIds: ["alistar", "bard", "diana", "yasuo"],
+  enemyChampionId: "ahri",
+  observedByChampionId: new Map(),
+  role: "mid",
+});
+const ahriMidRoleSpecificCandidateIds = new Set(
+  ahriMidRoleSpecificRows.map((row) => row.candidateChampionId),
+);
+
+assert.equal(
+  ahriMidRoleSpecificCandidateIds.has("alistar"),
+  false,
+  "Alistar should not appear as a Shadow Ranking candidate into Ahri Mid.",
+);
+assert.equal(
+  ahriMidRoleSpecificCandidateIds.has("bard"),
+  false,
+  "Bard should not appear as a Shadow Ranking candidate into Ahri Mid.",
+);
+assert.equal(
+  ahriMidRoleSpecificCandidateIds.has("diana"),
+  true,
+  "Diana should appear as a Shadow Ranking candidate into Ahri Mid.",
+);
+assert.equal(
+  ahriMidRoleSpecificCandidateIds.has("yasuo"),
+  true,
+  "Yasuo should appear as a Shadow Ranking candidate into Ahri Mid.",
+);
+
+const supportProfileOverrides = new Map([
+  [
+    getCounterRankingV2ProfileKey("alistar", "support"),
+    {
+      ...createCounterRankingV2GeneratedDraftChampionProfile("alistar", "support"),
+      reviewStatus: "reviewed",
+      strengths: [{ traitId: "reliable_cc", weight: 8 }],
+      vulnerabilities: [{ traitId: "short_range", weight: 4 }],
+    },
+  ],
+  [
+    getCounterRankingV2ProfileKey("lux", "support"),
+    {
+      ...createCounterRankingV2GeneratedDraftChampionProfile("lux", "support"),
+      reviewStatus: "reviewed",
+      strengths: [{ traitId: "poke", weight: 7 }],
+      vulnerabilities: [{ traitId: "fragile", weight: 5 }],
+    },
+  ],
+]);
+const luxSupportRows = generateCounterRankingV2MechanicalSuggestionsForRole({
+  enemyChampionId: "lux",
+  observedByChampionId: new Map(),
+  profileOverridesByChampionId: supportProfileOverrides,
+  role: "support",
+});
+
+assert.equal(
+  luxSupportRows.some((row) => row.candidateChampionId === "alistar"),
+  true,
+  "Alistar should appear in the Support candidate pool when Alistar Support is supported.",
+);
+
+const midCandidatePoolSummary = getCounterRankingV2CandidatePoolSummary({
+  candidateChampionIds: ["Ahri", "Alistar", "Bard", "Diana"],
+  candidatesDisplayed: 1,
+  candidatesEvaluated: ahriMidRoleSpecificRows.length,
+  role: "mid",
+});
+
+assert.deepEqual(
+  {
+    candidatesDisplayed: midCandidatePoolSummary.candidatesDisplayed,
+    candidatesEvaluated: midCandidatePoolSummary.candidatesEvaluated,
+    excludedUnsupportedCandidateRole: midCandidatePoolSummary.excludedUnsupportedCandidateRole,
+    includedForSelectedRole: midCandidatePoolSummary.includedForSelectedRole,
+    totalActiveChampions: midCandidatePoolSummary.totalActiveChampions,
+  },
+  {
+    candidatesDisplayed: 1,
+    candidatesEvaluated: 2,
+    excludedUnsupportedCandidateRole: 2,
+    includedForSelectedRole: 2,
+    totalActiveChampions: 4,
+  },
+  "Candidate pool summary should count included, excluded, evaluated, and displayed role candidates.",
+);
+
+assert.deepEqual(
+  getCounterRankingV2ComparisonRows({
+    candidateChampionIds: ["alistar"],
+    enemyChampionId: "ahri",
+    observedByChampionId: new Map(),
+    role: "mid",
+  }),
+  [],
+  "Unsupported-role candidates should be excluded before they become normal automation blockers.",
+);
 
 const vexIntoYone = calculateMechanicalMatchupFit({
   candidateChampionId: "vex",
@@ -1202,8 +1330,10 @@ const generatedMidSuggestions = generateCounterRankingV2MechanicalSuggestionsFor
 
 assert.equal(
   generatedMidSuggestions.length,
-  counterRankingV2SupportedChampionIds.length - 1,
-  "Mid-lane generation should evaluate every supported candidate profile except the selected enemy.",
+  counterRankingV2SupportedChampionIds.filter((championId) =>
+    isChampionSupportedInRole(championId, "mid"),
+  ).length - 1,
+  "Mid-lane generation should evaluate every Mid-supported candidate profile except the selected enemy.",
 );
 assert.ok(
   generatedMidSuggestions.some((row) => row.candidateChampionId === "vex" && row.automationSuggestion),
@@ -1525,6 +1655,40 @@ assert.deepEqual(
   },
   "Public Preview rows should expose preview-only public rank, score, games, confidence, and low-sample design labels.",
 );
+
+const unsupportedRolePublicPreviewRows = getCounterRankingV2PublicPreviewRows({
+  minimumGames: 5,
+  rows: [
+    {
+      automationSuggestion: null,
+      candidateChampionId: "alistar",
+      mechanicalRank: 1,
+      mechanicalResult: {
+        ...vexIntoYone,
+        candidateChampionId: "alistar",
+        enemyChampionId: "ahri",
+        role: "mid",
+        score: 90,
+      },
+      observed: null,
+      rankDelta: null,
+      review: createCounterRankingV2MechanicalReview({
+        calculatedMechanicalScore: 90,
+        counterChampionId: "alistar",
+        enemyChampionId: "ahri",
+        publicEligible: true,
+        reviewStatus: "verified_strong_counter",
+        role: "mid",
+      }),
+    },
+  ],
+});
+
+assert.deepEqual(
+  unsupportedRolePublicPreviewRows,
+  [],
+  "Public mechanical counter preview should exclude reviewed candidates unsupported in the selected role.",
+);
 assert.equal(
   isCounterRankingV2ShadowCandidateEligible({
     minimumGames: 5,
@@ -1741,6 +1905,10 @@ const counterPickAdminSectionSource = readFileSync(
 );
 const counterPickProfileReviewPageSource = readFileSync(
   new URL("../src/app/admin/counter-picks/profile-review/page.tsx", import.meta.url),
+  "utf8",
+);
+const counterPickStatisticsProviderSource = readFileSync(
+  new URL("../src/features/league/counter-pick-statistics-provider.ts", import.meta.url),
   "utf8",
 );
 
@@ -2036,6 +2204,21 @@ assert.match(
 );
 assert.match(
   counterPickAdminSectionSource,
+  /getCounterRankingV2CandidatePoolSummary/,
+  "Shadow Ranking should show admin candidate pool counts for the selected role.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /Excluded by role/,
+  "Shadow Ranking candidate pool counts should show unsupported-role exclusions.",
+);
+assert.match(
+  counterPickAdminSectionSource,
+  /candidatesDisplayed: filteredRows\.length/,
+  "Shadow Ranking candidate pool counts should include displayed candidate totals.",
+);
+assert.match(
+  counterPickAdminSectionSource,
   /trait\.weight\}\/10/,
   "Trait and vulnerability values should render with explicit /10 scale labels.",
 );
@@ -2083,6 +2266,31 @@ assert.match(
   counterPickAdminSectionSource,
   /Out-of-role/,
   "Counter Profile Review should keep existing out-of-role values visible with a small marker.",
+);
+assert.match(
+  counterPickStatisticsProviderSource,
+  /isPublicEligibleCounterRankingV2ReviewRow\(row, role\)/,
+  "Public reviewed-mechanical review filtering should receive the selected role.",
+);
+assert.match(
+  counterPickStatisticsProviderSource,
+  /isChampionSupportedInRole\(row\.counter_champion_id, role\)/,
+  "Public reviewed-mechanical counters should exclude unsupported-role counter champions.",
+);
+assert.match(
+  counterPickStatisticsProviderSource,
+  /isChampionSupportedInRole\(row\.enemy_champion_id, role\)/,
+  "Public reviewed-mechanical counters should exclude unsupported-role enemy champions.",
+);
+assert.match(
+  readFileSync(new URL("../src/features/league/counter-ranking-v2.ts", import.meta.url), "utf8"),
+  /supportedRoleCandidatePool/,
+  "Shadow Ranking candidate generation should use an explicitly named supported-role candidate pool.",
+);
+assert.match(
+  readFileSync(new URL("../src/features/league/counter-ranking-v2.ts", import.meta.url), "utf8"),
+  /candidateRoleEligibility/,
+  "Shadow Ranking candidate generation should expose explicit candidate role eligibility.",
 );
 assert.match(
   counterPickAdminSectionSource,

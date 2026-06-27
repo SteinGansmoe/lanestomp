@@ -4,6 +4,7 @@ import {
   getChampionMasteryRequirementLevel,
   type ChampionMasteryRequirementLevel,
 } from "./champion-mastery-requirements.ts";
+import { isChampionIdSupportedInRole } from "./champion-role-registry.ts";
 import type { LeagueRole } from "./roles.ts";
 
 export type CounterRankingV2TraitCategory =
@@ -212,6 +213,7 @@ export type CounterRankingV2AutomationConfidence = "high" | "low" | "medium";
 
 export type CounterRankingV2AutomationBlockerId =
   | "candidate_profile_generated_draft"
+  | "excluded_unsupported_candidate_role"
   | "existing_manual_review_override"
   | "high_mastery_candidate"
   | "manually_rejected"
@@ -293,6 +295,15 @@ export type CounterRankingV2ReviewProgressSummary = {
   unreviewed: number;
   verifiedSoftCounters: number;
   verifiedStrongCounters: number;
+};
+
+export type CounterRankingV2CandidatePoolSummary = {
+  candidatesDisplayed: number;
+  candidatesEvaluated: number;
+  excludedUnsupportedCandidateRole: number;
+  includedForSelectedRole: number;
+  role: LeagueRole;
+  totalActiveChampions: number;
 };
 
 export type CounterRankingV2PublicPreviewRow = {
@@ -712,6 +723,66 @@ export function isCounterRankingV2TraitDefinitionVisibleForRole(
   role: LeagueRole,
 ) {
   return !traitDefinition.roles || traitDefinition.roles.includes(role) || traitDefinition.isShared;
+}
+
+export function isChampionSupportedInRole(championId: string, role: LeagueRole) {
+  return isChampionIdSupportedInRole(championId, role);
+}
+
+export function getCounterRankingV2SupportedRoleCandidatePool({
+  candidateChampionIds,
+  role,
+}: {
+  candidateChampionIds: string[];
+  role: LeagueRole;
+}) {
+  const normalizedCandidateIds = Array.from(new Set(candidateChampionIds.map(normalizeChampionId)));
+  const candidateRoleEligibility = new Map(
+    normalizedCandidateIds.map(
+      (candidateChampionId) =>
+        [
+          candidateChampionId,
+          isChampionSupportedInRole(candidateChampionId, role),
+        ] as const,
+    ),
+  );
+  const supportedRoleCandidatePool = normalizedCandidateIds.filter((candidateChampionId) =>
+    candidateRoleEligibility.get(candidateChampionId),
+  );
+
+  return {
+    candidateRoleEligibility,
+    supportedRoleCandidatePool,
+  };
+}
+
+export function getCounterRankingV2CandidatePoolSummary({
+  candidateChampionIds,
+  candidatesDisplayed,
+  candidatesEvaluated,
+  role,
+}: {
+  candidateChampionIds: string[];
+  candidatesDisplayed: number;
+  candidatesEvaluated: number;
+  role: LeagueRole;
+}): CounterRankingV2CandidatePoolSummary {
+  const { candidateRoleEligibility } = getCounterRankingV2SupportedRoleCandidatePool({
+    candidateChampionIds,
+    role,
+  });
+  const includedForSelectedRole = Array.from(candidateRoleEligibility.values()).filter(Boolean)
+    .length;
+  const totalActiveChampions = candidateRoleEligibility.size;
+
+  return {
+    candidatesDisplayed,
+    candidatesEvaluated,
+    excludedUnsupportedCandidateRole: totalActiveChampions - includedForSelectedRole,
+    includedForSelectedRole,
+    role,
+    totalActiveChampions,
+  };
 }
 
 const counterRankingV2TraitInteractions = [
@@ -1456,7 +1527,11 @@ export function getCounterRankingV2ComparisonRows({
   reviewsByCandidateId?: Map<string, CounterRankingV2MechanicalReview>;
   role: LeagueRole;
 }): CounterRankingV2ComparisonRow[] {
-  const mechanicalRows = candidateChampionIds
+  const { supportedRoleCandidatePool } = getCounterRankingV2SupportedRoleCandidatePool({
+    candidateChampionIds,
+    role,
+  });
+  const mechanicalRows = supportedRoleCandidatePool
     .map((candidateChampionId) => ({
       candidateChampionId: normalizeChampionId(candidateChampionId),
       mechanicalResult: calculateMechanicalMatchupFit({
@@ -1533,21 +1608,23 @@ export function generateCounterRankingV2MechanicalSuggestionsForRole({
   role: LeagueRole;
 }): CounterRankingV2ComparisonRow[] {
   const normalizedEnemyChampionId = normalizeChampionId(enemyChampionId);
-  const candidateChampionIds = Array.from(
+  const allProfileCandidateIds = Array.from(
     new Set([
       ...counterRankingV2ChampionProfiles
         .filter((profile) => profile.championId !== normalizedEnemyChampionId)
-        .filter((profile) => profile.supportedRoles.includes(role))
         .map((profile) => profile.championId),
       ...Array.from(profileOverridesByChampionId?.values() ?? [])
         .filter((profile) => profile.championId !== normalizedEnemyChampionId)
-        .filter((profile) => profile.role === role || profile.supportedRoles.includes(role))
         .map((profile) => profile.championId),
     ]),
   );
+  const { supportedRoleCandidatePool } = getCounterRankingV2SupportedRoleCandidatePool({
+    candidateChampionIds: allProfileCandidateIds,
+    role,
+  });
 
   return getCounterRankingV2ComparisonRows({
-    candidateChampionIds,
+    candidateChampionIds: supportedRoleCandidatePool,
     enemyChampionId,
     observedByChampionId,
     profileOverridesByChampionId,
@@ -1816,6 +1893,7 @@ function isCounterRankingV2AutomationStatus(
 function createEmptyCounterRankingV2AutomationBlockerSummary(): CounterRankingV2AutomationBlockerSummary {
   return {
     candidate_profile_generated_draft: 0,
+    excluded_unsupported_candidate_role: 0,
     existing_manual_review_override: 0,
     high_mastery_candidate: 0,
     manually_rejected: 0,
@@ -2208,6 +2286,9 @@ export function getCounterRankingV2PublicPreviewRows({
 }): CounterRankingV2PublicPreviewRow[] {
   return rows
     .filter((row) => isCounterRankingV2ApprovedReviewPublicEligible(row.review))
+    .filter((row) =>
+      isChampionSupportedInRole(row.candidateChampionId, row.mechanicalResult.role ?? "mid"),
+    )
     .map((row) => ({
       candidateChampionId: row.candidateChampionId,
       confidenceLabel: row.observed?.confidence.shortLabel ?? "No data",

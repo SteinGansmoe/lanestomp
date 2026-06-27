@@ -14,7 +14,10 @@ import {
   minimumTrustedCounterPickGames,
   type PublicReviewedMechanicalCounter,
 } from "./counter-pick-statistics";
-import { counterRankingV2PublicApprovedReviewStatuses } from "./counter-ranking-v2";
+import {
+  counterRankingV2PublicApprovedReviewStatuses,
+  isChampionSupportedInRole,
+} from "./counter-ranking-v2";
 import { calculateCounterPickConfidence } from "./counter-pick-confidence";
 import type { LeagueRole } from "./roles";
 import { supabase } from "@/src/lib/supabase";
@@ -373,10 +376,10 @@ async function fetchPublicEligibleCounterRankingV2Reviews({
     hasMatchingCounterRankingV2ReviewCounter(row, enemyChampion),
   );
   const filteredReviewRows = selectedEnemyReviewRowsBeforePublicFiltering.filter((row) =>
-    isPublicEligibleCounterRankingV2ReviewRow(row),
+    isPublicEligibleCounterRankingV2ReviewRow(row, role),
   );
   const inverseFilteredReviewRows = selectedCounterReviewRowsBeforePublicFiltering.filter((row) =>
-    isPublicEligibleCounterRankingV2ReviewRow(row),
+    isPublicEligibleCounterRankingV2ReviewRow(row, role),
   );
 
   return {
@@ -430,9 +433,14 @@ function hasMatchingCounterRankingV2ReviewCounter(
     normalizeCounterPickStatsKey(counterChampion);
 }
 
-function isPublicEligibleCounterRankingV2ReviewRow(row: CounterRankingV2PublicReviewRow) {
+function isPublicEligibleCounterRankingV2ReviewRow(
+  row: CounterRankingV2PublicReviewRow,
+  role: LeagueRole,
+) {
   return (
     row.public_eligible &&
+    isChampionSupportedInRole(row.counter_champion_id, role) &&
+    isChampionSupportedInRole(row.enemy_champion_id, role) &&
     counterRankingV2PublicApprovedReviewStatuses.includes(
       row.review_status as (typeof counterRankingV2PublicApprovedReviewStatuses)[number],
     )
