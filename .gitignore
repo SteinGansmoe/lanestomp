@@ -36,6 +36,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Disposable Codex captures and generated audit evidence (keep reference assets tracked)
+/artifacts/codex-screenshots/
+/artifacts/generated-audits/
+/artifacts/audit-*.json
+/artifacts/dependency-chains-initial.json
+/artifacts/security-*.log
+/artifacts/security-dependency-diff.json
+/artifacts/security-runtime-smoke.json
+/artifacts/security-test-results.json
+
 # env files (can opt-in for committing if needed)
 .env*
 

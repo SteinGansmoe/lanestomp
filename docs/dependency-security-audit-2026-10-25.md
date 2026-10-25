@@ -93,7 +93,7 @@ Existing test failures:
 
 The HTTP checks used a local production build without Supabase credentials. HTTP 200 on `/admin` confirms the UI shell renders, not successful admin authentication. Login, live data, database authorization, write operations, visual transitions, and external service integrations require a configured preview and owner accounts.
 
-Evidence: `artifacts/audit-initial.json`, `artifacts/audit-production-initial.json`, `artifacts/audit-final.json`, `artifacts/audit-production-final.json`, `artifacts/dependency-chains-initial.json`, `artifacts/security-dependency-diff.json`, `artifacts/security-test-results.json`, `artifacts/security-runtime-smoke.json`, and `artifacts/security-*.log`. Logs contain no environment dump or credentials.
+The generated audit JSON, dependency-chain output, and verification logs were removed during [the artifact cleanup for issue #370](artifacts-cleanup-2026-10-25.md). This report preserves their security findings, verification results, advisory inventory, and complete dependency version diff. Original evidence remains recoverable from commit `0664c0a` (Security fixes, #369).
 
 ## Recommendation before deployment
 
