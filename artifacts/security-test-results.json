@@ -1,0 +1,182 @@
+[
+  {
+    "name": "test:sitemap-slugs",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:ability-hover-tokens",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:champion-knowledge-profiles",
+    "exit": 1,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:champion-normalization",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:champion-focused-discovery",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:champion-mastery-requirement",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:league-champion-registry",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:matchup-rank-attribution",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:matchup-rank-coverage-queue",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-pick-confidence",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-pick-data-pipeline",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-pick-management-metrics",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-ranking-v2",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-pick-admin-panel-cleanup",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-pick-entry-hero",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:homepage-counter-pick-entry",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:lanestomp-loading-skeletons",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:mobile-navigation-stacking",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:muted-primary-button-actions",
+    "exit": 1,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:navbar-logo-visibility",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:matchup-guides-redesign",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:matchup-guide-detail-redesign",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:matchup-guide-artwork-layering",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:matchup-draft-prompt-quality",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:counter-pick-routing",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:public-counter-pick-champions",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-batch-isolation",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-api-authentication-failure",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-observation-validation",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-rate-limiter",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-collection-jobs",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-seed-rank-enrichment",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-seed-candidate-pagination",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-seed-candidate-bulk-controls",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-seed-candidate-lifecycle",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  },
+  {
+    "name": "test:riot-seed-candidates",
+    "exit": 0,
+    "log": "artifacts/security-tests.log"
+  }
+]

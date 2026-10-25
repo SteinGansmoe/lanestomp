@@ -1,0 +1,352 @@
+{
+  "version": "0.1.0",
+  "name": "lanestomp",
+  "dependencies": {
+    "@tailwindcss/postcss": {
+      "version": "4.3.0",
+      "resolved": "https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.3.0.tgz",
+      "overridden": false,
+      "dependencies": {
+        "@tailwindcss/node": {
+          "version": "4.3.0",
+          "resolved": "https://registry.npmjs.org/@tailwindcss/node/-/node-4.3.0.tgz",
+          "overridden": false,
+          "dependencies": {
+            "source-map-js": {
+              "version": "1.2.1",
+              "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz",
+              "overridden": false
+            }
+          }
+        },
+        "postcss": {
+          "version": "8.5.14",
+          "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.14.tgz",
+          "overridden": false,
+          "dependencies": {
+            "nanoid": {
+              "version": "3.3.12",
+              "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.12.tgz",
+              "overridden": false
+            },
+            "source-map-js": {
+              "version": "1.2.1"
+            }
+          }
+        }
+      }
+    },
+    "eslint-config-next": {
+      "version": "16.2.6",
+      "resolved": "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-16.2.6.tgz",
+      "overridden": false,
+      "dependencies": {
+        "eslint-plugin-react-hooks": {
+          "version": "7.1.1",
+          "resolved": "https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-7.1.1.tgz",
+          "overridden": false,
+          "dependencies": {
+            "zod-validation-error": {
+              "version": "4.0.2",
+              "resolved": "https://registry.npmjs.org/zod-validation-error/-/zod-validation-error-4.0.2.tgz",
+              "overridden": false,
+              "dependencies": {
+                "zod": {
+                  "version": "4.4.3"
+                }
+              }
+            },
+            "zod": {
+              "version": "4.4.3",
+              "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+              "overridden": false
+            }
+          }
+        },
+        "typescript-eslint": {
+          "version": "8.59.3",
+          "resolved": "https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.59.3.tgz",
+          "overridden": false,
+          "dependencies": {
+            "@typescript-eslint/typescript-estree": {
+              "version": "8.59.3",
+              "resolved": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.59.3.tgz",
+              "overridden": false,
+              "dependencies": {
+                "minimatch": {
+                  "version": "10.2.5",
+                  "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-10.2.5.tgz",
+                  "overridden": false,
+                  "dependencies": {
+                    "brace-expansion": {
+                      "version": "5.0.6",
+                      "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.6.tgz",
+                      "overridden": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "eslint": {
+      "version": "9.39.4",
+      "resolved": "https://registry.npmjs.org/eslint/-/eslint-9.39.4.tgz",
+      "overridden": false,
+      "dependencies": {
+        "@eslint/eslintrc": {
+          "version": "3.3.5",
+          "resolved": "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-3.3.5.tgz",
+          "overridden": false,
+          "dependencies": {
+            "js-yaml": {
+              "version": "4.2.0",
+              "resolved": "https://registry.npmjs.org/js-yaml/-/js-yaml-4.2.0.tgz",
+              "overridden": false
+            }
+          }
+        },
+        "minimatch": {
+          "version": "3.1.5",
+          "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-3.1.5.tgz",
+          "overridden": false,
+          "dependencies": {
+            "brace-expansion": {
+              "version": "1.1.14",
+              "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.14.tgz",
+              "overridden": false
+            }
+          }
+        }
+      }
+    },
+    "next": {
+      "version": "16.2.6",
+      "resolved": "https://registry.npmjs.org/next/-/next-16.2.6.tgz",
+      "overridden": false,
+      "dependencies": {
+        "baseline-browser-mapping": {
+          "version": "2.10.29",
+          "resolved": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.10.29.tgz",
+          "overridden": false
+        },
+        "postcss": {
+          "version": "8.4.31",
+          "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.4.31.tgz",
+          "overridden": false,
+          "dependencies": {
+            "nanoid": {
+              "version": "3.3.12"
+            },
+            "source-map-js": {
+              "version": "1.2.1"
+            }
+          }
+        },
+        "sharp": {
+          "version": "0.34.5",
+          "resolved": "https://registry.npmjs.org/sharp/-/sharp-0.34.5.tgz",
+          "overridden": false
+        }
+      }
+    },
+    "shadcn": {
+      "version": "4.7.0",
+      "resolved": "https://registry.npmjs.org/shadcn/-/shadcn-4.7.0.tgz",
+      "overridden": false,
+      "dependencies": {
+        "@babel/core": {
+          "version": "7.29.7",
+          "resolved": "https://registry.npmjs.org/@babel/core/-/core-7.29.7.tgz",
+          "overridden": false,
+          "dependencies": {
+            "@babel/helper-compilation-targets": {
+              "version": "7.29.7",
+              "resolved": "https://registry.npmjs.org/@babel/helper-compilation-targets/-/helper-compilation-targets-7.29.7.tgz",
+              "overridden": false,
+              "dependencies": {
+                "browserslist": {
+                  "version": "4.28.2"
+                }
+              }
+            }
+          }
+        },
+        "@modelcontextprotocol/sdk": {
+          "version": "1.29.0",
+          "resolved": "https://registry.npmjs.org/@modelcontextprotocol/sdk/-/sdk-1.29.0.tgz",
+          "overridden": false,
+          "dependencies": {
+            "@hono/node-server": {
+              "version": "1.19.14",
+              "resolved": "https://registry.npmjs.org/@hono/node-server/-/node-server-1.19.14.tgz",
+              "overridden": false,
+              "dependencies": {
+                "hono": {
+                  "version": "4.12.26"
+                }
+              }
+            },
+            "ajv-formats": {
+              "version": "3.0.1",
+              "resolved": "https://registry.npmjs.org/ajv-formats/-/ajv-formats-3.0.1.tgz",
+              "overridden": false,
+              "dependencies": {
+                "ajv": {
+                  "version": "8.20.0",
+                  "resolved": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+                  "overridden": false,
+                  "dependencies": {
+                    "fast-uri": {
+                      "version": "3.1.2"
+                    }
+                  }
+                }
+              }
+            },
+            "ajv": {
+              "version": "8.20.0",
+              "resolved": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+              "overridden": false,
+              "dependencies": {
+                "fast-uri": {
+                  "version": "3.1.2",
+                  "resolved": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.2.tgz",
+                  "overridden": false
+                }
+              }
+            },
+            "express-rate-limit": {
+              "version": "8.5.2",
+              "resolved": "https://registry.npmjs.org/express-rate-limit/-/express-rate-limit-8.5.2.tgz",
+              "overridden": false,
+              "dependencies": {
+                "ip-address": {
+                  "version": "10.2.0",
+                  "resolved": "https://registry.npmjs.org/ip-address/-/ip-address-10.2.0.tgz",
+                  "overridden": false
+                }
+              }
+            },
+            "express": {
+              "version": "5.2.1",
+              "resolved": "https://registry.npmjs.org/express/-/express-5.2.1.tgz",
+              "overridden": false,
+              "dependencies": {
+                "body-parser": {
+                  "version": "2.2.2",
+                  "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-2.2.2.tgz",
+                  "overridden": false,
+                  "dependencies": {
+                    "qs": {
+                      "version": "6.15.2"
+                    }
+                  }
+                },
+                "proxy-addr": {
+                  "version": "2.0.7",
+                  "resolved": "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.7.tgz",
+                  "overridden": false
+                },
+                "qs": {
+                  "version": "6.15.2",
+                  "resolved": "https://registry.npmjs.org/qs/-/qs-6.15.2.tgz",
+                  "overridden": false
+                }
+              }
+            },
+            "hono": {
+              "version": "4.12.26",
+              "resolved": "https://registry.npmjs.org/hono/-/hono-4.12.26.tgz",
+              "overridden": false
+            },
+            "zod": {
+              "version": "4.4.3"
+            }
+          }
+        },
+        "browserslist": {
+          "version": "4.28.2",
+          "resolved": "https://registry.npmjs.org/browserslist/-/browserslist-4.28.2.tgz",
+          "overridden": false,
+          "dependencies": {
+            "baseline-browser-mapping": {
+              "version": "2.10.29"
+            },
+            "update-browserslist-db": {
+              "version": "1.2.3",
+              "resolved": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz",
+              "overridden": false,
+              "dependencies": {
+                "browserslist": {
+                  "version": "4.28.2"
+                }
+              }
+            }
+          }
+        },
+        "cosmiconfig": {
+          "version": "9.0.1",
+          "resolved": "https://registry.npmjs.org/cosmiconfig/-/cosmiconfig-9.0.1.tgz",
+          "overridden": false,
+          "dependencies": {
+            "js-yaml": {
+              "version": "4.2.0"
+            }
+          }
+        },
+        "postcss-selector-parser": {
+          "version": "7.1.1",
+          "resolved": "https://registry.npmjs.org/postcss-selector-parser/-/postcss-selector-parser-7.1.1.tgz",
+          "overridden": false
+        },
+        "postcss": {
+          "version": "8.5.14"
+        },
+        "ts-morph": {
+          "version": "26.0.0",
+          "resolved": "https://registry.npmjs.org/ts-morph/-/ts-morph-26.0.0.tgz",
+          "overridden": false,
+          "dependencies": {
+            "@ts-morph/common": {
+              "version": "0.27.0",
+              "resolved": "https://registry.npmjs.org/@ts-morph/common/-/common-0.27.0.tgz",
+              "overridden": false,
+              "dependencies": {
+                "minimatch": {
+                  "version": "10.2.5",
+                  "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-10.2.5.tgz",
+                  "overridden": false,
+                  "dependencies": {
+                    "brace-expansion": {
+                      "version": "5.0.6",
+                      "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.6.tgz",
+                      "overridden": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "zod-to-json-schema": {
+          "version": "3.25.2",
+          "resolved": "https://registry.npmjs.org/zod-to-json-schema/-/zod-to-json-schema-3.25.2.tgz",
+          "overridden": false,
+          "dependencies": {
+            "zod": {
+              "version": "4.4.3"
+            }
+          }
+        },
+        "zod": {
+          "version": "3.25.76",
+          "resolved": "https://registry.npmjs.org/zod/-/zod-3.25.76.tgz",
+          "overridden": false
+        }
+      }
+    }
+  }
+}
