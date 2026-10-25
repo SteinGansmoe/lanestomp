@@ -1,0 +1,790 @@
+
+===== test:sitemap-slugs (exit 0) =====
+
+> lanestomp@0.1.0 test:sitemap-slugs
+> node --experimental-strip-types scripts/validate-sitemap-matchup-slugs.mjs
+
+(node:24044) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/matchup-route-core.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Validated 13 champion slugs and 3 matchup URLs.
+
+===== test:ability-hover-tokens (exit 0) =====
+
+> lanestomp@0.1.0 test:ability-hover-tokens
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-ability-hover-tokens.mjs
+
+AbilityHover could not extract numeric damage values {
+  abilityId: 'VexW',
+  abilityName: 'Personal Space',
+  damageTypes: [ 'magic damage' ],
+  effectBurnCandidates: [],
+  unresolvedText: [ '{{ wdamagecalc }} magic damage' ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'AhriQ',
+  abilityName: 'Orb of Deception',
+  damageTypes: [ 'magic damage', 'true damage' ],
+  effectBurnCandidates: [],
+  unresolvedText: [
+    '{{ missingvalue }} magic damage',
+    '{{ missingvalue }} true damage'
+  ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'TestUnresolvedTotaldamage',
+  abilityName: 'Unresolved Totaldamage',
+  damageTypes: [ 'magic damage' ],
+  effectBurnCandidates: [ '1', '900' ],
+  unresolvedText: [ '{{ totaldamage }} magic damage' ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'AhriW',
+  abilityName: 'Fox-Fire',
+  damageTypes: [ 'magic damage' ],
+  effectBurnCandidates: [],
+  unresolvedText: [
+    '{{ singlefiredamage }} magic damage',
+    '{{ multifiredamage }} damage'
+  ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'AhriR',
+  abilityName: 'Spirit Rush',
+  damageTypes: [ 'magic damage' ],
+  effectBurnCandidates: [],
+  unresolvedText: [ '{{ rcalculateddamage }} magic damage' ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'AkaliQ',
+  abilityName: 'Five Point Strike',
+  damageTypes: [ 'magic damage' ],
+  effectBurnCandidates: [],
+  unresolvedText: [ '{{ damage }} magic damage' ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'FizzQ',
+  abilityName: 'Urchin Strike',
+  damageTypes: [ 'physical damage', 'magic damage' ],
+  effectBurnCandidates: [
+    '10/25/40/55/70',
+    '650/750/850/950/1050',
+    '1.5',
+    '600',
+    '1',
+    '0.35',
+    '40'
+  ],
+  unresolvedText: [ '{{ totaldamage }} physical damage', '{{ qdamage }} magic damage' ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'MalzaharR',
+  abilityName: 'Nether Grasp',
+  damageTypes: [ 'magic damage' ],
+  effectBurnCandidates: [ '5', '2.5' ],
+  unresolvedText: [
+    '{{ totaldamagetooltip }} magic damage',
+    '{{ zonedamagetooltip }} max Health magic damage'
+  ],
+  vars: []
+}
+AbilityHover could not extract numeric damage values {
+  abilityId: 'LockeW',
+  abilityName: 'Soul Ignition',
+  damageTypes: [ 'true damage' ],
+  effectBurnCandidates: [],
+  unresolvedText: [ '{{ healthcost*100 }}% current Health true damage' ],
+  vars: []
+}
+League hover token regression tests passed.
+(node:24328) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/ability-hover-tokens.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:champion-knowledge-profiles (exit 1) =====
+
+> lanestomp@0.1.0 test:champion-knowledge-profiles
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-champion-knowledge-profiles.mjs
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /profileQuality: "draft"/. Input:
+
+'import type { LeagueChampionKnowledgeProfile } from "./types";\r\n' +
+  '\r\n' +
+  'export const lockeCombatProfile = {\r\n' +
+  '  profileQuality: "reviewed",\r\n' +
+  '  abilities: {\r\n' +
+  '    Q: "Ritual Nails",\r\n' +
+  '    W: "Soul Ignition",\r\n' +
+  '    E: "Ashen Pursuit",\r\n' +
+  '    R: "Purgatory",\r\n' +
+  '  },\r\n' +
+  '  archetype: ["assassin", "mage", "melee skirmisher", "execute"],\r\n' +
+  '  primaryWinCondition: [\r\n' +
+  '    "Stack Soul Nails with (Q), use (W) and (E) to force a committed skirmish, then convert low-health targets with (R).",\r\n' +
+  '  ],\r\n' +
+  '  dangerAbilities: [\r\n' +
+  '    "(Q) Soul Nail marks and slow",\r\n' +
+  '    "(E) teleport, target dash, and takedown reset",\r\n' +
+  '    "(R) long-range slow and execute mark",\r\n' +
+  '  ],\r\n' +
+  '  dangerProfile: {\r\n' +
+  '    dangerousWhen: [\r\n' +
+  '      "Targets are already chipped and can fall into (R) execute range.",\r\n' +
+  '      "(Q) nails have marked a target and Locke can consume the marks with attacks or (E).",\r\n' +
+  '      "(E) is available to close distance, consume marks, or reset after a takedown.",\r\n' +
+  '    ],\r\n' +
+  '    mustRespect: [\r\n' +
+  '      "(Q) is the setup tool: multiple nails increase the slow and make his follow-up easier.",\r\n' +
+  '      "(W) gives attack speed and movement speed but spends current health while active.",\r\n' +
+  '      "(R) can convert low-health enemies and permanently improve its execute threshold when Locke seals champions.",\r\n' +
+  '    ],\r\n' +
+  '  },\r\n' +
+  '  commonWeaknesses: [\r\n' +
+  '    "Melee range means he can be poked or zoned before he commits.",\r\n' +
+  '    "(W) costs health over time, so failed all-ins can leave him easier to finish.",\r\n' +
+  '    "He needs mark setup and low-health targets before his execute pressure becomes reliable.",\r\n' +
+  '    "Hard crowd control during (E) follow-up can stop his reset chain.",\r\n' +
+  '  ],\r\n' +
+  '  damageType: "magic",\r\n' +
+  '  hardCrowdControl: [],\r\n' +
+  '  id: "Locke",\r\n' +
+  '  importantAbilityNotes: [\r\n' +
+  '    "Passive: Silver Stake adds magic on-hit damage that increases against lower-health enemies.",\r\n' +
+  '    "(Q) throws Soul Nails that mark, slow, and add bonus magic damage when consumed.",\r\n' +
+  '    "(W) grants attack speed and movement speed while draining current health, then restores part of recent damage taken.",\r\n' +
+  '    "(E) teleports to a location, then dashes on the next attack; takedowns reset its cooldown.",\r\n' +
+  '    "(R) throws a long-range binding artifact that slows, marks, and can execute low-health champions.",\r\n' +
+  '  ],\r\n' +
+  '  lanePlan: {\r\n' +
+  '    avoids: [\r\n' +
+  '      "Taking poke-heavy lanes without enough health to use (W) aggressively.",\r\n' +
+  '      "Using (E) before Soul Nails or enemy cooldowns create a real punish window.",\r\n' +
+  '      "Casting (R) into healthy targets where the execute mark will not threaten a seal.",\r\n' +
+  '    ],\r\n' +
+  '    idealLaneState:\r\n' +
+  '      "A skirmish lane where Locke can thin the wave, mark with (Q), and threaten committed trades once the enemy is low enough for execute pressure.",\r\n' +
+  '    wants: [\r\n' +
+  '      "Short setup trades with (Q) before committing.",\r\n' +
+  '      "Low-health targets that can be forced into (R) execute range.",\r\n' +
+  '      "Fights where takedown resets let (E) turn one kill into a chase.",\r\n' +
+  '    ],\r\n' +
+  '  },\r\n' +
+  '  laneIdentity: {\r\n' +
+  '    earlyGameAgency: "medium",\r\n' +
+  '    lanePressure: "medium",\r\n' +
+  '    preferredGameState: [\r\n' +
+  '      "Scrappy mid-game fights around marked targets.",\r\n' +
+  '      "Enemy lanes that cannot freely kite his (E) follow-up.",\r\n' +
+  '      "Low-health skirmishes where his passive and (R) finish targets.",\r\n' +
+  '    ],\r\n' +
+  '    scalingPriority: "medium",\r\n' +
+  '    winLaneBy: [\r\n' +
+  '      "Landing (Q) nails before trading.",\r\n' +
+  '      "Managing (W) health cost so trades do not backfire.",\r\n' +
+  '      "Holding (E) until it can consume marks, dodge abilities, or reset after a takedown.",\r\n' +
+  '    ],\r\n' +
+  '  },\r\n' +
+  '  majorPowerSpikes: [\r\n' +
+  '    "Level 3 with (Q), (W), and (E) available.",\r\n' +
+  '    "Level 6 (R) execute mark.",\r\n' +
+  '    "First finished item (example: Lichbane)",\r\n' +
+  '  ],\r\n' +
+  '  masteryDifficulty: "medium",\r\n' +
+  '  matchupPreferences: {\r\n' +
+  '    strongInto: [\r\n' +
+  '      "Low-mobility squishies he can mark with (Q).",\r\n' +
+  '      "Champions who fall into predictable low-health all-in windows.",\r\n' +
+  '      "Skirmish-heavy lanes where takedown resets matter.",\r\n' +
+  '    ],\r\n' +
+  '    weakInto: [\r\n' +
+  '      "Long-range poke that keeps him too low to spend health on (W).",\r\n' +
+  '      "Reliable hard crowd control that stops (E) follow-up.",\r\n' +
+  '      "Disengage and peel that denies his execute cleanup.",\r\n' +
+  '    ],\r\n' +
+  '  },\r\n' +
+  '  mobilityLevel: "medium",\r\n' +
+  '  name: "Locke",\r\n' +
+  '  offMetaRoles: [],\r\n' +
+  '  strategicIdentity: {\r\n' +
+  '    laneGoal: "snowball",\r\n' +
+  '    scalingProfile: "mid",\r\n' +
+  '    preferredGameLength: "medium",\r\n' +
+  '    winMethod: ["mark setup", "melee skirmish", "execute cleanup"],\r\n' +
+  '  },\r\n' +
+  '  powerSpikes: {\r\n' +
+  '    major: [\r\n' +
+  '      {\r\n' +
+  '        timing: "Level 6",\r\n' +
+  '        reason: "Level 6 (R) execute mark",\r\n' +
+  '        changesGameplay:\r\n' +
+  '          "Locke can threaten low-health targets from longer range and convert kills into permanent execute-threshold gains.",\r\n' +
+  '        playerAction:\r\n' +
+  '          "Chip targets with (Q) and passive damage before committing (R), then use (E) resets to chase only after a real takedown angle appears.",\r\n' +
+  '        enemyResponse:\r\n' +
+  '          "Stay above execute range, hold crowd control for his (E) follow-up, and avoid extended low-health fights.",\r\n' +
+  '      },\r\n' +
+  '      {\r\n' +
+  '        timing: "First completed assassin or AP skirmish item",\r\n' +
+  '        reason: "First completed assassin or AP skirmish item",\r\n' +
+  '        changesGameplay:\r\n' +
+  '          "His mark consumption and execute setup become more punishing, especially against isolated squishy targets.",\r\n' +
+  '        playerAction:\r\n' +
+  '          "Look for marked targets and reset chains instead of forcing front-to-back fights into peel.",\r\n' +
+  '        enemyResponse:\r\n' +
+  '          "Deny flank angles, group with peel, and punish (W) health drain when his engage does not find a kill.",\r\n' +
+  '      },\r\n' +
+  '    ],\r\n' +
+  '    minor: [\r\n' +
+  '      {\r\n' +
+  '        timing: "Level 3",\r\n' +
+  '        reason: "Level 3 with (Q), (W), and (E) available",\r\n' +
+  '        changesGameplay:\r\n' +
+  '          "Locke gains his full basic trade pattern: mark with (Q), empower the commit with (W), then reposition or follow with (E).",\r\n' +
+  '        playerAction:\r\n' +
+  '          "Trade only when (Q) creates a mark advantage or the enemy has already spent key control.",\r\n' +
+  '        enemyResponse:\r\n' +
+  '          "Respect his first complete combo, then punish if he spends (E) without securing health advantage.",\r\n' +
+  '      },\r\n' +
+  '    ],\r\n' +
+  '  },\r\n' +
+  '  primaryRoles: ["mid"],\r\n' +
+  '  secondaryRoles: ["jungle"],\r\n' +
+  '  primaryTradingPattern:\r\n' +
+  '    "Mark with (Q), activate (W) for attack speed and movement speed, then use (E) to close distance and consume Soul Nails when the target can be finished.",\r\n' +
+  '  punishProfile: {\r\n' +
+  '    canPunish: [\r\n' +
+  '      "Targets hit by multiple (Q) nails.",\r\n' +
+  '      "Low-health enemies who stay in (R) execute range.",\r\n' +
+  '      "Skirmishes where a takedown can reset (E).",\r\n' +
+  '    ],\r\n' +
+  '    strugglesToPunish: [\r\n' +
+  '      "Champions who keep him outside melee follow-up range.",\r\n' +
+  '      "Teams with reliable disengage after his first (E).",\r\n' +
+  '      "Targets that force him to spend (W) health without giving a kill window.",\r\n' +
+  '    ],\r\n' +
+  '  },\r\n' +
+  '  shields: [],\r\n' +
+  '  softCrowdControl: ["(Q) slow", "(R) slow"],\r\n' +
+  '  stealthOrInvisibility: null,\r\n' +
+  '  sustain: ["(W) restores part of recent damage taken after its health-drain window."],\r\n' +
+  '  trading: {\r\n' +
+  '    badTradeConditions: [\r\n' +
+  '      "(Q) misses or only lightly marks the target.",\r\n' +
+  '      "(W) drains health without creating immediate pressure.",\r\n' +
+  '      "(E) is used before enemy crowd control or disengage is forced out.",\r\n' +
+  '    ],\r\n' +
+  '    goodTradeConditions: [\r\n' +
+  '      "Multiple (Q) nails connect and slow the target.",\r\n' +
+  '      "The enemy is already chipped toward passive and (R) execute pressure.",\r\n' +
+  '      "A takedown is realistic enough for (E) reset value.",\r\n' +
+  '    ],\r\n' +
+  '    primaryPattern:\r\n' +
+  '      "Use (Q) as the setup, treat (W) as a committed skirmish button, and save (E) for follow-up that can actually convert.",\r\n' +
+  '  },\r\n' +
+  '  punishWindows: [\r\n' +
+  '    "After (E) is spent without a takedown, Locke has less access to resets and chase pressure.",\r\n' +
+  '    "If (W) is active but he cannot stay on target, its health cost can make the trade losing.",\r\n' +
+  '    "Before (R) or when targets stay above execute range, his cleanup threat is much lower.",\r\n' +
+  '  ],\r\n' +
+  '  debugNote:\r\n' +
+  '    "Draft profile created from Riot Data Dragon 16.13.1 metadata; review role placement and matchup specifics after live gameplay data is available.",\r\n' +
+  '} satisfies LeagueChampionKnowledgeProfile;\r\n'
+
+    at testLockeCombatProfile (file:///C:/Users/stein/lanestomp/scripts/test-champion-knowledge-profiles.mjs:34:10)
+    at file:///C:/Users/stein/lanestomp/scripts/test-champion-knowledge-profiles.mjs:13:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'import type { LeagueChampionKnowledgeProfile } from "./types";\r\n' +
+    '\r\n' +
+    'export const lockeCombatProfile = {\r\n' +
+    '  profileQuality: "reviewed",\r\n' +
+    '  abilities: {\r\n' +
+    '    Q: "Ritual Nails",\r\n' +
+    '    W: "Soul Ignition",\r\n' +
+    '    E: "Ashen Pursuit",\r\n' +
+    '    R: "Purgatory",\r\n' +
+    '  },\r\n' +
+    '  archetype: ["assassin", "mage", "melee skirmisher", "execute"],\r\n' +
+    '  primaryWinCondition: [\r\n' +
+    '    "Stack Soul Nails with (Q), use (W) and (E) to force a committed skirmish, then convert low-health targets with (R).",\r\n' +
+    '  ],\r\n' +
+    '  dangerAbilities: [\r\n' +
+    '    "(Q) Soul Nail marks and slow",\r\n' +
+    '    "(E) teleport, target dash, and takedown reset",\r\n' +
+    '    "(R) long-range slow and execute mark",\r\n' +
+    '  ],\r\n' +
+    '  dangerProfile: {\r\n' +
+    '    dangerousWhen: [\r\n' +
+    '      "Targets are already chipped and can fall into (R) execute range.",\r\n' +
+    '      "(Q) nails have marked a target and Locke can consume the marks with attacks or (E).",\r\n' +
+    '      "(E) is available to close distance, consume marks, or reset after a takedown.",\r\n' +
+    '    ],\r\n' +
+    '    mustRespect: [\r\n' +
+    '      "(Q) is the setup tool: multiple nails increase the slow and make his follow-up easier.",\r\n' +
+    '      "(W) gives attack speed and movement speed but spends current health while active.",\r\n' +
+    '      "(R) can convert low-health enemies and permanently improve its execute threshold when Locke seals champions.",\r\n' +
+    '    ],\r\n' +
+    '  },\r\n' +
+    '  commonWeaknesses: [\r\n' +
+    '    "Melee range means he can be poked or zoned before he commits.",\r\n' +
+    '    "(W) costs health over time, so failed all-ins can leave him easier to finish.",\r\n' +
+    '    "He needs mark setup and low-health targets before his execute pressure becomes reliable.",\r\n' +
+    '    "Hard crowd control during (E) follow-up can stop his reset chain.",\r\n' +
+    '  ],\r\n' +
+    '  damageType: "magic",\r\n' +
+    '  hardCrowdControl: [],\r\n' +
+    '  id: "Locke",\r\n' +
+    '  importantAbilityNotes: [\r\n' +
+    '    "Passive: Silver Stake adds magic on-hit damage that increases against lower-health enemies.",\r\n' +
+    '    "(Q) throws Soul Nails that mark, slow, and add bonus magic damage when consumed.",\r\n' +
+    '    "(W) grants attack speed and movement speed while draining current health, then restores part of recent damage taken.",\r\n' +
+    '    "(E) teleports to a location, then dashes on the next attack; takedowns reset its cooldown.",\r\n' +
+    '    "(R) throws a long-range binding artifact that slows, marks, and can execute low-health champions.",\r\n' +
+    '  ],\r\n' +
+    '  lanePlan: {\r\n' +
+    '    avoids: [\r\n' +
+    '      "Taking poke-heavy lanes without enough health to use (W) aggressively.",\r\n' +
+    '      "Using (E) before Soul Nails or enemy cooldowns create a real punish window.",\r\n' +
+    '      "Casting (R) into healthy targets where the execute mark will not threaten a seal.",\r\n' +
+    '    ],\r\n' +
+    '    idealLaneState:\r\n' +
+    '      "A skirmish lane where Locke can thin the wave, mark with (Q), and threaten committed trades once the enemy is low enough for execute pressure.",\r\n' +
+    '    wants: [\r\n' +
+    '      "Short setup trades with (Q) before committing.",\r\n' +
+    '      "Low-health targets that can be forced into (R) execute range.",\r\n' +
+    '      "Fights where takedown resets let (E) turn one kill into a chase.",\r\n' +
+    '    ],\r\n' +
+    '  },\r\n' +
+    '  laneIdentity: {\r\n' +
+    '    earlyGameAgency: "medium",\r\n' +
+    '    lanePressure: "medium",\r\n' +
+    '    preferredGameState: [\r\n' +
+    '      "Scrappy mid-game fights around marked targets.",\r\n' +
+    '      "Enemy lanes that cannot freely kite his (E) follow-up.",\r\n' +
+    '      "Low-health skirmishes where his passive and (R) finish targets.",\r\n' +
+    '    ],\r\n' +
+    '    scalingPriority: "medium",\r\n' +
+    '    winLaneBy: [\r\n' +
+    '      "Landing (Q) nails before trading.",\r\n' +
+    '      "Managing (W) health cost so trades do not backfire.",\r\n' +
+    '      "Holding (E) until it can consume marks, dodge abilities, or reset after a takedown.",\r\n' +
+    '    ],\r\n' +
+    '  },\r\n' +
+    '  majorPowerSpikes: [\r\n' +
+    '    "Level 3 with (Q), (W), and (E) available.",\r\n' +
+    '    "Level 6 (R) execute mark.",\r\n' +
+    '    "First finished item (example: Lichbane)",\r\n' +
+    '  ],\r\n' +
+    '  masteryDifficulty: "medium",\r\n' +
+    '  matchupPreferences: {\r\n' +
+    '    strongInto: [\r\n' +
+    '      "Low-mobility squishies he can mark with (Q).",\r\n' +
+    '      "Champions who fall into predictable low-health all-in windows.",\r\n' +
+    '      "Skirmish-heavy lanes where takedown resets matter.",\r\n' +
+    '    ],\r\n' +
+    '    weakInto: [\r\n' +
+    '      "Long-range poke that keeps him too low to spend health on (W).",\r\n' +
+    '      "Reliable hard crowd control that stops (E) follow-up.",\r\n' +
+    '      "Disengage and peel that denies his execute cleanup.",\r\n' +
+    '    ],\r\n' +
+    '  },\r\n' +
+    '  mobilityLevel: "medium",\r\n' +
+    '  name: "Locke",\r\n' +
+    '  offMetaRoles: [],\r\n' +
+    '  strategicIdentity: {\r\n' +
+    '    laneGoal: "snowball",\r\n' +
+    '    scalingProfile: "mid",\r\n' +
+    '    preferredGameLength: "medium",\r\n' +
+    '    winMethod: ["mark setup", "melee skirmish", "execute cleanup"],\r\n' +
+    '  },\r\n' +
+    '  powerSpikes: {\r\n' +
+    '    major: [\r\n' +
+    '      {\r\n' +
+    '        timing: "Level 6",\r\n' +
+    '        reason: "Level 6 (R) execute mark",\r\n' +
+    '        changesGameplay:\r\n' +
+    '          "Locke can threaten low-health targets from longer range and convert kills into permanent execute-threshold gains.",\r\n' +
+    '        playerAction:\r\n' +
+    '          "Chip targets with (Q) and passive damage before committing (R), then use (E) resets to chase only after a real takedown angle appears.",\r\n' +
+    '        enemyResponse:\r\n' +
+    '          "Stay above execute range, hold crowd control for his (E) follow-up, and avoid extended low-health fights.",\r\n' +
+    '      },\r\n' +
+    '      {\r\n' +
+    '        timing: "First completed assassin or AP skirmish item",\r\n' +
+    '        reason: "First completed assassin or AP skirmish item",\r\n' +
+    '        changesGameplay:\r\n' +
+    '          "His mark consumption and execute setup become more punishing, especially against isolated squishy targets.",\r\n' +
+    '        playerAction:\r\n' +
+    '          "Look for marked targets and reset chains instead of forcing front-to-back fights into peel.",\r\n' +
+    '        enemyResponse:\r\n' +
+    '          "Deny flank angles, group with peel, and punish (W) health drain when his engage does not find a kill.",\r\n' +
+    '      },\r\n' +
+    '    ],\r\n' +
+    '    minor: [\r\n' +
+    '      {\r\n' +
+    '        timing: "Level 3",\r\n' +
+    '        reason: "Level 3 with (Q), (W), and (E) available",\r\n' +
+    '        changesGameplay:\r\n' +
+    '          "Locke gains his full basic trade pattern: mark with (Q), empower the commit with (W), then reposition or follow with (E).",\r\n' +
+    '        playerAction:\r\n' +
+    '          "Trade only when (Q) creates a mark advantage or the enemy has already spent key control.",\r\n' +
+    '        enemyResponse:\r\n' +
+    '          "Respect his first complete combo, then punish if he spends (E) without securing health advantage.",\r\n' +
+    '      },\r\n' +
+    '    ],\r\n' +
+    '  },\r\n' +
+    '  primaryRoles: ["mid"],\r\n' +
+    '  secondaryRoles: ["jungle"],\r\n' +
+    '  primaryTradingPattern:\r\n' +
+    '    "Mark with (Q), activate (W) for attack speed and movement speed, then use (E) to close distance and consume Soul Nails when the target can be finished.",\r\n' +
+    '  punishProfile: {\r\n' +
+    '    canPunish: [\r\n' +
+    '      "Targets hit by multiple (Q) nails.",\r\n' +
+    '      "Low-health enemies who stay in (R) execute range.",\r\n' +
+    '      "Skirmishes where a takedown can reset (E).",\r\n' +
+    '    ],\r\n' +
+    '    strugglesToPunish: [\r\n' +
+    '      "Champions who keep him outside melee follow-up range.",\r\n' +
+    '      "Teams with reliable disengage after his first (E).",\r\n' +
+    '      "Targets that force him to spend (W) health without giving a kill window.",\r\n' +
+    '    ],\r\n' +
+    '  },\r\n' +
+    '  shields: [],\r\n' +
+    '  softCrowdControl: ["(Q) slow", "(R) slow"],\r\n' +
+    '  stealthOrInvisibility: null,\r\n' +
+    '  sustain: ["(W) restores part of recent damage taken after its health-drain window."],\r\n' +
+    '  trading: {\r\n' +
+    '    badTradeConditions: [\r\n' +
+    '      "(Q) misses or only lightly marks the target.",\r\n' +
+    '      "(W) drains health without creating immediate pressure.",\r\n' +
+    '      "(E) is used before enemy crowd control or disengage is forced out.",\r\n' +
+    '    ],\r\n' +
+    '    goodTradeConditions: [\r\n' +
+    '      "Multiple (Q) nails connect and slow the target.",\r\n' +
+    '      "The enemy is already chipped toward passive and (R) execute pressure.",\r\n' +
+    '      "A takedown is realistic enough for (E) reset value.",\r\n' +
+    '    ],\r\n' +
+    '    primaryPattern:\r\n' +
+    '      "Use (Q) as the setup, treat (W) as a committed skirmish button, and save (E) for follow-up that can actually convert.",\r\n' +
+    '  },\r\n' +
+    '  punishWindows: [\r\n' +
+    '    "After (E) is spent without a takedown, Locke has less access to resets and chase pressure.",\r\n' +
+    '    "If (W) is active but he cannot stay on target, its health cost can make the trade losing.",\r\n' +
+    '    "Before (R) or when targets stay above execute range, his cleanup threat is much lower.",\r\n' +
+    '  ],\r\n' +
+    '  debugNote:\r\n' +
+    '    "Draft profile created from Riot Data Dragon 16.13.1 metadata; review role placement and matchup specifics after live gameplay data is available.",\r\n' +
+    '} satisfies LeagueChampionKnowledgeProfile;\r\n',
+  expected: /profileQuality: "draft"/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.19.0
+
+===== test:champion-normalization (exit 0) =====
+
+> lanestomp@0.1.0 test:champion-normalization
+> node scripts/test-champion-normalization.mjs
+
+Champion normalization regression tests passed.
+
+===== test:champion-focused-discovery (exit 0) =====
+
+> lanestomp@0.1.0 test:champion-focused-discovery
+> node scripts/test-champion-focused-discovery.mjs
+
+Champion-focused discovery orientation passed.
+
+===== test:champion-mastery-requirement (exit 0) =====
+
+> lanestomp@0.1.0 test:champion-mastery-requirement
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-champion-mastery-requirement.mjs
+
+Champion mastery requirement handling passed.
+(node:24160) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/champion-mastery-requirements.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:league-champion-registry (exit 0) =====
+
+> lanestomp@0.1.0 test:league-champion-registry
+> node scripts/test-league-champion-registry.mjs
+
+League champion registry regression tests passed.
+
+===== test:matchup-rank-attribution (exit 0) =====
+
+> lanestomp@0.1.0 test:matchup-rank-attribution
+> node scripts/test-matchup-rank-attribution.mjs
+
+Matchup rank attribution regression tests passed.
+
+===== test:matchup-rank-coverage-queue (exit 0) =====
+
+> lanestomp@0.1.0 test:matchup-rank-coverage-queue
+> node scripts/test-matchup-rank-coverage-queue.mjs
+
+Matchup rank coverage queue regression tests passed.
+
+===== test:counter-pick-confidence (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-pick-confidence
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-confidence.mjs
+
+Counter Pick confidence handling passed.
+(node:13852) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/counter-pick-confidence.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:counter-pick-data-pipeline (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-pick-data-pipeline
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-data-pipeline.mjs
+
+Counter Pick data pipeline audit regression tests passed.
+
+===== test:counter-pick-management-metrics (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-pick-management-metrics
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-management-metrics.mjs
+
+Counter Pick management metrics regression tests passed.
+(node:23932) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/counter-pick-management-metrics.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:counter-ranking-v2 (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-ranking-v2
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-ranking-v2.mjs
+
+Counter Ranking V2 shadow-mode tests passed.
+(node:21164) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/counter-ranking-v2.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:counter-pick-admin-panel-cleanup (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-pick-admin-panel-cleanup
+> node scripts/test-counter-pick-admin-panel-cleanup.mjs
+
+Counter Pick admin panel cleanup regression tests passed.
+
+===== test:counter-pick-entry-hero (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-pick-entry-hero
+> node scripts/test-counter-pick-entry-hero.mjs
+
+Counter Pick entry hero regression tests passed.
+
+===== test:homepage-counter-pick-entry (exit 0) =====
+
+> lanestomp@0.1.0 test:homepage-counter-pick-entry
+> node scripts/test-homepage-counter-pick-entry.mjs
+
+Homepage Counter Pick entry regression tests passed.
+
+===== test:lanestomp-loading-skeletons (exit 0) =====
+
+> lanestomp@0.1.0 test:lanestomp-loading-skeletons
+> node scripts/test-lanestomp-loading-skeletons.mjs
+
+LaneStomp loading skeleton regression tests passed.
+
+===== test:mobile-navigation-stacking (exit 0) =====
+
+> lanestomp@0.1.0 test:mobile-navigation-stacking
+> node scripts/test-mobile-navigation-stacking.mjs
+
+Mobile navigation stacking regression tests passed.
+
+===== test:muted-primary-button-actions (exit 1) =====
+
+> lanestomp@0.1.0 test:muted-primary-button-actions
+> node scripts/test-muted-primary-button-actions.mjs
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+false !== true
+
+    at file:///C:/Users/stein/lanestomp/scripts/test-muted-primary-button-actions.mjs:20:8
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0
+
+===== test:navbar-logo-visibility (exit 0) =====
+
+> lanestomp@0.1.0 test:navbar-logo-visibility
+> node scripts/test-navbar-logo-visibility.mjs
+
+Navbar logo visibility regression tests passed.
+
+===== test:matchup-guides-redesign (exit 0) =====
+
+> lanestomp@0.1.0 test:matchup-guides-redesign
+> node scripts/test-matchup-guides-redesign.mjs
+
+Matchup Guides redesign regression tests passed.
+
+===== test:matchup-guide-detail-redesign (exit 0) =====
+
+> lanestomp@0.1.0 test:matchup-guide-detail-redesign
+> node scripts/test-matchup-guide-detail-redesign.mjs
+
+Matchup Guide detail redesign regression tests passed.
+
+===== test:matchup-guide-artwork-layering (exit 0) =====
+
+> lanestomp@0.1.0 test:matchup-guide-artwork-layering
+> node scripts/test-matchup-guide-artwork-layering.mjs
+
+Matchup Guide artwork layering regression tests passed.
+
+===== test:matchup-draft-prompt-quality (exit 0) =====
+
+> lanestomp@0.1.0 test:matchup-draft-prompt-quality
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-matchup-draft-prompt-quality.mjs
+
+Matchup draft prompt quality regression tests passed.
+(node:4236) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/matchup-draft-prompt.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:counter-pick-routing (exit 0) =====
+
+> lanestomp@0.1.0 test:counter-pick-routing
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-routing.mjs
+
+Counter Pick routing regression tests passed.
+(node:11900) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/counter-pick-routes.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:public-counter-pick-champions (exit 0) =====
+
+> lanestomp@0.1.0 test:public-counter-pick-champions
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-public-counter-pick-champions.mjs
+
+(node:23704) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/public-counter-pick-options.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Public Counter Pick champion coverage passed.
+
+===== test:riot-batch-isolation (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-batch-isolation
+> node scripts/test-riot-batch-isolation.mjs
+
+Riot batch isolation regression tests passed.
+
+===== test:riot-api-authentication-failure (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-api-authentication-failure
+> node scripts/test-riot-api-authentication-failure.mjs
+
+Riot API authentication failure regression tests passed.
+
+===== test:riot-observation-validation (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-observation-validation
+> node scripts/test-riot-observation-validation.mjs
+
+Riot observation validation regression tests passed.
+
+===== test:riot-rate-limiter (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-rate-limiter
+> node scripts/test-riot-rate-limiter.mjs
+
+Riot rate limiter regression tests passed.
+
+===== test:riot-collection-jobs (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-collection-jobs
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-riot-collection-jobs.mjs
+
+Riot collection job regression tests passed.
+(node:24484) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/riot-collection-jobs.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:riot-seed-rank-enrichment (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-seed-rank-enrichment
+> node scripts/test-riot-seed-rank-enrichment.mjs
+
+Riot seed candidate rank enrichment regression tests passed.
+
+===== test:riot-seed-candidate-pagination (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-seed-candidate-pagination
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-riot-seed-candidate-pagination.mjs
+
+Riot seed candidate pagination regression tests passed.
+(node:488) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/riot-seed-candidate-rank-groups.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:riot-seed-candidate-bulk-controls (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-seed-candidate-bulk-controls
+> node scripts/test-riot-seed-candidate-bulk-controls.mjs
+
+Riot seed candidate bulk control regression tests passed.
+
+===== test:riot-seed-candidate-lifecycle (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-seed-candidate-lifecycle
+> node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-riot-seed-candidate-lifecycle.mjs
+
+Riot seed candidate lifecycle regression tests passed.
+(node:2444) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/stein/lanestomp/src/features/league/riot-seed-candidate-lifecycle.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\stein\lanestomp\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+===== test:riot-seed-candidates (exit 0) =====
+
+> lanestomp@0.1.0 test:riot-seed-candidates
+> node scripts/test-riot-seed-candidates.mjs
+
+Riot seed candidate regression tests passed.
