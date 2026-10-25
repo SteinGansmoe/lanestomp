@@ -44,57 +44,42 @@ create table if not exists public.league_counter_picks (
     champion_id <> counter_champion_id
   )
 );
-
 create index if not exists league_counter_picks_champion_id_idx
 on public.league_counter_picks (champion_id);
-
 create index if not exists league_counter_picks_role_idx
 on public.league_counter_picks (role);
-
 create index if not exists league_counter_picks_counter_type_idx
 on public.league_counter_picks (counter_type);
-
 create index if not exists league_counter_picks_champion_role_type_idx
 on public.league_counter_picks (champion_id, role, counter_type);
-
 create index if not exists league_counter_picks_best_counter_win_rate_idx
 on public.league_counter_picks (champion_id, role, win_rate desc)
 where counter_type = 'best_counter';
-
 create index if not exists league_counter_picks_countered_by_win_rate_idx
 on public.league_counter_picks (champion_id, role, win_rate asc)
 where counter_type = 'countered_by';
-
 grant select on table public.league_counter_picks to anon, authenticated;
 grant insert, update, delete on table public.league_counter_picks to authenticated;
 grant select, insert, update, delete on table public.league_counter_picks to service_role;
-
 alter table public.league_counter_picks enable row level security;
-
 drop policy if exists "Reviewed league counter picks are publicly readable"
 on public.league_counter_picks;
-
 create policy "Reviewed league counter picks are publicly readable"
 on public.league_counter_picks
 for select
 to anon, authenticated
 using (generation_status = 'reviewed');
-
 drop policy if exists "Admins can manage league counter picks"
 on public.league_counter_picks;
-
 create policy "Admins can manage league counter picks"
 on public.league_counter_picks
 for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 drop trigger if exists set_league_counter_picks_updated_at on public.league_counter_picks;
-
 create trigger set_league_counter_picks_updated_at
 before update on public.league_counter_picks
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.league_counter_picks is
   'Reviewed and draft League of Legends counter pick recommendations by champion and role.';

@@ -8,7 +8,6 @@ create table public.games (
 
   constraint games_slug_key unique (slug)
 );
-
 create table public.seasons (
   id text primary key,
   game_id text not null references public.games(id) on delete cascade,
@@ -22,31 +21,24 @@ create table public.seasons (
   constraint seasons_game_id_slug_key unique (game_id, slug),
   constraint seasons_date_order_check check (ends_at >= starts_at)
 );
-
 alter table public.games enable row level security;
 alter table public.seasons enable row level security;
-
 create policy "Games are publicly readable"
   on public.games
   for select
   to anon, authenticated
   using (true);
-
 create policy "Seasons are publicly readable"
   on public.seasons
   for select
   to anon, authenticated
   using (true);
-
 comment on table public.games is
-  'Public game catalog for LaneStomp.';
-
+  'Public game catalog for Season Tracker.';
 comment on table public.seasons is
   'Public season schedule entries associated with games.';
-
 comment on column public.games.icon_url is
-  'Public icon or image path used by the LaneStomp UI.';
-
+  'Public icon or image path used by the Season Tracker UI.';
 -- Tiny example dataset for local reference only:
 -- insert into public.games (id, name, slug, description, icon_url)
 -- values ('diablo-4', 'Diablo IV', 'diablo-4', 'Seasonal ARPG tracking.', '/images/d4-icon.jpg');
@@ -60,4 +52,4 @@ comment on column public.games.icon_url is
 --   '2026-06-01T00:00:00Z',
 --   '2026-08-15T00:00:00Z',
 --   'Example public season record.'
--- );
+-- );;

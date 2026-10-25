@@ -35,49 +35,36 @@ create table if not exists public.counter_pick_stats (
     enemy_champion_id <> counter_champion_id
   )
 );
-
 create index if not exists counter_pick_stats_enemy_role_idx
 on public.counter_pick_stats (enemy_champion_id, role);
-
 create index if not exists counter_pick_stats_counter_idx
 on public.counter_pick_stats (counter_champion_id);
-
 create index if not exists counter_pick_stats_patch_idx
 on public.counter_pick_stats (patch);
-
 create index if not exists counter_pick_stats_ranking_idx
 on public.counter_pick_stats (enemy_champion_id, role, tier, win_rate desc, games desc);
-
 grant select on table public.counter_pick_stats to anon, authenticated;
 grant select, insert, update, delete on table public.counter_pick_stats to service_role;
-
 alter table public.counter_pick_stats enable row level security;
-
 drop policy if exists "Counter pick stats are publicly readable"
 on public.counter_pick_stats;
-
 create policy "Counter pick stats are publicly readable"
 on public.counter_pick_stats
 for select
 to anon, authenticated
 using (true);
-
 drop policy if exists "Service role can manage counter pick stats"
 on public.counter_pick_stats;
-
 create policy "Service role can manage counter pick stats"
 on public.counter_pick_stats
 for all
 to service_role
 using (true)
 with check (true);
-
 drop trigger if exists set_counter_pick_stats_updated_at
 on public.counter_pick_stats;
-
 create trigger set_counter_pick_stats_updated_at
 before update on public.counter_pick_stats
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.counter_pick_stats is
   'Permanent cached counter-pick statistics by enemy champion, counter champion, role, and patch.';

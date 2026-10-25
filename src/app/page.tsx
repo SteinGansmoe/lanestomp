@@ -4,13 +4,10 @@ import type { ReactNode } from "react";
 import {
   ArrowRight,
   BarChart3,
-  CheckCircle2,
   Crosshair,
-  LineChart,
   Search,
   ShieldAlert,
   ShieldCheck,
-  Swords,
   Target,
 } from "lucide-react";
 
@@ -19,7 +16,6 @@ import {
   laneStompContentClassName,
   laneStompPageClassName,
 } from "@/src/components/lane-stomp-page";
-import { CounterPickStartForm } from "@/src/components/league/counter-pick-start-form";
 import { HextechFrame } from "@/src/components/league/hextech-frame";
 import { SiteHeader } from "@/src/components/site-header";
 import {
@@ -27,7 +23,6 @@ import {
   getLeagueChampions,
   type LeagueChampion,
 } from "@/src/features/league/champions";
-import { getPopularCounterPickChampions } from "@/src/features/league/counter-pick-popular-champions";
 import {
   getLeagueMatchupCoverageSummary,
   type LeagueMatchupCoverageSummary,
@@ -36,17 +31,15 @@ import { leagueRoles } from "@/src/features/league/roles";
 import { cn } from "@/src/lib/utils";
 
 export const metadata: Metadata = {
-  title: "League of Legends Counter Picks & Matchup Guides | LaneStomp",
+  title: "League of Legends Matchup Guides | LaneStomp",
   description:
-    "Find League of Legends counter picks, champion matchup guides, and role-specific preparation with LaneStomp.",
+    "Find reviewed League of Legends matchup guides and role-specific preparation with LaneStomp.",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const { champions, error } = await getLeagueChampions();
-  const popularChampions =
-    champions.length > 0 ? await getPopularCounterPickChampions(champions) : [];
   const { coverage } =
     champions.length > 0 ? await getLeagueMatchupCoverageSummary(champions) : { coverage: null };
   const stats = getHomepageStats(champions.length, coverage);
@@ -59,23 +52,15 @@ export default async function Home() {
         <SiteHeader />
 
         <HomepageHero champion={heroChampion}>
-          {error ? (
-            <ChampionDataError message={error} />
-          ) : champions.length > 0 ? (
-            <CounterPickStartForm champions={champions} popularChampions={popularChampions} />
-          ) : (
-            <div className="max-w-xl border border-cyan-100/15 bg-[#07101f]/90 p-4 text-zinc-300">
-              <h2 className="font-mono text-lg font-semibold text-white">
-                Champion data is not ready yet
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
-                Import League champion data to enable the Counter Pick search.
-              </p>
-            </div>
-          )}
+          <Link
+            className="inline-flex min-h-12 items-center gap-3 border border-cyan-300/40 bg-cyan-400/10 px-6 py-3 font-mono font-semibold text-cyan-100 hover:bg-cyan-400/20"
+            href="/league/matchups"
+          >
+            Browse Matchup Guides <ArrowRight className="size-5" aria-hidden="true" />
+          </Link>
+          {error ? <ChampionDataError message={error} /> : null}
         </HomepageHero>
 
-        <ConfidenceGuide />
         <MatchupFeatureLinks />
         <PlatformStats stats={stats} />
       </div>
@@ -96,7 +81,7 @@ function HomepageHero({
       <div className="relative z-40 w-full max-w-[21rem] px-3 py-12 sm:max-w-3xl sm:px-8 sm:py-14 lg:px-12 lg:py-20">
         <div className="flex items-center gap-4">
           <p className="font-mono text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
-            Counter Pick
+            Matchup Guides
           </p>
           <span
             className="hidden h-px w-28 bg-[linear-gradient(90deg,rgba(103,232,249,0.85),rgba(103,232,249,0.08))] sm:block"
@@ -108,17 +93,15 @@ function HomepageHero({
           />
         </div>
         <h1 className="mt-6 font-mono text-4xl font-bold uppercase leading-[1.04] tracking-normal text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)] sm:text-5xl lg:text-6xl xl:text-7xl">
-          <span className="block">Find the right</span>
-          <span className="block">counter before</span>
-          <span className="block">champion select</span>
+          <span className="block">Know your matchup</span>
+          <span className="block">before champion select</span>
         </h1>
         <span
           className="mt-6 block h-0.5 w-12 bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.85)]"
           aria-hidden="true"
         />
         <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-100 sm:text-lg">
-          Search any champion to get smart counter picks, matchup insights, and practical prep
-          before you lock in.
+          Read reviewed matchup guides for lane advice, trading patterns, and practical preparation.
         </p>
         <div className="mt-8">{children}</div>
       </div>
@@ -152,66 +135,13 @@ function HomepageHeroBackground({ champion }: { champion: LeagueChampion | null 
   );
 }
 
-function ConfidenceGuide() {
-  const confidenceLevels = [
-    { label: "Very high", range: "1000+ stored games", style: "bg-cyan-300" },
-    { label: "High", range: "500–999 games", style: "bg-lime-300 rotate-45" },
-    { label: "Medium", range: "200–499 games", style: "bg-amber-400 rotate-45" },
-    { label: "Low", range: "50–199 games", style: "bg-rose-500" },
-    { label: "Very low", range: "Under 50 / preliminary", style: "bg-slate-500 rotate-45" },
-  ];
-
-  return (
-    <section className="border border-cyan-100/20 bg-[#06111f]/92 px-5 py-5 sm:px-7">
-      <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.7fr)] xl:items-center">
-        <div className="flex gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center border border-cyan-300/35 bg-cyan-400/10 text-cyan-100">
-            <LineChart className="size-5" aria-hidden="true" />
-          </div>
-          <div>
-            <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">
-              Confidence Guide
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-              Confidence is based on stored Riot game count for a given patch. More games provide
-              more reliable insights. Real matchup win rates are usually close - 52-54% is already
-              strong at scale.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {confidenceLevels.map((level) => (
-            <div className="flex items-start gap-3" key={level.label}>
-              <span
-                className={cn("mt-1 size-4 shrink-0 shadow-[0_0_12px_rgba(34,211,238,0.2)]", level.style)}
-                aria-hidden="true"
-              />
-              <span>
-                <span className="block font-semibold text-zinc-50">{level.label}</span>
-                <span className="mt-1 block text-sm leading-5 text-zinc-400">{level.range}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function MatchupFeatureLinks() {
   const features = [
     {
-      description: "See win rates, lane stats, and key insights for any champion matchup.",
+      description: "Read reviewed advice on trading patterns, power spikes, and lane preparation.",
       href: "/league/matchups",
       icon: Search,
       title: "Understand the matchup",
-    },
-    {
-      description: "Explore strengths, tradeoffs, and difficulty so you lock in with confidence.",
-      href: "/league/counters",
-      icon: Swords,
-      title: "Prepare your counter pick",
     },
     {
       description: "Turn short matchup notes into a practical lane and teamfight plan.",
@@ -226,7 +156,7 @@ function MatchupFeatureLinks() {
       <h2 className="px-3 font-mono text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">
         Matchup Guides
       </h2>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {features.map((feature) => {
           const Icon = feature.icon;
 
@@ -321,10 +251,7 @@ function ChampionDataError({ message }: { message: string }) {
   );
 }
 
-function getHomepageStats(
-  championCount: number,
-  coverage: LeagueMatchupCoverageSummary | null,
-) {
+function getHomepageStats(championCount: number, coverage: LeagueMatchupCoverageSummary | null) {
   const matchupCount = coverage?.all.generatedCount ?? 0;
   const rolesCovered = coverage
     ? leagueRoles.filter((role) => coverage[role].generatedCount > 0).length
@@ -345,11 +272,6 @@ function getHomepageStats(
       icon: Crosshair,
       label: "Roles covered",
       value: String(rolesCovered || leagueRoles.length),
-    },
-    {
-      icon: CheckCircle2,
-      label: "Counter Pick",
-      value: "LIVE",
     },
   ];
 }

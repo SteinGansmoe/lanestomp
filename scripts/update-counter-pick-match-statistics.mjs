@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { assertRiotCollectionAllowed } from "./lib/riot-collection-safety.mjs";
 
 import {
   loadActiveChampionRegistry,
@@ -8,6 +9,7 @@ import {
 } from "./lib/league-champion-normalizer.mjs";
 
 loadEnvFile(".env.local");
+assertRiotCollectionAllowed();
 
 const args = process.argv.slice(2);
 const isDryRun = args.includes("--dry-run") || process.env.npm_config_dry_run === "true";
@@ -223,6 +225,7 @@ function toLeagueRole(teamPosition) {
 }
 
 async function fetchRiotJson(url) {
+  assertRiotCollectionAllowed();
   const response = await fetch(url, {
     headers: {
       "X-Riot-Token": riotApiKey,

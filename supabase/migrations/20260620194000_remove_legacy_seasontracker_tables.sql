@@ -22,7 +22,6 @@ begin
     end if;
   end loop;
 end $$;
-
 do $$
 begin
   if to_regclass('public.planning_checklist_items') is not null then
@@ -96,7 +95,6 @@ begin
       on public.games;
   end if;
 end $$;
-
 drop table if exists public.planning_checklist_items;
 drop table if exists public.planning_links;
 drop table if exists public.planning_boards;

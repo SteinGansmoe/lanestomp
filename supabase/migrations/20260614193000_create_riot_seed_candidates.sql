@@ -1,5 +1,4 @@
 create extension if not exists pgcrypto;
-
 create table if not exists public.riot_seed_candidates (
   id uuid primary key default gen_random_uuid(),
   puuid text not null,
@@ -71,7 +70,6 @@ create table if not exists public.riot_seed_candidates (
     or (primary_champion_share >= 0 and primary_champion_share <= 1)
   )
 );
-
 create table if not exists public.riot_seed_candidate_observations (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.riot_seed_candidates(id) on delete cascade,
@@ -100,101 +98,74 @@ create table if not exists public.riot_seed_candidate_observations (
     or game_duration_seconds >= 0
   )
 );
-
 create index if not exists riot_seed_candidates_platform_region_idx
 on public.riot_seed_candidates (platform_region);
-
 create index if not exists riot_seed_candidates_status_idx
 on public.riot_seed_candidates (status);
-
 create index if not exists riot_seed_candidates_primary_role_idx
 on public.riot_seed_candidates (estimated_primary_role);
-
 create index if not exists riot_seed_candidates_primary_champion_idx
 on public.riot_seed_candidates (primary_champion);
-
 create index if not exists riot_seed_candidates_source_idx
 on public.riot_seed_candidates (source);
-
 create index if not exists riot_seed_candidates_last_seen_idx
 on public.riot_seed_candidates (last_seen_at desc);
-
 create index if not exists riot_seed_candidate_observations_candidate_id_idx
 on public.riot_seed_candidate_observations (candidate_id);
-
 create index if not exists riot_seed_candidate_observations_candidate_role_idx
 on public.riot_seed_candidate_observations (candidate_id, role);
-
 create index if not exists riot_seed_candidate_observations_candidate_champion_idx
 on public.riot_seed_candidate_observations (candidate_id, champion);
-
 create index if not exists riot_seed_candidate_observations_candidate_role_champion_idx
 on public.riot_seed_candidate_observations (candidate_id, role, champion);
-
 create index if not exists riot_seed_candidate_observations_patch_idx
 on public.riot_seed_candidate_observations (patch);
-
 create index if not exists riot_seed_candidate_observations_game_start_at_idx
 on public.riot_seed_candidate_observations (game_start_at desc);
-
 create index if not exists riot_seed_candidate_observations_scan_job_id_idx
 on public.riot_seed_candidate_observations (scan_job_id);
-
 grant select on table public.riot_seed_candidates to authenticated;
 grant select on table public.riot_seed_candidate_observations to authenticated;
 grant select, insert, update, delete on table public.riot_seed_candidates to service_role;
 grant select, insert, update, delete on table public.riot_seed_candidate_observations to service_role;
-
 alter table public.riot_seed_candidates enable row level security;
 alter table public.riot_seed_candidate_observations enable row level security;
-
 drop policy if exists "Admins can read riot seed candidates"
 on public.riot_seed_candidates;
-
 create policy "Admins can read riot seed candidates"
 on public.riot_seed_candidates
 for select
 to authenticated
 using (public.is_admin(auth.uid()));
-
 drop policy if exists "Service role can manage riot seed candidates"
 on public.riot_seed_candidates;
-
 create policy "Service role can manage riot seed candidates"
 on public.riot_seed_candidates
 for all
 to service_role
 using (true)
 with check (true);
-
 drop policy if exists "Admins can read riot seed candidate observations"
 on public.riot_seed_candidate_observations;
-
 create policy "Admins can read riot seed candidate observations"
 on public.riot_seed_candidate_observations
 for select
 to authenticated
 using (public.is_admin(auth.uid()));
-
 drop policy if exists "Service role can manage riot seed candidate observations"
 on public.riot_seed_candidate_observations;
-
 create policy "Service role can manage riot seed candidate observations"
 on public.riot_seed_candidate_observations
 for all
 to service_role
 using (true)
 with check (true);
-
 drop trigger if exists set_riot_seed_candidates_updated_at
 on public.riot_seed_candidates;
-
 create trigger set_riot_seed_candidates_updated_at
 before update on public.riot_seed_candidates
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.riot_seed_candidates is
   'Admin-only durable Riot player seed pool. One candidate per platform region and PUUID.';
-
 comment on table public.riot_seed_candidate_observations is
   'Durable per-match participant appearances used to rebuild Riot seed candidate profiles.';

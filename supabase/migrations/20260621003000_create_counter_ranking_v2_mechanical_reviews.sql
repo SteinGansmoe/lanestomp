@@ -21,8 +21,6 @@ create table if not exists public.counter_ranking_v2_mechanical_reviews (
     check (role in ('top', 'jungle', 'mid', 'adc', 'support')),
   constraint counter_ranking_v2_mechanical_review_not_self_check
     check (enemy_champion_id <> counter_champion_id),
-  constraint counter_ranking_v2_mechanical_reviews_unique
-    unique (enemy_champion_id, counter_champion_id, role),
   constraint counter_ranking_v2_mechanical_review_calculated_score_check
     check (calculated_mechanical_score >= 0 and calculated_mechanical_score <= 100),
   constraint counter_ranking_v2_mechanical_review_adjustment_check
@@ -51,7 +49,8 @@ create table if not exists public.counter_ranking_v2_mechanical_reviews (
       )
     )
 );
-
+create unique index if not exists counter_ranking_v2_mechanical_reviews_unique_idx
+on public.counter_ranking_v2_mechanical_reviews (enemy_champion_id, counter_champion_id, role);
 create index if not exists counter_ranking_v2_mechanical_reviews_enemy_final_score_idx
 on public.counter_ranking_v2_mechanical_reviews (
   enemy_champion_id,
@@ -59,9 +58,7 @@ on public.counter_ranking_v2_mechanical_reviews (
   public_eligible,
   final_mechanical_score desc
 );
-
 alter table public.counter_ranking_v2_mechanical_reviews enable row level security;
-
 drop policy if exists "Admins can manage counter ranking v2 mechanical reviews"
 on public.counter_ranking_v2_mechanical_reviews;
 create policy "Admins can manage counter ranking v2 mechanical reviews"
@@ -70,7 +67,6 @@ for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 grant select, insert, update, delete
 on table public.counter_ranking_v2_mechanical_reviews
 to authenticated;

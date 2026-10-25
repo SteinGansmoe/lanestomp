@@ -18,19 +18,19 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://lanestomp.com"),
 
   title: {
-    default: "LaneStomp | League of Legends Matchup Guides, Counter Picks & Champion Data",
+    default: "LaneStomp | League of Legends Matchup Guides & Champion Data",
     template: "%s | LaneStomp",
   },
 
   description:
-    "Find League of Legends matchup guides, counter picks, champion data, power spikes, and role-specific advice. Prepare before champion select and win more games with LaneStomp.",
+    "Find League of Legends matchup guides, champion data, power spikes, and role-specific advice. Prepare before champion select and win more games with LaneStomp.",
 
   applicationName: "LaneStomp",
   openGraph: {
-    title: "LaneStomp | League of Legends Matchup Guides & Counter Picks",
+    title: "LaneStomp | League of Legends Matchup Guides & Champion Data",
 
     description:
-      "Prepare before champion select with matchup guides, counter picks, champion data, power spikes, and role-specific advice.",
+      "Prepare before champion select with matchup guides, champion data, power spikes, and role-specific advice.",
 
     type: "website",
     siteName: "LaneStomp",
@@ -39,10 +39,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
 
-    title: "LaneStomp | League of Legends Matchup Guides & Counter Picks",
+    title: "LaneStomp | League of Legends Matchup Guides & Champion Data",
 
     description:
-      "Prepare before champion select with matchup guides, counter picks, champion data, power spikes, and role-specific advice.",
+      "Prepare before champion select with matchup guides, champion data, power spikes, and role-specific advice.",
   },
 };
 

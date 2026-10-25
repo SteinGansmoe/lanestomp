@@ -1,6 +1,5 @@
 alter table public.matchup_feedback
 add column if not exists session_id text;
-
 create table if not exists public.matchup_feedback_counts (
   matchup_id bigint not null references public.league_matchups(id) on update cascade on delete cascade,
   card_type text not null,
@@ -15,7 +14,6 @@ create table if not exists public.matchup_feedback_counts (
     and report_count >= 0
   )
 );
-
 delete from public.matchup_feedback feedback
 using (
   select ctid
@@ -32,19 +30,15 @@ using (
   where duplicate_rank > 1
 ) duplicates
 where feedback.ctid = duplicates.ctid;
-
 create unique index if not exists matchup_feedback_unique_user_vote_idx
 on public.matchup_feedback (matchup_id, card_type, user_id)
 where user_id is not null;
-
 create unique index if not exists matchup_feedback_unique_session_vote_idx
 on public.matchup_feedback (matchup_id, card_type, session_id)
 where user_id is null and session_id is not null;
-
 create index if not exists matchup_feedback_session_id_idx
 on public.matchup_feedback (session_id)
 where session_id is not null;
-
 insert into public.matchup_feedback_counts (
   matchup_id,
   card_type,
@@ -68,7 +62,6 @@ set
   not_helpful_count = excluded.not_helpful_count,
   report_count = excluded.report_count,
   updated_at = now();
-
 create or replace function public.refresh_matchup_feedback_counts(
   p_matchup_id bigint,
   p_card_type text
@@ -109,7 +102,6 @@ begin
     updated_at = now();
 end;
 $$;
-
 create or replace function public.handle_matchup_feedback_counts()
 returns trigger
 language plpgsql
@@ -132,13 +124,10 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists refresh_matchup_feedback_counts_after_change on public.matchup_feedback;
-
 create trigger refresh_matchup_feedback_counts_after_change
 after insert or update or delete on public.matchup_feedback
 for each row execute function public.handle_matchup_feedback_counts();
-
 create or replace function public.submit_matchup_feedback(
   p_matchup_id bigint,
   p_player_champion text,
@@ -288,7 +277,6 @@ begin
    and counts.card_type = p_card_type;
 end;
 $$;
-
 grant select on table public.matchup_feedback_counts to anon, authenticated;
 grant select, insert, update, delete on table public.matchup_feedback_counts to service_role;
 grant execute on function public.submit_matchup_feedback(
@@ -302,16 +290,12 @@ grant execute on function public.submit_matchup_feedback(
   text,
   text
 ) to anon, authenticated;
-
 alter table public.matchup_feedback_counts enable row level security;
-
 drop policy if exists "Anyone can read matchup feedback counts" on public.matchup_feedback_counts;
-
 create policy "Anyone can read matchup feedback counts"
 on public.matchup_feedback_counts
 for select
 to anon, authenticated
 using (true);
-
 comment on table public.matchup_feedback_counts is
   'Aggregated public counts for League matchup card feedback.';

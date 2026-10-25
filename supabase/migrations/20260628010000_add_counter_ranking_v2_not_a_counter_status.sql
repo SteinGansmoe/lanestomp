@@ -1,6 +1,5 @@
 alter table public.counter_ranking_v2_mechanical_reviews
 drop constraint if exists counter_ranking_v2_mechanical_review_status_check;
-
 alter table public.counter_ranking_v2_mechanical_reviews
 add constraint counter_ranking_v2_mechanical_review_status_check
 check (

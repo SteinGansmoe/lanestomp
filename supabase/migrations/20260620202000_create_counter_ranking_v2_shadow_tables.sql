@@ -9,7 +9,6 @@ create table if not exists public.counter_ranking_v2_champion_trait_profiles (
   constraint counter_ranking_v2_trait_profile_version_check check (profile_version > 0),
   constraint counter_ranking_v2_trait_profile_strengths_check check (jsonb_typeof(strengths) = 'array')
 );
-
 create table if not exists public.counter_ranking_v2_champion_vulnerability_profiles (
   champion_id text primary key references public.league_champions(id) on delete cascade,
   profile_version integer not null default 1,
@@ -22,7 +21,6 @@ create table if not exists public.counter_ranking_v2_champion_vulnerability_prof
   constraint counter_ranking_v2_vulnerability_profile_vulnerabilities_check
     check (jsonb_typeof(vulnerabilities) = 'array')
 );
-
 create table if not exists public.counter_ranking_v2_profile_reviews (
   champion_id text primary key references public.league_champions(id) on delete cascade,
   trait_profile_version integer not null default 1,
@@ -41,7 +39,6 @@ create table if not exists public.counter_ranking_v2_profile_reviews (
   constraint counter_ranking_v2_profile_review_vulnerability_version_check
     check (vulnerability_profile_version > 0)
 );
-
 create table if not exists public.counter_ranking_v2_mechanical_fit_results (
   id bigint generated always as identity primary key,
   candidate_champion_id text not null references public.league_champions(id) on delete cascade,
@@ -68,7 +65,6 @@ create table if not exists public.counter_ranking_v2_mechanical_fit_results (
   constraint counter_ranking_v2_mechanical_enemy_version_check
     check (enemy_profile_version > 0)
 );
-
 create unique index if not exists counter_ranking_v2_mechanical_fit_unique_idx
 on public.counter_ranking_v2_mechanical_fit_results (
   candidate_champion_id,
@@ -77,15 +73,12 @@ on public.counter_ranking_v2_mechanical_fit_results (
   candidate_profile_version,
   enemy_profile_version
 );
-
 create index if not exists counter_ranking_v2_mechanical_fit_enemy_score_idx
 on public.counter_ranking_v2_mechanical_fit_results (enemy_champion_id, role, score desc);
-
 alter table public.counter_ranking_v2_champion_trait_profiles enable row level security;
 alter table public.counter_ranking_v2_champion_vulnerability_profiles enable row level security;
 alter table public.counter_ranking_v2_profile_reviews enable row level security;
 alter table public.counter_ranking_v2_mechanical_fit_results enable row level security;
-
 drop policy if exists "Admins can manage counter ranking v2 trait profiles"
 on public.counter_ranking_v2_champion_trait_profiles;
 create policy "Admins can manage counter ranking v2 trait profiles"
@@ -94,7 +87,6 @@ for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 drop policy if exists "Admins can manage counter ranking v2 vulnerability profiles"
 on public.counter_ranking_v2_champion_vulnerability_profiles;
 create policy "Admins can manage counter ranking v2 vulnerability profiles"
@@ -103,7 +95,6 @@ for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 drop policy if exists "Admins can manage counter ranking v2 profile reviews"
 on public.counter_ranking_v2_profile_reviews;
 create policy "Admins can manage counter ranking v2 profile reviews"
@@ -112,7 +103,6 @@ for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 drop policy if exists "Admins can manage counter ranking v2 mechanical fit results"
 on public.counter_ranking_v2_mechanical_fit_results;
 create policy "Admins can manage counter ranking v2 mechanical fit results"
@@ -121,7 +111,6 @@ for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 grant select, insert, update, delete
 on table
   public.counter_ranking_v2_champion_trait_profiles,

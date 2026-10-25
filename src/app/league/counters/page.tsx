@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 import { connection } from "next/server";
+import { notFound } from "next/navigation";
+import { publicCounterPickEnabled } from "@/src/features/league/counter-pick-access";
 
 import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import { CounterPickSelector } from "@/src/components/league/counter-pick-selector";
@@ -20,6 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LeagueCountersPage({ searchParams }: LeagueCountersPageProps) {
+  if (!publicCounterPickEnabled) notFound();
   await connection();
 
   const [{ champions, error }, query] = await Promise.all([getLeagueChampions(), searchParams]);

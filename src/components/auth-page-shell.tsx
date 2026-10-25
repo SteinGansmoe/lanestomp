@@ -15,7 +15,7 @@ type AuthPageShellProps = {
   title: string;
 };
 
-const authHighlights = ["Counter Pick ready", "Matchup guides", "Saved account tools"];
+const authHighlights = ["Matchup guides", "Saved account tools"];
 
 export function AuthPageShell({ children, description, eyebrow, title }: AuthPageShellProps) {
   return (

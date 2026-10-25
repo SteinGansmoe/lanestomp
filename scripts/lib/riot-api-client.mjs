@@ -1,3 +1,4 @@
+import { assertRiotCollectionAllowed } from "./riot-collection-safety.mjs";
 import {
   MAX_RATE_LIMIT_RETRIES_PER_REQUEST,
   RiotRateLimitError,
@@ -156,11 +157,13 @@ export class RiotApiClient {
     url,
     { endpointGroup = "unknown", retryOnRateLimit = this.retryOnRateLimit } = {},
   ) {
+    assertRiotCollectionAllowed();
     for (
       let retryAttempt = 0;
       retryAttempt <= MAX_RATE_LIMIT_RETRIES_PER_REQUEST;
       retryAttempt += 1
     ) {
+      assertRiotCollectionAllowed();
       await this.rateLimiter.acquire({
         ...this.rateLimitContext,
         endpointGroup,

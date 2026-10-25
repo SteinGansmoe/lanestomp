@@ -5,12 +5,10 @@ import { BookOpen, ChevronRight, ExternalLink } from "lucide-react";
 const platformLinks = [
   { href: "/", label: "Home" },
   { href: "/league/matchups", label: "Matchups" },
-  { href: "/league/counters", label: "Counter Picks" },
   { href: "/champions", label: "Champions" },
 ];
 
 const resourceLinks = [
-  { href: "/league/counters", label: "Counter Pick" },
   { href: "/league/matchups", label: "Matchup Guides" },
   { href: "/champions", label: "Champion Index" },
   { href: "/legal", label: "Riot Disclaimer" },

@@ -8,14 +8,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Menu, Search, X } from "lucide-react";
 
 import { AuthenticatedAccountMenu } from "@/src/components/authenticated-account-menu";
-import { counterPickPrimaryCtaClassName } from "@/src/components/league/counter-pick-cta-styles";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { cn } from "@/src/lib/utils";
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/league/counters", label: "Counter Pick" },
   { href: "/league/matchups", label: "Matchup Guides" },
   { href: "/champions", label: "Champions" },
 ];
@@ -137,15 +135,6 @@ export function SiteHeader({ searchValue, onSearchChange }: SiteHeaderProps) {
 
         <div className="ml-auto mr-1 hidden shrink-0 items-center gap-3 sm:flex lg:mr-3 xl:ml-0 xl:mr-5">
           <AuthenticatedAccountMenu menuPlacement="inline" variant="topbar" />
-          <Link
-            className={cn(
-              "hidden h-10 items-center justify-center px-5 font-mono text-xs font-bold uppercase tracking-[0.08em] lg:inline-flex",
-              counterPickPrimaryCtaClassName,
-            )}
-            href="/league/counters"
-          >
-            Counter Pick
-          </Link>
         </div>
 
         <Button

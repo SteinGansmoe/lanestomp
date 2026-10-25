@@ -34,30 +34,21 @@ create table if not exists public.matchup_feedback (
     status in ('open', 'reviewing', 'resolved', 'dismissed')
   )
 );
-
 create index if not exists matchup_feedback_matchup_id_idx
 on public.matchup_feedback (matchup_id);
-
 create index if not exists matchup_feedback_status_idx
 on public.matchup_feedback (status);
-
 create index if not exists matchup_feedback_lane_idx
 on public.matchup_feedback (lane);
-
 create index if not exists matchup_feedback_card_type_idx
 on public.matchup_feedback (card_type);
-
 create index if not exists matchup_feedback_reason_idx
 on public.matchup_feedback (reason);
-
 grant insert on table public.matchup_feedback to anon, authenticated;
 grant select, update on table public.matchup_feedback to authenticated;
 grant select, insert, update, delete on table public.matchup_feedback to service_role;
-
 alter table public.matchup_feedback enable row level security;
-
 drop policy if exists "Anyone can submit matchup feedback" on public.matchup_feedback;
-
 create policy "Anyone can submit matchup feedback"
 on public.matchup_feedback
 for insert
@@ -66,29 +57,22 @@ with check (
   user_id is null
   or user_id = auth.uid()
 );
-
 drop policy if exists "Admins can read matchup feedback" on public.matchup_feedback;
-
 create policy "Admins can read matchup feedback"
 on public.matchup_feedback
 for select
 to authenticated
 using (public.is_admin(auth.uid()));
-
 drop policy if exists "Admins can update matchup feedback" on public.matchup_feedback;
-
 create policy "Admins can update matchup feedback"
 on public.matchup_feedback
 for update
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 drop trigger if exists set_matchup_feedback_updated_at on public.matchup_feedback;
-
 create trigger set_matchup_feedback_updated_at
 before update on public.matchup_feedback
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.matchup_feedback is
   'User feedback on League matchup guidance cards, reviewed manually by admins.';
