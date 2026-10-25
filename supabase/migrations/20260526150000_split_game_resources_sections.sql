@@ -1,9 +1,7 @@
 alter table public.game_resources
 add column if not exists section text not null default 'community';
-
 alter table public.game_resources
 add column if not exists group_title text;
-
 do $$
 begin
   if not exists (
@@ -16,7 +14,6 @@ begin
     check (section in ('resources', 'community'));
   end if;
 end $$;
-
 update public.game_resources
 set section = 'community',
     group_title = null
@@ -38,7 +35,6 @@ where section is null
     'path-of-exile-reddit',
     'path-of-exile-youtube'
   );
-
 insert into public.game_resources (
   id,
   game_id,

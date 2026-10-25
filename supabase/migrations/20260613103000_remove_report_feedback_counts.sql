@@ -35,19 +35,15 @@ begin
     updated_at = now();
 end;
 $$;
-
 alter table public.matchup_feedback_counts
 drop constraint if exists matchup_feedback_counts_nonnegative_check;
-
 alter table public.matchup_feedback_counts
 drop column if exists report_count;
-
 alter table public.matchup_feedback_counts
 add constraint matchup_feedback_counts_nonnegative_check check (
   helpful_count >= 0
   and not_helpful_count >= 0
 );
-
 delete from public.matchup_feedback feedback
 using (
   select ctid
@@ -65,7 +61,6 @@ using (
   where duplicate_rank > 1
 ) duplicates
 where feedback.ctid = duplicates.ctid;
-
 delete from public.matchup_feedback feedback
 using (
   select ctid
@@ -83,7 +78,6 @@ using (
   where duplicate_rank > 1
 ) duplicates
 where feedback.ctid = duplicates.ctid;
-
 delete from public.matchup_feedback feedback
 using (
   select ctid
@@ -102,7 +96,6 @@ using (
   where duplicate_rank > 1
 ) duplicates
 where feedback.ctid = duplicates.ctid;
-
 delete from public.matchup_feedback feedback
 using (
   select ctid
@@ -121,28 +114,22 @@ using (
   where duplicate_rank > 1
 ) duplicates
 where feedback.ctid = duplicates.ctid;
-
 drop index if exists public.matchup_feedback_unique_user_vote_idx;
 drop index if exists public.matchup_feedback_unique_user_report_idx;
 drop index if exists public.matchup_feedback_unique_session_vote_idx;
 drop index if exists public.matchup_feedback_unique_session_report_idx;
-
 create unique index matchup_feedback_unique_user_vote_idx
 on public.matchup_feedback (matchup_id, card_type, user_id)
 where user_id is not null and feedback_type in ('helpful', 'not_helpful');
-
 create unique index matchup_feedback_unique_user_report_idx
 on public.matchup_feedback (matchup_id, card_type, user_id)
 where user_id is not null and feedback_type = 'report_issue';
-
 create unique index matchup_feedback_unique_session_vote_idx
 on public.matchup_feedback (matchup_id, card_type, session_id)
 where user_id is null and session_id is not null and feedback_type in ('helpful', 'not_helpful');
-
 create unique index matchup_feedback_unique_session_report_idx
 on public.matchup_feedback (matchup_id, card_type, session_id)
 where user_id is null and session_id is not null and feedback_type = 'report_issue';
-
 insert into public.matchup_feedback_counts (
   matchup_id,
   card_type,
@@ -163,7 +150,6 @@ set
   helpful_count = excluded.helpful_count,
   not_helpful_count = excluded.not_helpful_count,
   updated_at = now();
-
 drop function if exists public.submit_matchup_feedback(
   bigint,
   text,
@@ -175,7 +161,6 @@ drop function if exists public.submit_matchup_feedback(
   text,
   text
 );
-
 create or replace function public.submit_matchup_feedback(
   p_matchup_id bigint,
   p_player_champion text,
@@ -412,7 +397,6 @@ begin
    and counts.card_type = p_card_type;
 end;
 $$;
-
 grant execute on function public.submit_matchup_feedback(
   bigint,
   text,

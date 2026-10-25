@@ -1,5 +1,4 @@
 create extension if not exists pgcrypto;
-
 create table if not exists public.riot_matchup_observations (
   id uuid primary key default gen_random_uuid(),
   match_id text not null,
@@ -44,45 +43,33 @@ create table if not exists public.riot_matchup_observations (
     role
   )
 );
-
 create index if not exists riot_matchup_observations_patch_role_idx
 on public.riot_matchup_observations (patch, role);
-
 create index if not exists riot_matchup_observations_pair_role_patch_idx
 on public.riot_matchup_observations (champion_a, champion_b, role, patch);
-
 create index if not exists riot_matchup_observations_winner_idx
 on public.riot_matchup_observations (winner_champion);
-
 create index if not exists riot_matchup_observations_rank_bracket_idx
 on public.riot_matchup_observations (rank_bracket);
-
 create index if not exists riot_matchup_observations_scan_job_id_idx
 on public.riot_matchup_observations (scan_job_id);
-
 grant select on table public.riot_matchup_observations to authenticated;
 grant select, insert, update, delete on table public.riot_matchup_observations to service_role;
-
 alter table public.riot_matchup_observations enable row level security;
-
 drop policy if exists "Admins can read riot matchup observations"
 on public.riot_matchup_observations;
-
 create policy "Admins can read riot matchup observations"
 on public.riot_matchup_observations
 for select
 to authenticated
 using (public.is_admin(auth.uid()));
-
 drop policy if exists "Service role can manage riot matchup observations"
 on public.riot_matchup_observations;
-
 create policy "Service role can manage riot matchup observations"
 on public.riot_matchup_observations
 for all
 to service_role
 using (true)
 with check (true);
-
 comment on table public.riot_matchup_observations is
   'Durable, deduplicated Riot match role observations used as the source of truth for counter_pick_stats. Uniqueness is match_id + role because one ranked match has one matchup per role.';

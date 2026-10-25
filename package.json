@@ -62,7 +62,8 @@
     "verify:riot-observation-validation": "node scripts/verify-riot-observation-validation.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:counter-pick-access-safety": "node scripts/test-counter-pick-access-safety.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

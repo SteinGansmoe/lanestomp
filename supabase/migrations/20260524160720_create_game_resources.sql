@@ -9,29 +9,22 @@ create table public.game_resources (
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
-
 grant select on table public.game_resources to anon, authenticated;
 grant insert, update, delete on table public.game_resources to authenticated;
-
 alter table public.game_resources enable row level security;
-
 drop policy if exists "Allow public read access to active game resources" on public.game_resources;
-
 create policy "Allow public read access to active game resources"
 on public.game_resources
 for select
 to anon, authenticated
 using (is_active = true);
-
 drop policy if exists "Authenticated users can manage game resources" on public.game_resources;
-
 create policy "Authenticated users can manage game resources"
 on public.game_resources
 for all
 to authenticated
 using (true)
 with check (true);
-
 insert into public.game_resources (
   id,
   game_id,

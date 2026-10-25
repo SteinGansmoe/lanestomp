@@ -45,37 +45,27 @@ create table if not exists public.riot_scan_jobs (
     )
   )
 );
-
 create index if not exists riot_scan_jobs_created_at_idx
 on public.riot_scan_jobs (created_at desc);
-
 create index if not exists riot_scan_jobs_status_idx
 on public.riot_scan_jobs (status);
-
 create index if not exists riot_scan_jobs_created_by_idx
 on public.riot_scan_jobs (created_by);
-
 grant select, insert, update, delete on table public.riot_scan_jobs to authenticated;
 grant select, insert, update, delete on table public.riot_scan_jobs to service_role;
-
 alter table public.riot_scan_jobs enable row level security;
-
 drop policy if exists "Admins can manage riot scan jobs"
 on public.riot_scan_jobs;
-
 create policy "Admins can manage riot scan jobs"
 on public.riot_scan_jobs
 for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 drop trigger if exists set_riot_scan_jobs_updated_at
 on public.riot_scan_jobs;
-
 create trigger set_riot_scan_jobs_updated_at
 before update on public.riot_scan_jobs
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.riot_scan_jobs is
   'Admin-only Riot match scanner jobs for Counter Pick research. Seed PUUIDs are stored for internal scanner use only.';

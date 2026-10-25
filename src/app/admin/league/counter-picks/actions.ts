@@ -1,5 +1,7 @@
 "use server";
 
+import { getRiotCollectionBlockReason } from "@/scripts/lib/riot-collection-safety.mjs";
+
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import {
@@ -626,6 +628,9 @@ export type BatchSaveCounterRankingV2MechanicalReviewsResult =
     };
 
 export async function startRiotScanJob(input: StartRiotScanJobInput): Promise<RiotScanJobResult> {
+  const collectionBlockReason = getRiotCollectionBlockReason();
+  if (collectionBlockReason) return { ok: false, error: collectionBlockReason };
+
   const authResult = await getAuthorizedAdmin(input.accessToken, "run Riot match scans");
 
   if (!authResult.ok) {
@@ -2137,6 +2142,9 @@ export async function batchSaveCounterRankingV2MechanicalReviews(
 export async function startRiotCollectionJob(
   input: StartRiotCollectionJobInput,
 ): Promise<RiotCollectionJobResult> {
+  const collectionBlockReason = getRiotCollectionBlockReason();
+  if (collectionBlockReason) return { ok: false, error: collectionBlockReason };
+
   const authResult = await getAuthorizedAdmin(input.accessToken, "start Riot collection jobs");
 
   if (!authResult.ok) {
@@ -2212,6 +2220,9 @@ export async function resumeRiotCollectionJob({
   accessToken: string;
   collectionJobId: number;
 }): Promise<RiotCollectionJobResult> {
+  const collectionBlockReason = getRiotCollectionBlockReason();
+  if (collectionBlockReason) return { ok: false, error: collectionBlockReason };
+
   const authResult = await getAuthorizedAdmin(accessToken, "resume Riot collection jobs");
 
   if (!authResult.ok) {
@@ -2361,6 +2372,9 @@ export async function getRiotCollectionJob({
   if (!jobResult.ok) {
     return jobResult;
   }
+
+  // Preview/polling must remain read-only while production collection is closed.
+  if (getRiotCollectionBlockReason()) return jobResult;
 
   const consistencyIssue = await getRiotCollectionConsistencyIssue({
     job: jobResult.job,
@@ -2566,6 +2580,9 @@ export async function getPaginatedRiotSeedCandidates({
 export async function refreshRiotSeedCandidateRanks(
   input: RiotSeedCandidateRankRefreshInput,
 ): Promise<RiotSeedCandidateRankRefreshResult> {
+  const collectionBlockReason = getRiotCollectionBlockReason();
+  if (collectionBlockReason) return { ok: false, error: collectionBlockReason };
+
   const authResult = await getAuthorizedAdmin(
     input.accessToken,
     "refresh Riot seed candidate ranks",
@@ -2874,6 +2891,9 @@ export async function refreshMatchupRankCoverageParticipants({
   force?: boolean;
   participants: MatchupRankCoverageParticipantInput[];
 }): Promise<RefreshMatchupRankCoverageParticipantsResult> {
+  const collectionBlockReason = getRiotCollectionBlockReason();
+  if (collectionBlockReason) return { ok: false, error: collectionBlockReason };
+
   const authResult = await getAuthorizedAdmin(accessToken, "refresh matchup rank coverage ranks");
 
   if (!authResult.ok) {

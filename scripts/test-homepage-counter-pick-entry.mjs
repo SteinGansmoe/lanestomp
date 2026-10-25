@@ -8,20 +8,13 @@ const siteHeader = readFileSync("src/components/site-header.tsx", "utf8");
 const countersPage = readFileSync("src/app/league/counters/page.tsx", "utf8");
 const changedHomepageFiles = `${homepage}\n${pageShell}\n${startForm}`;
 
-assert.match(homepage, /Counter Pick/, "Homepage should include the Counter Pick eyebrow.");
-assert.match(homepage, /Find the right/, "Homepage should render the approved hero headline.");
-assert.match(homepage, /counter before/, "Homepage should keep the approved headline line break.");
-assert.match(homepage, /champion select/, "Homepage should keep the approved headline ending.");
-assert.match(
+assert.doesNotMatch(
   homepage,
-  /Search any champion to get smart counter picks,\s+matchup insights,\s+and practical prep\s+before you lock in\./,
-  "Homepage should use the approved hero supporting copy.",
+  /CounterPickStartForm|\/league\/counters|Counter Pick/,
+  "Homepage must not promote the temporarily disabled Counter Pick feature.",
 );
-assert.match(
-  homepage,
-  /<CounterPickStartForm champions=\{champions\} popularChampions=\{popularChampions\} \/>/,
-  "Homepage hero should render the integrated Counter Pick search.",
-);
+assert.match(homepage, /Know your matchup/, "Homepage should focus on reviewed Matchup Guides.");
+assert.match(homepage, /Browse Matchup Guides/, "Homepage must retain a useful public CTA.");
 assert.match(
   homepage,
   /<LaneStompPageBackground \/>/,
@@ -68,20 +61,19 @@ assert.doesNotMatch(
   "Confidence guide should not use extreme win-rate tiers.",
 );
 
-assert.match(homepage, /Confidence Guide/, "Homepage should include the Confidence Guide strip.");
-assert.match(homepage, /1000\+ stored games/, "Very high confidence threshold should be 1000+.");
-assert.match(homepage, /500–999 games/, "High confidence threshold should be 500–999.");
-assert.match(homepage, /200–499 games/, "Medium confidence threshold should be 200–499.");
-assert.match(homepage, /50–199 games/, "Low confidence threshold should be 50–199.");
-assert.match(
+assert.doesNotMatch(
   homepage,
-  /Under 50 \/ preliminary/,
-  "Very low confidence threshold should be under 50 / preliminary.",
+  /Confidence Guide|stored games|value: "LIVE"/,
+  "Homepage must not promote statistical recommendations while Counter Pick is closed.",
 );
 
 assert.match(homepage, /Matchup Guides/, "Homepage should include Matchup Guide feature links.");
 assert.match(homepage, /Understand the matchup/, "Homepage should include matchup feature one.");
-assert.match(homepage, /Prepare your counter pick/, "Homepage should include matchup feature two.");
+assert.doesNotMatch(
+  homepage,
+  /Prepare your counter pick/,
+  "Disabled Counter Pick CTA must be absent.",
+);
 assert.match(homepage, /Play with a plan/, "Homepage should include matchup feature three.");
 assert.match(homepage, /LaneStomp in Numbers/, "Homepage should include the statistics strip.");
 
@@ -140,11 +132,7 @@ assert.match(
   /onKeyDown=\{handleKeyDown\}/,
   "Counter Pick hero search should expose keyboard navigation.",
 );
-assert.match(
-  siteHeader,
-  /counterPickPrimaryCtaClassName/,
-  "Navbar Counter Pick CTA should use the shared muted Counter Pick primary CTA style.",
-);
+assert.match(siteHeader, /Matchup Guides/, "Navbar must retain public Matchup Guides navigation.");
 assert.match(
   countersPage,
   /initialChampionId=\{initialChampionId\}/,
@@ -168,11 +156,7 @@ assert.match(
   /event\.key !== "Escape"/,
   "Account dropdown should handle Escape close behavior.",
 );
-assert.match(
-  accountMenu,
-  /handlePointerDown/,
-  "Account dropdown should close on outside click.",
-);
+assert.match(accountMenu, /handlePointerDown/, "Account dropdown should close on outside click.");
 assert.match(
   accountMenu,
   /showSignedOutActions/,

@@ -19,10 +19,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/league/matchups`,
       lastModified: new Date(),
     },
-    {
-      url: `${baseUrl}/league/counters`,
-      lastModified: new Date(),
-    },
   ];
 
   return [...staticRoutes, ...matchupRoutes];

@@ -33,54 +33,40 @@ create table if not exists public.league_counter_pick_match_statistics (
     enemy_champion_id <> counter_champion_id
   )
 );
-
 create index if not exists league_counter_pick_match_statistics_enemy_role_idx
 on public.league_counter_pick_match_statistics (enemy_champion_id, role);
-
 create index if not exists league_counter_pick_match_statistics_counter_idx
 on public.league_counter_pick_match_statistics (counter_champion_id);
-
 create index if not exists league_counter_pick_match_statistics_patch_idx
 on public.league_counter_pick_match_statistics (patch);
-
 create index if not exists league_counter_pick_match_statistics_trusted_best_idx
 on public.league_counter_pick_match_statistics (enemy_champion_id, role, win_rate desc, games desc)
 where games >= 100;
-
 create index if not exists league_counter_pick_match_statistics_trusted_bad_idx
 on public.league_counter_pick_match_statistics (enemy_champion_id, role, win_rate asc, games desc)
 where games >= 100;
-
 grant select on table public.league_counter_pick_match_statistics to anon, authenticated;
 grant select, insert, update, delete on table public.league_counter_pick_match_statistics to service_role;
-
 alter table public.league_counter_pick_match_statistics enable row level security;
-
 drop policy if exists "Counter pick match statistics are publicly readable"
 on public.league_counter_pick_match_statistics;
-
 create policy "Counter pick match statistics are publicly readable"
 on public.league_counter_pick_match_statistics
 for select
 to anon, authenticated
 using (true);
-
 drop policy if exists "Service role can manage counter pick match statistics"
 on public.league_counter_pick_match_statistics;
-
 create policy "Service role can manage counter pick match statistics"
 on public.league_counter_pick_match_statistics
 for all
 to service_role
 using (true)
 with check (true);
-
 drop trigger if exists set_league_counter_pick_match_statistics_updated_at
 on public.league_counter_pick_match_statistics;
-
 create trigger set_league_counter_pick_match_statistics_updated_at
 before update on public.league_counter_pick_match_statistics
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.league_counter_pick_match_statistics is
   'Cached League of Legends counter-pick matchup statistics aggregated by patch, role, enemy champion, and counter champion.';

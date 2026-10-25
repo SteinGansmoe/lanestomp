@@ -19,7 +19,6 @@ add column if not exists rank_enrichment_error_code text,
 add column if not exists rank_enrichment_error_message text,
 add column if not exists rank_enrichment_attempts integer not null default 0,
 add column if not exists rank_enrichment_failures integer not null default 0;
-
 do $$
 begin
   if not exists (
@@ -58,7 +57,6 @@ begin
     );
   end if;
 end $$;
-
 create table if not exists public.riot_seed_candidate_rank_snapshots (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.riot_seed_candidates(id) on delete cascade,
@@ -89,7 +87,6 @@ create table if not exists public.riot_seed_candidate_rank_snapshots (
     and (win_rate is null or (win_rate >= 0 and win_rate <= 1))
   )
 );
-
 create unique index if not exists riot_seed_candidate_rank_snapshots_unique_state_idx
 on public.riot_seed_candidate_rank_snapshots (
   candidate_id,
@@ -106,45 +103,33 @@ on public.riot_seed_candidate_rank_snapshots (
   coalesce(fresh_blood, false),
   coalesce(inactive, false)
 );
-
 create index if not exists riot_seed_candidates_rank_status_idx
 on public.riot_seed_candidates (rank_enrichment_status);
-
 create index if not exists riot_seed_candidates_rank_tier_idx
 on public.riot_seed_candidates (rank_tier);
-
 create index if not exists riot_seed_candidates_rank_last_success_idx
 on public.riot_seed_candidates (rank_last_success_at desc);
-
 create index if not exists riot_seed_candidates_rank_next_eligible_idx
 on public.riot_seed_candidates (rank_next_eligible_at);
-
 create index if not exists riot_seed_candidate_rank_snapshots_candidate_idx
 on public.riot_seed_candidate_rank_snapshots (candidate_id, observed_at desc);
-
 grant select on table public.riot_seed_candidate_rank_snapshots to authenticated;
 grant select, insert, update, delete on table public.riot_seed_candidate_rank_snapshots to service_role;
-
 alter table public.riot_seed_candidate_rank_snapshots enable row level security;
-
 drop policy if exists "Admins can read riot seed candidate rank snapshots"
 on public.riot_seed_candidate_rank_snapshots;
-
 create policy "Admins can read riot seed candidate rank snapshots"
 on public.riot_seed_candidate_rank_snapshots
 for select
 to authenticated
 using (public.is_admin(auth.uid()));
-
 drop policy if exists "Service role can manage riot seed candidate rank snapshots"
 on public.riot_seed_candidate_rank_snapshots;
-
 create policy "Service role can manage riot seed candidate rank snapshots"
 on public.riot_seed_candidate_rank_snapshots
 for all
 to service_role
 using (true)
 with check (true);
-
 comment on table public.riot_seed_candidate_rank_snapshots is
   'Point-in-time Riot Ranked Solo/Duo metadata snapshots for seed candidates.';

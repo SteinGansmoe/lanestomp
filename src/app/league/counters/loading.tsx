@@ -1,4 +1,5 @@
 import { HextechFrame } from "@/src/components/league/hextech-frame";
+import { publicCounterPickEnabled } from "@/src/features/league/counter-pick-access";
 import { LaneStompPageShell } from "@/src/components/lane-stomp-page";
 import {
   SkeletonButton,
@@ -11,6 +12,7 @@ import {
 import { SiteHeader } from "@/src/components/site-header";
 
 export default function LeagueCountersLoading() {
+  if (!publicCounterPickEnabled) return null;
   return (
     <LaneStompPageShell role="status" aria-label="Loading counter pick">
       <SiteHeader />

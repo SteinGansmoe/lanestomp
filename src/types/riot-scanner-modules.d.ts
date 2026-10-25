@@ -1,3 +1,7 @@
+declare module "@/scripts/lib/riot-collection-safety.mjs" {
+  export function getRiotCollectionBlockReason(): string | null;
+}
+
 type RiotObservationValidationIssueSummary = {
   issuesByCode: Record<string, number>;
   samples: Array<{

@@ -22,39 +22,29 @@ create table if not exists public.league_matchups (
   ),
   constraint league_matchups_unique_champion_role unique (champion_a_id, champion_b_id, role)
 );
-
 create index if not exists league_matchups_champion_a_idx
 on public.league_matchups (champion_a_id);
-
 create index if not exists league_matchups_champion_b_idx
 on public.league_matchups (champion_b_id);
-
 create index if not exists league_matchups_role_idx
 on public.league_matchups (role);
-
 grant select on table public.league_matchups to anon, authenticated;
 grant insert, update, delete on table public.league_matchups to authenticated;
 grant select, insert, update, delete on table public.league_matchups to service_role;
-
 alter table public.league_matchups enable row level security;
-
 drop policy if exists "League matchups are publicly readable" on public.league_matchups;
-
 create policy "League matchups are publicly readable"
 on public.league_matchups
 for select
 to anon, authenticated
 using (true);
-
 drop policy if exists "Admins can manage league matchups" on public.league_matchups;
-
 create policy "Admins can manage league matchups"
 on public.league_matchups
 for all
 to authenticated
 using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
-
 create or replace function public.set_current_timestamp_updated_at()
 returns trigger
 language plpgsql
@@ -64,12 +54,9 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists set_league_matchups_updated_at on public.league_matchups;
-
 create trigger set_league_matchups_updated_at
 before update on public.league_matchups
 for each row execute function public.set_current_timestamp_updated_at();
-
 comment on table public.league_matchups is
   'Structured League of Legends champion matchup notes by champion pair and role.';

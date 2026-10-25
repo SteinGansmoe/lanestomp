@@ -16,18 +16,14 @@ add column if not exists average_rank_score numeric,
 add column if not exists rank_snapshot_distance_seconds_a bigint,
 add column if not exists rank_snapshot_distance_seconds_b bigint,
 add column if not exists rank_attributed_at timestamptz;
-
 update public.riot_matchup_observations
 set rank_bracket = 'unknown'
 where rank_bracket is null;
-
 alter table public.riot_matchup_observations
 alter column rank_bracket set default 'unknown',
 alter column rank_bracket set not null;
-
 alter table public.riot_matchup_observations
 drop constraint if exists riot_matchup_observations_rank_bracket_check;
-
 alter table public.riot_matchup_observations
 add constraint riot_matchup_observations_rank_bracket_check check (
   rank_bracket in (
@@ -38,10 +34,8 @@ add constraint riot_matchup_observations_rank_bracket_check check (
     'unknown'
   )
 );
-
 alter table public.riot_matchup_observations
 drop constraint if exists riot_matchup_observations_rank_attribution_method_check;
-
 alter table public.riot_matchup_observations
 add constraint riot_matchup_observations_rank_attribution_method_check check (
   rank_attribution_method in (
@@ -50,10 +44,8 @@ add constraint riot_matchup_observations_rank_attribution_method_check check (
     'unknown'
   )
 );
-
 alter table public.riot_matchup_observations
 drop constraint if exists riot_matchup_observations_rank_attribution_state_check;
-
 alter table public.riot_matchup_observations
 add constraint riot_matchup_observations_rank_attribution_state_check check (
   (
@@ -80,10 +72,8 @@ add constraint riot_matchup_observations_rank_attribution_state_check check (
     and average_rank_score is null
   )
 );
-
 alter table public.counter_pick_stats
 drop constraint if exists counter_pick_stats_rank_bracket_check;
-
 alter table public.counter_pick_stats
 add constraint counter_pick_stats_rank_bracket_check check (
   rank_bracket in (
@@ -95,21 +85,15 @@ add constraint counter_pick_stats_rank_bracket_check check (
     'unknown'
   )
 );
-
 create index if not exists riot_matchup_observations_rank_method_idx
 on public.riot_matchup_observations (rank_attribution_method);
-
 create index if not exists riot_matchup_observations_rank_attributed_at_idx
 on public.riot_matchup_observations (rank_attributed_at);
-
 create index if not exists riot_matchup_observations_champion_a_puuid_idx
 on public.riot_matchup_observations (champion_a_puuid);
-
 create index if not exists riot_matchup_observations_champion_b_puuid_idx
 on public.riot_matchup_observations (champion_b_puuid);
-
 comment on column public.riot_matchup_observations.rank_bracket is
   'Rank bracket attributed from the matchup participants. Aggregate rows use all for every observation.';
-
 comment on column public.riot_matchup_observations.rank_attribution_method is
   'How the matchup rank bracket was assigned: two-player-average, single-player, or unknown.';
