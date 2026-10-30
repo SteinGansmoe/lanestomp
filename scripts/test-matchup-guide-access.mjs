@@ -9,7 +9,7 @@ const userId = "00000000-0000-0000-0000-000000000002";
 const expandName = "20261030193000_expand_matchup_guide_public_view.sql";
 const contractName = "20261030193100_contract_matchup_guide_storage_access.sql";
 const contractSql = await readFile(
-  new URL(`../supabase/deferred-migrations/${contractName}`, import.meta.url),
+  new URL(`../supabase/migrations/${contractName}`, import.meta.url),
   "utf8",
 );
 const publicFields = [
@@ -130,10 +130,26 @@ try {
         });
     });
   }
-  // Normal db push must not discover the contract migration.
+  // Reconciled history includes both applied phases, with no deferred duplicate.
   const activeMigrations = await readdir(new URL("../supabase/migrations/", import.meta.url));
   assert.ok(activeMigrations.includes(expandName));
-  assert.ok(!activeMigrations.includes(contractName));
+  assert.ok(activeMigrations.includes(contractName));
+  const deferredMigrations = await readdir(
+    new URL("../supabase/deferred-migrations/", import.meta.url),
+  ).catch((error) => {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  });
+  assert.ok(!deferredMigrations.includes(contractName));
+  const versions = activeMigrations
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+    .map((name) => {
+      assert.match(name, /^\d{14}_.+\.sql$/);
+      return name.slice(0, 14);
+    });
+  assert.equal(new Set(versions).size, versions.length, "Migration versions must be unique");
+  assert.ok(versions.every((version, index) => index === 0 || versions[index - 1] < version));
   assert.ok(expandName.slice(0, 14) < contractName.slice(0, 14));
   await asRole("authenticated", adminId, async () => {
     assert.equal((await rows("select admin_notes from public.league_matchups")).length, 3);
