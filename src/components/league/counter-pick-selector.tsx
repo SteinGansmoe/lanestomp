@@ -3575,7 +3575,7 @@ async function fetchReviewedGuideKeys(requestedGuideKeys: string[]) {
   const roles = Array.from(new Set(matchupRequests.map((request) => request.role)));
 
   const { data, error } = await supabase
-    .from("league_matchups")
+    .from("public_league_matchups")
     .select("champion_a_id, champion_b_id, role")
     .in("champion_a_id", championAIds)
     .in("champion_b_id", championBIds)
