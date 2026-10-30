@@ -75,7 +75,7 @@ export async function getLeagueMatchup({
   }
 
   const { data, error } = await supabase
-    .from("league_matchups")
+    .from("public_league_matchups")
     .select(
       [
         "champion_a_id",
@@ -136,7 +136,7 @@ export async function getLeagueMatchupCoverage({
   }
 
   const { count, error } = await supabase
-    .from("league_matchups")
+    .from("public_league_matchups")
     .select("id", { count: "exact", head: true })
     .eq("role", role)
     .eq("generation_status", "reviewed");
@@ -178,7 +178,7 @@ export async function getLeagueMatchupCoverageSummary(
   const roleCounts = await Promise.all(
     leagueRoles.map(async (role) => {
       const { count, error } = await supabaseClient
-        .from("league_matchups")
+        .from("public_league_matchups")
         .select("id", { count: "exact", head: true })
         .eq("role", role)
         .eq("generation_status", "reviewed");
