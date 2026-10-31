@@ -21,6 +21,7 @@ import { Button } from "@/src/components/ui/button";
 import { generateLeagueMatchupDraftSection } from "@/src/app/admin/league/matchups/actions";
 import { renderLeagueHoverText } from "@/src/components/league/ability-hover-token-text";
 import { MatchupFeedbackControls } from "@/src/components/league/matchup-feedback-controls";
+import { canSubmitMatchupFeedback } from "@/src/features/league/matchup-feedback";
 import { isAdminUser } from "@/src/lib/admin";
 import { supabase } from "@/src/lib/supabase";
 import { getChampionCombatProfile } from "@/src/features/league/champion-knowledge";
@@ -526,7 +527,7 @@ export function LeagueMatchupReviewPanel({
             isRegenerating={regeneratingSectionKey === section.key}
             key={section.title}
             feedbackContext={
-              displayMatchup?.id
+              canSubmitMatchupFeedback(displayMatchup) && displayMatchup?.id
                 ? {
                     cardType: section.key,
                     enemyChampion: championBName,
