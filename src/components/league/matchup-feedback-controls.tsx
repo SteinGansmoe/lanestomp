@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { AlertTriangle, MessageSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { supabase } from "@/src/lib/supabase";
 import type { LeagueRole } from "@/src/features/league/roles";
+import {
+  FEEDBACK_MESSAGE_MAX_LENGTH,
+  getFeedbackSubmissionError,
+  prepareFeedbackMessage,
+} from "@/src/features/league/matchup-feedback";
 
 type FeedbackType = "helpful" | "not_helpful" | "report_issue";
 type VoteFeedbackType = Exclude<FeedbackType, "report_issue">;
@@ -68,6 +73,8 @@ export function MatchupFeedbackControls({
     success: null,
   });
   const selectedFeedbackStorageKey = `lanestomp-feedback-selection:${matchupId}:${cardType}`;
+  const messageHelpId = useId();
+  const preparedMessage = prepareFeedbackMessage(message);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,6 +110,14 @@ export function MatchupFeedbackControls({
   }, [cardType, matchupId, selectedFeedbackStorageKey]);
 
   async function submitFeedback(feedbackType: FeedbackType) {
+    if (preparedMessage.isTooLong) {
+      setStatus({
+        error: "Please shorten your feedback to 4,000 characters or fewer.",
+        isLoading: false,
+        success: null,
+      });
+      return;
+    }
     if (!supabase) {
       setStatus({
         error: "Feedback cannot be submitted until Supabase is configured.",
@@ -114,43 +129,47 @@ export function MatchupFeedbackControls({
 
     setStatus({ error: null, isLoading: true, success: null });
 
-    const sessionId = getFeedbackSessionId();
-    const { data, error } = await supabase.rpc("submit_matchup_feedback", {
-      p_card_type: cardType,
-      p_enemy_champion: enemyChampion,
-      p_feedback_type: feedbackType,
-      p_lane: lane,
-      p_matchup_id: matchupId,
-      p_message: message.trim() || null,
-      p_player_champion: playerChampion,
-      p_reason: feedbackType === "report_issue" ? reason : null,
-      p_session_id: sessionId,
-    });
+    try {
+      const sessionId = getFeedbackSessionId();
+      const { data, error } = await supabase.rpc("submit_matchup_feedback", {
+        p_card_type: cardType,
+        p_enemy_champion: enemyChampion,
+        p_feedback_type: feedbackType,
+        p_lane: lane,
+        p_matchup_id: matchupId,
+        p_message: preparedMessage.text,
+        p_player_champion: playerChampion,
+        p_reason: feedbackType === "report_issue" ? reason : null,
+        p_session_id: sessionId,
+      });
 
-    if (error) {
-      setStatus({ error: error.message, isLoading: false, success: null });
-      return;
+      if (error) {
+        setStatus({ error: getFeedbackSubmissionError(error), isLoading: false, success: null });
+        return;
+      }
+
+      const nextCounts = getSubmittedFeedbackCounts(data);
+
+      if (nextCounts) {
+        setCounts(nextCounts);
+      }
+
+      if (feedbackType !== "report_issue") {
+        setSelectedFeedbackType(feedbackType);
+        storeSelectedFeedback(selectedFeedbackStorageKey, feedbackType);
+      }
+
+      setMessage("");
+      setIsReporting(false);
+      setStatus({
+        error: null,
+        isLoading: false,
+        success:
+          feedbackType === "report_issue" ? "Issue reported for admin review." : "Feedback saved.",
+      });
+    } catch {
+      setStatus({ error: getFeedbackSubmissionError(), isLoading: false, success: null });
     }
-
-    const nextCounts = getSubmittedFeedbackCounts(data);
-
-    if (nextCounts) {
-      setCounts(nextCounts);
-    }
-
-    if (feedbackType !== "report_issue") {
-      setSelectedFeedbackType(feedbackType);
-      storeSelectedFeedback(selectedFeedbackStorageKey, feedbackType);
-    }
-
-    setMessage("");
-    setIsReporting(false);
-    setStatus({
-      error: null,
-      isLoading: false,
-      success:
-        feedbackType === "report_issue" ? "Issue reported for admin review." : "Feedback saved.",
-    });
   }
 
   return (
@@ -163,7 +182,7 @@ export function MatchupFeedbackControls({
               ? "border-emerald-300/45 bg-emerald-500/20 ring-1 ring-emerald-300/35"
               : ""
           }`}
-          disabled={status.isLoading}
+          disabled={status.isLoading || preparedMessage.isTooLong}
           onClick={() => submitFeedback("helpful")}
           type="button"
           variant="ghost"
@@ -178,7 +197,7 @@ export function MatchupFeedbackControls({
               ? "border-amber-300/45 bg-amber-400/20 ring-1 ring-amber-300/35"
               : ""
           }`}
-          disabled={status.isLoading}
+          disabled={status.isLoading || preparedMessage.isTooLong}
           onClick={() => submitFeedback("not_helpful")}
           type="button"
           variant="ghost"
@@ -220,15 +239,28 @@ export function MatchupFeedbackControls({
           <label className="grid gap-1 text-xs text-zinc-400">
             Details
             <textarea
+              aria-describedby={messageHelpId}
+              aria-invalid={preparedMessage.isTooLong}
               className="min-h-20 resize-y border border-white/10 bg-[#081120] px-2 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus-visible:border-violet-400/70"
+              // HTML counts UTF-16 units: allow room for 4,000 astral characters.
+              // The code-point limit below and submission guard enforce 4,000.
+              maxLength={FEEDBACK_MESSAGE_MAX_LENGTH * 2}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Optional context for the admin reviewing this card"
               value={message}
             />
+            <span
+              className={preparedMessage.isTooLong ? "text-rose-200" : undefined}
+              id={messageHelpId}
+            >
+              {preparedMessage.length.toLocaleString("en-US")} / 4,000 characters after trimming
+              outer whitespace.
+              {preparedMessage.isTooLong ? " Please shorten your feedback before submitting." : ""}
+            </span>
           </label>
           <Button
             className="h-9 justify-self-start rounded-none border-rose-300/25 bg-rose-500/20 px-3 text-white hover:border-rose-300/45 hover:bg-rose-500/30"
-            disabled={status.isLoading}
+            disabled={status.isLoading || preparedMessage.isTooLong}
             onClick={() => submitFeedback("report_issue")}
             type="button"
           >
@@ -238,7 +270,11 @@ export function MatchupFeedbackControls({
         </div>
       ) : null}
 
-      {status.error ? <p className="mt-2 text-xs leading-5 text-rose-200">{status.error}</p> : null}
+      {status.error ? (
+        <p className="mt-2 text-xs leading-5 text-rose-200" role="alert">
+          {status.error}
+        </p>
+      ) : null}
       {status.success ? (
         <p className="mt-2 text-xs leading-5 text-emerald-200">{status.success}</p>
       ) : null}

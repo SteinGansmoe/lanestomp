@@ -54,6 +54,7 @@
     "test:riot-seed-candidate-pagination": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-riot-seed-candidate-pagination.mjs",
     "test:riot-seed-candidate-bulk-controls": "node scripts/test-riot-seed-candidate-bulk-controls.mjs",
     "test:riot-seed-candidate-lifecycle": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-riot-seed-candidate-lifecycle.mjs",
+    "test:matchup-feedback-ui": "node scripts/test-matchup-feedback-ui.mjs",
     "test:riot-seed-candidates": "node scripts/test-riot-seed-candidates.mjs",
     "update:counter-pick-stats": "node scripts/update-counter-pick-match-statistics.mjs",
     "verify:league-champions": "node scripts/verify-league-champions.mjs",
