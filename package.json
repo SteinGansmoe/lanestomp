@@ -31,6 +31,7 @@
     "test:counter-pick-confidence": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-confidence.mjs",
     "test:counter-pick-data-pipeline": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-data-pipeline.mjs",
     "test:counter-pick-management-metrics": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-pick-management-metrics.mjs",
+    "test:counter-pick-metrics-access": "node scripts/test-counter-pick-metrics-access.mjs",
     "test:counter-ranking-v2": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/test-counter-ranking-v2.mjs",
     "test:counter-pick-admin-panel-cleanup": "node scripts/test-counter-pick-admin-panel-cleanup.mjs",
     "test:counter-pick-entry-hero": "node scripts/test-counter-pick-entry-hero.mjs",
