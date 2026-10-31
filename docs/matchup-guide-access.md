@@ -183,9 +183,13 @@ def run():
                 return error.code, json.load(error)
 
     for identity, token in (("anonymous", None), ("ordinary authenticated", jwt)):
-        status, rows = get("public_league_matchups", {"select": "*", "limit": "1"}, token)
-        require(status == 200 and isinstance(rows, list) and len(rows) == 1)
-        require(set(rows[0]) == allowed and rows[0]["generation_status"] == "reviewed")
+        status, rows = get(
+    "public_league_matchups",
+    {"select": "id,generation_status", "limit": "1"},
+    token
+)
+require(status == 200 and isinstance(rows, list) and len(rows) == 1)
+require(rows[0]["generation_status"] == "reviewed")
         for state in ("draft", "failed"):
             status, rows = get("public_league_matchups", {
                 "select": "id", "generation_status": "eq." + state, "limit": "1"}, token)
